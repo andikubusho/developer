@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Plus, Search, Filter, ShoppingBag, FileText, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Plus, Search, Filter, ShoppingBag, FileText, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Sale } from '../types';
 import { Button } from '../components/ui/Button';
@@ -10,22 +10,31 @@ import { Modal } from '../components/ui/Modal';
 import { SaleForm } from '../components/forms/SaleForm';
 import { useAuth } from '../contexts/AuthContext';
 import { getMockData } from '../lib/storage';
+import { Pagination } from '../components/ui/Pagination';
 
 const Sales: React.FC = () => {
   const { isMockMode, division, setDivision } = useAuth();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 10;
 
+  // Debounce search term
   useEffect(() => {
-    if (division === 'marketing') {
-      fetchSales();
-    } else {
-      setLoading(false);
-    }
-  }, [division]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1); // Reset to first page on new search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  const fetchSales = async () => {
+  const fetchSales = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -46,31 +55,70 @@ const Sales: React.FC = () => {
             created_at: new Date().toISOString(),
           }
         ];
-        setSales(getMockData<Sale>('sales', defaultSales));
+        
+        const allMockSales = getMockData<Sale>('sales', defaultSales);
+        
+        // Mock filtering
+        const filteredMock = allMockSales.filter(s => 
+          s.customer?.full_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          s.unit?.unit_number.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          s.unit?.project?.name.toLowerCase().includes(debouncedSearch.toLowerCase())
+        );
+        
+        setTotalCount(filteredMock.length);
+        
+        // Mock pagination
+        const from = (currentPage - 1) * pageSize;
+        const to = from + pageSize;
+        setSales(filteredMock.slice(from, to));
         return;
       }
 
-      const { data, error } = await supabase
+      // Supabase Implementation with Pagination & Search
+      let query = supabase
         .from('sales')
-        .select('*, unit:units(unit_number, project:projects(name)), customer:customers(full_name), marketing:profiles(full_name)')
-        .order('sale_date', { ascending: false });
+        .select(`
+          *,
+          unit:units!inner(
+            unit_number, 
+            project:projects!inner(name)
+          ), 
+          customer:customers!inner(full_name), 
+          marketing:profiles!inner(full_name)
+        `, { count: 'exact' });
+
+      // Apply search filters if needed
+      if (debouncedSearch) {
+        // Search across relations using or expression
+        query = query.or(`customer.full_name.ilike.%${debouncedSearch}%,unit.unit_number.ilike.%${debouncedSearch}%`);
+      }
+
+      // Add pagination
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+      
+      const { data, error, count } = await query
+        .order('sale_date', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
+      
       setSales(data || []);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error('Error fetching sales:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, debouncedSearch, isMockMode, pageSize]);
 
-  const filteredSales = sales.filter(s => 
-    s.customer?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.unit?.unit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.unit?.project?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  useEffect(() => {
+    if (division === 'marketing') {
+      fetchSales();
+    } else {
+      setLoading(false);
+    }
+  }, [division, fetchSales]);
 
   const handleAdd = () => {
     setIsModalOpen(true);
@@ -80,6 +128,8 @@ const Sales: React.FC = () => {
     setIsModalOpen(false);
     fetchSales();
   };
+
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
     <div className="space-y-6">
@@ -98,7 +148,7 @@ const Sales: React.FC = () => {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Penjualan</h1>
-            <p className="text-slate-500">Kelola transaksi penjualan unit properti</p>
+            <p className="text-slate-500">Kelola transaksi penjualan unit properti ({totalCount})</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={handleAdd}>
@@ -119,25 +169,24 @@ const Sales: React.FC = () => {
         />
       </Modal>
 
-
-      <Card className="p-0">
+      <Card className="p-0 overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input 
-              placeholder="Cari pelanggan, unit, atau proyek..." 
-              className="pl-10"
+              placeholder="Cari pelanggan atau nomor unit..." 
+              className="pl-10 h-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline">
+          <Button variant="outline" className="h-10">
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[400px]">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
@@ -151,21 +200,22 @@ const Sales: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center">
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredSales.length === 0 ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td colSpan={6} className="px-6 py-4">
+                      <div className="h-4 bg-slate-100 rounded w-1/2 mb-2"></div>
+                      <div className="h-3 bg-slate-50 rounded w-1/4"></div>
+                    </td>
+                  </tr>
+                ))
+              ) : sales.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
                     Tidak ada transaksi ditemukan.
                   </td>
                 </tr>
               ) : (
-                filteredSales.map((sale) => (
+                sales.map((sale) => (
                   <tr key={sale.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-medium text-slate-900">{sale.customer?.full_name}</div>
@@ -213,9 +263,17 @@ const Sales: React.FC = () => {
             </tbody>
           </table>
         </div>
+        
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          isLoading={loading}
+        />
       </Card>
     </div>
   );
 };
 
 export default Sales;
+

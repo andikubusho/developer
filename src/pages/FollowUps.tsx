@@ -90,7 +90,7 @@ const FollowUps: React.FC = () => {
 
   const fetchLeads = async () => {
     if (isMockMode) {
-      const defaultLeads = [
+      const defaultLeads: Lead[] = [
         { id: '1', name: 'Andi Wijaya', phone: '081234567890', date: '', source: '', status: 'hot', description: '' },
         { id: '2', name: 'Budi Santoso', phone: '089876543210', date: '', source: '', status: 'medium', description: '' }
       ];
