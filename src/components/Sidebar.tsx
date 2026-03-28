@@ -263,59 +263,76 @@ const Sidebar: React.FC = () => {
   );
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen sticky top-0">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+    <aside className="w-72 bg-slate-50 border-r border-slate-200/60 flex flex-col h-screen sticky top-0 z-40">
+      <div className="p-8 pb-4 flex items-center gap-3">
+        <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 transition-transform hover:scale-110 duration-300">
           <Building2 className="text-white w-5 h-5" />
         </div>
-        <span className="text-xl font-bold text-white tracking-tight">PropDev ERP</span>
+        <div>
+          <span className="text-xl font-black text-slate-900 tracking-tight block leading-none">PropDev</span>
+          <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">ERP PRO 2026</span>
+        </div>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 px-4 space-y-1.5 mt-8 overflow-y-auto scrollbar-hide">
+        <div className="px-4 mb-4">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Menu Utama</p>
+        </div>
         {filteredMenu.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) => cn(
-              'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group',
+              'flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 group relative overflow-hidden',
               isActive 
-                ? 'bg-indigo-600 text-white' 
-                : 'hover:bg-slate-800 hover:text-white'
+                ? 'bg-white text-primary shadow-xl shadow-indigo-100/50 after:absolute after:left-0 after:top-1/4 after:bottom-1/4 after:w-1 after:bg-primary after:rounded-r-full' 
+                : 'text-slate-500 hover:bg-white/80 hover:text-slate-900'
             )}
           >
-            <item.icon className="w-5 h-5" />
-            <span className="font-medium">{item.name}</span>
+            {({ isActive }) => (
+              <>
+                <item.icon className={cn(
+                  "w-5 h-5 transition-transform group-hover:scale-110",
+                  isActive ? "text-primary" : "text-slate-400"
+                )} />
+                <span className="font-bold text-[13px] tracking-tight">{item.name}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
-        <div className="flex items-center gap-3 px-3 py-2 mb-4">
-          <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold">
+      <div className="p-6 m-4 mt-auto rounded-3xl bg-white border border-slate-100 shadow-premium">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-primary font-black text-lg shadow-sm">
             {profile?.full_name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-sm font-medium text-white truncate">{profile?.full_name}</p>
-            <p className="text-xs text-slate-400 capitalize">{division}</p>
+            <p className="text-[13px] font-black text-slate-900 truncate leading-tight tracking-tight">{profile?.full_name}</p>
+            <p className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1 opacity-70">{division}</p>
           </div>
         </div>
-        <button
-          onClick={() => {
-            localStorage.removeItem('user_division');
-            setDivision(null);
-          }}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors text-slate-400 mb-1"
-        >
-          <ArrowLeftRight className="w-5 h-5" />
-          <span className="font-medium">Ganti Divisi</span>
-        </button>
-        <button
-          onClick={() => signOut()}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-red-900/20 hover:text-red-400 transition-colors text-slate-400"
-        >
-          <LogOut className="w-5 h-5" />
-          <span className="font-medium">Keluar</span>
-        </button>
+        
+        <div className="space-y-2">
+          <button
+            onClick={() => {
+              localStorage.removeItem('user_division');
+              setDivision(null);
+            }}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-slate-50 text-slate-500 hover:text-primary transition-all duration-200 group"
+          >
+            <ArrowLeftRight className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+            <span className="font-bold text-xs">Ganti Divisi</span>
+          </button>
+          
+          <button
+            onClick={() => signOut()}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-danger transition-all duration-200"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="font-bold text-xs">Keluar Sistem</span>
+          </button>
+        </div>
       </div>
     </aside>
   );
