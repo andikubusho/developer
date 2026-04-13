@@ -1,0 +1,75 @@
+﻿node.exe : 
+At line:1 char:1
++ & "D:\node/node.exe" "D:
+\node/node_modules/npm/bin
+/npx-cli.js" tsx se ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (:  
+  String) [], RemoteExc   
+ eption
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+node:internal/modules/run_
+main:107
+    triggerUncaughtExcepti
+on(
+    ^
+Error [TransformError]: Tr
+ansform failed with 1 erro
+r:
+D:\monitor gudang ferio\mo
+nitor-gudang\server\routes
+\promo_helper.ts:104:10: E
+RROR: The symbol "pointGif
+t" has already been declar
+ed
+    at failureErrorWithLog
+ (D:\monitor gudang ferio\
+monitor-gudang\node_module
+s\@esbuild-kit\esm-loader\
+node_modules\esbuild\lib\m
+ain.js:1748:15)
+    at D:\monitor gudang f
+erio\monitor-gudang\node_m
+odules\@esbuild-kit\esm-lo
+ader\node_modules\esbuild\
+lib\main.js:1017:50
+    at responseCallbacks.<
+computed> (D:\monitor guda
+ng ferio\monitor-gudang\no
+de_modules\@esbuild-kit\es
+m-loader\node_modules\esbu
+ild\lib\main.js:884:9)
+    at handleIncomingPacke
+t (D:\monitor gudang ferio
+\monitor-gudang\node_modul
+es\@esbuild-kit\esm-loader
+\node_modules\esbuild\lib\
+main.js:939:12)
+    at Socket.readFromStdo
+ut (D:\monitor gudang feri
+o\monitor-gudang\node_modu
+les\@esbuild-kit\esm-loade
+r\node_modules\esbuild\lib
+\main.js:862:7)
+    at Socket.emit (node:e
+vents:508:28)
+    at addChunk (node:inte
+rnal/streams/readable:563:
+12)
+    at readableAddChunkPus
+hByteMode (node:internal/s
+treams/readable:514:3)
+    at Readable.push (node
+:internal/streams/readable
+:394:5)
+    at Pipe.onStreamRead (
+node:internal/stream_base_
+commons:189:23)
+
+Node.js v24.14.0

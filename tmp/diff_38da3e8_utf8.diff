@@ -1,0 +1,1231 @@
+﻿commit 38da3e8ef4b2696da9de815d7d23842a094e8397
+Author: Christian Luis Efendy <christian.luis.efendy@gmail.com>
+Date:   Mon Mar 30 15:36:08 2026 +0700
+
+    feat: calculate and display monetary reward value for Paket promos in transaction history
+
+diff --git a/client/src/pages/promo/PencairanIntegrated.tsx b/client/src/pages/promo/PencairanIntegrated.tsx
+index 4002216..5136a7e 100644
+--- a/client/src/pages/promo/PencairanIntegrated.tsx
++++ b/client/src/pages/promo/PencairanIntegrated.tsx
+@@ -1,5 +1,5 @@
+ 
+-import { useState } from "react";
++import { useState, useMemo } from "react";
+ import { useQuery, useMutation } from "@tanstack/react-query";
+ import { 
+   Card, CardContent, CardHeader, CardTitle, CardDescription 
+@@ -9,38 +9,52 @@ import {
+ } from "@/components/ui/table";
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
+-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+ import { 
+-  Loader2, CheckCircle, Clock, Wallet, Scissors, Gift, Star, RefreshCw 
++  Loader2, CheckCircle, Clock, Wallet, Scissors, Gift, Star, RefreshCw, 
++  Search, Printer, ChevronDown, User, ArrowRight, MapPin
+ } from "lucide-react";
+ import { apiRequest, queryClient } from "@/lib/queryClient";
+ import { useToast } from "@/hooks/use-toast";
+ import { 
+   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
+ } from "@/components/ui/select";
++import { Input } from "@/components/ui/input";
+ import { Label } from "@/components/ui/label";
+ import { Separator } from "@/components/ui/separator";
+ import { useBranch } from "@/hooks/use-branch";
+-
++import {
++  Accordion,
++  AccordionContent,
++  AccordionItem,
++  AccordionTrigger,
++} from "@/components/ui/accordion";
++import {
++  Dialog,
++  DialogContent,
++  DialogHeader,
++  DialogTitle,
++  DialogTrigger,
++} from "@/components/ui/dialog";
+ 
+ export default function PencairanReward() {
+   const { toast } = useToast();
+   const { selectedBranchId } = useBranch();
+-  const [selectedPelanggan, setSelectedPelanggan] = useState<string>("");
+-
++  const [searchTerm, setSearchTerm] = useState<string>("");
++  const [selectedPelangganId, setSelectedPelangganId] = useState<string>("all");
++  const [isRedeemOpen, setIsRedeemOpen] = useState(false);
++  const [activePelangganForRedeem, setActivePelangganForRedeem] = useState<any>(null);
+ 
+-  const { data: claims, isLoading: isLoadingClaims, refetch: refetchClaims } = useQuery<any[]>({
+-    queryKey: ["/api/reward/claims", { branchId: selectedBranchId }],
++  const { data: dashboardData, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useQuery<any>({
++    queryKey: ["/api/reward/dashboard-data", { branchId: selectedBranchId }],
+     queryFn: async () => {
+-       const res = await fetch(`/api/reward/claims?branchId=${selectedBranchId}`);
+-       if (!res.ok) throw new Error("Gagal mengambil data klaim");
++       const res = await fetch(`/api/reward/dashboard-data?branchId=${selectedBranchId}`);
++       if (!res.ok) throw new Error("Gagal mengambil data dashboard");
+        return res.json();
+     },
+     enabled: !!selectedBranchId
+   });
+ 
+-
+-  const { data: pelanggan } = useQuery<any[]>({
++  const { data: pelangganData } = useQuery<any[]>({
+     queryKey: ["/api/sales-customers", { branchId: selectedBranchId }],
+     queryFn: async () => {
+        const res = await fetch(`/api/sales-customers?branchId=${selectedBranchId}`);
+@@ -50,8 +64,7 @@ export default function PencairanReward() {
+     enabled: !!selectedBranchId
+   });
+ 
+-
+-  const { data: hadiah } = useQuery<any[]>({
++  const { data: hadiahData } = useQuery<any[]>({
+     queryKey: ["/api/promo/hadiah", { branchId: selectedBranchId }],
+     queryFn: async () => {
+        const res = await fetch(`/api/promo/hadiah?branchId=${selectedBranchId}`);
+@@ -61,14 +74,17 @@ export default function PencairanReward() {
+     enabled: !!selectedBranchId
+   });
+ 
+-
+-  const updateClaimMutation = useMutation({
+-    mutationFn: async ({ claimId, action }: { claimId: number, action: string }) => {
+-      await apiRequest("POST", "/api/reward/process", { claimId, action, branchId: selectedBranchId });
++  const disburseMutation = useMutation({
++    mutationFn: async (payload: any) => {
++      await apiRequest("POST", "/api/reward/disburse-item", { ...payload, branchId: selectedBranchId });
+     },
+     onSuccess: () => {
+-      toast({ title: "Status Diperbarui", description: "Reward berhasil dikelola." });
+-      queryClient.invalidateQueries({ queryKey: ["/api/reward/claims"] });
++      toast({ title: "Berhasil!", description: "Item berhasil dicairkan." });
++      queryClient.invalidateQueries({ queryKey: ["/api/reward/dashboard-data"] });
++      queryClient.invalidateQueries({ queryKey: ["/api/sales-customers"] });
++    },
++    onError: (err: any) => {
++      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+     }
+   });
+ 
+@@ -79,202 +95,468 @@ export default function PencairanReward() {
+     },
+     onSuccess: () => {
+       toast({ title: "Berhasil!", description: "Penukaran poin telah diproses." });
+-      queryClient.invalidateQueries({ queryKey: ["/api/reward/claims"] });
++      queryClient.invalidateQueries({ queryKey: ["/api/reward/dashboard-data"] });
+       queryClient.invalidateQueries({ queryKey: ["/api/promo/hadiah"] });
++      queryClient.invalidateQueries({ queryKey: ["/api/sales-customers"] });
++      setIsRedeemOpen(false);
+     },
+     onError: (err: any) => {
+       toast({ title: "Gagal Menukar", description: err.message, variant: "destructive" });
+     }
+   });
+ 
++  // Filter & Grouping Logic
++  const filteredAndGroupedData = useMemo(() => {
++    if (!dashboardData) return [];
++
++    const groups: Record<number, any> = {};
++
++    // Helper to ensure group exists
++    const ensureGroup = (pId: number, pNama: string) => {
++      if (!groups[pId]) {
++        const pDet = pelangganData?.find(p => p.id === pId);
++        groups[pId] = {
++          id: pId,
++          name: pNama,
++          saldoPoin: pDet?.totalPoint || 0,
++          totalCair: 0,
++          ready: [],
++          history: []
++        };
++      }
++    };
++
++    // 1. Process Ready Data
++    const { ready } = dashboardData;
++    ready.cashback.forEach((item: any) => {
++       ensureGroup(item.pelangganId, item.pelangganNama);
++       groups[item.pelangganId].ready.push({ ...item, type: 'cashback', label: 'Cashback' });
++    });
++    ready.points.forEach((item: any) => {
++       ensureGroup(item.pelangganId, item.pelangganNama);
++       groups[item.pelangganId].ready.push({ ...item, type: 'point', label: 'Loyalty Points', nilai: item.saldo });
++    });
++    ready.labels.forEach((item: any) => {
++       ensureGroup(item.pelangganId, item.pelangganNama);
++       groups[item.pelangganId].ready.push({ ...item, type: 'cutting', label: `Label: ${item.namaPromo}`, nilai: item.totalNilai });
++    });
++    ready.pakets.forEach((item: any) => {
++       ensureGroup(item.pelangganId, item.pelangganNama);
++       groups[item.pelangganId].ready.push({ ...item, type: 'paket', label: `Paket: ${item.namaPaket}`, nilai: item.targetVal || 0, desc: item.target });
++    });
++
++    // 2. Process History
++    dashboardData.history.forEach((item: any) => {
++       ensureGroup(item.pelangganId, item.pelanggan.name);
++       groups[item.pelangganId].history.push(item);
++       groups[item.pelangganId].totalCair += Number(item.jumlah);
++    });
++
++    // Filtering
++    let result = Object.values(groups);
++    if (searchTerm) {
++      const lowerSearch = searchTerm.toLowerCase();
++      result = result.filter(g => g.name.toLowerCase().includes(lowerSearch));
++    }
++    if (selectedPelangganId !== "all") {
++      result = result.filter(g => g.id.toString() === selectedPelangganId);
++    }
++
++    return result.sort((a, b) => a.name.localeCompare(b.name));
++  }, [dashboardData, searchTerm, selectedPelangganId, pelangganData]);
++
+   const getStatusBadge = (status: string) => {
+     switch (status) {
+-      case 'pending': return <Badge variant="outline" className="flex gap-1 items-center border-amber-500 text-amber-500 bg-amber-50"><Clock className="h-3 w-3" /> Menunggu</Badge>;
+-      case 'approved': return <Badge className="flex gap-1 items-center bg-blue-500"><CheckCircle className="h-3 w-3" /> Disetujui</Badge>;
+-      case 'selesai': return <Badge className="flex gap-1 items-center bg-green-500"><CheckCircle className="h-3 w-3" /> Cair/Selesai</Badge>;
+-      case 'batal': return <Badge variant="destructive" className="flex gap-1 items-center">Batal</Badge>;
+-      default: return <Badge>{status}</Badge>;
++      case 'pending': return <Badge variant="outline" className="flex gap-1 items-center border-amber-500 text-amber-500 bg-amber-50 text-[10px] py-0 px-1.5"><Clock className="h-2.5 w-2.5" /> Menunggu</Badge>;
++      case 'approved': return <Badge className="flex gap-1 items-center bg-blue-500 text-[10px] py-0 px-1.5"><CheckCircle className="h-2.5 w-2.5" /> Disetujui</Badge>;
++      case 'selesai': return <Badge className="flex gap-1 items-center bg-green-500 text-[10px] py-0 px-1.5"><CheckCircle className="h-2.5 w-2.5" /> Cair</Badge>;
++      case 'batal': return <Badge variant="destructive" className="flex gap-1 items-center text-[10px] py-0 px-1.5">Batal</Badge>;
++      default: return <Badge className="text-[10px] py-0 px-1.5">{status}</Badge>;
+     }
+   };
+ 
+-  const currentPelanggan = pelanggan?.find(p => p.id.toString() === selectedPelanggan);
++  const handlePrintAll = () => {
++    const printWindow = window.open('', '_blank');
++    if (!printWindow) return;
++
++    const content = `
++      <html>
++        <head>
++          <title>Laporan Pencairan Reward - Semua</title>
++          <style>
++            body { font-family: sans-serif; padding: 20px; }
++            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
++            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
++            th { bg-color: #f2f2f2; }
++            .header { text-align: center; margin-bottom: 30px; }
++            .total { font-weight: bold; }
++          </style>
++        </head>
++        <body>
++          <div class="header">
++            <h1>Laporan Pencairan Reward</h1>
++            <p>Dicetak pada: ${new Date().toLocaleString()}</p>
++          </div>
++          <table>
++            <thead>
++              <tr>
++                <th>Pelanggan</th>
++                <th>Saldo Poin</th>
++                <th>Total Pencairan</th>
++                <th>Jumlah Klaim</th>
++              </tr>
++            </thead>
++            <tbody>
++              ${filteredAndGroupedData.map(g => `
++                <tr>
++                  <td>${g.name}</td>
++                  <td>${g.saldoPoin}</td>
++                  <td>Rp ${g.totalCair.toLocaleString()}</td>
++                  <td>${g.claims.length}</td>
++                </tr>
++              `).join('')}
++            </tbody>
++          </table>
++        </body>
++      </html>
++    `;
++    printWindow.document.write(content);
++    printWindow.document.close();
++    printWindow.print();
++  };
++
++  const handlePrintSingle = (group: any) => {
++    const printWindow = window.open('', '_blank');
++    if (!printWindow) return;
++
++    const content = `
++      <html>
++        <head>
++          <title>Laporan Pencairan - ${group.name}</title>
++          <style>
++            body { font-family: sans-serif; padding: 20px; }
++            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
++            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
++            .header { border-bottom: 2px solid #333; padding-bottom: 10px; }
++            .summary { margin: 20px 0; display: flex; justify-content: space-between; }
++          </style>
++        </head>
++        <body>
++          <div class="header">
++            <h2>Detail Pencairan Reward</h2>
++            <p>Pelanggan: <strong>${group.name}</strong></p>
++          </div>
++          <div class="summary">
++            <div>Saldo Poin: <strong>${group.saldoPoin}</strong></div>
++            <div>Total Pencairan: <strong>Rp ${group.totalCair.toLocaleString()}</strong></div>
++          </div>
++          <table>
++            <thead>
++              <tr>
++                <th>Tanggal</th>
++                <th>Sumber</th>
++                <th>Deskripsi</th>
++                <th>Nilai</th>
++                <th>Status</th>
++              </tr>
++            </thead>
++            <tbody>
++              ${group.claims.map((c: any) => `
++                <tr>
++                  <td>${new Date(c.tanggalKlaim).toLocaleDateString()}</td>
++                  <td>${c.sumber}</td>
++                  <td>${c.rewardDesc || '-'}</td>
++                  <td>${c.rewardType === 'poin' ? c.jumlah + ' Poin' : 'Rp ' + Number(c.jumlah).toLocaleString()}</td>
++                  <td>${c.status}</td>
++                </tr>
++              `).join('')}
++            </tbody>
++          </table>
++        </body>
++      </html>
++    `;
++    printWindow.document.write(content);
++    printWindow.document.close();
++    printWindow.print();
++  };
+ 
+   return (
+-    <div className="container mx-auto p-6 space-y-6">
+-      <div className="flex flex-col gap-2">
+-        <h1 className="text-3xl font-bold tracking-tight">Pencairan & Klaim Reward</h1>
+-        <p className="text-muted-foreground">Kelola penukaran poin, cashback, dan hadiah program paket</p>
++    <div className="container mx-auto p-4 md:p-6 space-y-6">
++      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
++        <div>
++          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Manajemen Pencairan Reward</h1>
++          <p className="text-sm text-muted-foreground">Kontrol dan verifikasi pencairan reward per pelanggan</p>
++        </div>
++        <div className="flex gap-2">
++           <Button variant="outline" size="sm" onClick={() => refetchDashboard()} className="h-9">
++             <RefreshCw className="h-4 w-4 mr-2" /> Refresh
++           </Button>
++           <Button variant="default" size="sm" onClick={handlePrintAll} className="h-9 bg-blue-600 hover:bg-blue-700">
++             <Printer className="h-4 w-4 mr-2" /> Cetak Laporan
++           </Button>
++        </div>
+       </div>
+ 
+-      <Tabs defaultValue="claims" className="space-y-4">
+-        <TabsList className="bg-gray-100 p-1 rounded-xl grid grid-cols-2 md:grid-cols-4 w-full md:w-[600px] h-auto shadow-sm">
+-          <TabsTrigger value="claims" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+-             Riwayat Klaim
+-          </TabsTrigger>
+-          <TabsTrigger value="point-redeem" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+-             Tukar Poin
+-          </TabsTrigger>
+-          <TabsTrigger value="monitoring-rewards" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm" disabled>
+-             Cutting & Cashback
+-          </TabsTrigger>
+-          <TabsTrigger value="monitoring-paket" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm" disabled>
+-             Klaim Paket
+-          </TabsTrigger>
+-        </TabsList>
++      {/* FILTER PANEL */}
++      <Card className="border-none shadow-sm bg-blue-50/30">
++        <CardContent className="p-4 flex flex-col md:flex-row gap-4">
++          <div className="flex-1 relative">
++            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
++            <Input 
++              placeholder="Cari nama pelanggan..." 
++              className="pl-9 bg-white"
++              value={searchTerm}
++              onChange={(e) => setSearchTerm(e.target.value)}
++            />
++          </div>
++          <div className="w-full md:w-[300px]">
++             <Select value={selectedPelangganId} onValueChange={setSelectedPelangganId}>
++                <SelectTrigger className="bg-white">
++                  <SelectValue placeholder="Semua Pelanggan" />
++                </SelectTrigger>
++                <SelectContent>
++                   <SelectItem value="all">Semua Pelanggan</SelectItem>
++                   {pelangganData?.sort((a,b)=>a.name.localeCompare(b.name)).map(p => (
++                     <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
++                   ))}
++                </SelectContent>
++             </Select>
++          </div>
++        </CardContent>
++      </Card>
+ 
+-        {/* RIWAYAT KLAIM */}
+-        <TabsContent value="claims">
+-          <Card className="shadow-lg border-2">
+-            <CardHeader className="flex flex-row items-center justify-between">
+-              <div>
+-                <CardTitle>Riwayat & Verifikasi Klaim</CardTitle>
+-                <CardDescription>Persetujuan pencairan reward tertunda</CardDescription>
+-              </div>
+-               <button 
+-                  onClick={() => refetchClaims()} 
+-                  className="p-2 rounded-full hover:bg-gray-100 transition-all border shadow-sm"
+-               >
+-                 <RefreshCw className="h-5 w-5 text-blue-600" />
+-               </button>
+-            </CardHeader>
+-            <CardContent>
+-              {isLoadingClaims ? (
+-                <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin" /></div>
+-              ) : (
+-                <Table>
+-                  <TableHeader>
+-                    <TableRow className="bg-gray-50 uppercase">
+-                      <TableHead className="font-bold">Tanggal</TableHead>
+-                      <TableHead className="font-bold">Pelanggan</TableHead>
+-                      <TableHead className="font-bold">Sumber</TableHead>
+-                      <TableHead className="font-bold">Deskripsi</TableHead>
+-                      <TableHead className="font-bold">Nilai</TableHead>
+-                      <TableHead className="font-bold text-center">Status</TableHead>
+-                      <TableHead className="font-bold text-right">Aksi</TableHead>
+-                    </TableRow>
+-                  </TableHeader>
+-                  <TableBody>
+-                    {claims?.length === 0 && (
+-                      <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">Tidak ada riwayat klaim.</TableCell></TableRow>
+-                    )}
+-                    {claims?.map((c) => (
+-                      <TableRow key={c.id} className="hover:bg-blue-50/20">
+-                        <TableCell className="text-xs">{new Date(c.tanggalKlaim).toLocaleDateString()}</TableCell>
+-                        <TableCell className="font-semibold">{c.pelanggan.name}</TableCell>
+-                        <TableCell>
+-                          <div className="flex items-center gap-1">
+-                             {c.sumber === 'cashback' && <Wallet className="h-4 w-4 text-green-600" />}
+-                             {c.sumber === 'cutting' && <Scissors className="h-4 w-4 text-blue-600" />}
+-                             {c.sumber === 'point' && <Star className="h-4 w-4 text-amber-500 fill-amber-500" />}
+-                             {c.sumber === 'paket' && <Gift className="h-4 w-4 text-purple-600" />}
+-                             <span className="capitalize text-xs font-bold">{c.sumber}</span>
++      {!selectedBranchId ? (
++        <div className="text-center py-24 bg-white border-2 border-dashed rounded-2xl flex flex-col items-center gap-4">
++           <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center">
++              <MapPin className="h-8 w-8 text-blue-500" />
++           </div>
++           <div>
++              <h3 className="text-lg font-bold text-gray-900">Cabang Belum Dipilih</h3>
++              <p className="text-muted-foreground text-sm mt-1">Silakan pilih cabang di sidebar sebelah kiri untuk melihat data pencairan.</p>
++           </div>
++        </div>
++      ) : isLoadingDashboard ? (
++        <div className="flex flex-col items-center justify-center py-20 gap-2">
++           <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
++           <p className="text-muted-foreground animate-pulse">Memuat data pencairan...</p>
++        </div>
++      ) : (
++        <div className="space-y-4">
++          {filteredAndGroupedData.length === 0 ? (
++            <div className="text-center py-20 bg-white border-2 border-dashed rounded-2xl">
++               <User className="h-12 w-12 mx-auto text-gray-300 mb-3" />
++               <p className="text-muted-foreground">Tidak ada data pencairan ditemukan.</p>
++            </div>
++          ) : (
++            <Accordion type="multiple" className="space-y-3">
++              {filteredAndGroupedData.map((group) => (
++                <AccordionItem 
++                  key={group.id} 
++                  value={group.id.toString()}
++                  className="bg-white border-2 rounded-xl overflow-hidden px-0 shadow-sm data-[state=open]:border-blue-300 transition-all"
++                >
++                  <div className="flex items-center px-4 py-3 group">
++                    <AccordionTrigger className="hover:no-underline flex-1 py-0 justify-start gap-4">
++                       <div className="text-left">
++                          <p className="font-bold text-base text-gray-900 group-data-[state=open]:text-blue-700">{group.name}</p>
++                          <div className="flex items-center gap-4 mt-1">
++                             <div className="flex items-center gap-1">
++                                <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
++                                <span className="text-xs font-medium text-gray-600">{group.saldoPoin} Poin</span>
++                             </div>
++                             <div className="flex items-center gap-3 ml-2">
++                                <Badge variant="outline" className={`text-[10px] ${group.ready.length > 0 ? 'bg-amber-50 text-amber-700 border-amber-200 font-bold' : 'bg-gray-50 text-gray-400'}`}>
++                                   {group.ready.length} Siap Cair
++                                </Badge>
++                                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-50 rounded-md border border-green-100 italic">
++                                   <Wallet className="h-3 w-3 text-green-600" />
++                                   <span className="text-[10px] font-bold text-green-700">Rp {group.totalCair.toLocaleString()}</span>
++                                </div>
++                             </div>
+                           </div>
+-                        </TableCell>
+-                        <TableCell className="text-xs italic">{c.rewardDesc || '-'}</TableCell>
+-                        <TableCell className="font-bold">
+-                           {c.rewardType === 'poin' ? `${c.jumlah} Poin` : `Rp ${Number(c.jumlah).toLocaleString()}`}
+-                        </TableCell>
+-                        <TableCell className="text-center">
+-                           {getStatusBadge(c.status)}
+-                        </TableCell>
+-                        <TableCell className="text-right">
+-                           <div className="flex gap-1 justify-end">
+-                              {c.status === 'pending' && (
+-                                <Button 
+-                                   size="sm" 
+-                                   className="bg-blue-600 hover:bg-blue-700 h-7"
+-                                   onClick={() => updateClaimMutation.mutate({ claimId: c.id, action: 'approved' })}
+-                                >Approve</Button>
+-                              )}
+-                              {c.status === 'approved' && (
+-                                <Button 
+-                                   size="sm" 
+-                                   className="bg-green-600 hover:bg-green-700 h-7"
+-                                   onClick={() => updateClaimMutation.mutate({ claimId: c.id, action: 'selesai' })}
+-                                >Selesai</Button>
+-                              )}
+-                           </div>
+-                        </TableCell>
+-                      </TableRow>
+-                    ))}
+-                  </TableBody>
+-                </Table>
+-              )}
+-            </CardContent>
+-          </Card>
+-        </TabsContent>
++                       </div>
++                    </AccordionTrigger>
++                    
++                    <div className="flex items-center gap-2">
++                       <Dialog open={isRedeemOpen && activePelangganForRedeem?.id === group.id} onOpenChange={(open) => {
++                          setIsRedeemOpen(open);
++                          if(open) setActivePelangganForRedeem(group);
++                       }}>
++                          <DialogTrigger asChild>
++                             <Button size="sm" variant="outline" className="h-8 text-[11px] border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100">
++                                <Gift className="h-3 w-3 mr-1" /> Tukar Poin
++                             </Button>
++                          </DialogTrigger>
++                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
++                             <DialogHeader>
++                                <DialogTitle className="flex items-center gap-2">
++                                   <Gift className="h-5 w-5 text-purple-600" /> 
++                                   Tukar Poin: {group.name}
++                                </DialogTitle>
++                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex justify-between items-center mt-2">
++                                   <span className="text-sm font-medium">Saldo Poin Aktif</span>
++                                   <span className="text-xl font-black text-amber-700">{group.saldoPoin}</span>
++                                </div>
++                             </DialogHeader>
++                             
++                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
++                                {hadiahData?.map(h => {
++                                  const canRedeem = group.saldoPoin >= h.poinDibutuhkan && h.stok > 0;
++                                  return (
++                                    <div key={h.id} className={`p-4 border-2 rounded-xl flex flex-col justify-between gap-3 ${canRedeem ? 'border-amber-200 bg-white' : 'opacity-60 bg-gray-50 bg-stripe'}`}>
++                                       <div>
++                                          <p className="font-bold text-sm leading-tight">{h.namaHadiah}</p>
++                                          <p className="text-[10px] text-muted-foreground mt-1">Stok: {h.stok}</p>
++                                       </div>
++                                       <div className="flex items-center justify-between">
++                                          <Badge className="bg-amber-500 text-[10px]">{h.poinDibutuhkan} Poin</Badge>
++                                          <Button 
++                                             size="sm" 
++                                             disabled={!canRedeem || tukarPoinMutation.isPending}
++                                             onClick={() => tukarPoinMutation.mutate({ pelangganId: group.id, hadiahId: h.id })}
++                                             className="h-7 text-xs bg-amber-600 hover:bg-amber-700"
++                                          >Redeem</Button>
++                                       </div>
++                                    </div>
++                                  );
++                                })}
++                             </div>
++                          </DialogContent>
++                       </Dialog>
++
++                       <Button 
++                          size="sm" 
++                          variant="ghost" 
++                          className="h-8 w-8 p-0 text-gray-400 hover:text-blue-600"
++                          onClick={(e) => {
++                            e.stopPropagation();
++                            handlePrintSingle(group);
++                          }}
++                       >
++                          <Printer className="h-4 w-4" />
++                       </Button>
++                    </div>
++                  </div>
+ 
+-        {/* TUKAR POIN */}
+-        <TabsContent value="point-redeem">
+-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+-            <Card className="shadow-lg border-2">
+-              <CardHeader>
+-                <CardTitle>Data Pelanggan</CardTitle>
+-                <CardDescription>Cek saldo poin aktif</CardDescription>
+-              </CardHeader>
+-              <CardContent className="space-y-4">
+-                 <div className="space-y-2">
+-                    <Label>Pilih Pelanggan</Label>
+-                    <Select value={selectedPelanggan} onValueChange={setSelectedPelanggan}>
+-                       <SelectTrigger>
+-                          <SelectValue placeholder="Pilih pelanggan..." />
+-                       </SelectTrigger>
+-                       <SelectContent>
+-                          {pelanggan?.map((p) => (
+-                             <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+-                          ))}
+-                       </SelectContent>
+-                    </Select>
+-                 </div>
+-                 
+-                 {selectedPelanggan && (
+-                    <div className="p-4 bg-amber-50 rounded-xl border-2 border-amber-200 text-center space-y-1">
+-                       <div className="text-[10px] uppercase font-bold text-amber-700 leading-tight">Saldo Poin Aktif</div>
+-                       <div className="text-4xl font-black text-amber-800 tracking-tighter">
+-                          {currentPelanggan?.totalPoint || 0}
++                  <AccordionContent className="px-4 pb-4 border-t bg-gray-50/30 space-y-6 pt-4">
++                    {/* SECTION 1: READY TO DISBURSE */}
++                    <div className="space-y-3">
++                       <div className="flex items-center gap-2 text-blue-800">
++                          <Clock className="h-4 w-4" />
++                          <h3 className="text-sm font-bold uppercase tracking-wider">Promosi Siap Dicairkan</h3>
++                       </div>
++                       
++                       <div className="bg-white rounded-xl border-2 border-blue-100 overflow-hidden shadow-sm">
++                          <Table>
++                            <TableHeader>
++                              <TableRow className="bg-blue-50/50 hover:bg-blue-50/50">
++                                <TableHead className="h-8 text-[10px] py-1 font-bold">INFO PROMO</TableHead>
++                                <TableHead className="h-8 text-[10px] py-1 font-bold">BRAND</TableHead>
++                                <TableHead className="h-8 text-[10px] py-1 font-bold">NILAI</TableHead>
++                                <TableHead className="h-8 text-[10px] py-1 font-bold text-right">AKSI</TableHead>
++                              </TableRow>
++                            </TableHeader>
++                            <TableBody>
++                              {group.ready.length === 0 ? (
++                                <TableRow>
++                                   <TableCell colSpan={4} className="text-center py-6 text-xs text-muted-foreground italic">
++                                      Tidak ada promo yang siap dicairkan saat ini.
++                                   </TableCell>
++                                </TableRow>
++                              ) : (
++                                group.ready.map((item: any, idx: number) => (
++                                  <TableRow key={`${item.type}-${item.id}-${idx}`} className="hover:bg-blue-50/20">
++                                    <TableCell className="py-2">
++                                       <div className="flex flex-col">
++                                          <span className="text-[11px] font-bold text-gray-800">{item.label}</span>
++                                          {item.noFaktur && <span className="text-[9px] text-muted-foreground">Faktur: {item.noFaktur}</span>}
++                                          {item.desc && <span className="text-[9px] text-blue-600 font-medium">{item.desc}</span>}
++                                       </div>
++                                    </TableCell>
++                                    <TableCell className="py-2">
++                                       <Badge variant="secondary" className="text-[9px] font-bold px-1.5 py-0 bg-gray-100">{item.brandCode || 'FERIO'}</Badge>
++                                    </TableCell>
++                                    <TableCell className="py-2 text-[11px] font-black text-blue-700">
++                                       {item.type === 'point' ? `${item.nilai} Poin` : `Rp ${Number(item.nilai).toLocaleString()}`}
++                                    </TableCell>
++                                    <TableCell className="py-2 text-right">
++                                       <Button 
++                                          size="sm" 
++                                          className="h-7 px-3 text-[10px] bg-blue-600 hover:bg-blue-700 shadow-sm"
++                                          disabled={disburseMutation.isPending}
++                                          onClick={() => disburseMutation.mutate({
++                                             pelangganId: group.id,
++                                             type: item.type,
++                                             refId: item.id,
++                                             amount: item.nilai,
++                                             desc: item.desc || item.label
++                                          })}
++                                       >
++                                          Cairkan Sekarang
++                                       </Button>
++                                    </TableCell>
++                                  </TableRow>
++                                ))
++                              )}
++                            </TableBody>
++                          </Table>
+                        </div>
+-                       <div className="text-[10px] text-amber-600 font-medium italic">Poin dapat ditukarkan dengan hadiah katalog</div>
+                     </div>
+-                 )}
+-              </CardContent>
+-            </Card>
+ 
+-            <div className="md:col-span-2 space-y-4">
+-               <h3 className="text-xl font-bold flex items-center gap-2">
+-                 <Gift className="h-6 w-6 text-purple-600" /> Katalog Hadiah Aktif
+-               </h3>
+-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+-                  {hadiah?.map((h) => {
+-                    const canRedeem = selectedPelanggan && (currentPelanggan?.totalPoint || 0) >= Number(h.poinDibutuhkan) && h.stok > 0;
+-                    
+-                    return (
+-                      <Card key={h.id} className={`transition-all ${canRedeem ? 'border-amber-400 bg-white ring-2 ring-amber-400/20' : 'opacity-70 bg-gray-50 border-dashed'}`}>
+-                         <CardContent className="p-4 space-y-3">
+-                            <div className="flex justify-between items-start">
+-                               <span className="font-bold text-sm leading-tight">{h.namaHadiah}</span>
+-                               <Badge className="bg-amber-500 text-[10px] h-5">{h.poinDibutuhkan} Poin</Badge>
+-                            </div>
+-                            <Separator />
+-                            <div className="flex justify-between text-xs items-center">
+-                               <span className="text-muted-foreground">Stok: <b>{h.stok}</b></span>
+-                               <Button 
+-                                  size="sm" 
+-                                  disabled={!canRedeem || tukarPoinMutation.isPending}
+-                                  className={canRedeem ? "bg-amber-600 hover:bg-amber-700 h-9" : "bg-gray-300 h-9 pointer-events-none"}
+-                                  onClick={() => tukarPoinMutation.mutate({ pelangganId: parseInt(selectedPelanggan), hadiahId: h.id })}
+-                               >
+-                                  {tukarPoinMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Tukar"}
+-                               </Button>
+-                            </div>
+-                         </CardContent>
+-                      </Card>
+-                    );
+-                  })}
+-               </div>
+-            </div>
+-          </div>
+-        </TabsContent>
+-      </Tabs>
++                    <Separator className="bg-gray-200" />
++
++                    {/* SECTION 2: HISTORY */}
++                    <div className="space-y-3">
++                       <div className="flex items-center gap-2 text-green-700">
++                          <CheckCircle className="h-4 w-4" />
++                          <h3 className="text-sm font-bold uppercase tracking-wider">Riwayat Pencairan (Selesai)</h3>
++                       </div>
++
++                       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm opacity-80">
++                          <Table>
++                            <TableHeader>
++                              <TableRow className="bg-gray-50 hover:bg-gray-50">
++                                <TableHead className="h-8 text-[10px] py-1 font-bold">TANGGAL CAIR</TableHead>
++                                <TableHead className="h-8 text-[10px] py-1 font-bold">REWARD</TableHead>
++                                <TableHead className="h-8 text-[10px] py-1 font-bold text-right">JUMLAH</TableHead>
++                              </TableRow>
++                            </TableHeader>
++                            <TableBody>
++                              {group.history.length === 0 ? (
++                                <TableRow>
++                                   <TableCell colSpan={3} className="text-center py-6 text-xs text-muted-foreground italic">
++                                      Belum ada riwayat pencairan.
++                                   </TableCell>
++                                </TableRow>
++                              ) : (
++                                group.history.map((h: any) => (
++                                  <TableRow key={h.id} className="hover:bg-gray-50/50">
++                                    <TableCell className="py-2 text-[10px] text-gray-600">
++                                       {new Date(h.tanggalKlaim).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
++                                    </TableCell>
++                                    <TableCell className="py-2">
++                                       <div className="flex flex-col">
++                                          <span className="text-[10px] font-medium text-gray-700">{h.rewardDesc}</span>
++                                          <span className="text-[8px] text-muted-foreground uppercase">{h.sumber}</span>
++                                       </div>
++                                    </TableCell>
++                                    <TableCell className="py-2 text-right text-[10px] font-bold text-green-700">
++                                       {h.rewardType === 'poin' ? `${h.jumlah} Poin` : `Rp ${Number(h.jumlah).toLocaleString()}`}
++                                    </TableCell>
++                                  </TableRow>
++                                ))
++                              )}
++                            </TableBody>
++                          </Table>
++                       </div>
++                    </div>
++                  </AccordionContent>
++                </AccordionItem>
++              ))}
++            </Accordion>
++          )}
++        </div>
++      )}
+     </div>
+   );
+ }
+diff --git a/client/src/pages/promo/TransaksiIntegrated.tsx b/client/src/pages/promo/TransaksiIntegrated.tsx
+index e6cb828..0ef9d3b 100644
+--- a/client/src/pages/promo/TransaksiIntegrated.tsx
++++ b/client/src/pages/promo/TransaksiIntegrated.tsx
+@@ -450,8 +450,17 @@ export default function TransaksiIntegrated() {
+                                 <span className="text-[10px] text-indigo-600 font-bold uppercase">Tier Tercapai:</span>
+                                 <span className="text-xs font-bold">Tier {p.tier.urutan} ΓÇö {p.tier.rewardDesc || p.tier.rewardType}</span>
+                              </div>
+-                             {p.tier.rewardValue && (
+-                               <Badge className="bg-indigo-600">Rp {Number(p.tier.rewardValue).toLocaleString()}</Badge>
++                             {p.tier.rewardAmount !== undefined && (
++                               <div className="flex flex-col items-end">
++                                 <Badge className="bg-indigo-600 font-bold text-sm">
++                                   Rp {(p.tier.rewardAmount || 0).toLocaleString()}
++                                 </Badge>
++                                 {p.tier.rewardType === 'percent' && (
++                                   <span className="text-[9px] text-indigo-500 font-medium whitespace-nowrap mt-0.5">
++                                      ({p.tier.rewardValue || 0}% dari Rp {(p.progressBaruValue || 0).toLocaleString()})
++                                   </span>
++                                 )}
++                               </div>
+                              )}
+                           </div>
+                         ) : (
+@@ -513,7 +522,8 @@ export default function TransaksiIntegrated() {
+                   <th className="p-3 text-left font-bold">Merek</th>
+                   <th className="p-3 text-left font-bold w-[25%]">Program Aktif</th>
+                   <th className="p-3 text-right font-bold">Qty</th>
+-                  <th className="p-3 text-right font-bold">Nilai Faktur</th>
++                  <th className="p-3 text-right font-bold w-[12%]">Nilai Faktur</th>
++                  <th className="p-3 text-center font-bold">Hadiah</th>
+                   <th className="p-3 text-center font-bold">Aksi</th>
+                 </tr>
+               </thead>
+@@ -542,6 +552,37 @@ export default function TransaksiIntegrated() {
+                       </td>
+                       <td className="p-3 text-right">{t.qty}</td>
+                       <td className="p-3 text-right font-mono">Rp {parseFloat(t.nilaiFaktur).toLocaleString()}</td>
++                      <td className="p-3 text-center">
++                        <div className="flex flex-wrap justify-center gap-1">
++                          {t.rewards?.cashback > 0 && (
++                            <Badge className="bg-emerald-600 text-[9px] h-5 px-1.5 font-bold">
++                              Rp {t.rewards.cashback.toLocaleString()}
++                            </Badge>
++                          )}
++                          {t.rewards?.points > 0 && (
++                            <Badge className="bg-blue-600 text-[9px] h-5 px-1.5 font-bold">
++                              {t.rewards.points} Pts
++                            </Badge>
++                          )}
++                          {t.rewards?.labels > 0 && (
++                             <Badge className="bg-purple-600 text-[9px] h-5 px-1.5 font-bold">
++                               {t.rewards.labels} Lbl
++                             </Badge>
++                          )}
++                          {t.rewards?.paket && (
++                            <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50 text-[9px] h-5 px-1.5 font-bold">
++                              {t.rewards.paket.calculatedValue !== undefined && t.rewards.paket.calculatedValue > 0 ? (
++                                `Rp ${t.rewards.paket.calculatedValue.toLocaleString()}`
++                              ) : (
++                                `+${t.rewards.paket.qty || t.rewards.paket.nilai?.toLocaleString() || '0'} ${t.rewards.paket.qty ? 'Qty' : 'Rp'}`
++                              )}
++                            </Badge>
++                          )}
++                          {(!t.rewards || (t.rewards.cashback === 0 && t.rewards.points === 0 && t.rewards.labels === 0 && !t.rewards.paket)) && (
++                            <span className="text-[10px] text-muted-foreground">-</span>
++                          )}
++                        </div>
++                      </td>
+                       <td className="p-3 text-center">
+                         <div className="flex items-center justify-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                           <Button variant="outline" size="sm" className="h-8 w-8 p-0 text-slate-600 hover:bg-slate-100" onClick={() => setViewTransaction(t)} title="Lihat Detail">
+@@ -596,6 +637,36 @@ export default function TransaksiIntegrated() {
+                 <div className="font-semibold text-muted-foreground">Nilai Faktur</div>
+                 <div className="font-large font-bold text-green-700">Rp {Number(viewTransaction.nilaiFaktur).toLocaleString()}</div>
+               </div>
++              
++              <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
++                <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Hadiah yang Diperoleh</h4>
++                <div className="space-y-2">
++                  <div className="flex justify-between items-center text-sm">
++                    <span className="text-muted-foreground">Cashback (Tunai)</span>
++                    <span className="font-bold text-emerald-600">Rp {(viewTransaction.rewards?.cashback || 0).toLocaleString()}</span>
++                  </div>
++                  <div className="flex justify-between items-center text-sm">
++                    <span className="text-muted-foreground">Loyalty Points</span>
++                    <span className="font-bold text-blue-600">{viewTransaction.rewards?.points || 0} Pts</span>
++                  </div>
++                  <div className="flex justify-between items-center text-sm">
++                    <span className="text-muted-foreground">Cutting Label</span>
++                    <span className="font-bold text-purple-600">{viewTransaction.rewards?.labels || 0} Lbl</span>
++                  </div>
++                  {viewTransaction.rewards?.paket && (
++                    <div className="flex justify-between items-center text-sm pt-2 border-t border-dashed">
++                      <span className="text-muted-foreground italic text-xs">Kontribusi Paket (Progres)</span>
++                      <span className="font-bold text-orange-600 text-xs text-right">
++                        {viewTransaction.rewards.paket.calculatedValue !== undefined && viewTransaction.rewards.paket.calculatedValue > 0 ? (
++                           `Rp ${viewTransaction.rewards.paket.calculatedValue.toLocaleString()}`
++                        ) : (
++                           `+${viewTransaction.rewards.paket.qty ? `${viewTransaction.rewards.paket.qty} Qty` : `Rp ${viewTransaction.rewards.paket.nilai?.toLocaleString() || '0'}`}`
++                        )}
++                      </span>
++                    </div>
++                  )}
++                </div>
++              </div>
+             </div>
+           )}
+         </DialogContent>
+diff --git a/server/promo_service.ts b/server/promo_service.ts
+index 39a10b5..5afb61c 100644
+--- a/server/promo_service.ts
++++ b/server/promo_service.ts
+@@ -34,12 +34,14 @@ export interface PromoPreview {
+     progressLama: number;
+     transaksiIni: number;
+     progressBaru: number;
++    progressBaruValue: number; // Added to always show Nilai Faktur progress
+     basisType: 'qty' | 'nilai';
+     tier: {
+       urutan: number;
+       rewardType: string;
+       rewardDesc: string | null;
+       rewardValue: number | null;
++      rewardAmount: number; // Added for calculated Rupiah value
+     } | null;
+     targetBerikutnya: {
+       minValue: number;
+@@ -197,9 +199,13 @@ export async function calculatePromos(
+           warning = `Transaksi di luar periode paket [${m.nama}] (${prog.periodeStart.toLocaleDateString()} - ${prog.periodeEnd.toLocaleDateString()})`;
+         }
+ 
++        // Calculate NEW values for both Qty and Nilai to support percentage rewards correctly
++        const totalQtyNew = warning ? Number(prog.totalQty) : Number(prog.totalQty) + qty;
++        const totalNilaiNew = warning ? Number(prog.totalNilai) : Number(prog.totalNilai) + nilaiFaktur;
++        
+         const oldVal = m.basisType === 'qty' ? Number(prog.totalQty) : Number(prog.totalNilai);
++        const newVal = m.basisType === 'qty' ? totalQtyNew : totalNilaiNew;
+         const delta = m.basisType === 'qty' ? qty : nilaiFaktur;
+-        const newVal = warning ? oldVal : oldVal + delta;
+ 
+         const tiers = await db.select()
+           .from(paketTier)
+@@ -215,11 +221,27 @@ export async function calculatePromos(
+           const max = t.maxValue ? Number(t.maxValue) : Infinity;
+           
+           if (newVal >= min && newVal < max) {
++            let calculatedReward = 0;
++            // Use rewardPercent if it's a percent-based reward, otherwise fallback to rewardValue
++            const rewardVal = t.rewardType === 'percent' 
++               ? (t.rewardPercent ? Number(t.rewardPercent) : 0)
++               : (t.rewardValue ? Number(t.rewardValue) : 0);
++            
++            if (t.rewardType === 'percent') {
++                // Per user request: percentage is multiplied by ALL invoice values (Total Nilai)
++                calculatedReward = totalNilaiNew * (rewardVal / 100);
++                console.log(`[DEBUG PROMO] Percent Calc: totalNilai=${totalNilaiNew}, rewardVal=${rewardVal}, result=${calculatedReward}`);
++            } else if (t.rewardType === 'cash') {
++                calculatedReward = rewardVal;
++                console.log(`[DEBUG PROMO] Cash Calc: rewardVal=${rewardVal}`);
++            }
++
+             currentTier = {
+               urutan: t.urutanTier,
+               rewardType: t.rewardType,
+               rewardDesc: t.rewardDesc,
+-              rewardValue: t.rewardValue ? Number(t.rewardValue) : null
++              rewardValue: rewardVal || null,
++              rewardAmount: calculatedReward
+             };
+             const higherTiers = tiers.filter(ht => ht.urutanTier > t.urutanTier).sort((a,b) => a.urutanTier - b.urutanTier);
+             if (higherTiers.length > 0) {
+@@ -248,6 +270,7 @@ export async function calculatePromos(
+           progressLama: oldVal,
+           transaksiIni: delta,
+           progressBaru: newVal,
++          progressBaruValue: totalNilaiNew, // Always track total value for percent rewards
+           basisType: m.basisType,
+           tier: currentTier,
+           targetBerikutnya: nextTier,
+diff --git a/server/routes.ts b/server/routes.ts
+index 3baa8a4..9c81737 100644
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -2115,7 +2115,10 @@ export async function registerRoutes(
+   // 3. Transactions List (Consolidated & Strict)
+   app.get("/api/promo/transactions", requireAuth, async (req, res) => {
+     try {
+-      const effectiveBranchId = getEffectiveBranch(req);
++      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
++      const user = (req as any).user;
++      const { branchId } = req.query;
++      const effectiveBranchId = user?.branchId || (branchId ? parseInt(branchId as string) : null);
+       if (!effectiveBranchId) return res.json([]);
+       
+       const pelangganId = req.query.pelangganId ? parseInt(String(req.query.pelangganId)) : undefined;
+@@ -2144,25 +2147,89 @@ export async function registerRoutes(
+        
+        const cache = new Map<string, string>();
+        const enrichedData = await Promise.all(rawData.map(async (t) => {
+-          const key = `${t.pelangganId}_${t.brandCode || 'FERIO'}`;
+-          
+-          if (!cache.has(key)) {
+-             const programs = await storage.getPelangganPrograms(t.pelangganId, effectiveBranchId, t.brandCode || 'FERIO');
+-             const activeStr = programs
+-                .filter(p => p.status && p.status.toLowerCase() === 'aktif')
+-                .map(p => p.programName)
+-                .filter(Boolean)
+-                .join(", ");
+-             
+-             cache.set(key, activeStr || "-");
+-             console.log(`[API] Customer ${t.pelangganId} (${t.brandCode}) active promos: ${cache.get(key)}`);
+-          }
+-          
+-          return {
+-             ...t,
+-             activePromoStr: cache.get(key)
+-          };
+-       }));
++           const key = `${t.pelangganId}_${t.brandCode || 'FERIO'}`;
++           
++           if (!cache.has(key)) {
++              const programs = await storage.getPelangganPrograms(t.pelangganId, effectiveBranchId, t.brandCode || 'FERIO');
++              const activeStr = programs
++                 .filter(p => p.status && p.status.toLowerCase() === 'aktif')
++                 .map(p => p.programName)
++                 .filter(Boolean)
++                 .join(", ");
++              
++              cache.set(key, activeStr || "-");
++           }
++           
++           // Fetch rewards for this transaction
++           // 1. Cashback
++           const cashbackRows = await db.select().from(promoHasil).where(eq(promoHasil.transaksiId, t.id));
++           const totalCashback = cashbackRows.reduce((sum, r) => sum + parseFloat(r.nilaiCashback), 0);
++           
++           // 2. Points
++           const pointRows = await db.select({ point: pointLogs.point }).from(pointLogs).where(and(
++             sql`TRIM(${pointLogs.invoiceNumber}) ILIKE ${t.noFaktur.trim()}`,
++             eq(pointLogs.type, 'earn')
++           ));
++           const totalPoints = pointRows.reduce((sum, r) => sum + r.point, 0);
++           
++           // 3. Labels
++           const labelRows = await db.select({ amount: labelQuotas.amount }).from(labelQuotas).where(
++             sql`TRIM(${labelQuotas.invoiceNumber}) ILIKE ${t.noFaktur.trim()}`
++           );
++           const totalLabels = labelRows.reduce((sum, r) => sum + r.amount, 0);
++
++           // 4. Paket Progress Contribution (New)
++           const activePromoStr = cache.get(key) || "-";
++           const isPaket = activePromoStr.toLowerCase().includes("paket");
++           let paketRewardValue = 0;
++           let isPaketActive = false;
++
++           if (isPaket) {
++             // Find progress and current tier to calculate "worth"
++             const progs = await db.select({
++               id: paketProgress.id,
++               tierId: paketProgress.currentTierId,
++             })
++             .from(paketProgress)
++             .innerJoin(paketMaster, eq(paketProgress.paketId, paketMaster.id))
++             .where(and(
++               eq(paketProgress.pelangganId, t.pelangganId),
++               eq(paketProgress.branchId, effectiveBranchId),
++               eq(sql`LOWER(${paketMaster.brandCode})`, (t.brandCode || 'FERIO').toLowerCase())
++             ))
++             .limit(1);
++
++             if (progs.length > 0 && progs[0].tierId) {
++                const tiers = await db.select().from(paketTier).where(eq(paketTier.id, progs[0].tierId)).limit(1);
++                if (tiers.length > 0) {
++                   const tr = tiers[0];
++                   isPaketActive = true;
++                   if (tr.rewardType === 'percent') {
++                      paketRewardValue = Number(t.nilaiFaktur) * (Number(tr.rewardPercent || 0) / 100);
++                   } else if (tr.rewardType === 'cash') {
++                      paketRewardValue = 0; 
++                   }
++                }
++             }
++           }
++
++           const paketContribution = isPaketActive ? { calculatedValue: paketRewardValue } : (isPaket ? { qty: t.qty, nilai: parseFloat(t.nilaiFaktur.toString()) } : null);
++
++           if (totalCashback > 0 || totalPoints > 0 || totalLabels > 0) {
++              console.log(`[API] Found Rewards for ${t.noFaktur}: CB=${totalCashback}, Pts=${totalPoints}, Lbl=${totalLabels}`);
++           }
++
++           return {
++              ...t,
++              activePromoStr: activePromoStr,
++              rewards: {
++                cashback: totalCashback,
++                points: totalPoints,
++                labels: totalLabels,
++                paket: paketContribution
++              }
++           };
++        }));
+        
+        res.json(enrichedData);
+     } catch (err: any) {
+@@ -2234,6 +2301,167 @@ export async function registerRoutes(
+   });
+ 
+   // 5. Reward Claims List (Strict)
++  app.get("/api/reward/dashboard-data", requireAuth, async (req, res) => {
++    try {
++      const effectiveBranchId = getEffectiveBranch(req);
++      
++      // Strict Isolation: If no branchId is specified (and user has no home branch), return empty.
++      // This prevents mixing data even for superadmins.
++      if (!effectiveBranchId) {
++         return res.json({ history: [], ready: { cashback: [], points: [], labels: [], pakets: [] } });
++      }
++
++      // 1. Get Success/History (Finished Claims)
++      const history = await db.query.rewardClaim.findMany({
++        where: and(
++          eq(rewardClaim.branchId, effectiveBranchId),
++          eq(rewardClaim.status, 'selesai')
++        ),
++        with: { pelanggan: true, hadiah: true },
++        orderBy: desc(rewardClaim.tanggalKlaim)
++      });
++
++      // 2. Get Ready - Cashback (Result not yet in any claim)
++      const cashbackReady = await db.select({
++        id: promoHasil.id,
++        pelangganId: transaksiPromo.pelangganId,
++        pelangganNama: salesCustomers.name,
++        transaksiId: promoHasil.transaksiId,
++        noFaktur: transaksiPromo.noFaktur,
++        tglFaktur: transaksiPromo.tglFaktur,
++        nilai: promoHasil.nilaiCashback,
++        brandCode: transaksiPromo.brandCode
++      })
++      .from(promoHasil)
++      .innerJoin(transaksiPromo, eq(promoHasil.transaksiId, transaksiPromo.id))
++      .innerJoin(salesCustomers, eq(transaksiPromo.pelangganId, salesCustomers.id))
++      .leftJoin(rewardClaim, and(eq(rewardClaim.refId, promoHasil.id), eq(rewardClaim.sumber, 'cashback')))
++      .where(and(
++        eq(transaksiPromo.branchId, effectiveBranchId),
++        isNull(rewardClaim.id)
++      ));
++
++      // 3. Get Ready - Points
++      const pointsReady = await db.select({
++        id: pointSaldo.id,
++        pelangganId: pointSaldo.pelangganId,
++        pelangganNama: salesCustomers.name,
++        saldo: pointSaldo.saldoPoin,
++        brandCode: pointSaldo.brandCode
++      })
++      .from(pointSaldo)
++      .innerJoin(salesCustomers, eq(pointSaldo.pelangganId, salesCustomers.id))
++      .where(and(
++        eq(pointSaldo.branchId, effectiveBranchId),
++        sql`${pointSaldo.saldoPoin}::numeric > 0`
++      ));
++
++      // 4. Get Ready - Label Cutting
++      const labelsReady = await db.select({
++        id: cuttingProgress.id,
++        pelangganId: cuttingProgress.pelangganId,
++        pelangganNama: salesCustomers.name,
++        totalLabel: cuttingProgress.totalLabel,
++        totalNilai: cuttingProgress.totalNilai,
++        namaPromo: cuttingMaster.nama,
++        brandCode: cuttingMaster.brandCode
++      })
++      .from(cuttingProgress)
++      .innerJoin(cuttingMaster, eq(cuttingProgress.cuttingId, cuttingMaster.id))
++      .innerJoin(salesCustomers, eq(cuttingProgress.pelangganId, salesCustomers.id))
++      .where(and(
++        eq(cuttingProgress.branchId, effectiveBranchId),
++        eq(cuttingProgress.statusCair, 'belum')
++      ));
++
++      // 5. Get Ready - Paket
++      const paketsReady = await db.select({
++        id: paketProgress.id,
++        pelangganId: paketProgress.pelangganId,
++        pelangganNama: salesCustomers.name,
++        namaPaket: paketMaster.nama,
++        target: paketTier.rewardDesc,
++        targetVal: paketTier.rewardValue,
++        brandCode: paketMaster.brandCode
++      })
++      .from(paketProgress)
++      .innerJoin(paketMaster, eq(paketProgress.paketId, paketMaster.id))
++      .innerJoin(paketTier, eq(paketProgress.currentTierId, paketTier.id))
++      .innerJoin(salesCustomers, eq(paketProgress.pelangganId, salesCustomers.id))
++      .where(and(
++        eq(paketProgress.branchId, effectiveBranchId),
++        eq(paketProgress.status, 'tercapai')
++      ));
++
++      res.json({
++        history,
++        ready: {
++          cashback: cashbackReady,
++          points: pointsReady,
++          labels: labelsReady,
++          pakets: paketsReady
++        }
++      });
++    } catch (err: any) {
++      console.error("[Reward Dashboard] Error:", err);
++      res.status(500).json({ message: err.message });
++    }
++  });
++
++  // POST: Execute Disbursement
++  app.post("/api/reward/disburse-item", requireAuth, async (req, res) => {
++    try {
++      const { pelangganId, type, refId, amount, desc, branchId } = req.body;
++      
++      // Ensure we have a branchId for strict isolation
++      const targetBranchId = branchId || (req.user as any)?.branchId;
++      
++      if (!targetBranchId) {
++        return res.status(400).json({ message: "ID Cabang tidak ditemukan. Pilih cabang terlebih dahulu." });
++      }
++      
++      await db.transaction(async (tx) => {
++        // 1. Record the claim as 'selesai' immediately with STRICT branchId
++        await tx.insert(rewardClaim).values({
++          pelangganId: Number(pelangganId),
++          sumber: type, 
++          refId: Number(refId),
++          rewardType: type === 'cashback' || type === 'cutting' ? 'cash' : (type === 'point' ? 'barang' : 'cash'),
++          rewardDesc: desc || `Pencairan ${type}`,
++          jumlah: amount.toString(),
++          tanggalKlaim: new Date(),
++          claimedDate: new Date(),
++          status: 'selesai',
++          branchId: Number(targetBranchId)
++        });
++
++        // 2. Update Source Status
++        if (type === 'cutting') {
++          await tx.update(cuttingProgress).set({ statusCair: 'sudah' }).where(eq(cuttingProgress.id, refId));
++        } else if (type === 'paket') {
++          await tx.update(paketProgress).set({ status: 'selesai' }).where(eq(paketProgress.id, refId));
++        } else if (type === 'point') {
++           const saldoArr = await tx.select().from(pointSaldo).where(eq(pointSaldo.id, refId)).limit(1);
++           if (saldoArr.length > 0) {
++              const currentP = Number(saldoArr[0].saldoPoin);
++              const deduct = Number(amount);
++              await tx.update(pointSaldo).set({
++                 saldoPoin: (currentP - deduct).toString(),
++                 totalDitukar: (Number(saldoArr[0].totalDitukar) + deduct).toString()
++              }).where(eq(pointSaldo.id, refId));
++           }
++        }
++        // Cashback doesn't have a status in promoHasil, we rely on the JOIN in GET dashboard-data
++      });
++
++      broadcast("/api/reward");
++      res.json({ success: true, message: "Berhasil dicairkan" });
++    } catch (err: any) {
++      console.error("[Disburse] Error:", err);
++      res.status(400).json({ message: err.message });
++    }
++  });
++
+   app.get("/api/reward/claims", requireAuth, async (req, res) => {
+     const effectiveBranchId = getEffectiveBranch(req);
+     if (!effectiveBranchId) return res.json([]);

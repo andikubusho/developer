@@ -1,0 +1,170 @@
+[
+  {
+    "id": 5,
+    "name": "Suport Promosi kenda ",
+    "brandId": 13,
+    "type": "CASHBACK",
+    "value": "3",
+    "branchId": 2
+  },
+  {
+    "id": 6,
+    "name": "cash back tepat waktu daytona",
+    "brandId": 12,
+    "type": "CASHBACK",
+    "value": "3",
+    "branchId": 2
+  },
+  {
+    "id": 19,
+    "name": "kenda cash back tempat waktu subdist",
+    "brandId": 13,
+    "type": "CASHBACK",
+    "value": "2",
+    "branchId": 2
+  },
+  {
+    "id": 23,
+    "name": "Promo Gede",
+    "brandId": 17,
+    "type": "CASHBACK",
+    "value": "10",
+    "branchId": 3
+  },
+  {
+    "id": 24,
+    "name": "CAMPAIGN RCB 5 JUTA",
+    "brandId": 11,
+    "type": "CASHBACK",
+    "value": "1",
+    "branchId": 2
+  },
+  {
+    "id": 25,
+    "name": "CAMPAIGN RCB 10 JUTA",
+    "brandId": 11,
+    "type": "CASHBACK",
+    "value": "1.5",
+    "branchId": 2
+  },
+  {
+    "id": 26,
+    "name": "CAMPAIGN RCB 15 JUTA",
+    "brandId": 11,
+    "type": "CASHBACK",
+    "value": "3",
+    "branchId": 2
+  },
+  {
+    "id": 27,
+    "name": "CAMPAIGN DAYTONA 10 JUTA",
+    "brandId": 12,
+    "type": "CASHBACK",
+    "value": "3",
+    "branchId": 2
+  },
+  {
+    "id": 28,
+    "name": "CAMPAIGN DAYTONA 15 JUTA",
+    "brandId": 12,
+    "type": "CASHBACK",
+    "value": "5",
+    "branchId": 2
+  },
+  {
+    "id": 29,
+    "name": "CAMPAIGN DAYTONA 20 JUTA",
+    "brandId": 12,
+    "type": "CASHBACK",
+    "value": "7",
+    "branchId": 2
+  },
+  {
+    "id": 30,
+    "name": "RCB PARETO 2%",
+    "brandId": 11,
+    "type": "CASHBACK",
+    "value": "2",
+    "branchId": 2
+  },
+  {
+    "id": 31,
+    "name": "RCB PARETO VTR ",
+    "brandId": 11,
+    "type": "CASHBACK",
+    "value": "3",
+    "branchId": 2
+  },
+  {
+    "id": 32,
+    "name": "HANDGRIP RCB 30 PCS",
+    "brandId": 11,
+    "type": "VOUCHER",
+    "value": "50000",
+    "branchId": 2
+  },
+  {
+    "id": 33,
+    "name": "HANDGRIP RCB 50 PCS",
+    "brandId": 11,
+    "type": "VOUCHER",
+    "value": "120000",
+    "branchId": 2
+  },
+  {
+    "id": 34,
+    "name": "HANDGRIP RCB 100 PCS",
+    "brandId": 11,
+    "type": "VOUCHER",
+    "value": "260000",
+    "branchId": 2
+  },
+  {
+    "id": 35,
+    "name": "HANDGRIP RCB 150 PCS",
+    "brandId": 11,
+    "type": "VOUCHER",
+    "value": "400000",
+    "branchId": 2
+  },
+  {
+    "id": 36,
+    "name": "HANDGRIP RCB 250 PCS",
+    "brandId": 11,
+    "type": "VOUCHER",
+    "value": "700000",
+    "branchId": 2
+  },
+  {
+    "id": 37,
+    "name": "HANDGRIP RCB 500 PCS",
+    "brandId": 11,
+    "type": "VOUCHER",
+    "value": "1500000",
+    "branchId": 2
+  },
+  {
+    "id": 38,
+    "name": "CASH BACK PENGAMBILAN KENDA ",
+    "brandId": 13,
+    "type": "CASHBACK",
+    "value": "0.5",
+    "branchId": 2
+  },
+  {
+    "id": 39,
+    "name": "CASH BACK PENGAMBILAN KENDA ",
+    "brandId": 13,
+    "type": "CASHBACK",
+    "value": "1.5",
+    "branchId": 2
+  },
+  {
+    "id": 40,
+    "name": "CASH BACK PENGAMBILAN KENDA ",
+    "brandId": 13,
+    "type": "CASHBACK",
+    "value": "3",
+    "branchId": 2
+  }
+]

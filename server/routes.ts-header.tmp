@@ -1,0 +1,49 @@
+import type { Express } from "express";
+import type { Server } from "http";
+import { storage } from "./storage";
+import { cn } from "@/lib/utils";
+import { api } from "@shared/routes";
+import { z } from "zod";
+import { 
+  insertSalesCustomerSchema, 
+  insertTaxSchema,
+  insertPromoBrandSchema,
+  insertPromoMasterSchema,
+  insertPromoInputSchema,
+  insertRoleSchema,
+  promoInputs,
+  pointLogs,
+  labelQuotas,
+  labelClaims,
+  promoBrands, 
+  paketMaster, 
+  paketTier, 
+  paketPelanggan, 
+  promoPelanggan, 
+  pointMaster,
+  cashbackMaster, 
+  cuttingMaster, 
+  pointSaldo, 
+  hadiahKatalog, 
+  paketProgress, 
+  cuttingProgress, 
+  rewardClaim, 
+  transaksiPromo, 
+  promoHasil, 
+  items
+} from "@shared/schema";
+import passport from "passport";
+import { db } from "./db";
+import { sql, eq, desc, and, or, isNull } from "drizzle-orm";
+import { requireAuth, requirePermission, hashPassword } from "./auth";
+import { Server as SocketServer } from "socket.io";
+import fs from "fs";
+import path from "path";
+
+import { log } from "./logger";
+import { calculatePromos, saveTransaksiPromo } from "./promo_service";
+
+const logToFile = (message: string) => log(message, "socket");
+
+export async function registerRoutes(
+  httpServer: Server,

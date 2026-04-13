@@ -1,0 +1,20 @@
+[33md0a53ec[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m fix: kembalikan tampilan asli pop-up notifikasi SO dan pastikan fungsi berjalan
+[33m0f8a1ce[m fix: isolasi notifikasi pop-up berdasarkan cabang masing-masing pengguna
+[33mee62f62[m fix: optimasi sistem notifikasi agar case-insensitive dan mendukunh filter cabang global
+[33mae96679[m fix: perluas deteksi admin di backend agar pop-up notofikasi surat order muncul untuk semua akun admin
+[33mfa12363[m fix: perbaiki sistem notifikasi pop-up surat order dan tambah dokumentasi replit_id.md
+[33mb74f914[m fix: perbaiki permission update shipment - izinkan semua role pengiriman (packing, siap_kirim, terkirim, pengembalian)
+[33m41c6d49[m fix: konsolidasi route pengiriman & perbaikan error simpan faktur baru - Buat file route dedicated server/routes/shipments.ts (POST/PUT/DELETE/GET) - Hapus route shipment duplikat dari orders.ts dan masters.ts - Daftarkan registerShipmentRoutes di server/routes.ts - Semua endpoint shipment dibungkus try-catch untuk return JSON
+[33mda280a2[m feat: complete implementation of Principal Claims module with backend routes and premium frontend UI
+[33m02131c8[m fix: import requirePermission in promo_transactions.ts to fix backend crash
+[33mcba5bf0[m chore: remove nested submodule reference
+[33m22377d0[m fix: restore missing dashboard stats and promo input endpoints
+[33m7102b66[m fix: restore missing user permissions endpoints to resolve dashboard loading hang
+[33m85b00be[m feat: complete principal program integration with dual-reward logic and dashboard updates
+[33m531fa0a[m feat: complete promo status toggle and filter implementation across all modules
+[33m4182bcc[m feat: improve promo detection and conditional cashback progress UI
+[33mbf73430[m fix: make tglMulai optional in insertPelangganProgramSchema to allow defaultNow() from db
+[33m0e1fc4d[m feat: implement comprehensive reward disbursement modal with dynamic payment methods (cash, transfer, potong_faktur)
+[33meab0f99[m perbaikan tampil bor impact
+[33mc0fe4c5[m feat: merge premium Point Hadiah system into integrated Master Data page and cleanup redundant routes
+[33m7add790[m feat: implement Point Hadiah loyalty system with backend CRUD and premium frontend UI

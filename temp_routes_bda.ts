@@ -1,0 +1,3271 @@
+﻿import type { Express } from "express";
+import type { Server } from "http";
+import { storage } from "./storage";
+import { cn } from "@/lib/utils";
+import { api } from "@shared/routes";
+import { z } from "zod";
+import { 
+  insertSalesCustomerSchema, 
+  insertTaxSchema,
+  insertPromoBrandSchema,
+  insertPromoMasterSchema,
+  insertPromoInputSchema,
+  insertRoleSchema,
+  promoInputs,
+  pointLogs,
+  labelQuotas,
+  labelClaims,
+  insertPelangganProgramSchema,
+} from "@shared/schema";
+import passport from "passport";
+import { db } from "./db";
+import { sql, eq, desc, and, or, isNull, inArray } from "drizzle-orm";
+import { requireAuth, requirePermission, hashPassword } from "./auth";
+import { Server as SocketServer } from "socket.io";
+import fs from "fs";
+import path from "path";
+
+import { log } from "./logger";
+import { calculatePromos, saveTransaksiPromo, deleteTransaksiPromo, getConsolidatedMonitoring } from "./promo_service";
+import { 
+  promoBrands, paketMaster, paketTier, paketPelanggan, promoPelanggan, pointMaster,
+  cashbackMaster, cuttingMaster, 
+  pointSaldo, hadiahKatalog, 
+  paketProgress, cuttingProgress, rewardClaim, transaksiPromo, promoHasil, items,
+  pelangganProgram, salesCustomers
+} from "@shared/schema";
+
+const logToFile = (message: string) => log(message, "socket");
+
+
+export async function registerRoutes(
+  httpServer: Server,
+  app: Express
+): Promise<Server> {
+  const io = new SocketServer(httpServer, {
+    path: "/socket.io",
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"]
+    }
+  });
+
+  io.on("connection", (socket) => {
+    const qUserId = socket.handshake.query.userId;
+    const userIdStr = Array.isArray(qUserId) ? qUserId[0] : qUserId;
+    if (userIdStr) {
+      const uId = parseInt(userIdStr);
+      socket.join(`user_${uId}`);
+      logToFile(`User ${uId} connected and joined room user_${uId} (Socket: ${socket.id})`);
+      
+      socket.on("disconnect", () => {
+        logToFile(`User ${uId} disconnected`);
+      });
+    }
+  });
+
+  const broadcast = (type: string) => {
+    io.emit("data_updated", { type });
+    logToFile(`Broadcasted data_updated for: ${type}`);
+  };
+
+  const getEffectiveBranch = (req: any) => {
+    const q = req.query || {};
+    const b = req.body || {};
+    const userBranchId = (req.user as any)?.branchId;
+    
+    // Check query params first
+    if (q.branchId && q.branchId !== 'null' && q.branchId !== 'undefined') {
+      return Number(q.branchId);
+    }
+    // Check body next
+    if (b.branchId && b.branchId !== 'null' && b.branchId !== 'undefined') {
+      return Number(b.branchId);
+    }
+    // Fallback to user home branch
+    return userBranchId || null;
+  };
+
+  const notifyOrderAdmins = async (order: any) => {
+    logToFile(`notifyOrderAdmins called for order ID: ${order.id}`);
+    const allUsers = await storage.getUsers();
+    for (const user of allUsers) {
+      const perms = await storage.getUserPermissions(user.id);
+      // Administrator (ID 1) OR user with explicit notification permission
+      const hasNotifyPerm = user.id === 1 || perms.some(p => p.menuKey === "pop_up_notif_so" && p.canView);
+      
+      if (hasNotifyPerm) {
+        io.to(`user_${user.id}`).emit("new_order", order);
+        logToFile(`Emitted 'new_order' to user ID: ${user.id} (Room: user_${user.id})`);
+      }
+    }
+  };
+
+  // === AUTH ROUTES ===
+  app.post("/api/auth/login", (req, res, next) => {
+    console.log(`[Auth] Login attempt for user: ${req.body?.username}`);
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) {
+        console.error("[Auth] Error during authentication:", err);
+        return next(err);
+      }
+      if (!user) {
+        console.log(`[Auth] Login failed for ${req.body?.username}: ${info?.message}`);
+        return res.status(401).json({ message: info?.message || "Login gagal" });
+      }
+      req.logIn(user, async (err) => { // Added async here
+        if (err) {
+          console.error("[Auth] Error during logIn:", err);
+          return next(err);
+        }
+        console.log(`[Auth] Login successful for: ${user.username}`);
+        res.json({ 
+          id: user.id, 
+          username: user.username, 
+          displayName: user.displayName, 
+          branchId: user.branchId, 
+          accessibleBranchIds: user.accessibleBranchIds, 
+          authorizedDashboards: user.authorizedDashboards,
+          role: user.role
+        });
+        // Record audit log for successful login
+        if (user && user.id) {
+          await storage.recordAuditLog(user.id, "LOGIN", "auth", `User ${user.username} logged in`, user.branchId);
+        }
+      });
+    })(req, res, next);
+  });
+
+  app.post("/api/auth/logout", (req, res, next) => {
+    const userId = (req.user as any)?.id;
+    const username = (req.user as any)?.username;
+    req.logout(async (err) => { // Added async here
+      if (err) return next(err);
+      res.json({ message: "Berhasil logout" });
+      // Record audit log for logout
+      if (userId) {
+        await storage.recordAuditLog(userId, "LOGOUT", "auth", `User ${username} logged out`, (req.user as any)?.branchId);
+      }
+    });
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    res.json(req.user);
+  });
+
+  // === USER MANAGEMENT ===
+  app.get("/api/users", requireAuth, async (req, res) => {
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const allUsers = await storage.getUsers(branchId);
+    const usersWithBranches = await Promise.all(allUsers.map(async (u) => {
+      const accessibleBranchIds = await storage.getUserBranches(u.id);
+      return { 
+        id: u.id, 
+        username: u.username, 
+        displayName: u.displayName, 
+        branchId: u.branchId,
+        accessibleBranchIds,
+        authorizedDashboards: u.authorizedDashboards,
+        role: u.role,
+        roleId: u.roleId
+      };
+    }));
+    res.json(usersWithBranches);
+  });
+
+  app.post("/api/users", requireAuth, requirePermission("manajemen_pengguna", "input"), async (req, res) => {
+    try {
+      const schema = z.object({
+        username: z.string().min(3, "Username minimal 3 karakter"),
+        displayName: z.string().min(2, "Nama minimal 2 karakter"),
+        password: z.string().min(6, "Password minimal 6 karakter"),
+        branchId: z.coerce.number().optional().nullable(),
+        accessibleBranchIds: z.array(z.number()).optional(),
+        authorizedDashboards: z.array(z.string()).optional(),
+        role: z.string().optional().nullable(),
+      });
+      const { username, displayName, password, branchId, accessibleBranchIds, authorizedDashboards, role } = schema.parse(req.body);
+      const existing = await storage.getUserByUsername(username);
+      if (existing) return res.status(400).json({ message: "Username sudah digunakan" });
+      const hashed = await hashPassword(password);
+      const user = await storage.createUser({ 
+        username, 
+        displayName, 
+        password: hashed, 
+        branchId, 
+        authorizedDashboards: authorizedDashboards || ["gudang"],
+        role: role || null,
+        roleId: (req.body as any).roleId || null
+      });
+      if (accessibleBranchIds) {
+        await storage.setUserBranches(user.id, accessibleBranchIds);
+      }
+      
+      // Record audit log
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "CREATE", "users", `Membuat user: ${user.username}`, (req.user as any)?.branchId);
+      }
+
+      broadcast("/api/users");
+      res.status(201).json({ id: user.id, username: user.username, displayName: user.displayName, branchId: user.branchId, accessibleBranchIds, authorizedDashboards: user.authorizedDashboards });
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.put("/api/users/:id", requireAuth, requirePermission("manajemen_pengguna", "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const schema = z.object({
+        displayName: z.string().min(2, "Nama minimal 2 karakter").optional(),
+        username: z.string().min(3, "Username minimal 3 karakter").optional(),
+        password: z.string().min(6, "Password minimal 6 karakter").optional(),
+        branchId: z.coerce.number().optional().nullable(),
+        accessibleBranchIds: z.array(z.number()).optional(),
+        authorizedDashboards: z.array(z.string()).optional(),
+      });
+      const data = schema.parse(req.body);
+      const updates: Record<string, any> = {};
+      if (data.displayName) updates.displayName = data.displayName;
+      if (data.username) {
+        const existing = await storage.getUserByUsername(data.username);
+        if (existing && existing.id !== id) return res.status(400).json({ message: "Username sudah digunakan" });
+        updates.username = data.username;
+      }
+      if (data.password) updates.password = await hashPassword(data.password);
+      if (data.branchId !== undefined) updates.branchId = data.branchId;
+      if (data.authorizedDashboards) updates.authorizedDashboards = data.authorizedDashboards;
+      if ((req.body as any).roleId !== undefined) updates.roleId = (req.body as any).roleId;
+      if ((req.body as any).role !== undefined) updates.role = (req.body as any).role;
+      
+      const user = await storage.updateUser(id, updates);
+      if (data.accessibleBranchIds) {
+        await storage.setUserBranches(id, data.accessibleBranchIds);
+      }
+      
+      // Record audit log
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "UPDATE", "users", `Memperbarui user: ${user.username}`, (req.user as any)?.branchId);
+      }
+
+      const finalBranchIds = await storage.getUserBranches(id);
+      broadcast("/api/users");
+      res.json({ id: user.id, username: user.username, displayName: user.displayName, branchId: user.branchId, accessibleBranchIds: finalBranchIds, authorizedDashboards: user.authorizedDashboards });
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.delete("/api/users/:id", requireAuth, requirePermission("manajemen_pengguna", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    const currentUserId = (req.user as any)?.id;
+    if (id === currentUserId) return res.status(400).json({ message: "Tidak dapat menghapus akun Anda sendiri" });
+    const allUsers = await storage.getUsers();
+    if (allUsers.length <= 1) return res.status(400).json({ message: "Harus ada minimal 1 pengguna" });
+    
+    const targetUser = await storage.getUserById(id);
+    await storage.deleteUser(id);
+
+    // Record audit log
+    if (currentUserId && targetUser) {
+      await storage.recordAuditLog(currentUserId, "DELETE", "users", `Menghapus user: ${targetUser.username}`, (req.user as any)?.branchId);
+    }
+
+    broadcast("/api/users");
+    res.status(204).send();
+  });
+
+  // === ROLE MANAGEMENT ===
+  app.get("/api/roles", requireAuth, async (req, res) => {
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const allRoles = await storage.getRoles(branchId);
+    res.json(allRoles);
+  });
+
+  app.post("/api/roles", requireAuth, requirePermission("manajemen_role", "input"), async (req, res) => {
+    try {
+      const data = insertRoleSchema.parse(req.body);
+      const role = await storage.createRole(data);
+      
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "CREATE", "roles", `Membuat role: ${role.name}`, (req.user as any)?.branchId);
+      }
+      broadcast("/api/roles");
+      res.status(201).json(role);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.put("/api/roles/:id", requireAuth, requirePermission("manajemen_role", "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const data = insertRoleSchema.partial().parse(req.body);
+      const role = await storage.updateRole(id, data);
+      
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "UPDATE", "roles", `Memperbarui role: ${role.name}`, (req.user as any)?.branchId);
+      }
+      broadcast("/api/roles");
+      res.json(role);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.delete("/api/roles/:id", requireAuth, requirePermission("manajemen_role", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    
+    const currentUserId = (req.user as any)?.id;
+    const role = await storage.getRole(id);
+    if (role && currentUserId) {
+      await storage.recordAuditLog(currentUserId, "DELETE", "roles", `Menghapus role: ${role.name}`, (req.user as any)?.branchId);
+    }
+    
+    await storage.deleteRole(id);
+    broadcast("/api/roles");
+    res.sendStatus(204);
+  });
+
+  // === BRANCHES ===
+  app.get(api.branches.list.path, requireAuth, async (req, res) => {
+    const branches = await storage.getBranches();
+    res.json(branches);
+  });
+
+  app.post(api.branches.create.path, requireAuth, requirePermission("master_cabang", "input"), async (req, res) => {
+    try {
+      const input = api.branches.create.input.parse(req.body);
+      const branch = await storage.createBranch(input);
+      
+      // Record audit log
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "CREATE", "branches", `Membuat cabang: ${branch.name}`, (req.user as any)?.branchId);
+      }
+
+      broadcast("/api/branches");
+      res.status(201).json(branch);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.put(api.branches.update.path, requireAuth, requirePermission("master_cabang", "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const input = api.branches.update.input.parse(req.body);
+      const branch = await storage.updateBranch(id, input);
+      if (!branch) return res.status(404).json({ message: "Branch not found" });
+      
+      // Record audit log
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "UPDATE", "branches", `Memperbarui cabang: ${branch.name}`, (req.user as any)?.branchId);
+      }
+
+      broadcast("/api/branches");
+      res.json(branch);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.delete(api.branches.delete.path, requireAuth, requirePermission("master_cabang", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    
+    const branch = await storage.getBranch(id);
+    await storage.deleteBranch(id);
+
+    // Record audit log
+    const currentUserId = (req.user as any)?.id;
+    if (currentUserId && branch) {
+      await storage.recordAuditLog(currentUserId, "DELETE", "branches", `Menghapus cabang: ${branch.name}`, (req.user as any)?.branchId);
+    }
+
+    broadcast("/api/branches");
+    res.status(204).send();
+  });
+
+  app.get("/api/audit-logs", requireAuth, async (req, res) => {
+    const userId = (req.user as any)?.id;
+    const isAdmin = userId === 1;
+    const permissions = await storage.getUserPermissions(userId);
+    const canManageUsers = isAdmin || permissions.some(p => p.menuKey === "manajemen_pengguna" && p.canView);
+    
+    if (!canManageUsers) return res.sendStatus(403);
+    
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const logs = await storage.getAuditLogs(branchId);
+    res.json(logs);
+  });
+
+  // === PROTECTED ROUTES ===
+
+  // === EXPEDITIONS ===
+  app.get(api.expeditions.list.path, requireAuth, async (req, res) => {
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const expeditions = await storage.getExpeditions(branchId);
+    res.json(expeditions);
+  });
+
+  app.post(api.expeditions.create.path, requireAuth, requirePermission("master_ekspedisi", "input"), async (req, res) => {
+    try {
+      const input = api.expeditions.create.input.parse(req.body);
+      const expedition = await storage.createExpedition(input);
+      
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "CREATE", "expeditions", `Membuat ekspedisi: ${expedition.name}`, (req.user as any)?.branchId);
+      }
+      
+      broadcast("/api/expeditions");
+      res.status(201).json(expedition);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.put(api.expeditions.update.path, requireAuth, requirePermission("master_ekspedisi", "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      
+      const input = api.expeditions.update.input.parse(req.body);
+      const expedition = await storage.updateExpedition(id, input);
+      if (!expedition) {
+        return res.status(404).json({ message: "Expedition not found" });
+      }
+      
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "UPDATE", "expeditions", `Memperbarui ekspedisi: ${expedition.name}`, (req.user as any)?.branchId);
+      }
+      
+      broadcast("/api/expeditions");
+      res.json(expedition);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.expeditions.delete.path, requireAuth, requirePermission("master_ekspedisi", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    await storage.deleteExpedition(id);
+    broadcast("/api/expeditions");
+    res.status(204).send();
+  });
+
+  // === CUSTOMERS ===
+  app.get(api.customers.list.path, requireAuth, async (req, res) => {
+    const customers = await storage.getCustomers();
+    // Filter by branchId if provided
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    if (branchId) {
+      return res.json(customers.filter(c => c.branchId === branchId));
+    }
+    res.json(customers);
+  });
+
+  app.post(api.customers.create.path, requireAuth, requirePermission("master_pelanggan", "input"), async (req, res) => {
+    try {
+      const input = api.customers.create.input.parse(req.body);
+      const customer = await storage.createCustomer(input);
+      
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "CREATE", "customers", `Membuat pelanggan: ${customer.name}`, (req.user as any)?.branchId);
+      }
+      
+      broadcast("/api/customers");
+      res.status(201).json(customer);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.put(api.customers.update.path, requireAuth, requirePermission("master_pelanggan", "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      
+      const input = api.customers.update.input.parse(req.body);
+      const customer = await storage.updateCustomer(id, input);
+      if (!customer) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "UPDATE", "customers", `Memperbarui pelanggan: ${customer.name}`, (req.user as any)?.branchId);
+      }
+      
+      broadcast("/api/customers");
+      res.json(customer);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.customers.delete.path, requireAuth, requirePermission("master_pelanggan", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    await storage.deleteCustomer(id);
+    broadcast("/api/customers");
+    res.status(204).send();
+  });
+
+  // === SALES CUSTOMERS ===
+  app.get("/api/sales-customers", requireAuth, async (req, res) => {
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const customers = await storage.getSalesCustomers(branchId);
+    res.json(customers);
+  });
+
+  app.post("/api/sales-customers", requireAuth, requirePermission("master_pelanggan", "input"), async (req, res) => {
+    try {
+      const input = insertSalesCustomerSchema.parse(req.body);
+      const customer = await storage.createSalesCustomer(input);
+      
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "CREATE", "sales_customers", `Membuat pelanggan sales: ${customer.name}`, (req.user as any)?.branchId);
+      }
+      
+      broadcast("/api/sales-customers");
+      res.status(201).json(customer);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.put("/api/sales-customers/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      
+      const input = insertSalesCustomerSchema.partial().parse(req.body);
+      const customer = await storage.updateSalesCustomer(id, input);
+      if (!customer) {
+        return res.status(404).json({ message: "Sales Customer not found" });
+      }
+      broadcast("/api/sales-customers");
+      res.json(customer);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.delete("/api/sales-customers/:id", requireAuth, async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    await storage.deleteSalesCustomer(id);
+    broadcast("/api/sales-customers");
+    res.status(204).send();
+  });
+
+  // === LOYALTY POINTS ===
+  app.get("/api/points/:customerCode", requireAuth, async (req, res) => {
+    const customerCode = String(req.params.customerCode);
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const logs = await storage.getPointLogs({ customerCode, branchId });
+    const customer = await storage.getSalesCustomerByCode(customerCode, branchId);
+    res.json({ logs, totalPoint: customer?.totalPoint || 0 });
+  });
+
+  app.get("/api/points/all", requireAuth, async (req, res) => {
+    const filters: any = {};
+    if (req.query.branchId) filters.branchId = parseInt(String(req.query.branchId));
+    if (req.query.customerCode) filters.customerCode = String(req.query.customerCode);
+    if (req.query.startDate) filters.startDate = new Date(String(req.query.startDate));
+    if (req.query.endDate) filters.endDate = new Date(String(req.query.endDate));
+
+    const logs = await storage.getPointLogs(filters);
+    res.json(logs);
+  });
+
+  app.post("/api/points/earn", requireAuth, requirePermission("loyalty_points", "input"), async (req, res) => {
+    try {
+      const schema = z.object({
+        customerCode: z.string(),
+        point: z.number().positive(),
+        date: z.string().optional(),
+        invoiceNumber: z.string().optional(),
+        productName: z.string().optional(),
+        branchId: z.number(),
+      });
+      const data = schema.parse(req.body);
+      await storage.createPointLog({
+        ...data,
+        type: "earn",
+        date: data.date ? new Date(data.date) : new Date(),
+      });
+      await storage.recordAuditLog(req.user!.id, "CREATE", "point_logs", `Tambah poin ${data.point} untuk ${data.customerCode}`, data.branchId);
+      broadcast("/api/points");
+      res.json({ message: "Poin berhasil ditambahkan" });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/points/redeem", requireAuth, requirePermission("loyalty_points", "input"), async (req, res) => {
+    try {
+      const schema = z.object({
+        customerCode: z.string(),
+        point: z.number().positive(),
+        date: z.string().optional(),
+        notes: z.string().optional(),
+        branchId: z.number(),
+      });
+      const data = schema.parse(req.body);
+      await storage.createPointLog({
+        ...data,
+        point: -data.point,
+        type: "redeem",
+        date: data.date ? new Date(data.date) : new Date(),
+      });
+      await storage.recordAuditLog(req.user!.id, "CREATE", "point_logs", `Tukar poin ${data.point} untuk ${data.customerCode}`, data.branchId);
+      broadcast("/api/points");
+      res.json({ message: "Poin berhasil ditukar" });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/points/:id", requireAuth, requirePermission("loyalty_points", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    const log = await db.query.pointLogs.findFirst({ where: eq(pointLogs.id, id) });
+    await storage.deletePointLog(id);
+    await storage.recordAuditLog(req.user!.id, "DELETE", "point_logs", `Hapus transaksi poin ID ${id}`, log?.branchId || undefined);
+    broadcast("/api/points");
+    res.status(204).send();
+  });
+
+  // === CUTTING LABEL ===
+  app.get("/api/labels/:customerCode", requireAuth, async (req, res) => {
+    const customerCode = String(req.params.customerCode);
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const claims = await storage.getLabelClaims({ customerCode, branchId });
+    const summary = await storage.getLabelSummary(customerCode, branchId);
+    res.json({ ...claims, ...summary });
+  });
+
+  app.get("/api/labels/all", requireAuth, async (req, res) => {
+    const filters: any = {};
+    if (req.query.branchId) filters.branchId = parseInt(String(req.query.branchId));
+    if (req.query.customerCode) filters.customerCode = String(req.query.customerCode);
+    if (req.query.startDate) filters.startDate = new Date(String(req.query.startDate));
+    if (req.query.endDate) filters.endDate = new Date(String(req.query.endDate));
+
+    const claims = await storage.getLabelClaims(filters);
+    res.json(claims);
+  });
+
+  app.post("/api/labels/quota", requireAuth, requirePermission("cutting_label", "input"), async (req, res) => {
+    try {
+      const schema = z.object({
+        customerCode: z.string(),
+        amount: z.number().positive(),
+        date: z.string().optional(),
+        invoiceNumber: z.string().optional(),
+        productName: z.string().optional(),
+        branchId: z.number(),
+      });
+      const data = schema.parse(req.body);
+      await storage.createLabelQuota({
+        ...data,
+        date: data.date ? new Date(data.date) : new Date(),
+      });
+      await storage.recordAuditLog(req.user!.id, "CREATE", "label_quotas", `Tambah kuota label ${data.amount} untuk ${data.customerCode} di cabang ${data.branchId}`);
+      broadcast("/api/labels");
+      res.json({ message: "Kuota label berhasil ditambahkan" });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/labels/quota/:id", requireAuth, requirePermission("cutting_label", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    const quota = await db.query.labelQuotas.findFirst({ where: eq(labelQuotas.id, id) });
+    await storage.deleteLabelQuota(id);
+    await storage.recordAuditLog(req.user!.id, "DELETE", "label_quotas", `Hapus kuota label ID ${id}`, quota?.branchId || undefined);
+    broadcast("/api/labels");
+    res.status(204).send();
+  });
+
+  app.post("/api/labels/claim", requireAuth, requirePermission("cutting_label", "input"), async (req, res) => {
+    try {
+      const schema = z.object({
+        customerCode: z.string(),
+        amount: z.number().positive(),
+        date: z.string().optional(),
+        notes: z.string().optional(),
+        branchId: z.number(),
+      });
+      const data = schema.parse(req.body);
+      await storage.createLabelClaim({
+        ...data,
+        date: data.date ? new Date(data.date) : new Date(),
+      });
+      await storage.recordAuditLog(req.user!.id, "CREATE", "label_claims", `Klaim label ${data.amount} untuk ${data.customerCode}`, data.branchId);
+      broadcast("/api/labels");
+      res.json({ message: "Klaim label berhasil" });
+    } catch (err: any) {
+      res.status(401).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/labels/claim/:id", requireAuth, requirePermission("cutting_label", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    const claim = await db.query.labelClaims.findFirst({ where: eq(labelClaims.id, id) });
+    await storage.deleteLabelClaim(id);
+    await storage.recordAuditLog(req.user!.id, "DELETE", "label_claims", `Hapus klaim label ID ${id}`, claim?.branchId || undefined);
+    broadcast("/api/labels");
+    res.status(204).send();
+  });
+
+  // === SHIPMENTS ===
+
+  app.get(api.shipments.get.path, requireAuth, async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    
+    const shipment = await storage.getShipment(id);
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    res.json(shipment);
+  });
+
+  // === TAXES ===
+  app.get("/api/taxes", requireAuth, async (req, res) => {
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const taxesList = await storage.getTaxes(branchId);
+    res.json(taxesList);
+  });
+
+  app.get("/api/taxes/active", requireAuth, async (req, res) => {
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const tax = await storage.getActiveTax(branchId);
+    res.json(tax || null);
+  });
+
+  app.post("/api/taxes", requireAuth, requirePermission("master_ppn", "input"), async (req, res) => {
+    try {
+      const input = insertTaxSchema.parse(req.body);
+      const tax = await storage.createTax(input);
+      broadcast("/api/taxes");
+      res.status(201).json(tax);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.put("/api/taxes/:id", requireAuth, requirePermission("master_ppn", "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      
+      const input = insertTaxSchema.partial().parse(req.body);
+      const tax = await storage.updateTax(id, input);
+      broadcast("/api/taxes");
+      res.json(tax);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.delete("/api/taxes/:id", requireAuth, requirePermission("master_ppn", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    await storage.deleteTax(id);
+    broadcast("/api/taxes");
+    res.status(204).send();
+  });
+
+  app.post(api.shipments.create.path, requireAuth, requirePermission("input_pengiriman", "input"), async (req, res) => {
+    try {
+      const bodySchema = api.shipments.create.input.extend({
+        customerId: z.coerce.number(),
+        expeditionId: z.coerce.number(),
+        totalNotes: z.coerce.number(),
+      });
+      const input = bodySchema.parse(req.body);
+      const shipment = await storage.createShipment(input);
+      
+      // Record audit log
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "CREATE", "shipments", `Membuat pengiriman: ${shipment.invoiceNumber}`, (req.user as any)?.branchId);
+      }
+
+      broadcast("/api/shipments");
+      res.status(201).json(shipment);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.put(api.shipments.update.path, requireAuth, requirePermission(["input_pengiriman", "packing", "siap_kirim"], "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      
+      const bodySchema = api.shipments.update.input.extend({
+        customerId: z.coerce.number().optional(),
+        expeditionId: z.coerce.number().optional(),
+        totalNotes: z.coerce.number().optional(),
+        totalBoxes: z.coerce.number().optional(),
+        shippingDate: z.coerce.date().optional(),
+        branchId: z.coerce.number().optional().nullable(),
+      });
+
+      const input = bodySchema.parse(req.body);
+      
+      const shipment = await storage.updateShipment(id, input);
+      if (!shipment) {
+        return res.status(404).json({ message: "Shipment not found" });
+      }
+      
+      // Record audit log
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        const action = input.status ? "STATUS_UPDATE" : "UPDATE";
+        const details = input.status ? `Mengubah status pengiriman ${shipment.invoiceNumber} menjadi ${input.status}` : `Memperbarui pengiriman: ${shipment.invoiceNumber}`;
+        await storage.recordAuditLog(currentUserId, action, "shipments", details);
+      }
+
+      broadcast("/api/shipments");
+      res.json(shipment);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.shipments.delete.path, requireAuth, async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    await storage.deleteShipment(id);
+    broadcast("/api/shipments");
+    res.status(204).send();
+  });
+
+  // === CANCEL STATUS ROUTES ===
+  app.put("/api/shipments/:id/cancel-packing", requireAuth, requirePermission("packing", "edit"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    const shipment = await storage.getShipment(id);
+    if (!shipment) return res.status(404).json({ message: "Shipment tidak ditemukan" });
+    if (shipment.status !== "MENUNGGU_VERIFIKASI" || !shipment.verificationDate) {
+      return res.status(400).json({ message: "Status tidak valid untuk dibatalkan" });
+    }
+    const updated = await storage.updateShipment(id, {
+      verificationDate: null,
+      packerName: null,
+      totalBoxes: null,
+    });
+    broadcast("/api/shipments");
+    res.json(updated);
+  });
+
+  app.put("/api/shipments/:id/cancel-siap-kirim", requireAuth, requirePermission("siap_kirim", "edit"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    const shipment = await storage.getShipment(id);
+    if (!shipment) return res.status(404).json({ message: "Shipment tidak ditemukan" });
+    if (shipment.status !== "DALAM_PENGIRIMAN") {
+      return res.status(400).json({ message: "Status tidak valid untuk dibatalkan" });
+    }
+    const updated = await storage.updateShipment(id, {
+      status: "SIAP_KIRIM",
+      senderName: null,
+      shippingDate: null,
+      receiptNumber: null,
+      shippingNotes: null,
+    });
+    broadcast("/api/shipments");
+    res.json(updated);
+  });
+
+  // === USER PERMISSIONS ===
+  app.get("/api/users/:id/permissions", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) {
+        logToFile(`Permissions request failed: Invalid ID ${req.params.id}`);
+        return res.status(400).json({ message: "Invalid ID" });
+      }
+      
+      logToFile(`Fetching permissions for user ${id}`);
+      const startTime = Date.now();
+      const perms = await storage.getUserPermissions(id);
+      const duration = Date.now() - startTime;
+      
+      logToFile(`Successfully fetched ${perms.length} permissions for user ${id} in ${duration}ms`);
+      res.json(perms);
+    } catch (err: any) {
+      logToFile(`Error fetching permissions for user ${req.params.id}: ${err.message}`);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  app.put("/api/users/:id/permissions", requireAuth, requirePermission("manajemen_pengguna", "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      
+      const schema = z.object({
+        permissions: z.array(z.object({
+          menuKey: z.string(),
+          canView: z.boolean(),
+          canInput: z.boolean(),
+          canEdit: z.boolean(),
+          canDelete: z.boolean(),
+        })).optional(),
+        authorizedDashboards: z.array(z.string()).optional(),
+      });
+      
+      const { permissions, authorizedDashboards } = schema.parse(req.body);
+      
+      if (permissions) {
+        await storage.setUserPermissions(id, permissions);
+      }
+      
+      if (authorizedDashboards) {
+        await storage.updateUser(id, { authorizedDashboards });
+      }
+      
+      broadcast("/api/users");
+      res.json({ message: "Hak akses berhasil disimpan" });
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  // === PROMOS ===
+  app.get("/api/promos", requireAuth, async (req, res) => {
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const promos = await storage.getPromos(branchId);
+    res.json(promos);
+  });
+
+  app.get("/api/promos/active", requireAuth, async (req, res) => {
+    const queryBranchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const branchId = queryBranchId || (req.user as any)?.branchId;
+    const promos = await storage.getActivePromos(branchId);
+    res.json(promos);
+  });
+
+  app.post("/api/promos", requireAuth, requirePermission("promo_toko", "input"), async (req, res) => {
+    try {
+      const { insertPromoSchema } = await import("@shared/schema");
+      const data = insertPromoSchema.parse(req.body);
+      const promo = await storage.createPromo(data);
+      
+      // Record audit log
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "CREATE", "promos", `Membuat promo: ${promo.title}`);
+      }
+      
+      broadcast("/api/promos");
+      res.json(promo);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.put("/api/promos/:id", requireAuth, requirePermission("promo_toko", "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      
+      const { insertPromoSchema } = await import("@shared/schema");
+      const data = insertPromoSchema.partial().parse(req.body);
+      const promo = await storage.updatePromo(id, data);
+      
+      // Record audit log
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "UPDATE", "promos", `Memperbarui promo: ${promo.title}`);
+      }
+      
+      broadcast("/api/promos");
+      res.json(promo);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.delete("/api/promos/:id", requireAuth, requirePermission("promo_toko", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    
+    await storage.deletePromo(id);
+    broadcast("/api/promos");
+    res.status(204).send();
+  });
+
+  // === ITEMS (MASTER BARANG) ===
+  app.get("/api/items", requireAuth, async (req, res) => {
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const page = parseInt(String(req.query.page || "1"));
+    const limit = parseInt(String(req.query.limit || "50"));
+    const search = req.query.search ? String(req.query.search) : undefined;
+
+    // If no pagination params are provided, return all (fallback for compatibility if needed)
+    // but better to always use paginated if requested.
+    if (req.query.all === "true") {
+      const items = await storage.getItems(branchId, search);
+      return res.json(items);
+    }
+
+    const { items, total } = await storage.getItemsPaginated({
+      branchId,
+      offset: (page - 1) * limit,
+      limit,
+      search
+    });
+
+    res.json({
+      items,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit)
+    });
+  });
+
+  app.post("/api/items", requireAuth, requirePermission("master_barang", "input"), async (req, res) => {
+    try {
+      const { insertItemSchema } = await import("@shared/schema");
+      const data = insertItemSchema.parse(req.body);
+      const item = await storage.createItem(data);
+      
+      // Record audit log
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "CREATE", "items", `Membuat barang: ${item.code} - ${item.name}`);
+      }
+      
+      broadcast("/api/items");
+      res.status(201).json(item);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.put("/api/items/:id", requireAuth, requirePermission("master_barang", "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      
+      const { insertItemSchema } = await import("@shared/schema");
+      const data = insertItemSchema.partial().parse(req.body);
+      const item = await storage.updateItem(id, data);
+      
+      // Record audit log
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "UPDATE", "items", `Memperbarui barang: ${item.code}`);
+      }
+      
+      broadcast("/api/items");
+      res.json(item);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.delete("/api/items/:id", requireAuth, requirePermission("master_barang", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    
+    await storage.deleteItem(id);
+    broadcast("/api/items");
+    res.status(204).send();
+  });
+
+  // Bulk import items
+  app.post("/api/items/bulk", requireAuth, requirePermission("master_barang", "input"), async (req, res) => {
+    try {
+      const { insertItemSchema } = await import("@shared/schema");
+      const itemsArray = z.array(insertItemSchema).parse(req.body);
+      
+      const results = await storage.createItems(itemsArray);
+      const created = results.length;
+      const skipped = itemsArray.length - created;
+      
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "CREATE", "items", `Bulk import: ${created} berhasil, ${skipped} dilewati`);
+      }
+      
+      broadcast("/api/items");
+      res.status(201).json({ created, skipped, items: results });
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  // Bulk update stock
+  app.patch("/api/items/stock/bulk", requireAuth, requirePermission("master_barang", "edit"), async (req, res) => {
+    try {
+      const schema = z.array(z.object({
+        code: z.string(),
+        stock: z.coerce.number(),
+        branchId: z.coerce.number(),
+      }));
+      const data = schema.parse(req.body);
+      log(`[API] Bulk update stock requested for ${data.length} items`, "request");
+      await storage.updateItemsStock(data);
+      
+      // Record audit log
+      if (req.user) {
+        await storage.recordAuditLog(
+          (req.user as any).id,
+          "UPDATE_STOCK_BULK",
+          "items",
+          `Bulk updated stock for ${data.length} items`
+        );
+      }
+
+      broadcast("/api/items");
+      res.json({ updated: data.length });
+    } catch (err: any) {
+      log(`[API] Bulk update stock failed: ${err.message}`, "error");
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      res.status(500).json({ message: "Gagal memperbarui stok: " + err.message });
+    }
+  });
+
+  app.delete("/api/items/branch/:branchId", requireAuth, requirePermission("master_barang", "delete"), async (req, res) => {
+    try {
+      const branchId = parseInt(String(req.params.branchId));
+      if (isNaN(branchId)) return res.status(400).json({ message: "ID Cabang tidak valid" });
+
+      await storage.deleteItemsByBranch(branchId);
+      
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        const branch = await storage.getBranch(branchId);
+        await storage.recordAuditLog(currentUserId, "DELETE", "items", `Menghapus SEMUA barang untuk cabang: ${branch?.name || branchId}`);
+      }
+      
+      res.status(204).send();
+    } catch (err) {
+      res.status(500).json({ message: "Gagal menghapus data barang" });
+    }
+  });
+
+  // Bulk import customers
+  app.post("/api/customers/bulk", requireAuth, requirePermission("master_pelanggan", "input"), async (req, res) => {
+    try {
+      const { insertCustomerSchema } = await import("@shared/schema");
+      const customersArray = z.array(insertCustomerSchema).parse(req.body);
+      
+      const results = await storage.createCustomers(customersArray);
+      const created = results.length;
+      const skipped = customersArray.length - created;
+      
+      const currentUserId = (req.user as any)?.id;
+      if (currentUserId) {
+        await storage.recordAuditLog(currentUserId, "CREATE", "customers", `Bulk import: ${created} berhasil, ${skipped} dilewati`);
+      }
+      
+      res.status(201).json({ created, skipped, customers: results });
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.get("/api/sales-customers/by-code/:code", requireAuth, async (req, res) => {
+    const code = String(req.params.code);
+    const customer = await storage.getSalesCustomerByCode(code);
+    if (!customer) return res.status(404).json({ message: "Customer not found" });
+    res.json(customer);
+  });
+
+  // === ORDERS (SURAT ORDER) ===
+  app.get("/api/orders", requireAuth, async (req, res) => {
+    const filters: any = {};
+    if (req.query.shopName) filters.shopName = String(req.query.shopName);
+    if (req.query.region) filters.region = String(req.query.region);
+    
+    if (req.query.startDate) filters.startDate = new Date(String(req.query.startDate));
+    if (req.query.endDate) filters.endDate = new Date(String(req.query.endDate));
+    
+    // Support single date for backward compatibility
+    if (req.query.date && !req.query.startDate && !req.query.endDate) {
+      const d = new Date(String(req.query.date));
+      filters.startDate = new Date(d.setHours(0, 0, 0, 0));
+      filters.endDate = new Date(d.setHours(23, 59, 59, 999));
+    }
+
+    if (req.query.salesmanId) filters.salesmanId = parseInt(String(req.query.salesmanId));
+    if (req.query.branchId) filters.branchId = parseInt(String(req.query.branchId));
+    if (req.query.customerId) filters.customerId = parseInt(String(req.query.customerId));
+    if (req.query.customerCode) filters.customerCode = String(req.query.customerCode);
+    
+    if (req.query.limit) filters.limit = parseInt(String(req.query.limit));
+    if (req.query.offset) filters.offset = parseInt(String(req.query.offset));
+
+    const ordersData = await storage.getOrders(filters);
+    res.json(ordersData);
+  });
+
+  app.get(api.shipments.list.path, requireAuth, async (req, res) => {
+    const filters: any = {};
+    if (req.query.branchId) filters.branchId = parseInt(String(req.query.branchId));
+    if (req.query.status) filters.status = String(req.query.status);
+    if (req.query.search) filters.search = String(req.query.search);
+    if (req.query.limit) filters.limit = parseInt(String(req.query.limit));
+    if (req.query.offset) filters.offset = parseInt(String(req.query.offset));
+    
+    if (req.query.startDate) filters.startDate = new Date(String(req.query.startDate));
+    if (req.query.endDate) filters.endDate = new Date(String(req.query.endDate));
+    if (req.query.customerId) filters.customerId = parseInt(String(req.query.customerId));
+
+    const result = await storage.getShipments(filters);
+    res.json(result);
+  });
+
+  app.post("/api/orders", requireAuth, requirePermission("surat_order", "input"), async (req, res) => {
+    try {
+      const { insertOrderSchema, insertOrderItemSchema } = await import("@shared/schema");
+      
+      const orderData = insertOrderSchema.parse({
+        ...req.body,
+        salesmanId: (req.user as any).id, // Auto-set salesman
+        date: req.body.date ? new Date(req.body.date) : new Date(),
+      });
+      
+      const itemsData = z.array(insertOrderItemSchema.omit({ orderId: true })).parse(req.body.items);
+      
+      const order = await storage.createOrder(orderData, itemsData);
+      
+      // Trigger notification
+      notifyOrderAdmins(order);
+      
+      // Record audit log
+      await storage.recordAuditLog((req.user as any).id, "CREATE", "orders", `Membuat Surat Order untuk ${order.shopName}`, order.branchId ?? undefined);
+      
+      broadcast("/api/orders");
+      res.status(201).json(order);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.patch("/api/orders/:id/status", requireAuth, requirePermission("surat_order", "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      log(`[PATCH] Order status update requested for order ${id} to ${req.body.status}`, "request");
+      const { status } = z.object({ status: z.string() }).parse(req.body);
+      const userId = (req.user as any).id;
+
+      // Get current order to check locking
+      const currentOrder = await storage.getOrderById(id);
+      if (!currentOrder) return res.status(404).json({ message: "Pesanan tidak ditemukan" });
+
+      // If already in this status, just return success immediately
+      if (currentOrder.status === status) {
+        return res.json(currentOrder);
+      }
+
+      // Locking logic: If already processed by someone else
+      if (currentOrder.processedBy && currentOrder.processedBy !== userId) {
+        const processor = await storage.getUserById(currentOrder.processedBy);
+        return res.status(403).json({ 
+          message: `Pesanan ini sudah diproses oleh ${processor?.displayName || "user lain"}` 
+        });
+      }
+
+      // Update order with status, processor, and timestamp
+      const updateData: any = { status };
+      if (!currentOrder.processedBy) {
+        updateData.processedBy = userId;
+        updateData.acknowledgedAt = new Date();
+      }
+
+      const order = await storage.updateOrder(id, updateData);
+      
+      // Record audit log
+      await storage.recordAuditLog(userId, "UPDATE", "orders", `Memperbarui status pesanan ${id} menjadi ${status}`, order.branchId ?? undefined);
+      
+      // Broadcast update so others know it's being processed
+      const processor = await storage.getUserById(userId);
+      io.emit("order_processed", { 
+        orderId: id, 
+        status, 
+        processedBy: userId, 
+        processorName: processor?.displayName,
+        acknowledgedAt: updateData.acknowledgedAt || currentOrder.acknowledgedAt
+      });
+
+      broadcast("/api/orders");
+      res.json(order);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put("/api/orders/:id", requireAuth, requirePermission("surat_order", "edit"), async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
+      const { insertOrderSchema, insertOrderItemSchema } = await import("@shared/schema");
+      
+      const orderData = insertOrderSchema.partial().parse({
+        ...req.body,
+        date: req.body.date ? new Date(req.body.date) : undefined,
+      });
+      
+      let itemsData;
+      if (req.body.items) {
+        itemsData = z.array(insertOrderItemSchema.omit({ orderId: true })).parse(req.body.items);
+      }
+      
+      const order = await storage.updateOrder(id, orderData, itemsData);
+      
+      // Record audit log
+      await storage.recordAuditLog((req.user as any).id, "UPDATE", "orders", `Memperbarui Surat Order untuk ${order.shopName}`, order.branchId ?? undefined);
+      
+      broadcast("/api/orders");
+      res.json(order);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.delete("/api/orders/:id", requireAuth, requirePermission("surat_order", "delete"), async (req, res) => {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
+    const order = await storage.getOrderById(id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    await storage.deleteOrder(id);
+    
+    // Record audit log
+    await storage.recordAuditLog((req.user as any).id, "DELETE", "orders", `Menghapus Surat Order untuk ${order.shopName}`, order.branchId ?? undefined);
+    
+    broadcast("/api/orders");
+    res.status(204).send();
+  });
+
+  // === DASHBOARD STATS ===
+  app.get("/api/admin/stats", requireAuth, requirePermission("dashboard_admin", "view"), async (req, res) => {
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const stats = await storage.getAdminStats(branchId);
+    res.json(stats);
+  });
+
+  // === SALES ROUTES ===
+  app.get("/api/sales/stats", requireAuth, async (req, res) => {
+    const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+    const salesmanId = req.query.salesmanId ? parseInt(String(req.query.salesmanId)) : undefined;
+    const stats = await storage.getSalesStats(branchId, salesmanId);
+    res.json(stats);
+  });
+  app.get("/api/promo/debug-cust/:id", async (req, res) => {
+     try {
+       const id = parseInt(req.params.id);
+       const branchId = req.query.branchId ? parseInt(String(req.query.branchId)) : undefined;
+       const cust = await db.select().from(salesCustomers).where(eq(salesCustomers.id, id)).limit(1);
+       const progs = await storage.getPelangganPrograms(id, branchId);
+       res.json({ customer: cust[0], programs: progs });
+     } catch (err: any) {
+       res.status(500).json({ error: err.message });
+     }
+  });
+
+  // Call seed database if needed (ensure it's defined elsewhere or moved to end)
+  // seedDatabase().catch(console.error);
+
+  // === PROMO TOKO ===
+
+  app.get("/api/promo/brands", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const branchId = req.query.branchId ? Number(req.query.branchId) : undefined;
+    const brands = await storage.getPromoBrands(branchId);
+    res.json(brands);
+  });
+
+  app.post("/api/promo/brands", requireAuth, requirePermission(["promo_toko", "master_merek_promo"], "input"), async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const parse = insertPromoBrandSchema.safeParse(req.body);
+    if (!parse.success) return res.status(400).json(parse.error);
+    const brand = await storage.createPromoBrand(parse.data);
+    
+    await storage.recordAuditLog(
+      req.user!.id,
+      "CREATE",
+      "promo_brands",
+      `Created promo brand: ${brand.name}`,
+      brand.branchId ?? (req.user as any)?.branchId
+    );
+
+    res.status(201).json(brand);
+  });
+
+  app.delete("/api/promo/brands/:id", requireAuth, requirePermission(["promo_toko", "master_merek_promo"], "delete"), async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    await storage.deletePromoBrand(Number(req.params.id));
+    res.sendStatus(204);
+  });
+
+  app.get("/api/promo/masters", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const branchId = req.query.branchId ? Number(req.query.branchId) : undefined;
+    const masters = await storage.getPromoMasters(branchId);
+    res.json(masters);
+  });
+
+  app.post("/api/promo/masters", requireAuth, requirePermission(["promo_toko", "master_promo_toko"], "input"), async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const parse = insertPromoMasterSchema.safeParse(req.body);
+      if (!parse.success) return res.status(400).json(parse.error);
+      const master = await storage.createPromoMaster(parse.data);
+      
+      await storage.recordAuditLog(
+        req.user!.id,
+        "CREATE",
+        "promo_masters",
+        `Created promo master: ${master.name}`,
+        master.branchId || (req.user as any)?.branchId
+      );
+
+      res.status(201).json(master);
+    } catch (err: any) {
+      console.error("[PromoMaster] Create failed:", err);
+      res.status(500).json({ 
+        message: err.message, 
+        detail: `Attempted brandId: ${req.body.brandId}`,
+        code: err.code 
+      });
+    }
+  });
+
+  app.delete("/api/promo/masters/:id", requireAuth, requirePermission(["promo_toko", "master_promo_toko"], "delete"), async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    await storage.deletePromoMaster(Number(req.params.id));
+    res.sendStatus(204);
+  });
+
+  // Pelanggan Program
+  app.get("/api/pelanggan-program", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const pelangganId = Number(req.query.pelangganId);
+    if (isNaN(pelangganId)) return res.status(400).json({ message: "Invalid pelangganId" });
+    const branchIdRaw = req.query.branchId as string;
+    const branchId = (branchIdRaw && branchIdRaw !== "undefined" && branchIdRaw !== "null") ? Number(branchIdRaw) : undefined;
+    const brandCodeRaw = req.query.brandCode as string;
+    const brandCode = (brandCodeRaw && brandCodeRaw !== "undefined" && brandCodeRaw !== "null") ? brandCodeRaw : undefined;
+    
+    const programs = await storage.getPelangganPrograms(pelangganId, branchId, brandCode);
+    res.json(programs);
+  });
+
+  app.post("/api/pelanggan-program", requireAuth, requirePermission(["program_pelanggan"], "input"), async (req, res) => {
+    try {
+      console.log("[PelangganProgram] Create request body:", req.body);
+      const parse = insertPelangganProgramSchema.safeParse(req.body);
+      if (!parse.success) {
+        console.error("[PelangganProgram] Validation failed:", parse.error.format());
+        return res.status(400).json(parse.error);
+      }
+      
+      const payload = parse.data;
+      
+      // Logic for branchId:
+      // 1. Use branchId from payload if provided (for admins/superadmins managing branches)
+      // 2. Fallback to user's assigned branchId
+      // 3. Error only if both are missing
+      const userBranchId = (req.user as any)?.branchId;
+      const targetBranchId = payload.branchId || userBranchId;
+
+      if (!targetBranchId && (req.user as any)?.id !== 1 && (req.user as any)?.role !== 'admin') {
+        return res.status(403).json({ message: "Cabang tujuan tidak ditentukan dan pengguna tidak memiliki akses cabang default" });
+      }
+
+      // Improved duplicate check: match database unique constraint (pelangganId, branchId, brandCode, jenisProgram, referensiId)
+      const existing = await storage.getPelangganPrograms(payload.pelangganId, targetBranchId || undefined, payload.brandCode);
+      const duplicate = existing.find(p => 
+        p.jenisProgram === payload.jenisProgram && 
+        p.referensiId === payload.referensiId &&
+        p.brandCode === payload.brandCode &&
+        (targetBranchId ? p.branchId === targetBranchId : !p.branchId)
+      );
+      
+      if (duplicate) {
+        return res.status(400).json({ message: `Program ${payload.jenisProgram} untuk merek ${payload.brandCode} sudah diikuti oleh pelanggan ini` });
+      }
+
+      const programData = { ...payload, branchId: targetBranchId };
+      console.log("[PelangganProgram] Final program data to save:", programData);
+      
+      const program = await storage.createPelangganProgram(programData as any);
+      
+      await storage.recordAuditLog(
+        req.user!.id,
+        "CREATE",
+        "pelanggan_program",
+        `Added program ${program.jenisProgram} (ref:${program.referensiId}, brand:${program.brandCode}) to customer ${program.pelangganId}`,
+        program.branchId || targetBranchId
+      );
+
+      res.status(201).json(program);
+    } catch (err: any) {
+      console.error("[PelangganProgram] Create failed deep error:", err);
+      res.status(500).json({ message: err.message || "Internal server error" });
+    }
+  });
+
+  app.delete("/api/pelanggan-program/:id", requireAuth, requirePermission(["program_pelanggan"], "delete"), async (req, res) => {
+    await storage.deletePelangganProgram(Number(req.params.id));
+    res.sendStatus(204);
+  });
+
+  app.patch("/api/pelanggan-program/:id", requireAuth, requirePermission(["program_pelanggan"], "edit"), async (req, res) => {
+    try {
+      const program = await storage.updatePelangganProgram(Number(req.params.id), req.body);
+      res.json(program);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/pelanggan-program/global-summary", requireAuth, async (req, res) => {
+    try {
+      const branchIdRaw = req.query.branchId as string;
+      const branchId = (branchIdRaw && branchIdRaw !== "undefined" && branchIdRaw !== "null") ? Number(branchIdRaw) : undefined;
+      
+      const summary = await db.select({
+        pelangganId: pelangganProgram.pelangganId,
+        pelangganNama: salesCustomers.name,
+        pelangganKode: salesCustomers.code,
+        brandCode: pelangganProgram.brandCode,
+        programCount: sql<number>`count(*)`,
+        lastUpdate: sql<string>`max(${pelangganProgram.tglMulai})`
+      })
+      .from(pelangganProgram)
+      .innerJoin(salesCustomers, eq(pelangganProgram.pelangganId, salesCustomers.id))
+      .where(branchId ? eq(pelangganProgram.branchId, branchId) : undefined)
+      .groupBy(pelangganProgram.pelangganId, salesCustomers.name, salesCustomers.code, pelangganProgram.brandCode);
+
+      res.json(summary);
+    } catch (err: any) {
+      console.error("[Global Summary API] Error:", err);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/pelanggan-program/recap/:pelangganId", requireAuth, async (req, res) => {
+    try {
+      const pelangganId = parseInt(String(req.params.pelangganId));
+      const branchIdRaw = req.query.branchId as string;
+      const branchId = (branchIdRaw && branchIdRaw !== "undefined" && branchIdRaw !== "null") ? Number(branchIdRaw) : undefined;
+      const brandCodeRaw = req.query.brandCode as string;
+      const brandCode = (brandCodeRaw && brandCodeRaw !== "undefined" && brandCodeRaw !== "null") ? brandCodeRaw : undefined;
+
+      // 1. Get Points Progress (Aggregate if no brand specifying)
+      const pointsData = await db.select().from(pointSaldo).where(and(
+        eq(pointSaldo.pelangganId, pelangganId),
+        brandCode ? eq(pointSaldo.brandCode, brandCode) : undefined,
+        branchId ? eq(pointSaldo.branchId, branchId) : undefined
+      ));
+      const totalPoints = pointsData.reduce((sum, p) => sum + Number(p.saldoPoin), 0);
+      
+      // 2. Get Cutting Progress
+      const cutting = await db.select({
+        id: cuttingProgress.id,
+        totalLabel: cuttingProgress.totalLabel,
+        totalNilai: cuttingProgress.totalNilai,
+        nama: cuttingMaster.nama,
+        nilaiPerLabel: cuttingMaster.nilaiPerLabel,
+        brandCode: cuttingMaster.brandCode,
+        statusCair: cuttingProgress.statusCair
+      })
+      .from(cuttingProgress)
+      .innerJoin(cuttingMaster, eq(cuttingProgress.cuttingId, cuttingMaster.id))
+      .where(and(
+        eq(cuttingProgress.pelangganId, pelangganId),
+        brandCode ? eq(cuttingMaster.brandCode, brandCode) : undefined,
+        branchId ? eq(cuttingProgress.branchId, branchId) : undefined
+      ));
+
+      // 3. Get Paket Progress
+      const pakets = await db.query.paketProgress.findMany({
+        where: and(
+          eq(paketProgress.pelangganId, pelangganId),
+          branchId ? eq(paketProgress.branchId, branchId) : undefined
+        ),
+        with: {
+          paket: { with: { tiers: true } },
+          currentTier: true
+        }
+      }).then(res => res.filter(p => !brandCode || p.paket.brandCode === brandCode)); // Filter by brand only if provided
+
+      // 4. Get Cashback Summary
+      const cashback = await db.select({
+        cashbackId: promoHasil.cashbackId,
+        nama: cashbackMaster.nama,
+        totalNilai: sql<string>`sum(${promoHasil.nilaiCashback})`,
+        countTransactions: sql<number>`count(*)`
+      })
+      .from(promoHasil)
+      .innerJoin(transaksiPromo, eq(promoHasil.transaksiId, transaksiPromo.id))
+      .innerJoin(cashbackMaster, eq(promoHasil.cashbackId, cashbackMaster.id))
+      .where(and(
+        eq(transaksiPromo.pelangganId, pelangganId),
+        brandCode ? eq(cashbackMaster.brandCode, brandCode) : undefined,
+        branchId ? eq(transaksiPromo.branchId, branchId) : undefined
+      ))
+      .groupBy(promoHasil.cashbackId, cashbackMaster.nama);
+
+      res.json({
+        points: { saldoPoin: totalPoints.toString(), totalDiperoleh: "0", totalDitukar: "0", brandCode: brandCode || "SEMUA MEREK" },
+        cutting,
+        pakets: pakets.map(p => {
+          const tiers = p.paket.tiers.sort((a,b) => a.urutanTier - b.urutanTier);
+          const progress = p.paket.basisType === 'qty' ? Number(p.totalQty) : Number(p.totalNilai);
+          let nextTier = null;
+          if (p.currentTierId) {
+             const higher = tiers.filter(t => t.urutanTier > (p.currentTier?.urutanTier || 0));
+             if (higher.length > 0) nextTier = higher[0];
+          } else if (tiers.length > 0) {
+             nextTier = tiers[0];
+          }
+          return {
+             ...p,
+             progressValue: progress,
+             nextTier,
+             targetValue: nextTier ? Number(nextTier.minValue) : null
+          };
+        }),
+        cashback
+      });
+    } catch (err: any) {
+      console.error("[Recap API] Error:", err);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+
+
+  // Removed duplicate transactions routes from here
+  app.get("/api/promo/inputs", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const filters: any = {};
+    if (req.query.branchId) filters.branchId = Number(req.query.branchId);
+    if (req.query.startDate) filters.startDate = new Date(String(req.query.startDate));
+    if (req.query.endDate) filters.endDate = new Date(String(req.query.endDate));
+    if (req.query.customerCode) filters.customerCode = String(req.query.customerCode);
+
+    const inputs = await storage.getPromoInputs(filters);
+    res.json(inputs);
+  });
+
+  app.post("/api/promo/inputs", requireAuth, requirePermission(["promo_toko", "input_promo_toko"], "input"), async (req, res) => {
+    const userBranchId = (req.user as any)?.branchId;
+    if (!userBranchId) return res.status(403).json({ message: "Pengguna tidak memiliki akses cabang" });
+
+    const parse = insertPromoInputSchema.safeParse({ ...req.body, branchId: userBranchId });
+    if (!parse.success) return res.status(400).json(parse.error);
+    const input = await storage.createPromoInput(parse.data);
+    
+    await storage.recordAuditLog(
+      req.user!.id,
+      "CREATE",
+      "promo_inputs",
+      `Created promo input for: ${input.shopName}`,
+      userBranchId
+    );
+
+    res.status(201).json(input);
+  });
+
+  app.patch("/api/promo/inputs/:id", requireAuth, requirePermission(["promo_toko", "input_promo_toko"], "edit"), async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const input = await storage.updatePromoInput(Number(req.params.id), req.body);
+    
+    await storage.recordAuditLog(
+      req.user!.id,
+      "UPDATE",
+      "promo_inputs",
+      `Updated promo input: ${req.params.id}`,
+      input.branchId ?? (req.user as any)?.branchId
+    );
+
+    res.json(input);
+  });
+
+  app.patch("/api/promo/inputs/:id/finish", requireAuth, requirePermission(["promo_toko", "input_promo_toko"], "edit"), async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { 
+      paymentMethod, 
+      paidAmount, 
+      completionInvoiceNumber,
+      recipientName,
+      bankName,
+      bankAccountNumber,
+      bankAccountName,
+      completionDate 
+    } = req.body;
+
+    const input = await storage.updatePromoInput(Number(req.params.id), {
+      status: "SELESAI",
+      completionDate: completionDate ? new Date(completionDate) : new Date(),
+      paymentMethod,
+      paidAmount,
+      completionInvoiceNumber,
+      recipientName,
+      bankName,
+      bankAccountNumber,
+      bankAccountName,
+    });
+
+    // Automatically earn points if customerCode is present
+    if (input.customerCode && input.paidAmount) {
+      const points = Math.floor(Number(input.paidAmount) / 10000);
+      if (points > 0) {
+        await storage.updateCustomerPoints(input.customerCode, points, "earn", input.branchId!);
+        await storage.recordAuditLog(
+          req.user!.id,
+          "UPDATE",
+          "points",
+          `Automatically earned ${points} points for customer ${input.customerCode} from promo ${req.params.id}`
+        );
+      }
+    }
+    
+    await storage.recordAuditLog(
+      req.user!.id,
+      "UPDATE",
+      "promo_inputs",
+      `Finished promo input: ${req.params.id} with ${paymentMethod}`,
+      input.branchId ?? (req.user as any)?.branchId
+    );
+
+    res.json(input);
+  });
+
+  app.patch("/api/promo/inputs/:id", requireAuth, requirePermission(["promo_toko", "input_promo_toko"], "edit"), async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const data = req.body;
+      
+      const updated = await storage.updatePromoInput(id, data);
+      
+      await storage.recordAuditLog(
+        req.user!.id,
+        "UPDATE",
+        "promo_inputs",
+        `Updated promo input ID ${id} for ${updated.shopName}`,
+        updated.branchId || (req.user as any)?.branchId
+      );
+      
+      res.json(updated);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/promo/inputs/:id", requireAuth, requirePermission(["promo_toko", "input_promo_toko"], "delete"), async (req, res) => {
+    
+    // Get info for audit log before deleting
+    const [input] = await db.select().from(promoInputs).where(eq(promoInputs.id, Number(req.params.id)));
+    
+    await storage.deletePromoInput(Number(req.params.id));
+
+    if (input) {
+      await storage.recordAuditLog(
+        req.user!.id,
+        "DELETE",
+        "promo_inputs",
+        `Deleted promo input ID ${req.params.id} for ${input.shopName} (Status: ${input.status})`,
+        input.branchId || (req.user as any)?.branchId
+      );
+    }
+
+    res.sendStatus(204);
+  });
+
+  app.post("/api/promo/pencairan", requireAuth, requirePermission(["promo_toko", "input_promo_toko"], "edit"), async (req, res) => {
+    const { customerCode, branchId, ...paymentData } = req.body;
+    
+    if (!branchId) {
+      return res.status(400).json({ message: "branchId is required for liquidation" });
+    }
+
+    await storage.liquidatePromoInputs(customerCode, paymentData, branchId);
+    
+    await storage.recordAuditLog(
+      req.user!.id,
+      "UPDATE",
+      "promo_inputs",
+      `Liquidated promos for customer: ${customerCode}`
+    );
+
+    res.json({ message: "Pencairan berhasil" });
+  });
+
+  app.post("/api/promo/sync-balance", requireAuth, requirePermission(["promo_toko", "input_promo_toko"], "edit"), async (req, res) => {
+    const { customerCode, branchId } = req.body;
+    
+    if (!customerCode || !branchId) {
+      return res.status(400).json({ message: "customerCode and branchId are required" });
+    }
+
+    const newBalance = await storage.syncCustomerPromoBalance(customerCode, branchId);
+    
+    await storage.recordAuditLog(
+      req.user!.id,
+      "UPDATE",
+      "promo_inputs",
+      `Synced promo balance for customer: ${customerCode}. New balance: ${newBalance}`
+    );
+
+    res.json({ message: "Sinkronisasi saldo berhasil", newBalance });
+  });
+
+  // === PAYMENT CONFIRMATIONS ===
+  app.get("/api/payment-confirmations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const branchId = req.query.branchId ? Number(req.query.branchId) : undefined;
+    const confirmations = await storage.getPaymentConfirmations(branchId);
+    res.json(confirmations);
+  });
+
+  app.post("/api/payment-confirmations", requireAuth, requirePermission("promo_toko", "input"), async (req, res) => {
+    try {
+      const { insertPaymentConfirmationSchema } = await import("@shared/schema");
+      const data = insertPaymentConfirmationSchema.parse(req.body);
+      const confirmation = await storage.createPaymentConfirmation(data);
+      
+      await storage.recordAuditLog(
+        req.user!.id,
+        "CREATE",
+        "payment_confirmations",
+        `Created payment confirmation for ${data.type} ID ${data.referenceId}`
+      );
+      
+      res.status(201).json(confirmation);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) return res.status(400).json(err.errors);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // === APP SETTINGS ROUTES ===
+  app.get("/api/app-settings", async (req, res) => {
+    try {
+      const settings = await storage.getAppSettings();
+      console.log(`[API] Fetched ${settings.length} app settings`);
+      // Returns as a record for easier frontend usage: { [key]: value }
+      const settingsRecord = settings.reduce((acc, s) => {
+        acc[s.key] = s.value;
+        return acc;
+      }, {} as Record<string, string>);
+      res.json(settingsRecord);
+    } catch (error) {
+      console.error("[API] Error fetching app settings:", error);
+      res.status(500).json({ message: "Gagal mengambil pengaturan" });
+    }
+  });
+
+  app.post("/api/app-settings", async (req, res) => {
+    // Basic admin check for username or authorizedDashboard
+    const userRole = (req.user as any)?.authorizedDashboards || [];
+    const isAdmin = (req.user as any)?.username === 'admin' || userRole.includes('admin');
+    
+    if (!req.isAuthenticated() || !isAdmin) {
+      return res.status(403).json({ message: "Akses Admin diperlukan" });
+    }
+    const { key, value } = req.body;
+    if (!key || value === undefined) {
+      return res.status(400).json({ message: "Key dan Value diperlukan" });
+    }
+    try {
+      const setting = await storage.updateAppSetting(key, value);
+      res.json(setting);
+    } catch (error) {
+      res.status(500).json({ message: "Gagal memperbarui pengaturan" });
+    }
+  });
+
+  // Seed default settings if none exist
+  const seedSettings = async () => {
+    console.log("[Seed] Starting app settings seeding...");
+    const existing = await storage.getAppSettings();
+    const defaults = [
+      { key: 'app_name', value: 'Ferio Super App' },
+      { key: 'dashboard_welcome', value: 'Halo, Selamat Datang' },
+      { key: 'dashboard_stats_period', value: 'Bulan Ini' },
+      { key: 'dashboard_stats_shipments_label', value: 'Total Pengiriman' },
+      { key: 'dashboard_status_done', value: 'Selesai' },
+      { key: 'dashboard_stats_orders_label', value: 'Pesanan Berjalan' },
+      { key: 'dashboard_status_queue', value: 'Antrean' },
+      { key: 'dashboard_stats_points_badge', value: 'Reward' },
+      { key: 'dashboard_stats_points_label', value: 'Total Surat Order' },
+      { key: 'dashboard_stats_labels_badge', value: 'Klaim' },
+      { key: 'dashboard_stats_labels_label', value: 'Total Pengiriman Selesai' },
+      { key: 'dashboard_summary_shipments_title', value: 'Ringkasan Pengiriman' },
+      { key: 'dashboard_status_pending', value: 'Menunggu' },
+      { key: 'dashboard_status_ready_to_ship', value: 'Siap Kirim' },
+      { key: 'dashboard_status_in_progress_delivered', value: 'Proses / Terkirim' },
+      { key: 'banner_info_label', value: 'Info Sistem' },
+      { key: 'banner_admin_title', value: 'Administrator Aktif' },
+      { key: 'banner_admin_desc', value: 'Pantau seluruh pengguna, cabang, serta jejak audit sistem dalam satu pintu.' },
+      { key: 'banner_sales_title', value: 'Halo, Tim Sales!' },
+      { key: 'banner_sales_desc', value: 'Fokus tingkatkan pesanan dan pantau cek stock. Semangat hari ini!' },
+      { key: 'banner_promo_title', value: 'Halo, Tim Promo!' },
+      { key: 'banner_promo_desc', value: 'Kelola klaim loyalty toko dan penyaluran distribusi point hadiah.' },
+      { key: 'banner_gudang_title', value: 'Halo, Tim Operasional Gudang!' },
+      { key: 'banner_gudang_desc', value: 'Terdapat antrean packing pengiriman. Selesaikan segera.' },
+      { key: 'dashboard_activity_title', value: 'Aktivitas Terbaru' },
+      { key: 'button_view_all', value: 'Lihat Semua' },
+      { key: 'button_logout', value: 'Keluar' },
+      { key: 'tab_home', value: 'Home' },
+      { key: 'tab_sales', value: 'Sales' },
+      { key: 'tab_gudang', value: 'Gudang' },
+      { key: 'tab_promo', value: 'Promo' },
+      { key: 'tab_admin', value: 'Admin' },
+      { key: 'sidebar_active_branch', value: 'Cabang Aktif' },
+      { key: 'sidebar_branch_placeholder', value: 'Pilih Cabang' },
+      { key: 'sidebar_stats_points', value: 'Total Surat Order' },
+      { key: 'sidebar_stats_labels', value: 'Total Pengiriman Selesai' },
+      { key: 'sidebar_group_main', value: 'Utama' },
+      { key: 'sidebar_home_label', value: 'Home Beranda' },
+      { key: 'sidebar_footer_tagline', value: 'Legacy System' },
+      { key: 'sidebar_footer_credit', value: 'create system and design by' },
+      { key: 'sidebar_footer_author', value: 'Andi ho' }
+    ];
+
+    if (existing.length === 0) {
+      console.log(`[Seed] Database empty, seeding ${defaults.length} default settings`);
+      for (const s of defaults) {
+        await storage.updateAppSetting(s.key, s.value);
+      }
+    } else {
+      console.log(`[Seed] Database has ${existing.length} settings, checking for missing keys...`);
+      let dataToExport: any[] = [];
+      let addedCount = 0;
+      for (const s of defaults) {
+        const hasSetting = await storage.getAppSetting(s.key);
+        if (!hasSetting) {
+          await storage.updateAppSetting(s.key, s.value);
+          addedCount++;
+        }
+      }
+      console.log(`[Seed] Added ${addedCount} new settings keys`);
+    }
+    console.log("[Seed] App settings seeding complete.");
+  };
+  seedSettings();
+
+
+  // === INTEGRATED PROMO ROUTES ===
+
+  // 1. Calculate Preview (Step 2)
+  app.post("/api/promo/calculate", requireAuth, async (req, res) => {
+    try {
+      const schema = z.object({
+        pelangganId: z.number(),
+        qty: z.number(),
+        nilaiFaktur: z.number(),
+        tglFaktur: z.string(),
+        brandCode: z.string().optional(),
+        branchId: z.number().optional(),
+      });
+      const data = schema.parse(req.body);
+      const effectiveBranchId = getEffectiveBranch(req);
+      if (!effectiveBranchId) return res.status(403).json({ message: "Pengguna tidak memiliki akses cabang" });
+
+      // NEW: Branch Consistency Validation
+      const brandCheck = await db.select()
+        .from(promoBrands)
+        .where(and(
+          eq(sql`LOWER(${promoBrands.name})`, (data.brandCode || 'FERIO').toLowerCase()),
+          eq(promoBrands.branchId, effectiveBranchId)
+        ))
+        .limit(1);
+      
+      if (brandCheck.length === 0) {
+        return res.status(400).json({ 
+          message: `Merek '${data.brandCode || 'FERIO'}' tidak terdaftar untuk cabang ini. Silakan periksa Master Merek.` 
+        });
+      }
+
+      const preview = await calculatePromos(
+        data.pelangganId, 
+        data.qty, 
+        data.nilaiFaktur, 
+        new Date(data.tglFaktur),
+        data.brandCode || 'FERIO',
+        effectiveBranchId
+      );
+      res.json(preview);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  // 2. Save Atomic (Step 5)
+  app.post("/api/promo/save-transaction", requireAuth, async (req, res) => {
+    try {
+      const schema = z.object({
+        pelangganId: z.number(),
+        noFaktur: z.string(),
+        tglFaktur: z.string(),
+        qty: z.number(),
+        nilaiFaktur: z.number(),
+        brandCode: z.string().optional(),
+        branchId: z.number().optional(),
+      });
+      const data = schema.parse(req.body);
+      const effectiveBranchId = getEffectiveBranch(req);
+      if (!effectiveBranchId) return res.status(403).json({ message: "Pengguna tidak memiliki akses cabang" });
+      
+      // NEW: Branch Consistency Validation
+      const brandCheck = await db.select()
+        .from(promoBrands)
+        .where(and(
+          eq(sql`LOWER(${promoBrands.name})`, (data.brandCode || 'FERIO').toLowerCase()),
+          eq(promoBrands.branchId, effectiveBranchId)
+        ))
+        .limit(1);
+      
+      if (brandCheck.length === 0) {
+        return res.status(400).json({ 
+          message: `Merek '${data.brandCode || 'FERIO'}' tidak terdaftar untuk cabang ini. Silakan periksa Master Merek.` 
+        });
+      }
+
+      // Atomic Save inside service using db.transaction
+      const result = await saveTransaksiPromo(
+        data.pelangganId,
+        data.noFaktur,
+        new Date(data.tglFaktur),
+        data.qty,
+        data.nilaiFaktur,
+        data.brandCode || 'FERIO',
+        effectiveBranchId
+      );
+      
+      broadcast("/api/promo");
+      res.status(201).json(result);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.put("/api/promo/transactions/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id as string);
+      const schema = z.object({
+        pelangganId: z.number(),
+        noFaktur: z.string(),
+        tglFaktur: z.string(),
+        qty: z.number(),
+        nilaiFaktur: z.number(),
+        brandCode: z.string().optional(),
+        branchId: z.number().optional(),
+      });
+      const data = schema.parse(req.body);
+      const effectiveBranchId = getEffectiveBranch(req);
+      if (!effectiveBranchId) return res.status(403).json({ message: "Pengguna tidak memiliki akses cabang" });
+      
+      // NEW: Branch Consistency Validation
+      const brandCheck = await db.select()
+        .from(promoBrands)
+        .where(and(
+          eq(sql`LOWER(${promoBrands.name})`, (data.brandCode || 'FERIO').toLowerCase()),
+          eq(promoBrands.branchId, effectiveBranchId)
+        ))
+        .limit(1);
+      
+      if (brandCheck.length === 0) {
+        return res.status(400).json({ 
+          message: `Merek '${data.brandCode || 'FERIO'}' tidak terdaftar untuk cabang ini. Silakan periksa Master Merek.` 
+        });
+      }
+
+      // Since recalculation depends on sequential order, replacing is deleting and appending.
+      await deleteTransaksiPromo(id);
+      const result = await saveTransaksiPromo(
+        data.pelangganId,
+        data.noFaktur,
+        new Date(data.tglFaktur),
+        data.qty,
+        data.nilaiFaktur,
+        data.brandCode || 'FERIO',
+        effectiveBranchId
+      );
+      
+      broadcast("/api/promo");
+      res.status(200).json(result);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/promo/transactions/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id as string);
+      await deleteTransaksiPromo(id);
+      broadcast("/api/promo");
+      res.json({ message: "Transaksi berhasil dihapus dan progress telah diperbarui" });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  // 3. Transactions List (Consolidated & Strict)
+  app.get("/api/promo/transactions", requireAuth, async (req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      const effectiveBranchId = getEffectiveBranch(req);
+      if (!effectiveBranchId) return res.json([]);
+      
+      const pelangganId = req.query.pelangganId ? parseInt(String(req.query.pelangganId)) : undefined;
+       const rawData = await db
+         .select({
+           id: transaksiPromo.id,
+           pelangganId: transaksiPromo.pelangganId,
+           brandCode: transaksiPromo.brandCode,
+           noFaktur: transaksiPromo.noFaktur,
+           tglFaktur: transaksiPromo.tglFaktur,
+           qty: transaksiPromo.qty,
+           nilaiFaktur: transaksiPromo.nilaiFaktur,
+           createdAt: transaksiPromo.createdAt,
+           branchId: transaksiPromo.branchId,
+           pelangganName: salesCustomers.name,
+         })
+         .from(transaksiPromo)
+         .leftJoin(salesCustomers, eq(transaksiPromo.pelangganId, salesCustomers.id))
+         .where(and(
+           eq(transaksiPromo.branchId, effectiveBranchId),
+           pelangganId ? eq(transaksiPromo.pelangganId, pelangganId) : undefined
+         ))
+         .orderBy(desc(transaksiPromo.createdAt));
+       
+       console.log(`[API] Found ${rawData.length} transactions for enrichment (branch: ${effectiveBranchId})`);
+       
+       const cache = new Map<string, string>();
+       
+       // Optimization: Batch fetch all rewards for the found transactions
+       const txIds = rawData.map(t => t.id);
+       const invNums = rawData.map(t => (t.noFaktur || "").trim()).filter(Boolean);
+       
+       // 1. All Cashbacks
+       const allCashbacks = txIds.length > 0 
+         ? await db.select().from(promoHasil).where(inArray(promoHasil.transaksiId, txIds))
+         : [];
+         
+       // 2. All Points (strict branch isolation)
+       const allPoints = invNums.length > 0
+         ? await db.select().from(pointLogs).where(and(
+             inArray(sql`TRIM(${pointLogs.invoiceNumber})`, invNums),
+             eq(pointLogs.type, 'earn'),
+             eq(pointLogs.branchId, effectiveBranchId)
+           ))
+         : [];
+         
+       // 3. All Label Quotas (strict branch isolation)
+       const allLabels = invNums.length > 0
+         ? await db.select().from(labelQuotas).where(and(
+             inArray(sql`TRIM(${labelQuotas.invoiceNumber})`, invNums),
+             eq(labelQuotas.branchId, effectiveBranchId)
+           ))
+         : [];
+
+       // 4. All Cutting Masters for calculation
+       const allCuttingMasters = await db.select().from(cuttingMaster).where(eq(cuttingMaster.branchId, effectiveBranchId));
+
+       console.log(`[API] Batch Fetch: CB=${allCashbacks.length}, Pts=${allPoints.length}, Lbl=${allLabels.length}, Masters=${allCuttingMasters.length}`);
+
+       const enrichedData = await Promise.all(rawData.map(async (t) => {
+           const key = `${t.pelangganId}_${t.brandCode || 'FERIO'}`;
+           
+           if (!cache.has(key)) {
+              const programs = await storage.getPelangganPrograms(t.pelangganId, effectiveBranchId, t.brandCode || 'FERIO');
+              const activeStr = programs
+                 .filter(p => p.status && p.status.toLowerCase() === 'aktif')
+                 .map(p => p.programName)
+                 .filter(Boolean)
+                 .join(", ");
+              
+              cache.set(key, activeStr || "-");
+           }
+           
+           // Filter rewards from batch results
+           const tNoFaktur = (t.noFaktur || "").trim().toLowerCase();
+           const tBrandCode = (t.brandCode || "FERIO").trim().toLowerCase();
+
+           // 1. Cashback
+           const totalCashback = allCashbacks
+             .filter(r => r.transaksiId === t.id)
+             .reduce((sum, r) => sum + parseFloat(r.nilaiCashback), 0);
+           
+           // 2. Points
+           const totalPoints = allPoints
+             .filter(r => (r.invoiceNumber || "").trim().toLowerCase() === tNoFaktur)
+             .reduce((sum, r) => sum + r.point, 0);
+           
+           // 3. Labels (Calculate total Rupiah value)
+           const matchingCutMaster = allCuttingMasters.find(m => (m.brandCode || "").trim().toLowerCase() === tBrandCode);
+           const totalLabelsQty = allLabels
+             .filter(r => (r.invoiceNumber || "").trim().toLowerCase() === tNoFaktur)
+             .reduce((sum, r) => sum + r.amount, 0);
+           
+           const totalLabelsValue = matchingCutMaster ? totalLabelsQty * parseFloat(matchingCutMaster.nilaiPerLabel) : 0;
+
+           // 4. Paket Progress Contribution
+           const activePromoStr = cache.get(key) || "-";
+           const isPaket = activePromoStr.toLowerCase().includes("paket");
+           let paketRewardValue = 0;
+           let isPaketActive = false;
+
+           if (isPaket) {
+             const progs = await db.select({
+               id: paketProgress.id,
+               tierId: paketProgress.currentTierId,
+             })
+             .from(paketProgress)
+             .innerJoin(paketMaster, eq(paketProgress.paketId, paketMaster.id))
+             .where(and(
+               eq(paketProgress.pelangganId, t.pelangganId),
+               eq(paketProgress.branchId, effectiveBranchId),
+               eq(sql`LOWER(${paketMaster.brandCode})`, (t.brandCode || 'FERIO').toLowerCase())
+             ))
+             .limit(1);
+
+             if (progs.length > 0 && progs[0].tierId) {
+                const tiers = await db.select().from(paketTier).where(eq(paketTier.id, progs[0].tierId)).limit(1);
+                if (tiers.length > 0) {
+                   const tr = tiers[0];
+                   isPaketActive = true;
+                   if (tr.rewardType === 'percent') {
+                      paketRewardValue = Number(t.nilaiFaktur) * (Number(tr.rewardPercent || 0) / 100);
+                   } else if (tr.rewardType === 'cash') {
+                      // Note: for fixed cash reward, it's a one-time thing at achievement, but here we show progress contribution ?
+                      // User wants to see "result" of calculation.
+                      paketRewardValue = 0; 
+                   }
+                }
+             }
+           }
+
+           const paketContribution = isPaketActive ? { calculatedValue: paketRewardValue } : (isPaket ? { qty: t.qty, nilai: parseFloat(t.nilaiFaktur.toString()) } : null);
+
+           return {
+              ...t,
+              activePromoStr: activePromoStr,
+              rewards: {
+                cashback: totalCashback,
+                points: totalPoints,
+                labels: totalLabelsValue, // CHANGED: now returning the rupiah value
+                labelsQty: totalLabelsQty, // Backup just in case
+                paket: paketContribution
+              }
+           };
+        }));
+       
+       res.json(enrichedData);
+    } catch (err: any) {
+       console.error("[API] Failed to get enriched transactions:", err);
+       res.status(500).json({ message: err.message });
+    }
+  });
+
+  // 4. Monitoring Promo Terpadu (Consolidated Service-Based)
+  app.get("/api/promo/monitoring", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      console.log(`[API] Monitoring Request: branchId=${effectiveBranchId}`);
+      if (!effectiveBranchId) return res.json([]);
+
+      const data = await getConsolidatedMonitoring(effectiveBranchId);
+      console.log(`[API] Monitoring Result: count=${data.length}`);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[API] Monitoring Error:", err);
+      res.status(500).json({ 
+        message: "Gagal memuat monitoring promo terpadu.", 
+        details: err.message 
+      });
+    }
+  });
+
+  app.get("/api/promo/monitoring/:pelangganId", requireAuth, async (req, res) => {
+    try {
+      const pelangganId = parseInt(req.params.pelangganId);
+      const effectiveBranchId = getEffectiveBranch(req);
+      if (!effectiveBranchId) return res.status(403).json({ message: "Pengguna tidak memiliki akses cabang" });
+
+      const data = await getCustomerTransactionsDetail(effectiveBranchId, pelangganId);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[API] Detailed Monitoring Error:", err);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // 5. Reward Claims List (Strict)
+  app.get("/api/reward/dashboard-data", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      
+      // Strict Isolation: If no branchId is specified (and user has no home branch), return empty.
+      // This prevents mixing data even for superadmins.
+      if (!effectiveBranchId) {
+         return res.json({ history: [], ready: { cashback: [], points: [], labels: [], pakets: [] } });
+      }
+
+      // 1. Get Success/History (Finished Claims)
+      const history = await db.query.rewardClaim.findMany({
+        where: and(
+          eq(rewardClaim.branchId, effectiveBranchId),
+          eq(rewardClaim.status, 'selesai')
+        ),
+        with: { pelanggan: true, hadiah: true },
+        orderBy: desc(rewardClaim.tanggalKlaim)
+      });
+
+      // 2. Get Ready - Cashback (Result not yet in any claim)
+      const cashbackReady = await db.select({
+        id: promoHasil.id,
+        pelangganId: transaksiPromo.pelangganId,
+        pelangganNama: salesCustomers.name,
+        transaksiId: promoHasil.transaksiId,
+        noFaktur: transaksiPromo.noFaktur,
+        tglFaktur: transaksiPromo.tglFaktur,
+        nilai: promoHasil.nilaiCashback,
+        brandCode: transaksiPromo.brandCode
+      })
+      .from(promoHasil)
+      .innerJoin(transaksiPromo, eq(promoHasil.transaksiId, transaksiPromo.id))
+      .innerJoin(salesCustomers, eq(transaksiPromo.pelangganId, salesCustomers.id))
+      .leftJoin(rewardClaim, and(eq(rewardClaim.refId, promoHasil.id), eq(rewardClaim.sumber, 'cashback')))
+      .where(and(
+        eq(transaksiPromo.branchId, effectiveBranchId),
+        isNull(rewardClaim.id)
+      ));
+
+      // 3. Get Ready - Points
+      const pointsReady = await db.select({
+        id: pointSaldo.id,
+        pelangganId: pointSaldo.pelangganId,
+        pelangganNama: salesCustomers.name,
+        saldo: pointSaldo.saldoPoin,
+        brandCode: pointSaldo.brandCode
+      })
+      .from(pointSaldo)
+      .innerJoin(salesCustomers, eq(pointSaldo.pelangganId, salesCustomers.id))
+      .where(and(
+        eq(pointSaldo.branchId, effectiveBranchId),
+        sql`${pointSaldo.saldoPoin}::numeric > 0`
+      ));
+
+      // 4. Get Ready - Label Cutting
+      const labelsReady = await db.select({
+        id: cuttingProgress.id,
+        pelangganId: cuttingProgress.pelangganId,
+        pelangganNama: salesCustomers.name,
+        totalLabel: cuttingProgress.totalLabel,
+        totalNilai: cuttingProgress.totalNilai,
+        namaPromo: cuttingMaster.nama,
+        brandCode: cuttingMaster.brandCode
+      })
+      .from(cuttingProgress)
+      .innerJoin(cuttingMaster, eq(cuttingProgress.cuttingId, cuttingMaster.id))
+      .innerJoin(salesCustomers, eq(cuttingProgress.pelangganId, salesCustomers.id))
+      .where(and(
+        eq(cuttingProgress.branchId, effectiveBranchId),
+        eq(cuttingProgress.statusCair, 'belum')
+      ));
+
+      // 5. Get Ready - Paket
+      const paketsReady = await db.select({
+        id: paketProgress.id,
+        pelangganId: paketProgress.pelangganId,
+        pelangganNama: salesCustomers.name,
+        namaPaket: paketMaster.nama,
+        target: paketTier.rewardDesc,
+        targetVal: paketTier.rewardValue,
+        brandCode: paketMaster.brandCode
+      })
+      .from(paketProgress)
+      .innerJoin(paketMaster, eq(paketProgress.paketId, paketMaster.id))
+      .innerJoin(paketTier, eq(paketProgress.currentTierId, paketTier.id))
+      .innerJoin(salesCustomers, eq(paketProgress.pelangganId, salesCustomers.id))
+      .where(and(
+        eq(paketProgress.branchId, effectiveBranchId),
+        eq(paketProgress.status, 'tercapai')
+      ));
+
+      res.json({
+        history,
+        ready: {
+          cashback: cashbackReady,
+          points: pointsReady,
+          labels: labelsReady,
+          pakets: paketsReady
+        }
+      });
+    } catch (err: any) {
+      console.error("[Reward Dashboard] Error:", err);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // POST: Execute Disbursement
+  app.post("/api/reward/disburse-item", requireAuth, async (req, res) => {
+    try {
+      const { pelangganId, type, refId, amount, desc, branchId } = req.body;
+      
+      // Ensure we have a branchId for strict isolation
+      const targetBranchId = branchId || (req.user as any)?.branchId;
+      
+      if (!targetBranchId) {
+        return res.status(400).json({ message: "ID Cabang tidak ditemukan. Pilih cabang terlebih dahulu." });
+      }
+      
+      await db.transaction(async (tx) => {
+        // 1. Record the claim as 'selesai' immediately with STRICT branchId
+        await tx.insert(rewardClaim).values({
+          pelangganId: Number(pelangganId),
+          sumber: type, 
+          refId: Number(refId),
+          rewardType: type === 'cashback' || type === 'cutting' ? 'cash' : (type === 'point' ? 'barang' : 'cash'),
+          rewardDesc: desc || `Pencairan ${type}`,
+          jumlah: amount.toString(),
+          tanggalKlaim: new Date(),
+          claimedDate: new Date(),
+          status: 'selesai',
+          branchId: Number(targetBranchId)
+        });
+
+        // 2. Update Source Status
+        if (type === 'cutting') {
+          await tx.update(cuttingProgress).set({ statusCair: 'sudah' }).where(eq(cuttingProgress.id, refId));
+        } else if (type === 'paket') {
+          await tx.update(paketProgress).set({ status: 'selesai' }).where(eq(paketProgress.id, refId));
+        } else if (type === 'point') {
+           const saldoArr = await tx.select().from(pointSaldo).where(eq(pointSaldo.id, refId)).limit(1);
+           if (saldoArr.length > 0) {
+              const currentP = Number(saldoArr[0].saldoPoin);
+              const deduct = Number(amount);
+              await tx.update(pointSaldo).set({
+                 saldoPoin: (currentP - deduct).toString(),
+                 totalDitukar: (Number(saldoArr[0].totalDitukar) + deduct).toString()
+              }).where(eq(pointSaldo.id, refId));
+           }
+        }
+        // Cashback doesn't have a status in promoHasil, we rely on the JOIN in GET dashboard-data
+      });
+
+      broadcast("/api/reward");
+      res.json({ success: true, message: "Berhasil dicairkan" });
+    } catch (err: any) {
+      console.error("[Disburse] Error:", err);
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/reward/claims", requireAuth, async (req, res) => {
+    const effectiveBranchId = getEffectiveBranch(req);
+    if (!effectiveBranchId) return res.json([]);
+
+    const claims = await db.query.rewardClaim.findMany({
+      where: eq(rewardClaim.branchId, effectiveBranchId),
+      with: {
+        pelanggan: true,
+        hadiah: true
+      },
+      orderBy: desc(rewardClaim.tanggalKlaim)
+    });
+    res.json(claims);
+  });
+
+  // redundant hadiah GET removed below (already at line 2029)
+
+  // 6. Point Redemption
+  app.post("/api/promo/tukar-poin", requireAuth, async (req, res) => {
+    try {
+      const { pelangganId, hadiahId } = req.body;
+      
+      await db.transaction(async (tx) => {
+        const effectiveBranchId = (req.user as any)?.branchId || (req.body.branchId ? Number(req.body.branchId) : null);
+        if (!effectiveBranchId) throw new Error("ID Cabang tidak teridentifikasi");
+
+        const saldoArr = await tx.select().from(pointSaldo).where(and(
+          eq(pointSaldo.pelangganId, pelangganId),
+          eq(pointSaldo.branchId, effectiveBranchId)
+        )).limit(1);
+        if (saldoArr.length === 0) throw new Error("Saldo poin tidak ditemukan di cabang ini");
+        
+        const giftArr = await tx.select().from(hadiahKatalog).where(eq(hadiahKatalog.id, hadiahId)).limit(1);
+        if (giftArr.length === 0) throw new Error("Hadiah tidak ditemukan");
+        
+        const saldo = Number(saldoArr[0].saldoPoin);
+        const butuh = Number(giftArr[0].poinDibutuhkan);
+        const stok = giftArr[0].stok;
+        
+        if (saldo < butuh) throw new Error("Saldo poin tidak cukup");
+        if (stok <= 0) throw new Error("Stok hadiah habis");
+        
+        // Update Saldo
+        await tx.update(pointSaldo).set({
+          saldoPoin: (saldo - butuh).toString(),
+          totalDitukar: (Number(saldoArr[0].totalDitukar) + butuh).toString(),
+          updatedAt: new Date()
+        }).where(and(
+          eq(pointSaldo.id, saldoArr[0].id),
+          eq(pointSaldo.branchId, effectiveBranchId)
+        ));
+        
+        // Update Stok
+        await tx.update(hadiahKatalog).set({
+          stok: stok - 1
+        }).where(eq(hadiahKatalog.id, hadiahId));
+        
+        // Create Reward Claim
+        await tx.insert(rewardClaim).values({
+          pelangganId,
+          sumber: 'point',
+          refId: pelangganId, // ref to point_saldo
+          rewardType: 'barang',
+          rewardDesc: giftArr[0].namaHadiah,
+          jumlah: butuh.toString(),
+          hadiahId,
+          tanggalKlaim: new Date(),
+          status: 'pending',
+          branchId: (req.user as any)?.branchId || (req.body.branchId ? Number(req.body.branchId) : null)
+        });
+      });
+      
+      broadcast("/api/promo");
+      res.json({ message: "Penukaran poin berhasil" });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  // 7. Approve / Set Selesai Reward Claim
+  app.post("/api/reward/process", requireAuth, async (req, res) => {
+    const { claimId, action } = req.body; // action: 'approve' | 'selesai' | 'batal'
+    const userDisplayName = (req.user as any)?.displayName || "System";
+    
+    const userBranchId = (req.user as any)?.branchId;
+    const effectiveBranchId = userBranchId || (req.body.branchId ? Number(req.body.branchId) : null);
+    const update: any = { status: action };
+    if (action === 'approved') {
+      update.approvedBy = userDisplayName;
+    } else if (action === 'selesai') {
+      update.claimedDate = new Date();
+    }
+    
+    await db.update(rewardClaim).set(update).where(and(
+      eq(rewardClaim.id, claimId),
+      effectiveBranchId ? eq(rewardClaim.branchId, effectiveBranchId) : sql`TRUE`
+    ));
+    broadcast("/api/reward");
+    res.json({ message: `Reward status updated to ${action}` });
+  });
+
+  // === MASTER DATA PROMO INTEGRATED (UNIFIED) ===
+
+
+
+  // 1. MASTER BRANDS (Dropdown Source) - Public GET like old endpoint
+  app.get("/api/promo/masters/brands", async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      let queryStr = "SELECT * FROM promo_brands";
+      
+      if (effectiveBranchId) {
+        queryStr += ` WHERE branch_id = ${Number(effectiveBranchId)}`;
+      }
+      
+      const { rows } = await db.execute(sql.raw(queryStr));
+      const data = rows as any[];
+      // Map name to brandCode to maintain backward compatibility with some frontend logic
+      const result = data.map(b => ({ ...b, brandCode: b.name }));
+      res.json(result);
+    } catch (err: any) {
+      console.error("[BRANDS API ERROR]", err);
+      res.status(500).json({ message: err.message, stack: err.stack });
+    }
+  });
+
+  // 2. MASTER PAKET (Tiering)
+  app.get("/api/promo/masters/paket", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      const brandCode = req.query.brandCode as string;
+      
+      console.log(`[PROMO] GET Paket - Branch: ${effectiveBranchId}, Brand: ${brandCode || 'ALL'}`);
+      
+      let query = db.select().from(paketMaster).$dynamic();
+      const conditions = [];
+      
+      if (effectiveBranchId) {
+        conditions.push(eq(paketMaster.branchId, effectiveBranchId));
+      }
+      if (brandCode && brandCode !== 'SEMUA') {
+        conditions.push(eq(paketMaster.brandCode, brandCode));
+      }
+      
+      if (conditions.length > 0) query = query.where(and(...conditions));
+      
+      const data = await query;
+      const withTiers = await Promise.all(data.map(async (p) => {
+        const tiers = await db.select().from(paketTier).where(eq(paketTier.paketId, p.id)).orderBy(paketTier.urutanTier);
+        return { ...p, tiers };
+      }));
+      res.json(withTiers);
+    } catch (err: any) {
+      console.error("[PROMO] GET Paket Error:", err);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/promo/masters/paket", requireAuth, async (req, res) => {
+    try {
+      const { tiers, ...paketData } = req.body;
+      const effectiveBranchId = getEffectiveBranch(req);
+      const [inserted] = await db.insert(paketMaster).values({
+        ...paketData,
+        startDate: new Date(paketData.startDate),
+        branchId: req.body.branchId !== undefined ? (req.body.branchId === 'null' ? null : req.body.branchId) : effectiveBranchId
+      }).returning();
+      if (tiers && tiers.length > 0) {
+        await db.insert(paketTier).values(tiers.map((t: any) => ({ ...t, paketId: inserted.id })));
+      }
+      res.json(inserted);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/promo/masters/paket/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const { tiers, ...paketData } = req.body;
+      const effectiveBranchId = getEffectiveBranch(req);
+      await db.transaction(async (tx) => {
+        const conditions = [eq(paketMaster.id, id)];
+        if (effectiveBranchId) conditions.push(eq(paketMaster.branchId, effectiveBranchId));
+        const owner = await tx.select().from(paketMaster).where(and(...conditions)).limit(1);
+        if (owner.length === 0) throw new Error("Paket tidak ditemukan");
+        await tx.update(paketMaster).set({ ...paketData, startDate: paketData.startDate ? new Date(paketData.startDate) : undefined }).where(eq(paketMaster.id, id));
+        if (tiers) {
+          await tx.delete(paketTier).where(eq(paketTier.paketId, id));
+          if (tiers.length > 0) await tx.insert(paketTier).values(tiers.map((t: any) => ({ ...t, paketId: id, id: undefined })));
+        }
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/promo/masters/paket/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const effectiveBranchId = getEffectiveBranch(req);
+      console.log(`[PROMO] [DELETE] Request Paket ID: ${id}, Branch: ${effectiveBranchId}`);
+      await db.transaction(async (tx) => {
+        const conditions = [eq(paketMaster.id, id)];
+        if (effectiveBranchId) {
+          conditions.push(or(eq(paketMaster.branchId, effectiveBranchId), isNull(paketMaster.branchId)) as any);
+        }
+        const owner = await tx.select().from(paketMaster).where(and(...(conditions.filter(Boolean) as any[]))).limit(1);
+        if (owner.length === 0) throw new Error("Paket tidak ditemukan");
+        await tx.delete(paketTier).where(eq(paketTier.paketId, id));
+        await tx.delete(paketPelanggan).where(eq(paketPelanggan.paketId, id));
+        await tx.delete(paketProgress).where(eq(paketProgress.paketId, id));
+        await tx.delete(rewardClaim).where(and(eq(rewardClaim.refId, id), eq(rewardClaim.sumber, 'paket')));
+        await tx.delete(paketMaster).where(eq(paketMaster.id, id));
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // 3. MASTER CASHBACK
+  app.get("/api/promo/masters/cashback", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      const brandCode = req.query.brandCode as string;
+      
+      console.log(`[PROMO] GET Cashback - Branch: ${effectiveBranchId}, Brand: ${brandCode || 'ALL'}`);
+      
+      let query = db.select().from(cashbackMaster).$dynamic();
+      const conditions = [];
+      
+      if (effectiveBranchId) {
+        conditions.push(eq(cashbackMaster.branchId, effectiveBranchId));
+      }
+      if (brandCode && brandCode !== 'SEMUA') {
+        conditions.push(eq(cashbackMaster.brandCode, brandCode));
+      }
+      
+      if (conditions.length > 0) query = query.where(and(...conditions));
+      
+      const data = await query;
+      res.json(data);
+    } catch (err: any) {
+      console.error("[PROMO] GET Cashback Error:", err);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/promo/masters/cashback", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      const [inserted] = await db.insert(cashbackMaster).values({ 
+        ...req.body, 
+        branchId: req.body.branchId !== undefined ? (req.body.branchId === 'null' ? null : req.body.branchId) : effectiveBranchId 
+      }).returning();
+      res.json(inserted);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/promo/masters/cashback/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const effectiveBranchId = getEffectiveBranch(req);
+      const conditions = [eq(cashbackMaster.id, id)];
+      if (effectiveBranchId) conditions.push(eq(cashbackMaster.branchId, effectiveBranchId));
+      const [updated] = await db.update(cashbackMaster).set(req.body)
+        .where(and(...conditions)).returning();
+      res.json(updated);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/promo/masters/cashback/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const effectiveBranchId = getEffectiveBranch(req);
+      console.log(`[PROMO] [DELETE] Request Cashback ID: ${id}, Branch: ${effectiveBranchId}`);
+      await db.transaction(async (tx) => {
+        const conditions = [eq(cashbackMaster.id, id)];
+        if (effectiveBranchId) {
+          conditions.push(or(eq(cashbackMaster.branchId, effectiveBranchId), isNull(cashbackMaster.branchId)) as any);
+        }
+        const owner = await tx.select().from(cashbackMaster).where(and(...(conditions.filter(Boolean) as any[]))).limit(1);
+        if (owner.length === 0) throw new Error("Cashback tidak ditemukan");
+        await tx.delete(promoHasil).where(eq(promoHasil.cashbackId, id));
+        await tx.delete(rewardClaim).where(and(eq(rewardClaim.refId, id), eq(rewardClaim.sumber, 'cashback')));
+        await tx.delete(cashbackMaster).where(eq(cashbackMaster.id, id));
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // 4. MASTER CUTTING LABEL
+  app.get("/api/promo/masters/cutting", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      const brandCode = req.query.brandCode as string;
+      
+      console.log(`[PROMO] GET Cutting - Branch: ${effectiveBranchId}, Brand: ${brandCode || 'ALL'}`);
+      
+      let query = db.select().from(cuttingMaster).$dynamic();
+      const conditions = [];
+      
+      if (effectiveBranchId) {
+        conditions.push(eq(cuttingMaster.branchId, effectiveBranchId));
+      }
+      if (brandCode && brandCode !== 'SEMUA') {
+        conditions.push(eq(cuttingMaster.brandCode, brandCode));
+      }
+      
+      if (conditions.length > 0) query = query.where(and(...conditions));
+      
+      const data = await query;
+      res.json(data);
+    } catch (err: any) {
+      console.error("[PROMO] GET Cutting Error:", err);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/promo/masters/cutting", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      const [inserted] = await db.insert(cuttingMaster).values({ 
+        ...req.body, 
+        branchId: req.body.branchId !== undefined ? (req.body.branchId === 'null' ? null : req.body.branchId) : effectiveBranchId 
+      }).returning();
+      res.json(inserted);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/promo/masters/cutting/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const effectiveBranchId = getEffectiveBranch(req);
+      const [updated] = await db.update(cuttingMaster).set(req.body)
+        .where(and(
+          eq(cuttingMaster.id, id), 
+          effectiveBranchId ? eq(cuttingMaster.branchId, effectiveBranchId) : sql`TRUE`
+        )).returning();
+      res.json(updated);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/promo/masters/cutting/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const effectiveBranchId = getEffectiveBranch(req);
+      console.log(`[PROMO] [DELETE] Request Cutting ID: ${id}, Branch: ${effectiveBranchId}`);
+      await db.transaction(async (tx) => {
+        const conditions = [eq(cuttingMaster.id, id)];
+        if (effectiveBranchId) {
+          conditions.push(or(eq(cuttingMaster.branchId, effectiveBranchId), isNull(cuttingMaster.branchId)) as any);
+        }
+        const owner = await tx.select().from(cuttingMaster).where(and(...(conditions.filter(Boolean) as any[]))).limit(1);
+        if (owner.length === 0) throw new Error("Cutting tidak ditemukan");
+        await tx.delete(cuttingProgress).where(eq(cuttingProgress.cuttingId, id));
+        await tx.delete(rewardClaim).where(and(eq(rewardClaim.refId, id), eq(rewardClaim.sumber, 'cutting')));
+        await tx.delete(cuttingMaster).where(eq(cuttingMaster.id, id));
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // 5. MASTER POINT HADIAH
+  app.get("/api/promo/masters/point", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      const brandCode = req.query.brandCode as string;
+      
+      console.log(`[PROMO] GET Point - Branch: ${effectiveBranchId}, Brand: ${brandCode || 'ALL'}`);
+      
+      let query = db.select().from(pointMaster).$dynamic();
+      const conditions = [];
+      
+      if (effectiveBranchId) {
+        conditions.push(eq(pointMaster.branchId, effectiveBranchId));
+      }
+      if (brandCode && brandCode !== 'SEMUA') {
+        conditions.push(eq(pointMaster.brandCode, brandCode));
+      }
+      
+      if (conditions.length > 0) query = query.where(and(...conditions));
+      
+      const data = await query;
+      res.json(data);
+    } catch (err: any) {
+      console.error("[PROMO] GET Point Error:", err);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/promo/masters/point", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      const [inserted] = await db.insert(pointMaster).values({ 
+        ...req.body, 
+        branchId: req.body.branchId !== undefined ? (req.body.branchId === 'null' ? null : req.body.branchId) : effectiveBranchId 
+      }).returning();
+      res.json(inserted);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/promo/masters/point/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const effectiveBranchId = getEffectiveBranch(req);
+      const conditions = [eq(pointMaster.id, id)];
+      if (effectiveBranchId) conditions.push(eq(pointMaster.branchId, effectiveBranchId));
+      const [updated] = await db.update(pointMaster).set(req.body)
+        .where(and(...conditions)).returning();
+      res.json(updated);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/promo/masters/point/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const effectiveBranchId = getEffectiveBranch(req);
+      console.log(`[PROMO] [DELETE] Request Point ID: ${id}, Branch: ${effectiveBranchId}`);
+      await db.transaction(async (tx) => {
+        const conditions = [eq(pointMaster.id, id)];
+        if (effectiveBranchId) {
+          conditions.push(or(eq(pointMaster.branchId, effectiveBranchId), isNull(pointMaster.branchId)) as any);
+        }
+        const owner = await tx.select().from(pointMaster).where(and(...(conditions.filter(Boolean) as any[]))).limit(1);
+        if (owner.length === 0) throw new Error("Point tidak ditemukan");
+        await tx.delete(rewardClaim).where(and(eq(rewardClaim.refId, id), eq(rewardClaim.sumber, 'point')));
+        await tx.delete(pointMaster).where(eq(pointMaster.id, id));
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // 6. HADIAH KATALOG
+  app.get("/api/promo/hadiah", requireAuth, async (req, res) => {
+    const effectiveBranchId = getEffectiveBranch(req);
+    let query = db.select().from(hadiahKatalog).$dynamic();
+    if (effectiveBranchId) query = query.where(eq(hadiahKatalog.branchId, effectiveBranchId));
+    const data = await query;
+    res.json(data);
+  });
+
+  app.post("/api/promo/hadiah", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      const [inserted] = await db.insert(hadiahKatalog).values({ ...req.body, branchId: effectiveBranchId }).returning();
+      res.json(inserted);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/promo/hadiah/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const [updated] = await db.update(hadiahKatalog).set(req.body).where(eq(hadiahKatalog.id, id)).returning();
+      res.json(updated);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/promo/hadiah/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      await db.delete(hadiahKatalog).where(eq(hadiahKatalog.id, id));
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // 7. MAPPINGS & PROGRESS
+  app.get("/api/promo/masters/mapping-paket", requireAuth, async (req, res) => {
+    const effectiveBranchId = getEffectiveBranch(req);
+    const data = await db.query.paketPelanggan.findMany({
+      where: effectiveBranchId ? eq(paketPelanggan.branchId, effectiveBranchId) : undefined,
+      with: { pelanggan: true, paket: true }
+    });
+    res.json(data);
+  });
+
+  app.post("/api/promo/masters/mapping-paket", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      const [inserted] = await db.insert(paketPelanggan).values({ ...req.body, tglMulai: new Date(req.body.tglMulai), tglSelesai: req.body.tglSelesai ? new Date(req.body.tglSelesai) : null, branchId: effectiveBranchId }).returning();
+      res.json(inserted);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/promo/masters/mapping-paket/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const effectiveBranchId = getEffectiveBranch(req);
+      await db.delete(paketPelanggan).where(and(eq(paketPelanggan.id, id), effectiveBranchId ? eq(paketPelanggan.branchId, effectiveBranchId) : sql`TRUE`));
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/promo/masters/mapping-promo", requireAuth, async (req, res) => {
+    const effectiveBranchId = getEffectiveBranch(req);
+    const data = await db.query.promoPelanggan.findMany({
+      where: effectiveBranchId ? eq(promoPelanggan.branchId, effectiveBranchId) : undefined,
+      with: { pelanggan: true }
+    });
+    res.json(data);
+  });
+
+  app.post("/api/promo/masters/mapping-promo", requireAuth, async (req, res) => {
+    try {
+      const effectiveBranchId = getEffectiveBranch(req);
+      const [inserted] = await db.insert(promoPelanggan).values({ ...req.body, tglMulai: new Date(req.body.tglMulai), tglSelesai: req.body.tglSelesai ? new Date(req.body.tglSelesai) : null, branchId: effectiveBranchId }).returning();
+      res.json(inserted);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/promo/masters/mapping-promo/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const effectiveBranchId = getEffectiveBranch(req);
+      await db.delete(promoPelanggan).where(and(eq(promoPelanggan.id, id), effectiveBranchId ? eq(promoPelanggan.branchId, effectiveBranchId) : sql`TRUE`));
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/promo/progress/paket", requireAuth, async (req, res) => {
+    const effectiveBranchId = getEffectiveBranch(req);
+    const data = await db.query.paketProgress.findMany({
+      where: effectiveBranchId ? eq(paketProgress.branchId, effectiveBranchId) : undefined,
+      with: { pelanggan: true, paket: true, currentTier: true }
+    });
+    res.json(data);
+  });
+
+  app.get("/api/promo/progress/point", requireAuth, async (req, res) => {
+    const effectiveBranchId = getEffectiveBranch(req);
+    const data = await db.query.pointSaldo.findMany({
+      where: effectiveBranchId ? eq(pointSaldo.branchId, effectiveBranchId) : undefined,
+      with: { pelanggan: true }
+    });
+    res.json(data);
+  });
+
+  return httpServer;
+}
+
+async function seedDatabase() {
+  console.log("[Seed] Checking if database needs seeding...");
+  try {
+    // 1. Seed Branches
+    const existingBranches = await storage.getBranches();
+    let defaultBranchId: number | undefined;
+    if (existingBranches.length === 0) {
+      console.log("[Seed] Creating default branch: Pusat");
+      const pusat = await storage.createBranch({ name: "Pusat" });
+      defaultBranchId = pusat.id;
+    } else {
+      defaultBranchId = existingBranches[0].id;
+    }
+
+    // 2. Seed Expeditions
+    const existingExpeditions = await storage.getExpeditions();
+    const expeditionsToSeed = ["JNE", "SiCepat", "J&T Express", "Ninja Xpress", "Anteraja", "REX"];
+    for (const name of expeditionsToSeed) {
+      if (!existingExpeditions.find(e => e.name === name)) {
+        console.log(`[Seed] Adding expedition: ${name}`);
+        await storage.createExpedition({ name, active: true });
+      }
+    }
+
+    // 2. Seed Customers
+    const existingCustomers = await storage.getCustomers();
+    const customersToSeed = [
+      { name: "PT. Maju Mundur", address: "Jl. Sudirman No. 1", phone: "081234567890", code: "CUST-001" },
+      { name: "Toko Sinar Jaya", address: "Pasar Pagi Blok A/1", phone: "081987654321", code: "CUST-002" },
+      { name: "Budi Santoso", address: "Jl. Melati 25", phone: "081512341234", code: "CUST-003" },
+      { name: "PT. Sumber Rejeki", address: "Kawasan Industri Jababeka", phone: "081122334455", code: "CUST-004" },
+      { name: "Toko Berkah", address: "Ruko Emerald No. 5", phone: "081334455667", code: "CUST-005" },
+    ];
+    for (const cust of customersToSeed) {
+      if (!existingCustomers.find(c => c.name === cust.name)) {
+        console.log(`[Seed] Adding customer: ${cust.name}`);
+        await storage.createCustomer(cust);
+      }
+    }
+
+    // 3. Seed Items (Master Barang)
+    const existingItems = await storage.getItems();
+    if (existingItems.length === 0) {
+      console.log("[Seed] Seeding sample items...");
+      const itemsToSeed = [
+        { code: "B001", name: "Semen Holcim 50kg", brandCode: "HOLCIM", sellingPrice: 65000 },
+        { code: "B002", name: "Cat Tembok Dulux 5L", brandCode: "DULUX", sellingPrice: 185000 },
+        { code: "B003", name: "Paku Kayu 3 inch", brandCode: "GENERIC", sellingPrice: 15000 },
+        { code: "B004", name: "Kuas Cat 3 inch", brandCode: "ETERNA", sellingPrice: 12000 },
+        { code: "B005", name: "Thinner A 1L", brandCode: "IMPIAN", sellingPrice: 25000 },
+      ];
+      for (const item of itemsToSeed) {
+        await storage.createItem(item);
+      }
+    }
+ 
+    // 4. Seed Admin User
+    const adminUser = await storage.getUserByUsername("admin");
+    if (!adminUser) {
+      console.log("[Seed] Creating default admin user...");
+      const { hashPassword } = await import("./auth");
+      await storage.createUser({
+        username: "admin",
+        password: await hashPassword("admin123"),
+        displayName: "Administrator",
+      });
+      console.log("[Seed] Admin user 'admin' created with password 'admin123'");
+    }
+
+    // 4. Seed Shipments (Sample data for Dashboard)
+    const { shipments: existingShipments } = await storage.getShipments();
+    if (existingShipments.length === 0) {
+      console.log("[Seed] Seeding sample shipments...");
+      const expeditionsList = await storage.getExpeditions();
+      const customersList = await storage.getCustomers();
+      
+      const jne = expeditionsList.find(e => e.name === "JNE")?.id || expeditionsList[0].id;
+      const sicepat = expeditionsList.find(e => e.name === "SiCepat")?.id || expeditionsList[0].id;
+      const jnt = expeditionsList.find(e => e.name === "J&T Express")?.id || expeditionsList[0].id;
+      
+      const customer1 = customersList[0].id;
+      const customer2 = customersList[1].id;
+      const customer3 = customersList[2].id;
+
+      // Status: MENUNGGU_VERIFIKASI
+      await storage.createShipment({
+        invoiceNumber: "INV/2026/001",
+        customerId: customer1,
+        expeditionId: jne,
+        totalNotes: 5,
+        destination: "Jakarta",
+        status: "MENUNGGU_VERIFIKASI",
+        notes: "Minta dipacking kayu",
+        branchId: defaultBranchId,
+      });
+
+      // Status: MENUNGGU_VERIFIKASI
+      await storage.createShipment({
+        invoiceNumber: "INV/2026/002",
+        customerId: customer2,
+        expeditionId: sicepat,
+        totalNotes: 12,
+        destination: "Surabaya",
+        status: "MENUNGGU_VERIFIKASI",
+      });
+
+      // Status: SIAP_KIRIM (Verified but not picked up)
+      await storage.createShipment({
+        invoiceNumber: "INV/2026/003",
+        customerId: customer3,
+        expeditionId: jnt,
+        totalNotes: 8,
+        destination: "Bandung",
+        status: "SIAP_KIRIM",
+        totalBoxes: 2,
+        packerName: "Andi",
+        verificationDate: new Date(),
+        branchId: defaultBranchId,
+      });
+
+      // Status: DALAM_PENGIRIMAN
+      await storage.createShipment({
+        invoiceNumber: "INV/2026/004",
+        customerId: customer1,
+        expeditionId: sicepat,
+        totalNotes: 3,
+        destination: "Medan",
+        status: "DALAM_PENGIRIMAN",
+        totalBoxes: 1,
+        packerName: "Budi",
+        verificationDate: new Date(Date.now() - 86400000), // yesterday
+        senderName: "Doni",
+        receiptNumber: "SOC123456789",
+        shippingDate: new Date(),
+      });
+
+      // Status: TERKIRIM
+      await storage.createShipment({
+        invoiceNumber: "INV/2026/005",
+        customerId: customer2,
+        expeditionId: jne,
+        totalNotes: 20,
+        destination: "Semarang",
+        status: "TERKIRIM",
+        totalBoxes: 4,
+        packerName: "Andi",
+        verificationDate: new Date(Date.now() - 172800000), // 2 days ago
+        senderName: "Eko",
+        receiptNumber: "JNE987654321",
+        shippingDate: new Date(Date.now() - 86400000), // yesterday
+        invoiceReturned: true,
+        returnedDate: new Date(),
+      });
+      
+      console.log("[Seed] Sample shipments created.");
+    }
+    console.log("[Seed] Seeding check completed.");
+  } catch (err) {
+    console.error("[Seed] Error during seeding:", err);
+  }
+}

@@ -1,0 +1,205 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', sans-serif;
+    --font-display: 'Plus Jakarta Sans', sans-serif;
+
+    /* Soft & Premium Palette: Sophisticated Slate & Muted Indigo */
+    --background: 210 25% 99%;
+    --foreground: 222 47% 12%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 12%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 12%;
+    
+    /* Soft Indigo */
+    --primary: 224 71% 60%;
+    --primary-foreground: 210 40% 100%;
+    
+    --secondary: 213 27% 97%;
+    --secondary-foreground: 222 47% 12%;
+    
+    --muted: 213 27% 97%;
+    --muted-foreground: 215 16% 50%;
+    
+    --accent: 213 27% 97%;
+    --accent-foreground: 222 47% 12%;
+    
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 210 40% 100%;
+
+    --border: 214 32% 93%;
+    --input: 214 32% 93%;
+    --ring: 224 71% 60%;
+
+    --radius: 1.25rem;
+
+    /* Soft Theme Differentiators */
+    --table-header-soft: 180 30% 98%; /* Soft Cyan/Teal Header */
+    --menu-bg-soft: 250 40% 99%;    /* Soft Light Indigo Menu */
+    --list-highlight-soft: 45 60% 98%; /* Soft Amber/Emerald for highlights */
+    --sidebar-accent-soft: 224 71% 97%;
+
+    /* Premium Sidebar Variables */
+    --sidebar: 0 0% 100%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 35%;
+    --sidebar-primary: 224 71% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 213 27% 97%;
+    --sidebar-accent-foreground: 222 47% 12%;
+    --sidebar-border: 214 32% 95%;
+    --sidebar-ring: 224 71% 60%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222 47% 11%;
+    
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+
+    --sidebar: 240 5.9% 10%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply tracking-tight font-semibold;
+  }
+}
+
+/* Custom visual depth utilities */
+@layer utilities {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-md border border-white/20 shadow-sm;
+  }
+  .subtle-shadow {
+    @apply shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)];
+  }
+  .hover-elevate {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)];
+  }
+}
+
+@media print {
+  @page {
+    margin: 1cm;
+    size: A4;
+    margin-top: 0.5cm;
+    margin-bottom: 0.5cm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Sembunyikan URL browser di header/footer */
+  /* Sembunyikan navigasi bawah */
+  nav, .bottom-nav, .mobile-nav,
+  [class*='bottom'], [class*='navigation'],
+  [class*='navbar'] {
+    display: none !important;
+  }
+
+  /* Sembunyikan sidebar */
+  aside, .sidebar, [data-sidebar], .sidebar-trigger {
+    display: none !important;
+  }
+
+  /* Sembunyikan tombol dan summary card */
+  button, .btn, .print\:hidden,
+  .summary-card, [class*='summary'] {
+    display: none !important;
+  }
+
+  /* Sembunyikan search dan filter */
+  input, select, [class*='search'],
+  [class*='filter'] {
+    display: none !important;
+  }
+
+  /* Reset layout container untuk kertas */
+  .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Pastikan elemen laporan terlihat */
+  .hidden.print\:block {
+    display: block !important;
+  }
+
+  /* Optimalisasi Tabel untuk Cetak */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  th, td {
+    padding: 6px !important;
+    word-wrap: break-word !important;
+    border: 1px solid #e2e8f0 !important;
+    font-size: 10px !important;
+  }
+}
