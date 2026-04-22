@@ -1,0 +1,21 @@
+{
+  "branches": [
+    {
+      "id": 2,
+      "name": "pjm",
+      "use_ppn": true
+    },
+    {
+      "id": 3,
+      "name": "ferio motor",
+      "use_ppn": false
+    }
+  ],
+  "integrated": [],
+  "legacy": [
+    {
+      "branch_id": 2,
+      "jumlah_data": "92"
+    }
+  ]
+}

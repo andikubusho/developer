@@ -1,0 +1,24 @@
+[
+  {
+    "id": 6,
+    "customerCode": "CUST-0003",
+    "amount": 1000,
+    "date": "2026-10-01T00:00:00.000Z",
+    "invoiceNumber": "INV/001",
+    "productName": "Label Test",
+    "brandCode": "FERIO",
+    "branchId": 3,
+    "createdAt": "2026-03-22T19:06:57.962Z"
+  },
+  {
+    "id": 15,
+    "customerCode": "BKLDUT001",
+    "amount": 200,
+    "date": "2026-04-01T03:27:17.287Z",
+    "invoiceNumber": "jhjk",
+    "productName": "PETRONAS CUTTING LABEL MOTOR",
+    "brandCode": "Petronas",
+    "branchId": 2,
+    "createdAt": "2026-04-01T03:27:17.287Z"
+  }
+]

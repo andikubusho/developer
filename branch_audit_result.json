@@ -1,0 +1,190 @@
+{
+  "branches": [
+    {
+      "id": 2,
+      "name": "pjm",
+      "use_ppn": true
+    },
+    {
+      "id": 3,
+      "name": "ferio motor",
+      "use_ppn": false
+    }
+  ],
+  "integrated": [],
+  "legacy": [
+    {
+      "branch_id": 2
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "role": "admin",
+      "branch_id": 3
+    },
+    {
+      "id": 2,
+      "username": "ariska",
+      "role": "admin super",
+      "branch_id": 2
+    },
+    {
+      "id": 3,
+      "username": "sales",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 4,
+      "username": "aes",
+      "role": "admin input ",
+      "branch_id": 2
+    },
+    {
+      "id": 5,
+      "username": "andreas",
+      "role": "supervisor",
+      "branch_id": 2
+    },
+    {
+      "id": 6,
+      "username": "atha",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 7,
+      "username": "tini",
+      "role": "admin input ",
+      "branch_id": 2
+    },
+    {
+      "id": 8,
+      "username": "ebest",
+      "role": "supervisor",
+      "branch_id": 2
+    },
+    {
+      "id": 9,
+      "username": "amir",
+      "role": "supervisor",
+      "branch_id": 2
+    },
+    {
+      "id": 10,
+      "username": "ahmad",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 11,
+      "username": "isa",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 12,
+      "username": "relly",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 13,
+      "username": "andi",
+      "role": "salesman",
+      "branch_id": 2
+    },
+    {
+      "id": 14,
+      "username": "rio",
+      "role": "gudang",
+      "branch_id": 2
+    },
+    {
+      "id": 15,
+      "username": "meta",
+      "role": "admin",
+      "branch_id": 2
+    },
+    {
+      "id": 16,
+      "username": "randi",
+      "role": "gudang",
+      "branch_id": 2
+    },
+    {
+      "id": 17,
+      "username": "putra",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 18,
+      "username": "dina",
+      "role": "admin input ",
+      "branch_id": 2
+    },
+    {
+      "id": 19,
+      "username": "cintia",
+      "role": "admin input ",
+      "branch_id": 2
+    },
+    {
+      "id": 20,
+      "username": "muhsin",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 21,
+      "username": "amin",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 22,
+      "username": "hari",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 23,
+      "username": "pepen",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 24,
+      "username": "dedy",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 25,
+      "username": "arya",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 26,
+      "username": "aldi",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 27,
+      "username": "michael",
+      "role": "sales",
+      "branch_id": 2
+    },
+    {
+      "id": 28,
+      "username": "angga",
+      "role": "sales",
+      "branch_id": 2
+    }
+  ]
+}
