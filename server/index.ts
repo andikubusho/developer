@@ -84,8 +84,8 @@ app.use((req, res, next) => {
     log("WARNING: DATABASE_URL is not set!");
   }
 
+    log("Step 0: Running database migrations...");
     try {
-      log("Step 0: Running database migrations...");
       const { db } = await import("./db");
       const { sql } = await import("drizzle-orm");
       await db.execute(sql`
