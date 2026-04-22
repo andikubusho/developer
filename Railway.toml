@@ -1,9 +1,10 @@
 [build]
 builder = "nixpacks"
+installCommand = "npm install"
 buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm start"
 healthCheckPath = "/api/ping"
 healthCheckTimeout = 100
-# Update to trigger redeploy: 2026-04-22
+restartPolicy = "always"
