@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'marketing' | 'owner';
+export type UserRole = 'admin' | 'marketing' | 'owner' | 'teknik' | 'keuangan' | 'audit' | 'hrd' | 'accounting';
 
 export type LeadStatus = 'no respon' | 'low' | 'medium' | 'hot';
 

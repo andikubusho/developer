@@ -22,6 +22,7 @@ import SitePlan from './pages/SitePlan';
 import FloorPlan from './pages/FloorPlan';
 import MarketingSchedule from './pages/MarketingSchedule';
 import MarketingMaster from './pages/MarketingMaster';
+import UserManagement from './pages/UserManagement';
 
 // Teknik
 import RAB from './pages/RAB';
@@ -140,6 +141,7 @@ export default function App() {
             <Route path="audit-transactions" element={<AuditTransactions />} />
             <Route path="audit-stock" element={<AuditStock />} />
             <Route path="audit-costs" element={<AuditCosts />} />
+            <Route path="user-management" element={<UserManagement />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

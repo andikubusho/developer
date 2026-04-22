@@ -268,11 +268,21 @@ const Sidebar: React.FC = () => {
       path: '/audit-costs', 
       divisions: ['audit'] 
     },
+    { 
+      name: 'User & Role', 
+      icon: ShieldCheck, 
+      path: '/user-management', 
+      divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'] 
+    },
   ];
 
-  const filteredMenu = menuItems.filter(item => 
-    division && item.divisions.includes(division)
-  );
+  const filteredMenu = menuItems.filter(item => {
+    const hasDivision = division && item.divisions.includes(division);
+    if (item.path === '/user-management') {
+      return hasDivision && (profile?.role === 'admin' || profile?.role === 'owner');
+    }
+    return hasDivision;
+  });
 
   return (
     <aside className="w-72 bg-slate-50 border-r border-slate-200/60 flex flex-col h-screen sticky top-0 z-40 print:hidden">
