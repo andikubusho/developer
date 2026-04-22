@@ -3,6 +3,10 @@ builder = "nixpacks"
 installCommand = "npm install"
 buildCommand = "npm run build"
 
+[build.environment]
+NIXPACKS_NODE_VERSION = "20"
+NODE_VERSION = "20"
+
 [deploy]
 startCommand = "npm start"
 healthCheckPath = "/api/ping"
