@@ -15,11 +15,12 @@ const MarketingSchedulePage: React.FC = () => {
   const [staff, setStaff] = useState<MarketingStaff[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFormEnabled, setIsFormEnabled] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-
+  const [editingSchedule, setEditingSchedule] = useState<MarketingSchedule | null>(null);
   const [formData, setFormData] = useState({
-    staff_id: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    staff_entries: [] as { staff_id: string, position: string }[]
   });
 
   useEffect(() => {
@@ -32,8 +33,8 @@ const MarketingSchedulePage: React.FC = () => {
       setLoading(true);
       if (isMockMode) {
         const defaultSchedules: MarketingSchedule[] = [
-          { id: '1', staff_id: '1', date: new Date().toISOString(), staff: { id: '1', name: 'Rina', address: '', phone: '', position: '' } },
-          { id: '2', staff_id: '2', date: new Date().toISOString(), staff: { id: '2', name: 'Doni', address: '', phone: '', position: '' } }
+          { id: '1', staff_id: '1', date: new Date().toISOString(), position: 'Kanvas', staff: { id: '1', name: 'Rina', address: '', phone: '', position: 'Senior Marketing' } },
+          { id: '2', staff_id: '2', date: new Date().toISOString(), position: 'Stay DV Village', staff: { id: '2', name: 'Doni', address: '', phone: '', position: 'Junior Marketing' } }
         ];
         setSchedules(getMockData<MarketingSchedule>('marketing_schedules', defaultSchedules));
         return;
@@ -77,38 +78,122 @@ const MarketingSchedulePage: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.staff_entries.length === 0) return;
+    
     setLoading(true);
     try {
       if (isMockMode) {
         const currentSchedules = getMockData<MarketingSchedule>('marketing_schedules', []);
-        const selectedStaff = staff.find(s => s.id === formData.staff_id);
         
-        const newSchedule = {
-          id: Math.random().toString(36).substr(2, 9),
-          staff_id: formData.staff_id,
-          date: formData.date,
-          staff: selectedStaff
-        };
-        
-        const updatedSchedules = [...currentSchedules, newSchedule];
-        saveMockData('marketing_schedules', updatedSchedules);
-        setSchedules(updatedSchedules);
-        setIsModalOpen(false);
+        if (editingSchedule) {
+          const entry = formData.staff_entries[0];
+          const updatedSchedules = currentSchedules.map(s => 
+            s.id === editingSchedule.id ? { ...s, position: entry.position } : s
+          );
+          saveMockData('marketing_schedules', updatedSchedules);
+          setSchedules(updatedSchedules);
+        } else {
+          const newSchedules = formData.staff_entries.map(entry => {
+            const selectedStaff = staff.find(s => s.id === entry.staff_id);
+            return {
+              id: Math.random().toString(36).substr(2, 9),
+              staff_id: entry.staff_id,
+              date: formData.date,
+              position: entry.position,
+              staff: selectedStaff
+            };
+          });
+          const updatedSchedules = [...currentSchedules, ...newSchedules];
+          saveMockData('marketing_schedules', updatedSchedules);
+          setSchedules(updatedSchedules);
+        }
+        closeModal();
         return;
       }
 
-      const { error } = await supabase
-        .from('marketing_schedules')
-        .insert([formData]);
+      if (editingSchedule) {
+        const entry = formData.staff_entries[0];
+        const { error } = await supabase
+          .from('marketing_schedules')
+          .update({ position: entry.position })
+          .eq('id', editingSchedule.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('marketing_schedules')
+          .insert(formData.staff_entries.map(entry => ({
+            staff_id: entry.staff_id,
+            date: formData.date,
+            position: entry.position
+          })));
+        if (error) throw error;
+      }
       
-      if (error) throw error;
       fetchSchedules();
-      setIsModalOpen(false);
+      closeModal();
     } catch (error) {
       console.error('Error saving schedule:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Hapus jadwal ini?')) return;
+    
+    try {
+      if (isMockMode) {
+        const currentSchedules = getMockData<MarketingSchedule>('marketing_schedules', []);
+        const updatedSchedules = currentSchedules.filter(s => s.id !== id);
+        saveMockData('marketing_schedules', updatedSchedules);
+        setSchedules(updatedSchedules);
+        closeModal();
+        return;
+      }
+
+      const { error } = await supabase
+        .from('marketing_schedules')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      fetchSchedules();
+      closeModal();
+    } catch (error) {
+      console.error('Error deleting schedule:', error);
+    }
+  };
+
+
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setIsFormEnabled(false);
+    setEditingSchedule(null);
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      staff_entries: []
+    });
+  };
+
+  const openAddModal = (dateStr: string) => {
+    setEditingSchedule(null);
+    setFormData({
+      date: dateStr,
+      staff_entries: []
+    });
+    setIsFormEnabled(true);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (schedule: MarketingSchedule) => {
+    setEditingSchedule(schedule);
+    setFormData({
+      date: schedule.date.split('T')[0],
+      staff_entries: [{ staff_id: schedule.staff_id, position: schedule.position || '' }]
+    });
+    setIsFormEnabled(true);
+    setIsModalOpen(true);
   };
 
   const getDaysInMonth = (year: number, month: number) => {
@@ -169,10 +254,6 @@ const MarketingSchedulePage: React.FC = () => {
             <p className="text-slate-500">Atur jadwal piket dan kunjungan marketing</p>
           </div>
         </div>
-        <Button className="w-full sm:w-auto" onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Input Jadwal
-        </Button>
       </div>
 
       <Card className="p-6">
@@ -204,18 +285,26 @@ const MarketingSchedulePage: React.FC = () => {
             const daySchedules = schedules.filter(s => s.date.startsWith(dateStr));
             
             return (
-              <div key={day} className="bg-white p-2 min-h-[120px] border-t border-slate-100">
+              <div 
+                key={day} 
+                className="bg-white p-2 min-h-[120px] border-t border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+                onClick={() => openAddModal(dateStr)}
+              >
                 <span className="text-sm font-medium text-slate-400">{day}</span>
                 <div className="mt-2 space-y-1">
                   {daySchedules.map(s => (
                     <div 
                       key={s.id} 
                       className={cn(
-                        "text-[10px] px-2 py-1 rounded border truncate font-medium",
+                        "text-[10px] px-2 py-1 rounded border truncate font-medium flex justify-between items-center group cursor-pointer hover:brightness-95",
                         getStaffColor(s.staff?.name || '')
                       )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditModal(s);
+                      }}
                     >
-                      {s.staff?.name}
+                      <span className="truncate">{s.staff?.name} - {s.position}</span>
                     </div>
                   ))}
                 </div>
@@ -227,39 +316,110 @@ const MarketingSchedulePage: React.FC = () => {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Input Jadwal Marketing"
+        onClose={closeModal}
+        title={editingSchedule ? "Edit Jadwal Marketing" : "Input Jadwal Marketing"}
       >
-        <form className="space-y-4" onSubmit={handleSave}>
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Marketing</label>
-            <select 
-              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={formData.staff_id}
-              onChange={(e) => setFormData({ ...formData, staff_id: e.target.value })}
-              required
-            >
-              <option value="">-- Pilih Marketing --</option>
-              {staff.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+        <div className="space-y-6">
+          <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+            <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">Tanggal Terpilih</p>
+            <p className="text-lg font-bold text-slate-900">
+              {new Date(formData.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
           </div>
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Tanggal</label>
-            <input 
-              type="date" 
-              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" 
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              required
-            />
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button type="submit" isLoading={loading}>Simpan Jadwal</Button>
-          </div>
-        </form>
+
+          <form className="space-y-4" onSubmit={handleSave}>
+            {!editingSchedule && (
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Marketing (Bisa banyak)</label>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-slate-300 rounded-lg bg-white">
+                  {staff.map(s => (
+                    <label key={s.id} className="flex items-center gap-2 text-sm p-1 hover:bg-slate-50 rounded cursor-pointer">
+                      <input 
+                        type="checkbox"
+                        checked={formData.staff_entries.some(entry => entry.staff_id === s.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({
+                              ...formData,
+                              staff_entries: [...formData.staff_entries, { staff_id: s.id, position: '' }]
+                            });
+                          } else {
+                            setFormData({
+                              ...formData,
+                              staff_entries: formData.staff_entries.filter(entry => entry.staff_id !== s.id)
+                            });
+                          }
+                        }}
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      {s.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {editingSchedule && (
+               <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Marketing</label>
+                <p className="text-sm font-bold text-slate-900 border border-slate-200 p-2.5 rounded-lg bg-slate-50">
+                  {editingSchedule.staff?.name}
+                </p>
+              </div>
+            )}
+
+            {formData.staff_entries.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <label className="text-sm font-medium text-slate-700 block">
+                  {editingSchedule ? "Edit Posisi / Tugas:" : "Posisi / Tugas per Marketing:"}
+                </label>
+                {formData.staff_entries.map(entry => {
+                  const s = staff.find(staffItem => staffItem.id === entry.staff_id);
+                  return (
+                    <div key={entry.staff_id} className="flex flex-col gap-1">
+                      {!editingSchedule && <span className="text-xs font-semibold text-slate-500">{s?.name}</span>}
+                      <input 
+                        type="text"
+                        placeholder="Contoh: Kanvas, Stay DV Village..."
+                        autoFocus
+                        value={entry.position}
+                        onChange={(e) => {
+                          const updatedEntries = formData.staff_entries.map(item => 
+                            item.staff_id === entry.staff_id ? { ...item, position: e.target.value } : item
+                          );
+                          setFormData({ ...formData, staff_entries: updatedEntries });
+                        }}
+                        className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row justify-between gap-3 mt-8">
+              <div>
+                {editingSchedule && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 w-full sm:w-auto"
+                    onClick={() => handleDelete(editingSchedule.id)}
+                  >
+                    Hapus Jadwal
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" onClick={closeModal} className="flex-1 sm:flex-none">Batal</Button>
+                <Button type="submit" isLoading={loading} disabled={formData.staff_entries.length === 0} className="flex-1 sm:flex-none">
+                  {editingSchedule ? "Simpan Perubahan" : "Simpan Jadwal"}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );

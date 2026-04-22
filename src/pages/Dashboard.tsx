@@ -21,7 +21,11 @@ import {
   Map,
   Layout,
   ShoppingCart,
-  ChevronRight
+  ChevronRight,
+  Building2,
+  HardHat,
+  Package,
+  ClipboardList
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -46,34 +50,142 @@ import { useAuth } from '../contexts/AuthContext';
 const Dashboard: React.FC = () => {
   const { profile, isMockMode, division, setDivision } = useAuth();
   const [stats, setStats] = useState({
-    totalIncome: 0,
+    // Marketing Stats
+    totalLeads: 0,
+    pendingFollowUps: 0,
+    totalDeposits: 0,
     totalSales: 0,
+    // Teknik Stats
+    activeProjects: 0,
+    ongoingConstruction: 0,
+    lowStockMaterials: 0,
+    pendingPRs: 0,
+    // General Stats
     totalUnits: 0,
-    overdueAmount: 0,
     soldUnits: 0,
-    availableUnits: 35,
-    totalLeads: 124,
-    pendingFollowUps: 18,
-    totalDeposits: 45000000,
-    activePromos: 3,
-    marketingStaff: 8,
-    todaySchedules: 2,
+    availableUnits: 0,
   });
   const [loading, setLoading] = useState(true);
 
+  // Marketing states
   const [overdueInstallments, setOverdueInstallments] = useState<any[]>([]);
   const [recentLeads, setRecentLeads] = useState<any[]>([]);
   const [todaySchedules, setTodaySchedules] = useState<any[]>([]);
 
+  // Teknik states
+  const [constructionProgress, setConstructionProgress] = useState<any[]>([]);
+  const [materialStock, setMaterialStock] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [activeSpks, setActiveSpks] = useState<any[]>([]);
+
   useEffect(() => {
     if (division === 'marketing') {
-      fetchDashboardData();
-      fetchOverdueInstallments();
-      fetchMarketingSpecifics();
+      fetchMarketingData();
+    } else if (division === 'teknik') {
+      fetchTeknikData();
     } else {
       setLoading(false);
     }
   }, [division]);
+
+  const fetchMarketingData = async () => {
+    setLoading(true);
+    await Promise.all([
+      fetchGeneralStats(),
+      fetchMarketingStats(),
+      fetchOverdueInstallments(),
+      fetchMarketingSpecifics()
+    ]);
+    setLoading(false);
+  };
+
+  const fetchTeknikData = async () => {
+    setLoading(true);
+    await Promise.all([
+      fetchGeneralStats(),
+      fetchTeknikStats(),
+      fetchTeknikSpecifics()
+    ]);
+    setLoading(false);
+  };
+
+  const fetchGeneralStats = async () => {
+    if (isMockMode) {
+      setStats(prev => ({
+        ...prev,
+        totalUnits: 50,
+        soldUnits: 15,
+        availableUnits: 35
+      }));
+      return;
+    }
+    
+    try {
+      const { data: units } = await supabase.from('units').select('status');
+      if (units) {
+        setStats(prev => ({
+          ...prev,
+          totalUnits: units.length,
+          soldUnits: units.filter(u => u.status === 'sold').length,
+          availableUnits: units.filter(u => u.status === 'available').length
+        }));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchMarketingStats = async () => {
+    if (isMockMode) {
+      setStats(prev => ({
+        ...prev,
+        totalLeads: 124,
+        pendingFollowUps: 18,
+        totalDeposits: 45000000,
+        totalSales: 15
+      }));
+      return;
+    }
+    // Real Supabase fetching for marketing
+  };
+
+  const fetchTeknikStats = async () => {
+    if (isMockMode) {
+      setStats(prev => ({
+        ...prev,
+        activeProjects: 3,
+        ongoingConstruction: 12,
+        lowStockMaterials: 5,
+        pendingPRs: 8
+      }));
+      return;
+    }
+    // Real Supabase fetching for teknik
+  };
+
+  const fetchTeknikSpecifics = async () => {
+    if (isMockMode) {
+      setConstructionProgress([
+        { id: '1', unit: 'A-01', project: 'Golden Canyon', percentage: 75, status: 'On Progress' },
+        { id: '2', unit: 'B-05', project: 'Golden Canyon', percentage: 40, status: 'Foundation' },
+        { id: '3', unit: 'C-02', project: 'DV Village', percentage: 90, status: 'Finishing' },
+      ]);
+      setMaterialStock([
+        { id: '1', name: 'Semen Gresik', stock: 10, unit: 'Sak', min: 20 },
+        { id: '2', name: 'Besi 10mm', stock: 5, unit: 'Batang', min: 15 },
+        { id: '3', name: 'Batu Bata', stock: 500, unit: 'Pcs', min: 1000 },
+      ]);
+      setPendingRequests([
+        { id: '1', item: 'Pipa PVC 3/4', qty: 50, date: '2026-03-25' },
+        { id: '2', item: 'Cat Tembok Putih', qty: 10, date: '2026-03-26' },
+      ]);
+      setActiveSpks([
+        { id: '1', contractor: 'CV Jati Makmur', work: 'Pekerjaan Atap A-01', value: 25000000 },
+        { id: '2', contractor: 'Bpk. Sumarno', work: 'Plester Dinding B-05', value: 12000000 },
+      ]);
+      return;
+    }
+  };
 
   const fetchMarketingSpecifics = async () => {
     if (isMockMode) {
@@ -196,7 +308,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const statCards = [
+  const marketingStatCards = [
     { 
       title: 'Calon Konsumen', 
       value: formatNumber(stats.totalLeads), 
@@ -238,6 +350,51 @@ const Dashboard: React.FC = () => {
       path: '/sales'
     },
   ];
+
+  const teknikStatCards = [
+    { 
+      title: 'Proyek Aktif', 
+      value: formatNumber(stats.activeProjects), 
+      icon: Building2, 
+      color: 'text-indigo-600', 
+      bg: 'bg-indigo-50/50',
+      trend: 'Stabil',
+      isUp: true,
+      path: '/projects'
+    },
+    { 
+      title: 'Unit Dibangun', 
+      value: formatNumber(stats.ongoingConstruction), 
+      icon: HardHat, 
+      color: 'text-amber-600', 
+      bg: 'bg-amber-50/50',
+      trend: '+2 Minggu ini',
+      isUp: true,
+      path: '/construction-progress'
+    },
+    { 
+      title: 'Stok Kritis', 
+      value: formatNumber(stats.lowStockMaterials), 
+      icon: Package, 
+      color: 'text-rose-600', 
+      bg: 'bg-rose-50/50',
+      trend: 'Segera Order',
+      isUp: false,
+      path: '/materials'
+    },
+    { 
+      title: 'PR Pending', 
+      value: formatNumber(stats.pendingPRs), 
+      icon: ClipboardList, 
+      color: 'text-emerald-600', 
+      bg: 'bg-emerald-50/50',
+      trend: 'Butuh Approval',
+      isUp: true,
+      path: '/purchase-requests'
+    },
+  ];
+
+  const statCards = division === 'marketing' ? marketingStatCards : teknikStatCards;
 
   const pieData = [
     { name: 'Terjual', value: stats.soldUnits },
@@ -307,91 +464,172 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <Card title="Calon Konsumen Terbaru" subtitle="Peluang penjualan yang masuk hari ini">
-            <Table>
-              <THead>
-                <TR isHoverable={false}>
-                  <TH>Nama Konsumen</TH>
-                  <TH>Status</TH>
-                  <TH>Tanggal</TH>
-                  <TH className="text-right">Aksi</TH>
-                </TR>
-              </THead>
-              <TBody>
-                {recentLeads.map((lead) => (
-                  <TR key={lead.id}>
-                    <TD>
-                      <p className="font-black text-slate-900">{lead.name}</p>
-                      <p className="text-xs text-slate-400 font-bold">{lead.phone}</p>
-                    </TD>
-                    <TD>
-                      <span className={cn(
-                        'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest',
-                        lead.status === 'hot' ? 'bg-rose-100/50 text-rose-600' :
-                        lead.status === 'medium' ? 'bg-amber-100/50 text-amber-600' :
-                        'bg-indigo-100/50 text-indigo-600'
-                      )}>
-                        {lead.status}
-                      </span>
-                    </TD>
-                    <TD className="text-slate-400 font-bold">{formatDate(lead.date)}</TD>
-                    <TD className="text-right">
-                      <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-slate-100">
-                        <MessageSquare className="w-4 h-4 text-primary" />
-                      </Button>
-                    </TD>
+          {division === 'marketing' ? (
+            <Card title="Calon Konsumen Terbaru" subtitle="Peluang penjualan yang masuk hari ini">
+              <Table>
+                <THead>
+                  <TR isHoverable={false}>
+                    <TH>Nama Konsumen</TH>
+                    <TH>Status</TH>
+                    <TH>Tanggal</TH>
+                    <TH className="text-right">Aksi</TH>
                   </TR>
-                ))}
-              </TBody>
-            </Table>
-            <div className="mt-6">
-              <Button variant="outline" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12">
-                Lihat Seluruh Lead
-              </Button>
-            </div>
-          </Card>
+                </THead>
+                <TBody>
+                  {recentLeads.map((lead) => (
+                    <TR key={lead.id}>
+                      <TD>
+                        <p className="font-black text-slate-900">{lead.name}</p>
+                        <p className="text-xs text-slate-400 font-bold">{lead.phone}</p>
+                      </TD>
+                      <TD>
+                        <span className={cn(
+                          'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest',
+                          lead.status === 'hot' ? 'bg-rose-100/50 text-rose-600' :
+                          lead.status === 'medium' ? 'bg-amber-100/50 text-amber-600' :
+                          'bg-indigo-100/50 text-indigo-600'
+                        )}>
+                          {lead.status}
+                        </span>
+                      </TD>
+                      <TD className="text-slate-400 font-bold">{formatDate(lead.date)}</TD>
+                      <TD className="text-right">
+                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-slate-100">
+                          <MessageSquare className="w-4 h-4 text-primary" />
+                        </Button>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </Card>
+          ) : (
+            <Card title="Progress Pembangunan" subtitle="Update terbaru lapangan">
+              <Table>
+                <THead>
+                  <TR isHoverable={false}>
+                    <TH>Unit / Proyek</TH>
+                    <TH>Progress</TH>
+                    <TH>Status</TH>
+                    <TH className="text-right">Aksi</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {constructionProgress.map((cp) => (
+                    <TR key={cp.id}>
+                      <TD>
+                        <p className="font-black text-slate-900">{cp.unit}</p>
+                        <p className="text-xs text-slate-400 font-bold">{cp.project}</p>
+                      </TD>
+                      <TD>
+                        <div className="w-full bg-slate-100 rounded-full h-2 mt-2 max-w-[100px]">
+                          <div className="bg-primary h-2 rounded-full" style={{ width: `${cp.percentage}%` }}></div>
+                        </div>
+                        <span className="text-[10px] font-black text-slate-600">{cp.percentage}%</span>
+                      </TD>
+                      <TD>
+                        <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-indigo-100/50 text-indigo-600">
+                          {cp.status}
+                        </span>
+                      </TD>
+                      <TD className="text-right">
+                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-slate-100">
+                          <ChevronRight className="w-4 h-4 text-primary" />
+                        </Button>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </Card>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card title="Dokumen Proyek" subtitle="Akses cepat materi pemasaran">
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: 'Price List', path: '/price-list', icon: FileText, color: 'text-primary', bg: 'bg-indigo-50/50' },
-                  { label: 'Siteplan', path: '/site-plan', icon: Map, color: 'text-emerald-500', bg: 'bg-emerald-50/50' },
-                  { label: 'Denah Unit', path: '/floor-plan', icon: Layout, color: 'text-amber-500', bg: 'bg-amber-50/50' },
-                  { label: 'Promo Unit', path: '/promos', icon: Tag, color: 'text-rose-500', bg: 'bg-rose-50/50' },
-                ].map((btn) => (
-                  <button 
-                    key={btn.label}
-                    onClick={() => window.location.href = btn.path}
-                    className="group p-6 flex flex-col items-center gap-3 rounded-2xl bg-white border border-slate-100 transition-all hover:bg-slate-50 hover:shadow-premium hover:-translate-y-1"
-                  >
-                    <div className={cn('p-3 rounded-xl transition-transform group-hover:scale-110', btn.bg)}>
-                      <btn.icon className={cn('w-6 h-6', btn.color)} />
-                    </div>
-                    <span className="text-xs font-black text-slate-700 uppercase tracking-widest">{btn.label}</span>
-                  </button>
-                ))}
-              </div>
-            </Card>
-
-            <Card title="Jadwal Hari Ini" subtitle="Kegiatan tim di lapangan">
-              <div className="space-y-4">
-                {todaySchedules.map((schedule) => (
-                  <div key={schedule.id} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50/50 border border-slate-100/50 group hover:bg-indigo-50/30 transition-colors">
-                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-primary font-black text-[10px] shadow-sm tracking-tighter">
-                      {schedule.time}
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-slate-900 group-hover:text-primary transition-colors">{schedule.activity}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">PIC: {schedule.staff}</p>
-                    </div>
+            {division === 'marketing' ? (
+              <>
+                <Card title="Dokumen Proyek" subtitle="Akses cepat materi pemasaran">
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { label: 'Price List', path: '/price-list', icon: FileText, color: 'text-primary', bg: 'bg-indigo-50/50' },
+                      { label: 'Siteplan', path: '/site-plan', icon: Map, color: 'text-emerald-500', bg: 'bg-emerald-50/50' },
+                      { label: 'Denah Unit', path: '/floor-plan', icon: Layout, color: 'text-amber-500', bg: 'bg-amber-50/50' },
+                      { label: 'Promo Unit', path: '/promos', icon: Tag, color: 'text-rose-500', bg: 'bg-rose-50/50' },
+                    ].map((btn) => (
+                      <button 
+                        key={btn.label}
+                        onClick={() => window.location.href = btn.path}
+                        className="group p-6 flex flex-col items-center gap-3 rounded-2xl bg-white border border-slate-100 transition-all hover:bg-slate-50 hover:shadow-premium hover:-translate-y-1"
+                      >
+                        <div className={cn('p-3 rounded-xl transition-transform group-hover:scale-110', btn.bg)}>
+                          <btn.icon className={cn('w-6 h-6', btn.color)} />
+                        </div>
+                        <span className="text-xs font-black text-slate-700 uppercase tracking-widest">{btn.label}</span>
+                      </button>
+                    ))}
                   </div>
-                ))}
-                <Button variant="ghost" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2">
-                  Lihat Kalender Kerja
-                </Button>
-              </div>
-            </Card>
+                </Card>
+
+                <Card title="Jadwal Hari Ini" subtitle="Kegiatan tim di lapangan">
+                  <div className="space-y-4">
+                    {todaySchedules.map((schedule) => (
+                      <div key={schedule.id} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50/50 border border-slate-100/50 group hover:bg-indigo-50/30 transition-colors">
+                        <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-primary font-black text-[10px] shadow-sm tracking-tighter">
+                          {schedule.time}
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-slate-900 group-hover:text-primary transition-colors">{schedule.activity}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">PIC: {schedule.staff}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <Button variant="ghost" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2">
+                      Lihat Kalender Kerja
+                    </Button>
+                  </div>
+                </Card>
+              </>
+            ) : (
+              <>
+                <Card title="Purchase Request" subtitle="Permintaan material pending">
+                  <div className="space-y-4">
+                    {pendingRequests.map((pr) => (
+                      <div key={pr.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-slate-100/50 group hover:bg-indigo-50/30 transition-colors">
+                        <div>
+                          <p className="text-sm font-black text-slate-900">{pr.item}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Qty: {pr.qty} • {formatDate(pr.date)}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg">
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2" onClick={() => window.location.href = '/purchase-requests'}>
+                      Lihat Semua Request
+                    </Button>
+                  </div>
+                </Card>
+
+                <Card title="SPK Kontraktor" subtitle="Kontrak aktif saat ini">
+                  <div className="space-y-4">
+                    {activeSpks.map((spk) => (
+                      <div key={spk.id} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50/50 border border-slate-100/50">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-black text-slate-900 truncate">{spk.contractor}</p>
+                          <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{spk.work}</p>
+                        </div>
+                        <p className="text-xs font-black text-slate-900">{formatCurrency(spk.value)}</p>
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2" onClick={() => window.location.href = '/spk'}>
+                      Kelola SPK
+                    </Button>
+                  </div>
+                </Card>
+              </>
+            )}
           </div>
         </div>
 
@@ -431,54 +669,83 @@ const Dashboard: React.FC = () => {
             </div>
           </Card>
 
-          <Card title="Peringatan Tunggakan" subtitle="Tindakan segera diperlukan">
-            <div className="space-y-4">
-              {overdueInstallments.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 text-sm">
-                  <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-500 opacity-40" />
+          {division === 'marketing' ? (
+            <Card title="Peringatan Tunggakan" subtitle="Tindakan segera diperlukan">
+              <div className="space-y-4">
+                {overdueInstallments.length === 0 ? (
+                  <div className="text-center py-12 text-slate-500 text-sm">
+                    <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle2 className="w-8 h-8 text-emerald-500 opacity-40" />
+                    </div>
+                    <p className="font-bold text-slate-400">Semua cicilan aman.</p>
                   </div>
-                  <p className="font-bold text-slate-400">Semua cicilan aman.</p>
-                </div>
-              ) : (
-                overdueInstallments.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-rose-50/50 border border-rose-100/50 group hover:shadow-premium transition-all">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 shadow-sm transition-transform group-hover:rotate-12">
-                        <AlertTriangle className="w-5 h-5" />
+                ) : (
+                  overdueInstallments.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-rose-50/50 border border-rose-100/50 group hover:shadow-premium transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 shadow-sm transition-transform group-hover:rotate-12">
+                          <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <div className="overflow-hidden">
+                          <p className="text-sm font-black text-slate-900 truncate">{(item as any).sales?.customers?.name}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap mt-0.5">Jatuh tempo: {formatDate(item.due_date)}</p>
+                        </div>
                       </div>
-                      <div className="overflow-hidden">
-                        <p className="text-sm font-black text-slate-900 truncate">{(item as any).sales?.customers?.name}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap mt-0.5">Jatuh tempo: {formatDate(item.due_date)}</p>
+                      <div className="text-right flex-shrink-0 flex items-center gap-4 pl-2">
+                        <div className="hidden sm:block">
+                          <p className="text-[13px] font-black text-rose-600 tracking-tight">{formatCurrency(item.amount)}</p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="p-0 h-10 w-10 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50 rounded-xl"
+                          onClick={() => {
+                            const phone = (item as any).sales?.customers?.phone || '';
+                            const name = (item as any).sales?.customers?.name || '';
+                            const amount = formatCurrency(item.amount);
+                            const message = `Halo Bapak/Ibu ${name}, ini pengingat untuk pembayaran cicilan properti Anda sebesar ${amount} yang telah jatuh tempo pada ${formatDate(item.due_date)}. Mohon segera melakukan pembayaran. Terima kasih.`;
+                            window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+                          }}
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0 flex items-center gap-4 pl-2">
-                      <div className="hidden sm:block">
-                        <p className="text-[13px] font-black text-rose-600 tracking-tight">{formatCurrency(item.amount)}</p>
+                  ))
+                )}
+              </div>
+            </Card>
+          ) : (
+            <Card title="Stok Material Kritis" subtitle="Segera lakukan pemesanan">
+              <div className="space-y-4">
+                {materialStock.filter(m => m.stock < m.min).length === 0 ? (
+                  <div className="text-center py-12 text-slate-500 text-sm">
+                    <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle2 className="w-8 h-8 text-emerald-500 opacity-40" />
+                    </div>
+                    <p className="font-bold text-slate-400">Stok material aman.</p>
+                  </div>
+                ) : (
+                  materialStock.filter(m => m.stock < m.min).map((m) => (
+                    <div key={m.id} className="flex items-center justify-between p-4 rounded-2xl bg-rose-50/50 border border-rose-100/50 group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 shadow-sm">
+                          <Package className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-slate-900">{m.name}</p>
+                          <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mt-0.5">Stok: {m.stock} {m.unit} (Min: {m.min})</p>
+                        </div>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="p-0 h-10 w-10 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50 rounded-xl"
-                        onClick={() => {
-                          const phone = (item as any).sales?.customers?.phone || '';
-                          const name = (item as any).sales?.customers?.name || '';
-                          const amount = formatCurrency(item.amount);
-                          const message = `Halo Bapak/Ibu ${name}, ini pengingat untuk pembayaran cicilan properti Anda sebesar ${amount} yang telah jatuh tempo pada ${formatDate(item.due_date)}. Mohon segera melakukan pembayaran. Terima kasih.`;
-                          window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
-                        }}
-                      >
-                        <MessageSquare className="w-4 h-4" />
+                      <Button variant="ghost" size="sm" className="text-primary font-black text-[10px] h-10 px-3 rounded-xl hover:bg-white" onClick={() => window.location.href = '/purchase-requests'}>
+                        ORDER
                       </Button>
                     </div>
-                  </div>
-                ))
-              )}
-              <Button variant="ghost" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2" onClick={() => window.location.href = '/payments'}>
-                Buka Data Pembayaran
-              </Button>
-            </div>
-          </Card>
+                  ))
+                )}
+              </div>
+            </Card>
+          )}
         </div>
       </div>
     </div>

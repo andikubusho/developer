@@ -152,6 +152,18 @@ const Sidebar: React.FC = () => {
       path: '/spk', 
       divisions: ['teknik', 'audit'] 
     },
+    { 
+      name: 'Opname/Upah', 
+      icon: ClipboardList, 
+      path: '/opname', 
+      divisions: ['teknik', 'audit'] 
+    },
+    { 
+      name: 'Real Cost', 
+      icon: BarChart3, 
+      path: '/real-cost', 
+      divisions: ['teknik', 'audit'] 
+    },
 
     // Keuangan Specific Menus
     { 

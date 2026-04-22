@@ -88,6 +88,7 @@ export interface MarketingSchedule {
   id: string;
   staff_id: string;
   date: string;
+  position?: string;
   staff?: MarketingStaff;
 }
 
@@ -192,6 +193,23 @@ export interface SPK {
   created_at: string;
 }
 
+export interface ProjectOpname {
+  id: string;
+  date: string;
+  project_id: string;
+  unit_id?: string;
+  spk_id?: string;
+  worker_name: string;
+  work_description: string;
+  previous_percentage: number;
+  current_percentage: number;
+  amount: number;
+  status: 'pending' | 'approved' | 'paid';
+  project?: Project;
+  unit?: Unit;
+  spk?: SPK;
+}
+
 export interface KPRDisbursement {
   id: string;
   sale_id: string;
@@ -286,6 +304,7 @@ export interface Material {
 export interface PurchaseOrder {
   id: string;
   po_number: string;
+  project_id: string;
   material_id: string;
   supplier: string;
   quantity: number;

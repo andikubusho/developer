@@ -28,6 +28,8 @@ import RAB from './pages/RAB';
 import ConstructionProgress from './pages/ConstructionProgress';
 import PurchaseRequests from './pages/PurchaseRequests';
 import SPK from './pages/SPK';
+import Opname from './pages/Opname';
+import RealCost from './pages/RealCost';
 
 // Keuangan
 import KPRDisbursement from './pages/KPRDisbursement';
@@ -113,6 +115,8 @@ export default function App() {
             <Route path="construction-progress" element={<ConstructionProgress />} />
             <Route path="purchase-requests" element={<PurchaseRequests />} />
             <Route path="spk" element={<SPK />} />
+            <Route path="opname" element={<Opname />} />
+            <Route path="real-cost" element={<RealCost />} />
 
             {/* Keuangan */}
             <Route path="kpr-disbursement" element={<KPRDisbursement />} />
