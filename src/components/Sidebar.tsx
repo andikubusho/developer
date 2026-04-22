@@ -275,7 +275,7 @@ const Sidebar: React.FC = () => {
   );
 
   return (
-    <aside className="w-72 bg-slate-50 border-r border-slate-200/60 flex flex-col h-screen sticky top-0 z-40">
+    <aside className="w-72 bg-slate-50 border-r border-slate-200/60 flex flex-col h-screen sticky top-0 z-40 print:hidden">
       <div className="p-8 pb-4 flex items-center gap-3">
         <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 transition-transform hover:scale-110 duration-300">
           <Building2 className="text-white w-5 h-5" />

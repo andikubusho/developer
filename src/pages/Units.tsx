@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Filter, Home, Tag, CheckCircle2, Clock, ArrowLeft } from 'lucide-react';
+import { Plus, Search, Filter, Home, Tag, CheckCircle2, Clock, ArrowLeft, Printer, FileDown } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { supabase } from '../lib/supabase';
 import { Unit } from '../types';
 import { Button } from '../components/ui/Button';
@@ -16,6 +18,7 @@ const Units: React.FC = () => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchUnits();
@@ -101,9 +104,69 @@ const Units: React.FC = () => {
     fetchUnits();
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleExportPDF = async () => {
+    const element = document.getElementById('units-report');
+    if (!element) return;
+
+    try {
+      setIsExporting(true);
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Daftar-Unit-Properti-${new Date().toLocaleDateString('id-ID')}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Gagal mengekspor PDF.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div id="units-report" className="space-y-6">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page { 
+            size: landscape; 
+            margin: 5mm !important; 
+          }
+          body {
+            background: white !important;
+            -webkit-print-color-adjust: exact;
+          }
+          .print-no-shadow {
+            box-shadow: none !important;
+            border: 1px solid #e2e8f0 !important;
+          }
+        }
+      `}} />
+
+      <div className="hidden print:block text-center mb-6">
+        <h1 className="text-xl font-bold text-slate-900 uppercase">Daftar Stok Unit Properti - Abadi Lestari Mandiri</h1>
+        <p className="text-xs text-slate-500 mt-1">Dicetak pada: {new Date().toLocaleString('id-ID')}</p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-4">
           <Button 
             variant="ghost" 
@@ -121,10 +184,31 @@ const Units: React.FC = () => {
             <p className="text-slate-500">Daftar semua unit di setiap proyek</p>
           </div>
         </div>
-        <Button className="w-full sm:w-auto" onClick={handleAdd}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah Unit
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handlePrint}
+            className="flex items-center gap-2"
+          >
+            <Printer className="w-4 h-4" />
+            <span className="hidden sm:inline">Cetak</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportPDF}
+            isLoading={isExporting}
+            className="flex items-center gap-2"
+          >
+            <FileDown className="w-4 h-4" />
+            <span className="hidden sm:inline">PDF</span>
+          </Button>
+          <Button className="w-full sm:w-auto" onClick={handleAdd}>
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Unit
+          </Button>
+        </div>
       </div>
 
       <Modal 
@@ -181,8 +265,8 @@ const Units: React.FC = () => {
         </Card>
       </div>
 
-      <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+      <Card className="p-0 print-no-shadow">
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 print:hidden">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input 
@@ -207,7 +291,7 @@ const Units: React.FC = () => {
                 <th className="px-6 py-3 font-semibold">Tipe</th>
                 <th className="px-6 py-3 font-semibold">Harga</th>
                 <th className="px-6 py-3 font-semibold">Status</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
+                <th className="px-6 py-3 font-semibold text-right print:hidden">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -243,7 +327,7 @@ const Units: React.FC = () => {
                          unit.status === 'booked' ? 'Booked' : 'Terjual'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right print:hidden">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(unit)}>Edit</Button>
                     </td>
                   </tr>

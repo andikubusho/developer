@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Plus, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, ArrowLeft, ChevronLeft, ChevronRight, Printer, FileDown } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -18,6 +20,7 @@ const MarketingSchedulePage: React.FC = () => {
   const [isFormEnabled, setIsFormEnabled] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editingSchedule, setEditingSchedule] = useState<MarketingSchedule | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     staff_entries: [] as { staff_id: string, position: string }[]
@@ -222,6 +225,44 @@ const MarketingSchedulePage: React.FC = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleExportPDF = async () => {
+    const element = document.getElementById('calendar-content');
+    if (!element) return;
+
+    try {
+      setIsExporting(true);
+      const canvas = await html2canvas(element, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Jadwal-Marketing-${monthNames[currentDate.getMonth()]}-${currentDate.getFullYear()}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Gagal mengekspor PDF. Silakan coba lagi.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const getStaffColor = (name: string) => {
     const colors = [
       'bg-indigo-100 text-indigo-700 border-indigo-200',
@@ -236,7 +277,35 @@ const MarketingSchedulePage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page { 
+            size: landscape; 
+            margin: 5mm !important; 
+          }
+          body {
+            background: white !important;
+            -webkit-print-color-adjust: exact;
+          }
+          .print-compact-row {
+            min-height: 95px !important;
+            height: 95px !important;
+            padding: 4px !important;
+            overflow: hidden !important;
+          }
+          .print-schedule-item {
+            font-size: 8px !important;
+            padding: 1px 4px !important;
+            margin-bottom: 2px !important;
+          }
+        }
+      `}} />
+      
+      <div className="hidden print:block text-center mb-4">
+        <h1 className="text-xl font-bold text-slate-900 uppercase">Jadwal marketing abadi lestari mandiri</h1>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-4">
           <Button 
             variant="ghost" 
@@ -254,14 +323,36 @@ const MarketingSchedulePage: React.FC = () => {
             <p className="text-slate-500">Atur jadwal piket dan kunjungan marketing</p>
           </div>
         </div>
+
+        <div className="flex gap-2 print:hidden">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handlePrint}
+            className="flex items-center gap-2"
+          >
+            <Printer className="w-4 h-4" />
+            <span className="hidden sm:inline">Cetak Layar</span>
+          </Button>
+          <Button 
+            variant="primary" 
+            size="sm" 
+            onClick={handleExportPDF}
+            isLoading={isExporting}
+            className="flex items-center gap-2"
+          >
+            <FileDown className="w-4 h-4" />
+            <span className="hidden sm:inline">Export ke PDF</span>
+          </Button>
+        </div>
       </div>
 
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-8">
+      <Card id="calendar-content" className="p-6 border-none shadow-none sm:border sm:shadow-premium print:p-0 print:border-none print:shadow-none">
+        <div className="flex items-center justify-between mb-8 print:mb-4">
           <h2 className="text-xl font-bold text-slate-900">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 print:hidden">
             <Button variant="outline" size="sm" onClick={prevMonth}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -278,7 +369,7 @@ const MarketingSchedulePage: React.FC = () => {
             </div>
           ))}
           {blanks.map(i => (
-            <div key={`blank-${i}`} className="bg-white p-4 min-h-[120px]"></div>
+            <div key={`blank-${i}`} className="bg-white p-4 min-h-[120px] print-compact-row"></div>
           ))}
           {days.map(day => {
             const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0];
@@ -287,16 +378,16 @@ const MarketingSchedulePage: React.FC = () => {
             return (
               <div 
                 key={day} 
-                className="bg-white p-2 min-h-[120px] border-t border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+                className="bg-white p-2 min-h-[120px] border-t border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors print-compact-row"
                 onClick={() => openAddModal(dateStr)}
               >
                 <span className="text-sm font-medium text-slate-400">{day}</span>
-                <div className="mt-2 space-y-1">
+                <div className="mt-2 space-y-1 min-h-[90px] print:min-h-0">
                   {daySchedules.map(s => (
                     <div 
                       key={s.id} 
                       className={cn(
-                        "text-[10px] px-2 py-1 rounded border truncate font-medium flex justify-between items-center group cursor-pointer hover:brightness-95",
+                        "text-[10px] px-2 py-1 rounded border truncate font-medium flex justify-between items-center group cursor-pointer hover:brightness-95 print:py-0.5 print:text-[9px]",
                         getStaffColor(s.staff?.name || '')
                       )}
                       onClick={(e) => {

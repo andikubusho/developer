@@ -12,10 +12,18 @@ export interface Profile {
 export interface Project {
   id: string;
   name: string;
+  developer: string;
+  logo_url?: string;
   location: string;
   description: string;
   total_units: number;
   status: 'planned' | 'ongoing' | 'completed';
+  settings: {
+    bunga_flat: number;
+    dp_percentage: number;
+    booking_fee: number;
+  };
+  active: boolean;
   created_at: string;
 }
 
@@ -97,6 +105,24 @@ export interface MarketingDocument {
   type: 'pricelist' | 'siteplan' | 'denah';
   name: string;
   file_url: string;
+  created_at: string;
+}
+
+export interface PriceListItem {
+  id: string;
+  project_id: string; // Added for multi-project support
+  unit_id: string; // Required for Sales integration
+  category: 'Ruko' | 'Rumah';
+  cluster?: 'East' | 'South' | 'North';
+  blok: string;
+  unit: string;
+  tipe: string;
+  luas_tanah: number;
+  luas_bangunan: number;
+  harga_jual: number;
+  booking_fee: number;
+  dp_percentage: number;
+  status: 'available' | 'sold';
   created_at: string;
 }
 
