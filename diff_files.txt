@@ -1,5 +1,0 @@
-﻿client/src/App.tsx
-client/src/components/app-sidebar.tsx
-client/src/pages/dashboard.tsx
-server/routes/masters.ts
-shared/schema.ts
