@@ -4,7 +4,7 @@ import path from "path";
 import { log } from "./index";
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(process.cwd(), "dist", "public");
+  const distPath = path.resolve(process.cwd(), "dist");
   log(`Resolved static assets path: ${distPath}`, "static");
   
   if (!fs.existsSync(distPath)) {
