@@ -101,12 +101,20 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
       const { data: p } = await supabase.from('projects').select('id, name');
       const { data: u } = await supabase.from('units').select('id, unit_number, price, project_id').eq('status', 'available');
       const { data: c } = await supabase.from('customers').select('id, full_name');
+      const { data: l } = await supabase.from('leads').select('id, name');
       const { data: m } = await supabase.from('profiles').select('id, full_name').eq('role', 'marketing');
       const { data: pr } = await supabase.from('promos').select('id, name, value');
 
       setProjects(p || []);
       setUnits(u || []);
-      setCustomers(c || []);
+      
+      // Merge customers and leads
+      const allCustomers = [
+        ...(c || []).map(item => ({ id: item.id, full_name: item.full_name })),
+        ...(l || []).map(item => ({ id: item.id, full_name: item.name + ' (Lead)' }))
+      ];
+      setCustomers(allCustomers);
+      
       setMarketingStaff(m || []);
       setPromos(pr || []);
     };
