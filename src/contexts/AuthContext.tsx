@@ -21,8 +21,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(() => {
-    const saved = localStorage.getItem('user_profile');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('user_profile');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error('Error parsing profile cache:', e);
+      return null;
+    }
   });
   const [division, setDivisionState] = useState<Division | null>(() => {
     return localStorage.getItem('user_division') as Division | null;
@@ -62,14 +67,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Restore division from localStorage
-    const savedDivision = localStorage.getItem('propdev_division') as Division | null;
-    if (savedDivision) {
-      setDivisionState(savedDivision);
-    }
+    // Safety timeout: Never let the loading screen hang for more than 5 seconds
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
 
     if (!isSupabaseConfigured) {
       setLoading(false);
+      clearTimeout(safetyTimeout);
       return;
     }
 
@@ -79,13 +84,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         fetchProfile(session.user.id, session.user.email);
         // If we already have a profile from localStorage, we can stop global loading now
-        if (profile) setLoading(false);
+        if (profile) {
+          setLoading(false);
+          clearTimeout(safetyTimeout);
+        }
       } else {
         setLoading(false);
+        clearTimeout(safetyTimeout);
       }
     });
 
-    // Listen for changes on auth state (logged in, signed out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -93,10 +101,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setProfile(null);
         setLoading(false);
+        clearTimeout(safetyTimeout);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
+    };
   }, []);
 
   const fetchProfile = async (userId: string, userEmail?: string) => {
