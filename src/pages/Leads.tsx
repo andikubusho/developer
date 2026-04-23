@@ -102,9 +102,9 @@ const Leads: React.FC = () => {
         return;
       }
 
-      // 10-second timeout for cross-region latency
+      // 30-second timeout for first-time cold start in Singapore
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Fetch timeout')), 10000)
+        setTimeout(() => reject(new Error('Fetch timeout')), 30000)
       );
 
       console.log('Executing Supabase query (Singapore Region)...');
@@ -127,7 +127,7 @@ const Leads: React.FC = () => {
     } catch (err: any) {
       console.error('Error in fetchLeads:', err);
       if (err.message === 'Fetch timeout') {
-        setError('Koneksi lambat (Tokyo-Singapore). Menampilkan data terakhir.');
+        setError('Koneksi database lambat. Silakan coba lagi beberapa saat lagi.');
       } else {
         setError('Gagal memuat data terbaru.');
       }
