@@ -104,62 +104,70 @@ const Leads: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (isMockMode) {
-      let updatedLeads: Lead[];
-      if (selectedLead) {
-        // Update
-        updatedLeads = leads.map(l => l.id === selectedLead.id ? { ...l, ...formData } : l);
-      } else {
-        // Create
-        const newLead: Lead = {
-          id: Math.random().toString(36).substr(2, 9),
-          date: new Date().toISOString(),
-          ...formData
-        };
-        updatedLeads = [newLead, ...leads];
+    const isEdit = !!selectedLead;
+    console.log(`DIRECT ${isEdit ? 'UPDATE' : 'INSERT'} START...`);
+    
+    try {
+      setLoading(true);
+      const url = isEdit 
+        ? `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/leads?id=eq.${selectedLead.id}`
+        : `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/leads`;
+      
+      const payload = isEdit ? formData : { ...formData, date: new Date().toISOString() };
+      
+      const response = await fetch(url, {
+        method: isEdit ? 'PATCH' : 'POST',
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Save Failed (${response.status}): ${errorText}`);
       }
-      setLeads(updatedLeads);
-      saveMockData('leads', updatedLeads);
-    } else {
-      try {
-        if (selectedLead) {
-          const { error } = await supabase
-            .from('leads')
-            .update(formData)
-            .eq('id', selectedLead.id);
-          if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('leads')
-            .insert([{ ...formData, date: new Date().toISOString() }]);
-          if (error) throw error;
-        }
-        fetchLeads();
-      } catch (error) {
-        console.error('Error saving lead:', error);
-      }
+
+      console.log('DIRECT SAVE SUCCESS');
+      await fetchLeads();
+      setIsModalOpen(false);
+    } catch (error: any) {
+      console.error('Error saving lead:', error);
+      alert(`Gagal menyimpan: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-    setIsModalOpen(false);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
+    console.log('DIRECT DELETE START...');
 
-    if (isMockMode) {
-      const updatedLeads = leads.filter(l => l.id !== id);
-      setLeads(updatedLeads);
-      saveMockData('leads', updatedLeads);
-    } else {
-      try {
-        const { error } = await supabase
-          .from('leads')
-          .delete()
-          .eq('id', id);
-        if (error) throw error;
-        fetchLeads();
-      } catch (error) {
-        console.error('Error deleting lead:', error);
+    try {
+      setLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/leads?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Delete Failed (${response.status}): ${errorText}`);
       }
+
+      console.log('DIRECT DELETE SUCCESS');
+      await fetchLeads();
+    } catch (error: any) {
+      console.error('Error deleting lead:', error);
+      alert(`Gagal menghapus: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
