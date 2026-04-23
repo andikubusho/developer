@@ -217,7 +217,6 @@ export interface PurchaseRequest {
 
 export interface SPK {
   id: string;
-  spk_number: string;
   project_id: string;
   contractor_name: string;
   work_description: string;

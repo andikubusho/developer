@@ -82,9 +82,9 @@ const OpnamePage: React.FC = () => {
     try {
       setLoading(true);
       const [opRes, projRes, spkRes] = await Promise.all([
-        api.get('project_opnames', 'select=*,project:projects(name),spk:spks(spk_number,contractor_name)&order=date.desc'),
+        api.get('project_opnames', 'select=*,project:projects(name),spk:spks(id,contractor_name)&order=date.desc'),
         api.get('projects', 'select=id,name'),
-        api.get('spks', 'select=id,spk_number,contractor_name,total_value,project_id')
+        api.get('spks', 'select=id,contractor_name,total_value,project_id')
       ]);
 
       setOpnames(opRes || []);
@@ -235,7 +235,7 @@ const OpnamePage: React.FC = () => {
                     <td className="px-6 py-5 text-sm font-bold text-slate-600">{formatDate(item.date)}</td>
                     <td className="px-6 py-5">
                       <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{item.worker_name}</p>
-                      <p className="text-[10px] font-bold text-primary mt-0.5">{item.spk?.spk_number || 'Tanpa SPK'}</p>
+                      <p className="text-[10px] font-bold text-primary mt-0.5">{item.spk ? `SPK-${item.spk.id.substring(0, 8)}` : 'Tanpa SPK'}</p>
                     </td>
                     <td className="px-6 py-5">
                       <p className="text-sm text-slate-700 font-medium max-w-xs">{item.work_description}</p>
@@ -287,7 +287,7 @@ const OpnamePage: React.FC = () => {
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Referensi SPK (Opsional)</label>
               <select className="w-full h-12 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" value={formData.spk_id} onChange={(e) => setFormData({ ...formData, spk_id: e.target.value, worker_name: spks.find(s => s.id === e.target.value)?.contractor_name || formData.worker_name })}>
                 <option value="">-- Tanpa SPK --</option>
-                {spks.filter(s => s.project_id === formData.project_id || !formData.project_id).map(s => <option key={s.id} value={s.id}>{s.spk_number} - {s.contractor_name}</option>)}
+                {spks.filter(s => s.project_id === formData.project_id || !formData.project_id).map(s => <option key={s.id} value={s.id}>SPK-{s.id.substring(0, 8)} - {s.contractor_name}</option>)}
               </select>
             </div>
             <Input label="Nama Pekerja / Kontraktor" placeholder="Masukkan nama..." value={formData.worker_name} onChange={(e) => setFormData({ ...formData, worker_name: e.target.value })} required />
