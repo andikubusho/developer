@@ -17,7 +17,6 @@ const ConstructionProgressPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProgress, setSelectedProgress] = useState<ConstructionProgress | null>(null);
 
-  // Form State
   const [formData, setFormData] = useState({
     report_date: new Date().toISOString().split('T')[0],
     unit_id: '',
@@ -53,8 +52,8 @@ const ConstructionProgressPage: React.FC = () => {
   const fetchProgress = async () => {
     try {
       setLoading(true);
-      // Use the correct table name from the migration: project_progress
-      const data = await api.get('project_progress', 'select=*&order=report_date.desc');
+      // CORRECT TABLE NAME: construction_progress
+      const data = await api.get('construction_progress', 'select=*&order=report_date.desc');
       setProgressItems(data || []);
     } catch (error) {
       console.error('Error fetching progress:', error);
@@ -68,14 +67,14 @@ const ConstructionProgressPage: React.FC = () => {
       setLoading(true);
       const payload = {
         ...formData,
-        project_id: '1', // Default or fetch based on unit
+        project_id: '1',
         created_by: 'Admin'
       };
 
       if (selectedProgress) {
-        await api.update('project_progress', selectedProgress.id, payload);
+        await api.update('construction_progress', selectedProgress.id, payload);
       } else {
-        await api.insert('project_progress', payload);
+        await api.insert('construction_progress', payload);
       }
       await fetchProgress();
       setIsModalOpen(false);
@@ -96,7 +95,7 @@ const ConstructionProgressPage: React.FC = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
     try {
       setLoading(true);
-      await api.delete('project_progress', id);
+      await api.delete('construction_progress', id);
       await fetchProgress();
     } catch (error: any) {
       console.error('Error deleting progress:', error);
@@ -114,12 +113,7 @@ const ConstructionProgressPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setDivision(null)}
-            className="p-2 h-auto"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
@@ -128,8 +122,7 @@ const ConstructionProgressPage: React.FC = () => {
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={() => { setSelectedProgress(null); setIsModalOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Input Laporan Progress
+          <Plus className="w-4 h-4 mr-2" /> Input Laporan Progress
         </Button>
       </div>
 
@@ -137,24 +130,15 @@ const ConstructionProgressPage: React.FC = () => {
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input 
-              placeholder="Cari deskripsi laporan..." 
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <Input placeholder="Cari deskripsi..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
         </div>
-
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Tanggal</th>
-                <th className="px-6 py-3 font-semibold">Unit ID</th>
+                <th className="px-6 py-3 font-semibold">Unit</th>
                 <th className="px-6 py-3 font-semibold">Progress (%)</th>
                 <th className="px-6 py-3 font-semibold">Keterangan</th>
                 <th className="px-6 py-3 font-semibold">Foto</th>
@@ -163,67 +147,48 @@ const ConstructionProgressPage: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-400 animate-pulse">Memuat laporan...</td>
-                </tr>
+                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">Memuat data...</td></tr>
               ) : filteredProgress.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
-                    Tidak ada laporan progress ditemukan.
-                  </td>
-                </tr>
+                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-500">Tidak ada laporan ditemukan.</td></tr>
               ) : (
                 filteredProgress.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        {formatDate(item.report_date)}
-                      </div>
-                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600"><Clock className="w-3 h-3 inline mr-1" />{formatDate(item.report_date)}</td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-900">{item.unit_id}</td>
                     <td className="px-6 py-4">
-                      <div className="w-full bg-slate-100 rounded-full h-2.5 max-w-[100px]">
-                        <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: `${item.percentage}%` }}></div>
-                      </div>
-                      <span className="text-xs font-bold text-slate-600 mt-1 block">{item.percentage}%</span>
+                      <div className="w-full bg-slate-100 rounded-full h-2 max-w-[100px] inline-block mr-2"><div className="bg-indigo-600 h-2 rounded-full" style={{ width: `${item.percentage}%` }}></div></div>
+                      <span className="text-xs font-bold">{item.percentage}%</span>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{item.description}</td>
                     <td className="px-6 py-4">
-                      {item.photo_url ? (
-                        <img src={item.photo_url} alt="Progress" className="w-10 h-10 rounded object-cover" referrerPolicy="no-referrer" />
-                      ) : (
-                        <div className="w-10 h-10 bg-slate-100 rounded flex items-center justify-center"><Camera className="w-4 h-4 text-slate-400" /></div>
-                      )}
+                      {item.photo_url ? <img src={item.photo_url} alt="Progress" className="w-10 h-10 rounded object-cover" /> : <Camera className="w-4 h-4 text-slate-300" />}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(item)}><Edit className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(item.id)}><Trash2 className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}><Edit className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(item.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
-          </table></div>
+          </table>
+        </div>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedProgress ? 'Edit Laporan' : 'Input Laporan'}>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
           <Input label="Tanggal Laporan" type="date" value={formData.report_date} onChange={(e) => setFormData({ ...formData, report_date: e.target.value })} required />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="ID Unit" placeholder="Contoh: Unit-01" value={formData.unit_id} onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })} required />
+            <Input label="Unit ID" value={formData.unit_id} onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })} required />
             <Input label="Progress (%)" type="number" value={formData.percentage} onChange={(e) => setFormData({ ...formData, percentage: parseInt(e.target.value) || 0 })} required />
           </div>
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Keterangan</label>
-            <textarea className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
-          </div>
-          <Input label="Foto URL" placeholder="https://..." value={formData.photo_url} onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })} />
-          <div className="flex justify-end gap-3 mt-6">
+          <textarea className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Keterangan..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
+          <Input label="Foto URL" value={formData.photo_url} onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })} />
+          <div className="flex justify-end gap-3 mt-4">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button type="submit" isLoading={loading}>Simpan Laporan</Button>
+            <Button type="submit" isLoading={loading}>Simpan</Button>
           </div>
         </form>
       </Modal>
