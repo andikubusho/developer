@@ -82,7 +82,7 @@ const OpnamePage: React.FC = () => {
     try {
       setLoading(true);
       const [opRes, projRes, spkRes] = await Promise.all([
-        api.get('project_opnames', 'select=*,project:projects(name),spk:spk(*)&order=date.desc'),
+        api.get('project_opnames', 'select=*,project:projects(name),spk:spk(*)&order=created_at.desc'),
         api.get('projects', 'select=id,name'),
         api.get('spks', 'select=*')
       ]);
