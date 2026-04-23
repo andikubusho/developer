@@ -1,72 +1,73 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
+import DivisionSelection from './pages/DivisionSelection';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Projects from './pages/Projects';
-import ProjectDetail from './pages/ProjectDetail';
-import Units from './pages/Units';
-import Sales from './pages/Sales';
-import Customers from './pages/Customers';
-import Payments from './pages/Payments';
-import Materials from './pages/Materials';
-import PurchaseOrders from './pages/PurchaseOrders';
-import Reports from './pages/Reports';
-import Leads from './pages/Leads';
-import FollowUps from './pages/FollowUps';
-import Deposits from './pages/Deposits';
-import Promos from './pages/Promos';
-import PriceList from './pages/PriceList';
-import SitePlan from './pages/SitePlan';
-import FloorPlan from './pages/FloorPlan';
-import MarketingSchedule from './pages/MarketingSchedule';
-import MarketingMaster from './pages/MarketingMaster';
-import UserManagement from './pages/UserManagement';
+
+// Lazy load pages
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Projects = lazy(() => import('./pages/Projects'));
+const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
+const Units = lazy(() => import('./pages/Units'));
+const Sales = lazy(() => import('./pages/Sales'));
+const Customers = lazy(() => import('./pages/Customers'));
+const Payments = lazy(() => import('./pages/Payments'));
+const Materials = lazy(() => import('./pages/Materials'));
+const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Leads = lazy(() => import('./pages/Leads'));
+const FollowUps = lazy(() => import('./pages/FollowUps'));
+const Deposits = lazy(() => import('./pages/Deposits'));
+const Promos = lazy(() => import('./pages/Promos'));
+const PriceList = lazy(() => import('./pages/PriceList'));
+const SitePlan = lazy(() => import('./pages/SitePlan'));
+const FloorPlan = lazy(() => import('./pages/FloorPlan'));
+const MarketingSchedule = lazy(() => import('./pages/MarketingSchedule'));
+const MarketingMaster = lazy(() => import('./pages/MarketingMaster'));
+const UserManagement = lazy(() => import('./pages/UserManagement'));
 
 // Teknik
-import RAB from './pages/RAB';
-import ConstructionProgress from './pages/ConstructionProgress';
-import PurchaseRequests from './pages/PurchaseRequests';
-import SPK from './pages/SPK';
-import Opname from './pages/Opname';
-import RealCost from './pages/RealCost';
+const RAB = lazy(() => import('./pages/RAB'));
+const ConstructionProgress = lazy(() => import('./pages/ConstructionProgress'));
+const PurchaseRequests = lazy(() => import('./pages/PurchaseRequests'));
+const SPK = lazy(() => import('./pages/SPK'));
+const Opname = lazy(() => import('./pages/Opname'));
+const RealCost = lazy(() => import('./pages/RealCost'));
 
 // Keuangan
-import KPRDisbursement from './pages/KPRDisbursement';
-import SupplierPayments from './pages/SupplierPayments';
-import CashFlow from './pages/CashFlow';
-import PettyCash from './pages/PettyCash';
+const KPRDisbursement = lazy(() => import('./pages/KPRDisbursement'));
+const SupplierPayments = lazy(() => import('./pages/SupplierPayments'));
+const CashFlow = lazy(() => import('./pages/CashFlow'));
+const PettyCash = lazy(() => import('./pages/PettyCash'));
 
 // Accounting
-import GeneralJournal from './pages/GeneralJournal';
-import Ledger from './pages/Ledger';
-import FinancialReports from './pages/FinancialReports';
-import Taxation from './pages/Taxation';
+const GeneralJournal = lazy(() => import('./pages/GeneralJournal'));
+const Ledger = lazy(() => import('./pages/Ledger'));
+const FinancialReports = lazy(() => import('./pages/FinancialReports'));
+const Taxation = lazy(() => import('./pages/Taxation'));
 
 // HRD
-import Employees from './pages/Employees';
-import Attendance from './pages/Attendance';
-import Payroll from './pages/Payroll';
-import Recruitment from './pages/Recruitment';
+const Employees = lazy(() => import('./pages/Employees'));
+const Attendance = lazy(() => import('./pages/Attendance'));
+const Payroll = lazy(() => import('./pages/Payroll'));
+const Recruitment = lazy(() => import('./pages/Recruitment'));
 
 // Audit
-import AuditTransactions from './pages/AuditTransactions';
-import AuditStock from './pages/AuditStock';
-import AuditCosts from './pages/AuditCosts';
+const AuditTransactions = lazy(() => import('./pages/AuditTransactions'));
+const AuditStock = lazy(() => import('./pages/AuditStock'));
+const AuditCosts = lazy(() => import('./pages/AuditCosts'));
 
-import DivisionSelection from './pages/DivisionSelection';
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-50">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+  </div>
+);
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading, division } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingFallback />;
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -83,69 +84,71 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Dashboard />} />
-            <Route path="projects" element={<Projects />} />
-            <Route path="projects/:id" element={<ProjectDetail />} />
-            <Route path="units" element={<Units />} />
-            <Route path="sales" element={<Sales />} />
-            <Route path="customers" element={<Customers />} />
-            <Route path="payments" element={<Payments />} />
-            <Route path="materials" element={<Materials />} />
-            <Route path="purchase-orders" element={<PurchaseOrders />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="leads" element={<Leads />} />
-            <Route path="follow-ups" element={<FollowUps />} />
-            <Route path="deposits" element={<Deposits />} />
-            <Route path="promos" element={<Promos />} />
-            <Route path="price-list" element={<PriceList />} />
-            <Route path="site-plan" element={<SitePlan />} />
-            <Route path="floor-plan" element={<FloorPlan />} />
-            <Route path="marketing-schedule" element={<MarketingSchedule />} />
-            <Route path="marketing-master" element={<MarketingMaster />} />
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
             
-            {/* Teknik */}
-            <Route path="rab" element={<RAB />} />
-            <Route path="construction-progress" element={<ConstructionProgress />} />
-            <Route path="purchase-requests" element={<PurchaseRequests />} />
-            <Route path="spk" element={<SPK />} />
-            <Route path="opname" element={<Opname />} />
-            <Route path="real-cost" element={<RealCost />} />
-
-            {/* Keuangan */}
-            <Route path="kpr-disbursement" element={<KPRDisbursement />} />
-            <Route path="supplier-payments" element={<SupplierPayments />} />
-            <Route path="cash-flow" element={<CashFlow />} />
-            <Route path="petty-cash" element={<PettyCash />} />
-
-            {/* Accounting */}
-            <Route path="general-journal" element={<GeneralJournal />} />
-            <Route path="ledger" element={<Ledger />} />
-            <Route path="financial-reports" element={<FinancialReports />} />
-            <Route path="taxation" element={<Taxation />} />
-
-            {/* HRD */}
-            <Route path="employees" element={<Employees />} />
-            <Route path="attendance" element={<Attendance />} />
-            <Route path="payroll" element={<Payroll />} />
-            <Route path="recruitment" element={<Recruitment />} />
-
-            {/* Audit */}
-            <Route path="audit-transactions" element={<AuditTransactions />} />
-            <Route path="audit-stock" element={<AuditStock />} />
-            <Route path="audit-costs" element={<AuditCosts />} />
-            <Route path="user-management" element={<UserManagement />} />
-
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Dashboard />} />
+              <Route path="projects" element={<Projects />} />
+              <Route path="projects/:id" element={<ProjectDetail />} />
+              <Route path="units" element={<Units />} />
+              <Route path="sales" element={<Sales />} />
+              <Route path="customers" element={<Customers />} />
+              <Route path="payments" element={<Payments />} />
+              <Route path="materials" element={<Materials />} />
+              <Route path="purchase-orders" element={<PurchaseOrders />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="leads" element={<Leads />} />
+              <Route path="follow-ups" element={<FollowUps />} />
+              <Route path="deposits" element={<Deposits />} />
+              <Route path="promos" element={<Promos />} />
+              <Route path="price-list" element={<PriceList />} />
+              <Route path="site-plan" element={<SitePlan />} />
+              <Route path="floor-plan" element={<FloorPlan />} />
+              <Route path="marketing-schedule" element={<MarketingSchedule />} />
+              <Route path="marketing-master" element={<MarketingMaster />} />
+              
+              {/* Teknik */}
+              <Route path="rab" element={<RAB />} />
+              <Route path="construction-progress" element={<ConstructionProgress />} />
+              <Route path="purchase-requests" element={<PurchaseRequests />} />
+              <Route path="spk" element={<SPK />} />
+              <Route path="opname" element={<Opname />} />
+              <Route path="real-cost" element={<RealCost />} />
+              
+              {/* Keuangan */}
+              <Route path="kpr-disbursement" element={<KPRDisbursement />} />
+              <Route path="supplier-payments" element={<SupplierPayments />} />
+              <Route path="cash-flow" element={<CashFlow />} />
+              <Route path="petty-cash" element={<PettyCash />} />
+              
+              {/* Accounting */}
+              <Route path="general-journal" element={<GeneralJournal />} />
+              <Route path="ledger" element={<Ledger />} />
+              <Route path="financial-reports" element={<FinancialReports />} />
+              <Route path="taxation" element={<Taxation />} />
+              
+              {/* HRD */}
+              <Route path="employees" element={<Employees />} />
+              <Route path="attendance" element={<Attendance />} />
+              <Route path="payroll" element={<Payroll />} />
+              <Route path="recruitment" element={<Recruitment />} />
+              
+              {/* Audit */}
+              <Route path="audit-transactions" element={<AuditTransactions />} />
+              <Route path="audit-stock" element={<AuditStock />} />
+              <Route path="audit-costs" element={<AuditCosts />} />
+              <Route path="user-management" element={<UserManagement />} />
+              
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </Suspense>
       </Router>
     </AuthProvider>
   );
