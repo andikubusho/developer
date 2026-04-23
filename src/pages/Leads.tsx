@@ -29,23 +29,10 @@ const Leads: React.FC = () => {
   });
 
   useEffect(() => {
-    console.log('Leads Page Mounted. Division:', division);
-    
-    // Load from cache first for instant UI
-    const cached = localStorage.getItem('cache_leads');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        setLeads(parsed);
-        // Hide spinner if we have some data
-        if (parsed.length > 0) setLoading(false);
-      } catch (e) {
-        console.error('Error parsing leads cache:', e);
-      }
-    }
-
+    console.log('Leads Page Mounted. Fetching data...');
+    setLoading(true);
     fetchLeads();
-  }, [division]);
+  }, []);
 
   useEffect(() => {
     if (selectedLead) {
