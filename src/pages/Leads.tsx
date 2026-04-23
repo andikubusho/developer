@@ -28,22 +28,22 @@ const Leads: React.FC = () => {
   });
 
   useEffect(() => {
+    console.log('Leads Page Mounted. Division:', division);
+    
     // Load from cache first for instant UI
     const cached = localStorage.getItem('cache_leads');
     if (cached) {
       try {
-        setLeads(JSON.parse(cached));
+        const parsed = JSON.parse(cached);
+        console.log('Loaded leads from cache:', parsed.length);
+        setLeads(parsed);
         setLoading(false);
       } catch (e) {
         console.error('Error parsing leads cache:', e);
       }
     }
 
-    if (division === 'marketing') {
-      fetchLeads();
-    } else {
-      setLoading(false);
-    }
+    fetchLeads();
   }, [division]);
 
   useEffect(() => {
@@ -68,10 +68,13 @@ const Leads: React.FC = () => {
 
   const fetchLeads = async () => {
     const start = performance.now();
+    console.log('Starting fetchLeads...');
+    
     try {
       if (leads.length === 0) setLoading(true);
       
       if (isMockMode) {
+        console.log('Using Mock Mode for Leads');
         const defaultLeads: Lead[] = [
           {
             id: '1',
@@ -99,21 +102,32 @@ const Leads: React.FC = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      // Add a timeout to the fetch
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Fetch timeout')), 10000)
+      );
+
+      console.log('Executing Supabase query for leads...');
+      const fetchPromise = supabase
         .from('leads')
         .select('*')
         .order('date', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      const result: any = await Promise.race([fetchPromise, timeoutPromise]);
       
-      const fetchedData = data || [];
+      if (result.error) throw result.error;
+      
+      const fetchedData = result.data || [];
+      console.log(`Fetched ${fetchedData.length} leads successfully`);
+      
       setLeads(fetchedData);
       localStorage.setItem('cache_leads', JSON.stringify(fetchedData));
       
-      console.log(`Leads fetched in ${(performance.now() - start).toFixed(2)}ms`);
+      console.log(`Leads fetch completed in ${(performance.now() - start).toFixed(2)}ms`);
     } catch (error) {
-      console.error('Error fetching leads:', error);
+      console.error('Error in fetchLeads:', error);
+      setLoading(false);
     } finally {
       setLoading(false);
     }
