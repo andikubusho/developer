@@ -501,7 +501,8 @@ const Dashboard: React.FC = () => {
                     </TR>
                   ))}
                 </TBody>
-              </table></div></div>
+              </table>
+            </div>
             </Card>
           ) : (
             <Card title="Progress Pembangunan" subtitle="Update terbaru lapangan">
@@ -540,7 +541,8 @@ const Dashboard: React.FC = () => {
                     </TR>
                   ))}
                 </TBody>
-              </table></div></div>
+              </table>
+            </div>
             </Card>
           )}
 
