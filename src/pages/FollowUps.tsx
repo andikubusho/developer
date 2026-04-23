@@ -52,7 +52,7 @@ const FollowUps: React.FC = () => {
   const fetchFollowUps = async () => {
     try {
       setLoading(true);
-      const data = await api.get('follow_ups', 'select=*,lead:leads(*)&order=date_time.desc');
+      const data = await api.get('follow_ups', 'select=*,lead:leads(name,phone)&order=date_time.desc');
       setFollowUps(data || []);
     } catch (error) {
       console.error('Error fetching follow ups:', error);

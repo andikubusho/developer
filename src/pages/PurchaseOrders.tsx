@@ -65,7 +65,7 @@ const PurchaseOrders: React.FC = () => {
         return;
       }
 
-      const data = await api.get('purchase_orders', 'select=*,materials(*)&order=order_date.desc');
+      const data = await api.get('purchase_orders', 'select=*,materials(name,unit,price)&order=order_date.desc');
       setOrders(data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
