@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { api } from '@/lib/api';
-import { Project, Unit } from '@/types';
+import { api } from '@/src/lib/api';
+import { Project, Unit } from '@/src/types';
 import { 
   Upload, 
   Map as MapIcon, 
