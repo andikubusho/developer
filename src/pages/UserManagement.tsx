@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { Profile, UserRole, Capabilities } from '../types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -47,12 +48,7 @@ const UserManagement: React.FC = () => {
   const fetchProfiles = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await api.get('profiles', 'select=*&order=created_at.desc');
       setProfiles(data || []);
     } catch (error) {
       console.error('Error fetching profiles:', error);

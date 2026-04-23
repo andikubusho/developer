@@ -7,12 +7,12 @@ import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { Attendance } from '../types';
 import { formatDate, cn } from '../lib/utils';
-import { supabase } from '../lib/supabase';
-import { getMockData, saveMockData } from '../lib/storage';
+import { api } from '../lib/api';
 
 const AttendancePage: React.FC = () => {
-  const { isMockMode, division, setDivision } = useAuth();
+  const { setDivision } = useAuth();
   const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,51 +27,22 @@ const AttendancePage: React.FC = () => {
 
   useEffect(() => {
     fetchAttendance();
+    fetchEmployees();
   }, []);
 
-  const fetchAttendance = async () => {
-    setLoading(true);
-    if (isMockMode) {
-      const defaultAttendance: Attendance[] = [
-        {
-          id: '1',
-          employee_id: '1',
-          date: '2026-03-27',
-          check_in: '08:00',
-          check_out: '17:00',
-          status: 'present',
-          employee: { full_name: 'Neville Christian', employee_id: 'EMP001' } as any
-        },
-        {
-          id: '2',
-          employee_id: '2',
-          date: '2026-03-27',
-          check_in: '08:15',
-          check_out: '17:05',
-          status: 'present',
-          employee: { full_name: 'Siti Aminah', employee_id: 'EMP002' } as any
-        },
-        {
-          id: '3',
-          employee_id: '1',
-          date: '2026-03-26',
-          check_in: '07:55',
-          check_out: '17:10',
-          status: 'present',
-          employee: { full_name: 'Neville Christian', employee_id: 'EMP001' } as any
-        }
-      ];
-      setAttendance(getMockData<Attendance>('attendance', defaultAttendance));
-      setLoading(false);
-      return;
-    }
-
+  const fetchEmployees = async () => {
     try {
-      const { data, error } = await supabase
-        .from('attendance')
-        .select('*, employee:employees(*)')
-        .order('date', { ascending: false });
-      if (error) throw error;
+      const data = await api.get('employees', 'select=id,full_name,employee_id&status=eq.active');
+      setEmployees(data || []);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  const fetchAttendance = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get('attendance', 'select=*,employee:employees(*)&order=date.desc');
       setAttendance(data || []);
     } catch (error) {
       console.error('Error fetching attendance:', error);
@@ -81,46 +52,21 @@ const AttendancePage: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (isMockMode) {
-      const mockEmployee = formData.employee_id === '1' 
-        ? { full_name: 'Neville Christian', employee_id: 'EMP001' }
-        : { full_name: 'Siti Aminah', employee_id: 'EMP002' };
-
-      let updatedAttendance: Attendance[];
+    try {
+      setLoading(true);
       if (editingId) {
-        updatedAttendance = attendance.map(a => a.id === editingId ? { ...a, ...formData, employee: mockEmployee as any } : a);
+        await api.update('attendance', editingId, formData);
       } else {
-        const newAttendance: Attendance = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...formData,
-          employee: mockEmployee as any
-        };
-        updatedAttendance = [newAttendance, ...attendance];
+        await api.insert('attendance', formData);
       }
-      setAttendance(updatedAttendance);
-      saveMockData('attendance', updatedAttendance);
+      await fetchAttendance();
       setIsModalOpen(false);
       resetForm();
-    } else {
-      try {
-        if (editingId) {
-          const { error } = await supabase
-            .from('attendance')
-            .update(formData)
-            .eq('id', editingId);
-          if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('attendance')
-            .insert([formData]);
-          if (error) throw error;
-        }
-        fetchAttendance();
-        setIsModalOpen(false);
-        resetForm();
-      } catch (error) {
-        console.error('Error saving attendance:', error);
-      }
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      alert('Gagal menyimpan absensi');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -138,22 +84,15 @@ const AttendancePage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus data absensi ini?')) return;
-
-    if (isMockMode) {
-      const updatedAttendance = attendance.filter(a => a.id !== id);
-      setAttendance(updatedAttendance);
-      saveMockData('attendance', updatedAttendance);
-    } else {
-      try {
-        const { error } = await supabase
-          .from('attendance')
-          .delete()
-          .eq('id', id);
-        if (error) throw error;
-        fetchAttendance();
-      } catch (error) {
-        console.error('Error deleting attendance:', error);
-      }
+    try {
+      setLoading(true);
+      await api.delete('attendance', id);
+      await fetchAttendance();
+    } catch (error) {
+      console.error('Error deleting attendance:', error);
+      alert('Gagal menghapus absensi');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -187,15 +126,7 @@ const AttendancePage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => {
-              setDivision(null);
-              setDivision(null);
-            }}
-            className="p-2 h-auto"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
@@ -204,14 +135,8 @@ const AttendancePage: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Clock className="w-4 h-4 mr-2" />
-            Rekap Bulanan
-          </Button>
-          <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Input Absensi
-          </Button>
+          <Button variant="outline"><Clock className="w-4 h-4 mr-2" /> Rekap Bulanan</Button>
+          <Button onClick={() => setIsModalOpen(true)}><Plus className="w-4 h-4 mr-2" /> Input Absensi</Button>
         </div>
       </div>
 
@@ -219,17 +144,13 @@ const AttendancePage: React.FC = () => {
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input 
-              placeholder="Cari nama karyawan atau ID..." 
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <Input placeholder="Cari nama karyawan atau ID..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <Input type="date" className="w-full sm:w-auto" defaultValue={new Date().toISOString().split('T')[0]} />
         </div>
 
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Tanggal</th>
@@ -243,17 +164,9 @@ const AttendancePage: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                  </td>
-                </tr>
+                <tr><td colSpan={7} className="px-6 py-10 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div></td></tr>
               ) : filteredAttendance.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
-                    Tidak ada data absensi.
-                  </td>
-                </tr>
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500">Tidak ada data absensi.</td></tr>
               ) : (
                 filteredAttendance.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
@@ -263,91 +176,41 @@ const AttendancePage: React.FC = () => {
                     <td className="px-6 py-4 text-sm text-slate-600">{item.check_in || '-'}</td>
                     <td className="px-6 py-4 text-sm text-slate-600">{item.check_out || '-'}</td>
                     <td className="px-6 py-4">
-                      <span className={cn(
-                        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
-                        getStatusColor(item.status)
-                      )}>
-                        {item.status}
-                      </span>
+                      <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize', getStatusColor(item.status))}>{item.status}</span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleEdit(item)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-red-500"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(item)}><Edit className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(item.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
-          </table></div>
+          </table>
+        </div>
       </Card>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          resetForm();
-        }}
-        title={editingId ? "Edit Absensi Karyawan" : "Input Absensi Karyawan"}
-      >
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); resetForm(); }} title={editingId ? "Edit Absensi Karyawan" : "Input Absensi Karyawan"}>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-          <Input 
-            label="Tanggal" 
-            type="date" 
-            value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            required
-          />
+          <Input label="Tanggal" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Karyawan</label>
-            <select 
-              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={formData.employee_id}
-              onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
-              required
-            >
+            <select className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" value={formData.employee_id} onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })} required>
               <option value="">-- Pilih Karyawan --</option>
-              <option value="1">Neville Christian (EMP001)</option>
-              <option value="2">Siti Aminah (EMP002)</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.full_name} ({emp.employee_id})</option>
+              ))}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input 
-              label="Jam Masuk" 
-              type="time" 
-              value={formData.check_in}
-              onChange={(e) => setFormData({ ...formData, check_in: e.target.value })}
-            />
-            <Input 
-              label="Jam Pulang" 
-              type="time" 
-              value={formData.check_out}
-              onChange={(e) => setFormData({ ...formData, check_out: e.target.value })}
-            />
+            <Input label="Jam Masuk" type="time" value={formData.check_in} onChange={(e) => setFormData({ ...formData, check_in: e.target.value })} />
+            <Input label="Jam Pulang" type="time" value={formData.check_out} onChange={(e) => setFormData({ ...formData, check_out: e.target.value })} />
           </div>
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Status Kehadiran</label>
-            <select 
-              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-              required
-            >
+            <select className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value as any })} required>
               <option value="present">Hadir</option>
               <option value="absent">Alpa</option>
               <option value="leave">Cuti</option>
@@ -355,8 +218,8 @@ const AttendancePage: React.FC = () => {
             </select>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <Button variant="outline" onClick={() => { setIsModalOpen(false); resetForm(); }}>Batal</Button>
-            <Button type="submit">{editingId ? "Update Absensi" : "Simpan Absensi"}</Button>
+            <Button variant="outline" type="button" onClick={() => { setIsModalOpen(false); resetForm(); }}>Batal</Button>
+            <Button type="submit" isLoading={loading}>{editingId ? "Update Absensi" : "Simpan Absensi"}</Button>
           </div>
         </form>
       </Modal>
@@ -365,6 +228,3 @@ const AttendancePage: React.FC = () => {
 };
 
 export default AttendancePage;
-
-
-
