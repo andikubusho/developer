@@ -234,7 +234,7 @@ const RealCostPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card title="Budget vs Actual" subtitle="Perbandingan total anggaran dengan pengeluaran nyata">
-          <div className="h-[350px] w-full mt-6">
+          <div className="h-[350px] min-h-[350px] w-full min-w-0 mt-6">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -271,7 +271,7 @@ const RealCostPage: React.FC = () => {
         </Card>
 
         <Card title="Pengeluaran Berdasarkan Kategori" subtitle="Distribusi real-cost antara material dan upah kerja">
-          <div className="h-[280px] w-full mt-6">
+          <div className="h-[280px] min-h-[280px] w-full min-w-0 mt-6">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie

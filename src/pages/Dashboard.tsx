@@ -645,7 +645,7 @@ const Dashboard: React.FC = () => {
 
         <div className="space-y-8">
           <Card title="Efektivitas Unit" subtitle="Distribusi stok properti">
-            <div className="h-[240px] w-full mt-4">
+            <div className="h-[240px] min-h-[240px] w-full min-w-0 mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
