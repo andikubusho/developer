@@ -12,10 +12,10 @@ import {
   RefreshCw,
   Info
 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Modal } from '@/components/ui/modal';
-import { cn } from '@/lib/utils';
+import { Card } from '@/src/components/ui/card';
+import { Button } from '@/src/components/ui/button';
+import { Modal } from '@/src/components/ui/modal';
+import { cn } from '@/src/lib/utils';
 
 const SitePlan = () => {
   const [projects, setProjects] = useState<Project[]>([]);
