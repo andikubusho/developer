@@ -48,6 +48,15 @@ export interface Unit {
   sp_x?: number;
   sp_y?: number;
   sp_rotation?: number;
+  specs?: {
+    pondasi?: string;
+    dinding?: string;
+    lantai?: string;
+    atap?: string;
+    plafon?: string;
+    listrik?: string;
+    air?: string;
+  };
   project?: Project;
 }
 
