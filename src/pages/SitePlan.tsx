@@ -112,7 +112,7 @@ const SitePlan: React.FC = () => {
                 key={unit.id}
                 onClick={() => { setSelectedUnit(unit); setActiveTab('info'); }}
                 className={cn(
-                  "absolute w-8 h-11 border border-black/20 cursor-pointer transition-all hover:brightness-110 hover:z-50 shadow-sm group",
+                  "absolute w-8 h-11 border border-black/30 cursor-pointer transition-all hover:brightness-110 hover:z-50 shadow-md group flex items-center justify-center overflow-hidden",
                   unit.status === 'sold' ? "ring-1 ring-red-600/50" : "hover:ring-2 hover:ring-white"
                 )}
                 style={{ 
@@ -122,11 +122,17 @@ const SitePlan: React.FC = () => {
                   backgroundColor: getStatusColor(unit.status)
                 }}
               >
-                {/* Tooltip like Sikumbang - Visible only on hover */}
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-2 py-1 rounded text-[9px] font-black opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-[100] shadow-xl">
-                  {unit.unit_number}
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-1.5 h-1.5 bg-slate-900"></div>
+                {/* Always Show Unit Number Label */}
+                <div className="text-[7px] font-black text-white drop-shadow-md select-none">
+                   {num}
                 </div>
+
+                {/* Status Overlay for Sold/Booked */}
+                {unit.status !== 'available' && (
+                  <div className={cn("absolute inset-0 flex items-center justify-center uppercase text-[6px] font-black tracking-tighter mix-blend-overlay opacity-40")}>
+                    {unit.status === 'sold' ? 'SOLD' : 'BKD'}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -182,9 +188,8 @@ const SitePlan: React.FC = () => {
 
         {/* Map Canvas - Locked & Clean */}
         <div className="flex-1 relative bg-slate-950 overflow-hidden shadow-2xl group/canvas border-[12px] border-slate-900 rounded-[3.5rem]">
-          {/* Sikumbang Style Legend */}
+          {/* Legend */}
           <div className="absolute bottom-8 left-8 bg-slate-900/90 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 shadow-2xl z-20">
-            <h4 className="text-[10px] font-black uppercase text-indigo-400 mb-4 tracking-widest">Status Unit</h4>
             <div className="flex gap-6">
               {[
                 { name: 'Tersedia', color: '#10B981' },
@@ -212,7 +217,7 @@ const SitePlan: React.FC = () => {
               {loading ? (
                 <div className="flex flex-col items-center justify-center text-indigo-500 gap-6">
                   <div className="w-16 h-16 border-4 border-indigo-900 border-t-indigo-500 rounded-full animate-spin" />
-                  <p className="font-black uppercase tracking-widest text-[10px]">Sinkronisasi Peta...</p>
+                  <p className="font-black uppercase tracking-widest text-[10px]">Loading Master Plan...</p>
                 </div>
               ) : renderInteractiveMap()}
             </div>
@@ -225,21 +230,44 @@ const SitePlan: React.FC = () => {
         <Card className="flex-1 flex flex-col bg-slate-900 border border-white/5 rounded-[3rem] shadow-2xl relative overflow-hidden">
           {selectedUnit ? (
             <div className="flex flex-col h-full">
-              {/* Sidebar Header */}
-              <div className="p-8 pb-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-3xl font-black text-white leading-none tracking-tighter">{selectedUnit.unit_number}</h3>
-                  <p className="text-[10px] font-black uppercase text-indigo-400 mt-2 tracking-widest">ID: GC-{selectedUnit.id.split('-')[0]}</p>
+              {/* Top Banner / Image (Tampak Depan) */}
+              <div className="relative h-48 bg-slate-800">
+                <img 
+                  src={`https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600&text=Unit+${selectedUnit.unit_number}`} 
+                  alt="Unit View" 
+                  className="w-full h-full object-cover opacity-80"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
+                <div className="absolute top-4 right-4">
+                  <div className={cn(
+                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl",
+                    selectedUnit.status === 'available' ? "bg-emerald-500 text-white" :
+                    selectedUnit.status === 'booked' ? "bg-amber-500 text-white" : "bg-rose-500 text-white"
+                  )}>
+                    {selectedUnit.status}
+                  </div>
                 </div>
-                <button onClick={() => setSelectedUnit(null)} className="p-3 bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors">
-                  <X className="w-5 h-5" />
+                <button 
+                  onClick={() => setSelectedUnit(null)} 
+                  className="absolute top-4 left-4 p-2 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition-all"
+                >
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
+              {/* Sidebar Header Content */}
+              <div className="px-8 pt-6 pb-2">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-3xl font-black text-white leading-none tracking-tighter">{selectedUnit.unit_number}</h3>
+                  <span className="text-xl font-black text-indigo-400">{formatCurrency(selectedUnit.price)}</span>
+                </div>
+                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">ID: {selectedUnit.id.split('-')[0].toUpperCase()}</p>
+              </div>
+
               {/* Tabs */}
-              <div className="px-8 flex gap-4 border-b border-white/5">
+              <div className="px-8 flex gap-6 border-b border-white/5 mt-4">
                 {[
-                  { id: 'info', name: 'Info Unit' },
+                  { id: 'info', name: 'Ringkasan' },
                   { id: 'specs', name: 'Spesifikasi' },
                   { id: 'denah', name: 'Denah' }
                 ].map(tab => (
@@ -247,12 +275,12 @@ const SitePlan: React.FC = () => {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
                     className={cn(
-                      "pb-4 text-[10px] font-black uppercase tracking-widest transition-all relative",
+                      "pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative",
                       activeTab === tab.id ? "text-indigo-400" : "text-slate-500 hover:text-slate-300"
                     )}
                   >
                     {tab.name}
-                    {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500 rounded-t-full shadow-[0_-4px_10px_rgba(99,102,241,0.5)]" />}
+                    {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500 rounded-t-full shadow-[0_-4px_12px_rgba(99,102,241,0.6)]" />}
                   </button>
                 ))}
               </div>
@@ -262,38 +290,32 @@ const SitePlan: React.FC = () => {
                 {activeTab === 'info' && (
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-5 bg-white/5 rounded-[2rem] border border-white/5">
+                      <div className="p-5 bg-white/5 rounded-[2.5rem] border border-white/5">
                         <Building2 className="w-5 h-5 text-indigo-400 mb-3" />
-                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Tipe Rumah</p>
+                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Tipe Unit</p>
                         <p className="text-sm font-black text-white">{selectedUnit.type}</p>
                       </div>
-                      <div className="p-5 bg-white/5 rounded-[2rem] border border-white/5">
+                      <div className="p-5 bg-white/5 rounded-[2.5rem] border border-white/5">
                         <Ruler className="w-5 h-5 text-indigo-400 mb-3" />
-                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Luas Tanah/Bng</p>
-                        <p className="text-sm font-black text-white">120 / 45 m²</p>
+                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Luas T/B</p>
+                        <p className="text-sm font-black text-white">120/45 m²</p>
                       </div>
-                    </div>
-
-                    <div className="p-6 bg-indigo-600 rounded-[2.5rem] shadow-xl shadow-indigo-900/20">
-                      <p className="text-[10px] text-white/60 font-black uppercase tracking-[0.2em] mb-1">Harga Jual</p>
-                      <p className="text-2xl font-black text-white">{formatCurrency(selectedUnit.price)}</p>
                     </div>
 
                     <div className="space-y-3">
-                      <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Keterangan</h4>
+                      <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] ml-1">Informasi Dasar</h4>
                       <div className="space-y-2">
-                        <div className="flex justify-between p-4 bg-white/5 rounded-2xl text-[11px]">
-                          <span className="text-slate-400">Blok / Cluster</span>
-                          <span className="text-white font-bold">{selectedUnit.unit_number.split('/')[0]}</span>
-                        </div>
-                        <div className="flex justify-between p-4 bg-white/5 rounded-2xl text-[11px]">
-                          <span className="text-slate-400">Kamar Tidur</span>
-                          <span className="text-white font-bold">2 Ruang</span>
-                        </div>
-                        <div className="flex justify-between p-4 bg-white/5 rounded-2xl text-[11px]">
-                          <span className="text-slate-400">Kamar Mandi</span>
-                          <span className="text-white font-bold">1 Ruang</span>
-                        </div>
+                        {[
+                          { label: 'Cluster', value: selectedUnit.unit_number.split('/')[0] },
+                          { label: 'Kamar Tidur', value: '2 Ruang' },
+                          { label: 'Kamar Mandi', value: '1 Ruang' },
+                          { label: 'Sertifikat', value: 'SHM (Milik Adat)' },
+                        ].map((item, i) => (
+                          <div key={i} className="flex justify-between p-5 bg-white/5 rounded-[1.5rem] text-[11px] border border-white/5">
+                            <span className="text-slate-400 font-bold uppercase tracking-wider">{item.label}</span>
+                            <span className="text-white font-black">{item.value}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
