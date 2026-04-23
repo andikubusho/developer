@@ -19,7 +19,6 @@ const MarketingMaster: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    position: '',
     address: ''
   });
 
@@ -77,7 +76,6 @@ const MarketingMaster: React.FC = () => {
     setFormData({
       name: s.name,
       phone: s.phone,
-      position: s.position,
       address: s.address
     });
     setIsModalOpen(true);
@@ -88,7 +86,6 @@ const MarketingMaster: React.FC = () => {
     setFormData({
       name: '',
       phone: '',
-      position: '',
       address: ''
     });
     setIsModalOpen(true);
@@ -135,7 +132,6 @@ const MarketingMaster: React.FC = () => {
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Nama</th>
                 <th className="px-6 py-3 font-semibold">No. Telp</th>
-                <th className="px-6 py-3 font-semibold">Jabatan</th>
                 <th className="px-6 py-3 font-semibold">Alamat</th>
                 <th className="px-6 py-3 font-semibold text-right">Aksi</th>
               </tr>
@@ -151,9 +147,6 @@ const MarketingMaster: React.FC = () => {
                     <td className="px-6 py-4 font-medium text-slate-900">{s.name}</td>
                     <td className="px-6 py-4 text-sm text-slate-600">
                       <div className="flex items-center gap-2"><Phone className="w-3 h-3 text-slate-400" />{s.phone}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm text-slate-600"><Briefcase className="w-3 h-3 text-slate-400" />{s.position}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-sm text-slate-600"><MapPin className="w-3 h-3 text-slate-400" />{s.address}</div>
@@ -176,7 +169,6 @@ const MarketingMaster: React.FC = () => {
         <form className="space-y-4" onSubmit={handleSave}>
           <Input label="Nama" placeholder="Nama lengkap" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
           <Input label="No. Telp" placeholder="0812..." value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
-          <Input label="Jabatan" placeholder="Contoh: Senior Marketing" value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })} required />
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Alamat</label>
             <textarea className="w-full rounded-lg border border-slate-300 p-2 text-sm" rows={3} placeholder="Alamat lengkap..." value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} required />

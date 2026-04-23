@@ -43,7 +43,7 @@ const MarketingSchedulePage: React.FC = () => {
         return;
       }
 
-      const data = await api.get('marketing_schedules', 'select=*,staff:marketing_staff(id,name,position)');
+      const data = await api.get('marketing_schedules', 'select=*,staff:marketing_staff(id,name)');
       setSchedules(data || []);
     } catch (error) {
       console.error('Error fetching schedules:', error);

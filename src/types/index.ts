@@ -99,7 +99,6 @@ export interface MarketingStaff {
   name: string;
   address: string;
   phone: string;
-  position: string;
 }
 
 export interface MarketingSchedule {
