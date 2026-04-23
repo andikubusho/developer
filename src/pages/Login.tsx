@@ -3,24 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Card } from '../components/ui/Card';
 import { Building2, Sparkles, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {
-  const { mockLogin, user } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       navigate('/', { replace: true });
     }
   }, [user, navigate]);
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isRegister, setIsRegister] = useState(false);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,21 +26,12 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      if (isRegister) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        if (error) throw error;
-        setError('Pendaftaran berhasil! Silakan cek email Anda atau langsung login jika email dikonfirmasi otomatis.');
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        navigate('/');
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      navigate('/');
     } catch (err: any) {
       if (err.message === 'Failed to fetch') {
         setError('Gagal terhubung ke database. Pastikan VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY sudah diset di Secrets.');
@@ -52,12 +41,6 @@ const Login: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoLogin = () => {
-    setEmail('admin@propdev.com');
-    setPassword('password123');
-    setIsRegister(false);
   };
 
   return (
@@ -109,17 +92,13 @@ const Login: React.FC = () => {
           </div>
 
           <div className="mb-10">
-            <h3 className="text-3xl font-black text-slate-900 tracking-tight">
-              {isRegister ? 'Buat Akun Baru' : 'Selamat Datang'}
-            </h3>
-            <p className="text-slate-500 font-bold mt-2">
-              {isRegister ? 'Bergabunglah dengan ekosistem properti cerdas' : 'Silakan masuk untuk melanjutkan akses sistem'}
-            </p>
+            <h3 className="text-3xl font-black text-slate-900 tracking-tight">Selamat Datang</h3>
+            <p className="text-slate-500 font-bold mt-2">Silakan masuk untuk melanjutkan akses sistem</p>
           </div>
 
           <form onSubmit={handleAuth} className="space-y-6">
             {error && (
-              <div className={`p-4 border-none text-xs font-black uppercase tracking-widest rounded-2xl ${error.includes('berhasil') ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-danger'}`}>
+              <div className="p-4 bg-rose-50 border-none text-xs font-black uppercase tracking-widest rounded-2xl text-danger">
                 {error}
               </div>
             )}
@@ -132,10 +111,7 @@ const Login: React.FC = () => {
               required
             />
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-bold text-slate-700 tracking-tight">Kata Sandi</label>
-                {!isRegister && <button type="button" className="text-xs font-bold text-primary hover:underline">Lupa Password?</button>}
-              </div>
+              <label className="text-sm font-bold text-slate-700 tracking-tight">Kata Sandi</label>
               <Input
                 type="password"
                 placeholder="••••••••"
@@ -145,48 +121,9 @@ const Login: React.FC = () => {
               />
             </div>
             <Button type="submit" className="w-full h-14 rounded-2xl text-md font-black shadow-xl shadow-indigo-100" isLoading={loading}>
-              {isRegister ? 'Daftar Sekarang' : 'Masuk ke Dashboard'}
+              Masuk ke Dashboard
             </Button>
           </form>
-
-          <div className="mt-8 space-y-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-100"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase tracking-widest font-black">
-                <span className="bg-white px-4 text-slate-400">Atau</span>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <button 
-                onClick={() => setIsRegister(!isRegister)}
-                className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-100 text-sm text-slate-600 hover:bg-slate-100 font-black transition-all"
-              >
-                {isRegister ? 'Kembali ke Login' : 'Belum punya akun? Daftar Sekarang'}
-              </button>
-              
-              {!isRegister && (
-                <div className="space-y-4">
-                  <Button 
-                    variant="outline" 
-                    className="w-full h-14 border-dashed border-slate-200 text-slate-400 hover:border-primary hover:text-primary rounded-2xl font-bold bg-transparent"
-                    onClick={handleDemoLogin}
-                  >
-                    Coba Akun Demo
-                  </Button>
-                  
-                  <button 
-                    onClick={() => mockLogin()}
-                    className="w-full text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-primary transition-colors italic"
-                  >
-                    Bypass Authentication (UI Testing Only)
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
 
           <p className="text-center text-slate-300 text-[10px] font-bold uppercase tracking-[0.2rem] mt-12 pb-8">
             &copy; 2026 PropDev ERP Pro. Precision Redefined.
