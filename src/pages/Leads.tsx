@@ -125,8 +125,37 @@ const Leads: React.FC = () => {
       localStorage.setItem('cache_leads', JSON.stringify(fetchedData));
       
       console.log(`Leads fetch completed in ${(performance.now() - start).toFixed(2)}ms`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in fetchLeads:', error);
+      
+      // If timeout or connection error, fallback to mock data so user is not stuck
+      if (error.message === 'Fetch timeout' || !navigator.onLine) {
+        console.warn('Database timeout! Switching to Mock Data for user experience.');
+        
+        const defaultLeads: Lead[] = [
+          {
+            id: 'mock-1',
+            date: new Date().toISOString(),
+            name: 'Andi Wijaya (Contoh)',
+            phone: '081234567890',
+            source: 'Facebook Ads',
+            status: 'hot',
+            description: 'Tertarik dengan unit A-01 (Data Contoh karena Database sedang lambat)'
+          },
+          {
+            id: 'mock-2',
+            date: new Date().toISOString(),
+            name: 'Budi Santoso (Contoh)',
+            phone: '089876543210',
+            source: 'Walk-in',
+            status: 'medium',
+            description: 'Tanya-tanya tipe 36 (Data Contoh)'
+          }
+        ];
+        
+        setLeads(defaultLeads);
+      }
+      
       setLoading(false);
     } finally {
       setLoading(false);
