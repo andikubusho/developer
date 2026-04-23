@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Search, Filter, Home, Tag, CheckCircle2, Clock, ArrowLeft, Printer, FileDown } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { supabase } from '../lib/supabase';
 import { Unit } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -11,14 +10,17 @@ import { formatCurrency, formatNumber, cn } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
 import { UnitForm } from '../components/forms/UnitForm';
 import { useAuth } from '../contexts/AuthContext';
-import { getMockData } from '../lib/storage';
+import { api } from '../lib/api';
 
 const Units: React.FC = () => {
-  const { isMockMode, division, setDivision } = useAuth();
+  const { setDivision } = useAuth();
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     fetchUnits();
@@ -28,41 +30,7 @@ const Units: React.FC = () => {
   const fetchUnits = async () => {
     try {
       setLoading(true);
-      
-      if (isMockMode) {
-        const defaultUnits: any[] = [
-          {
-            id: '1',
-            project_id: '1',
-            unit_number: 'A-01',
-            type: 'Tipe 36/72',
-            price: 350000000,
-            status: 'available',
-            project: { name: 'Griya Asri Residence' },
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            project_id: '1',
-            unit_number: 'A-02',
-            type: 'Tipe 36/72',
-            price: 350000000,
-            status: 'booked',
-            project: { name: 'Griya Asri Residence' },
-            created_at: new Date().toISOString(),
-          }
-        ];
-        setUnits(getMockData<Unit>('units', defaultUnits));
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('units')
-        .select('*, project:projects(name)')
-        .order('unit_number', { ascending: true })
-        .limit(50);
-
-      if (error) throw error;
+      const data = await api.get('units', 'select=*,project:projects(name)&order=unit_number.asc&limit=100');
       setUnits(data || []);
     } catch (error) {
       console.error('Error fetching units:', error);
@@ -71,24 +39,20 @@ const Units: React.FC = () => {
     }
   };
 
+  const fetchProjects = async () => {
+    try {
+      const data = await api.get('projects', 'select=id,name');
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
   const filteredUnits = units.filter(u => 
     u.unit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.project?.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
-
-  const fetchProjects = async () => {
-    if (isMockMode) {
-      setProjects([{ id: '1', name: 'Griya Asri Residence' }, { id: '2', name: 'Grand Emerald City' }]);
-      return;
-    }
-    const { data } = await supabase.from('projects').select('id, name');
-    setProjects(data || []);
-  };
 
   const handleAdd = () => {
     setSelectedUnit(null);
@@ -172,10 +136,7 @@ const Units: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              localStorage.removeItem('user_division');
-              setDivision(null);
-            }}
+            onClick={() => setDivision(null)}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -341,6 +302,3 @@ const Units: React.FC = () => {
 };
 
 export default Units;
-
-
-

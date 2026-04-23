@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { CurrencyInput } from '../ui/CurrencyInput';
-import { useAuth } from '../../contexts/AuthContext';
-import { getMockData, saveMockData } from '../../lib/storage';
 
 const unitSchema = z.object({
   project_id: z.string().min(1, 'Pilih proyek'),
@@ -28,7 +26,6 @@ interface UnitFormProps {
 }
 
 export const UnitForm: React.FC<UnitFormProps> = ({ projects, onSuccess, onCancel, initialData }) => {
-  const { isMockMode } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const { register, handleSubmit, control, formState: { errors } } = useForm<UnitFormValues>({
@@ -41,43 +38,15 @@ export const UnitForm: React.FC<UnitFormProps> = ({ projects, onSuccess, onCance
   const onSubmit = async (values: UnitFormValues) => {
     setLoading(true);
     try {
-      if (isMockMode) {
-        const units = getMockData<any>('units', []);
-        const project = projects.find(p => p.id === values.project_id);
-        
-        let updatedUnits: any[];
-        if (initialData?.id) {
-          updatedUnits = units.map(u => u.id === initialData.id ? { ...u, ...values, project: { name: project?.name } } : u);
-        } else {
-          const newUnit = {
-            id: Math.random().toString(36).substr(2, 9),
-            ...values,
-            project: { name: project?.name },
-            created_at: new Date().toISOString()
-          };
-          updatedUnits = [newUnit, ...units];
-        }
-        saveMockData('units', updatedUnits);
-        onSuccess();
-        return;
-      }
-
       if (initialData?.id) {
-        const { error } = await supabase
-          .from('units')
-          .update(values)
-          .eq('id', initialData.id);
-        if (error) throw error;
+        await api.update('units', initialData.id, values);
       } else {
-        const { error } = await supabase
-          .from('units')
-          .insert([values]);
-        if (error) throw error;
+        await api.insert('units', values);
       }
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving unit:', error);
-      alert('Gagal menyimpan unit.');
+      alert(`Gagal menyimpan: ${error.message}`);
     } finally {
       setLoading(false);
     }

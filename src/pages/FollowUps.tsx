@@ -7,11 +7,10 @@ import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { FollowUp, Lead, LeadStatus } from '../types';
 import { cn, formatDateTime } from '../lib/utils';
-import { supabase } from '../lib/supabase';
-import { getMockData, saveMockData } from '../lib/storage';
+import { api } from '../lib/api';
 
 const FollowUps: React.FC = () => {
-  const { isMockMode, division, setDivision } = useAuth();
+  const { setDivision } = useAuth();
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,17 +23,13 @@ const FollowUps: React.FC = () => {
     lead_id: '',
     description: '',
     status: 'no respon' as LeadStatus,
-    date_time: new Date().toISOString().slice(0, 16)
+    date_time: new Date().toISOString()
   });
 
   useEffect(() => {
-    if (division === 'marketing') {
-      fetchFollowUps();
-      fetchLeads();
-    } else {
-      setLoading(false);
-    }
-  }, [division]);
+    fetchFollowUps();
+    fetchLeads();
+  }, []);
 
   useEffect(() => {
     if (selectedFollowUp) {
@@ -42,44 +37,22 @@ const FollowUps: React.FC = () => {
         lead_id: selectedFollowUp.lead_id,
         description: selectedFollowUp.description,
         status: selectedFollowUp.status,
-        date_time: new Date(selectedFollowUp.date_time).toISOString().slice(0, 16)
+        date_time: selectedFollowUp.date_time
       });
     } else {
       setFormData({
         lead_id: '',
         description: '',
         status: 'no respon',
-        date_time: new Date().toISOString().slice(0, 16)
+        date_time: new Date().toISOString()
       });
     }
   }, [selectedFollowUp, isModalOpen]);
 
   const fetchFollowUps = async () => {
-    setLoading(true);
-    if (isMockMode) {
-      const defaultFollowUps: FollowUp[] = [
-        {
-          id: '1',
-          lead_id: '1',
-          date_time: new Date().toISOString(),
-          description: 'Sudah dihubungi via WA, masih pikir-pikir',
-          status: 'medium',
-          lead: { id: '1', name: 'Andi Wijaya', phone: '081234567890', date: '', source: '', status: 'hot', description: '' }
-        }
-      ];
-      const data = getMockData<FollowUp>('followups', defaultFollowUps);
-      setFollowUps(data);
-      setLoading(false);
-      return;
-    }
-
     try {
-      const { data, error } = await supabase
-        .from('follow_ups')
-        .select('*, lead:leads(*)')
-        .order('date_time', { ascending: false });
-
-      if (error) throw error;
+      setLoading(true);
+      const data = await api.get('follow_ups', 'select=*,lead:leads(*)&order=date_time.desc');
       setFollowUps(data || []);
     } catch (error) {
       console.error('Error fetching follow ups:', error);
@@ -89,21 +62,8 @@ const FollowUps: React.FC = () => {
   };
 
   const fetchLeads = async () => {
-    if (isMockMode) {
-      const defaultLeads: Lead[] = [
-        { id: '1', name: 'Andi Wijaya', phone: '081234567890', date: '', source: '', status: 'hot', description: '' },
-        { id: '2', name: 'Budi Santoso', phone: '089876543210', date: '', source: '', status: 'medium', description: '' }
-      ];
-      setLeads(getMockData<Lead>('leads', defaultLeads));
-      return;
-    }
-
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('name');
-      if (error) throw error;
+      const data = await api.get('leads', 'select=*&order=name.asc');
       setLeads(data || []);
     } catch (error) {
       console.error('Error fetching leads:', error);
@@ -126,63 +86,34 @@ const FollowUps: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (isMockMode) {
-      const lead = leads.find(l => l.id === formData.lead_id);
-      let updatedFollowUps: FollowUp[];
+    try {
+      setLoading(true);
       if (selectedFollowUp) {
-        // Update
-        updatedFollowUps = followUps.map(f => f.id === selectedFollowUp.id ? { ...f, ...formData, lead } : f);
+        await api.update('follow_ups', selectedFollowUp.id, formData);
       } else {
-        // Create
-        const newFollowUp: FollowUp = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...formData,
-          lead
-        };
-        updatedFollowUps = [newFollowUp, ...followUps];
+        await api.insert('follow_ups', formData);
       }
-      setFollowUps(updatedFollowUps);
-      saveMockData('followups', updatedFollowUps);
-    } else {
-      try {
-        if (selectedFollowUp) {
-          const { error } = await supabase
-            .from('follow_ups')
-            .update(formData)
-            .eq('id', selectedFollowUp.id);
-          if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('follow_ups')
-            .insert([formData]);
-          if (error) throw error;
-        }
-        fetchFollowUps();
-      } catch (error) {
-        console.error('Error saving follow up:', error);
-      }
+      await fetchFollowUps();
+      setIsModalOpen(false);
+    } catch (error: any) {
+      console.error('Error saving follow up:', error);
+      alert(`Gagal menyimpan: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-    setIsModalOpen(false);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
-
-    if (isMockMode) {
-      const updatedFollowUps = followUps.filter(item => item.id !== id);
-      setFollowUps(updatedFollowUps);
-      saveMockData('followups', updatedFollowUps);
-    } else {
-      try {
-        const { error } = await supabase
-          .from('follow_ups')
-          .delete()
-          .eq('id', id);
-        if (error) throw error;
-        fetchFollowUps();
-      } catch (error) {
-        console.error('Error deleting follow up:', error);
-      }
+    try {
+      setLoading(true);
+      await api.delete('follow_ups', id);
+      await fetchFollowUps();
+    } catch (error: any) {
+      console.error('Error deleting follow up:', error);
+      alert(`Gagal menghapus: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -203,10 +134,7 @@ const FollowUps: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              localStorage.removeItem('user_division');
-              setDivision(null);
-            }}
+            onClick={() => setDivision(null)}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -369,6 +297,3 @@ const FollowUps: React.FC = () => {
 };
 
 export default FollowUps;
-
-
-
