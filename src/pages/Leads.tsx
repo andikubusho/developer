@@ -28,6 +28,17 @@ const Leads: React.FC = () => {
   });
 
   useEffect(() => {
+    // Load from cache first for instant UI
+    const cached = localStorage.getItem('cache_leads');
+    if (cached) {
+      try {
+        setLeads(JSON.parse(cached));
+        setLoading(false);
+      } catch (e) {
+        console.error('Error parsing leads cache:', e);
+      }
+    }
+
     if (division === 'marketing') {
       fetchLeads();
     } else {
@@ -56,35 +67,10 @@ const Leads: React.FC = () => {
   }, [selectedLead, isModalOpen]);
 
   const fetchLeads = async () => {
-    setLoading(true);
-    if (isMockMode) {
-      const defaultLeads: Lead[] = [
-        {
-          id: '1',
-          date: new Date().toISOString(),
-          name: 'Andi Wijaya',
-          phone: '081234567890',
-          source: 'Facebook Ads',
-          status: 'hot',
-          description: 'Tertarik dengan unit A-01'
-        },
-        {
-          id: '2',
-          date: new Date().toISOString(),
-          name: 'Budi Santoso',
-          phone: '089876543210',
-          source: 'Walk-in',
-          status: 'medium',
-          description: 'Tanya-tanya tipe 36'
-        }
-      ];
-      const data = getMockData<Lead>('leads', defaultLeads);
-      setLeads(data);
-      setLoading(false);
-      return;
-    }
-
+    const start = performance.now();
     try {
+      if (leads.length === 0) setLoading(true);
+      
       const { data, error } = await supabase
         .from('leads')
         .select('*')
@@ -92,7 +78,12 @@ const Leads: React.FC = () => {
         .limit(50);
 
       if (error) throw error;
-      setLeads(data || []);
+      
+      const fetchedData = data || [];
+      setLeads(fetchedData);
+      localStorage.setItem('cache_leads', JSON.stringify(fetchedData));
+      
+      console.log(`Leads fetched in ${(performance.now() - start).toFixed(2)}ms`);
     } catch (error) {
       console.error('Error fetching leads:', error);
     } finally {
