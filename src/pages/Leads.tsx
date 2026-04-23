@@ -7,11 +7,10 @@ import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { Lead, LeadStatus } from '../types';
 import { cn, formatDateTime } from '../lib/utils';
-import { supabase } from '../lib/supabase';
-import { getMockData, saveMockData } from '../lib/storage';
+import { api } from '../lib/api';
 
 const Leads: React.FC = () => {
-  const { isMockMode, division, setDivision } = useAuth();
+  const { division, setDivision } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +28,6 @@ const Leads: React.FC = () => {
   });
 
   useEffect(() => {
-    console.log('Leads Page Mounted. Fetching data...');
-    setLoading(true);
     fetchLeads();
   }, []);
 
@@ -55,34 +52,46 @@ const Leads: React.FC = () => {
   }, [selectedLead, isModalOpen]);
 
   const fetchLeads = async () => {
-    const start = performance.now();
-    setError(null);
-    console.log('STARTING DIRECT FETCH (Singapore Region)...');
-    
     try {
       setLoading(true);
-      
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/leads?select=*&order=date.desc&limit=50`, {
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP Error ${response.status}: ${errorText}`);
-      }
-
-      const fetchedData = await response.json();
-      console.log('DIRECT FETCH SUCCESS:', fetchedData.length, 'rows');
-      
-      setLeads(fetchedData || []);
-      localStorage.setItem('cache_leads', JSON.stringify(fetchedData || []));
+      const data = await api.get('leads', 'select=*&order=date.desc&limit=50');
+      setLeads(data || []);
       setError(null);
     } catch (err: any) {
-      console.error('DIRECT FETCH FAILED:', err);
-      setError(err.message || 'Gagal memuat data terbaru.');
+      console.error('Fetch Leads Failed:', err);
+      setError(err.message || 'Gagal memuat data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      if (selectedLead) {
+        await api.update('leads', selectedLead.id, formData);
+      } else {
+        await api.insert('leads', { ...formData, date: new Date().toISOString() });
+      }
+      await fetchLeads();
+      setIsModalOpen(false);
+    } catch (error: any) {
+      console.error('Error saving lead:', error);
+      alert(`Gagal menyimpan: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
+    try {
+      setLoading(true);
+      await api.delete('leads', id);
+      await fetchLeads();
+    } catch (error: any) {
+      console.error('Error deleting lead:', error);
+      alert(`Gagal menghapus: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -103,74 +112,6 @@ const Leads: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = async () => {
-    const isEdit = !!selectedLead;
-    console.log(`DIRECT ${isEdit ? 'UPDATE' : 'INSERT'} START...`);
-    
-    try {
-      setLoading(true);
-      const url = isEdit 
-        ? `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/leads?id=eq.${selectedLead.id}`
-        : `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/leads`;
-      
-      const payload = isEdit ? formData : { ...formData, date: new Date().toISOString() };
-      
-      const response = await fetch(url, {
-        method: isEdit ? 'PATCH' : 'POST',
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Save Failed (${response.status}): ${errorText}`);
-      }
-
-      console.log('DIRECT SAVE SUCCESS');
-      await fetchLeads();
-      setIsModalOpen(false);
-    } catch (error: any) {
-      console.error('Error saving lead:', error);
-      alert(`Gagal menyimpan: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
-    console.log('DIRECT DELETE START...');
-
-    try {
-      setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/leads?id=eq.${id}`, {
-        method: 'DELETE',
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Delete Failed (${response.status}): ${errorText}`);
-      }
-
-      console.log('DIRECT DELETE SUCCESS');
-      await fetchLeads();
-    } catch (error: any) {
-      console.error('Error deleting lead:', error);
-      alert(`Gagal menghapus: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getStatusColor = (status: LeadStatus) => {
     switch (status) {
       case 'hot': return 'bg-red-100 text-red-700';
@@ -188,21 +129,14 @@ const Leads: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setDivision(null);
-            }}
+            onClick={() => setDivision(null)}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Calon Konsumen <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full ml-2">Singapore Mode</span></h1>
-            <div className="flex items-center gap-2 mt-1 overflow-hidden">
-              <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono truncate max-w-[200px]">URL: {supabase.auth.getSession ? (import.meta.env.VITE_SUPABASE_URL || 'MISSING').substring(0, 30) : 'Error'}</span>
-              <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-mono">Status: {loading ? 'Connecting...' : 'Ready'}</span>
-              {error && <span className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded font-mono">Error: {error.substring(0, 30)}</span>}
-            </div>
-            <p className="text-slate-500 mt-1">Kelola data prospek dan calon pembeli</p>
+            <p className="text-slate-500">Kelola data prospek dan calon pembeli</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={handleAdd}>
@@ -363,6 +297,3 @@ const Leads: React.FC = () => {
 };
 
 export default Leads;
-
-
-

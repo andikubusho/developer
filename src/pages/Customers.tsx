@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, Filter, UserPlus, Mail, Phone, MapPin, ArrowLeft } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { Customer } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -8,13 +7,15 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { CustomerForm } from '../components/forms/CustomerForm';
 import { useAuth } from '../contexts/AuthContext';
-import { getMockData } from '../lib/storage';
+import { api } from '../lib/api';
 
 const Customers: React.FC = () => {
-  const { isMockMode, division, setDivision } = useAuth();
+  const { setDivision } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -23,37 +24,7 @@ const Customers: React.FC = () => {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      
-      if (isMockMode) {
-        const defaultCustomers: Customer[] = [
-          {
-            id: '1',
-            full_name: 'Budi Santoso',
-            email: 'budi@example.com',
-            phone: '08123456789',
-            identity_number: '3201234567890001',
-            address: 'Jl. Merdeka No. 123, Bandung',
-          },
-          {
-            id: '2',
-            full_name: 'Siti Aminah',
-            email: 'siti@example.com',
-            phone: '08987654321',
-            identity_number: '3201234567890002',
-            address: 'Jl. Sudirman No. 45, Jakarta',
-          }
-        ];
-        setCustomers(getMockData<Customer>('customers', defaultCustomers));
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .order('full_name', { ascending: true })
-        .limit(50);
-
-      if (error) throw error;
+      const data = await api.get('customers', 'select=*&order=full_name.asc&limit=50');
       setCustomers(data || []);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -67,9 +38,6 @@ const Customers: React.FC = () => {
     c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.phone.includes(searchTerm)
   );
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   const handleAdd = () => {
     setSelectedCustomer(null);
@@ -93,28 +61,26 @@ const Customers: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setDivision(null);
-            }}
+            onClick={() => setDivision(null)}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Pelanggan</h1>
-            <p className="text-slate-500">Kelola data pelanggan dan prospek</p>
+            <h1 className="text-2xl font-bold text-slate-900">Data Konsumen</h1>
+            <p className="text-slate-500">Kelola data pembeli resmi dan resmi terdaftar</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={handleAdd}>
           <UserPlus className="w-4 h-4 mr-2" />
-          Tambah Pelanggan
+          Tambah Konsumen
         </Button>
       </div>
 
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title={selectedCustomer ? 'Edit Pelanggan' : 'Tambah Pelanggan'}
+        title={selectedCustomer ? 'Edit Konsumen' : 'Tambah Konsumen'}
         size="lg"
       >
         <CustomerForm 
@@ -164,7 +130,7 @@ const Customers: React.FC = () => {
               ) : filteredCustomers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
-                    Tidak ada pelanggan ditemukan.
+                    Tidak ada data konsumen.
                   </td>
                 </tr>
               ) : (
@@ -208,6 +174,3 @@ const Customers: React.FC = () => {
 };
 
 export default Customers;
-
-
-
