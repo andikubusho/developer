@@ -61,17 +61,34 @@ const SitePlan: React.FC = () => {
     }
   };
 
-  const handleUploadImage = async () => {
-    const url = prompt('Masukkan URL Gambar Site Plan (JPG/PNG):');
-    if (!url) return;
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+      alert('Mohon pilih file gambar (JPG/PNG)');
+      return;
+    }
+
     try {
       setLoading(true);
-      await api.update('projects', selectedProjectId, { site_plan_image_url: url });
-      await fetchInitialData();
-      setIsUploadModalOpen(false);
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        try {
+          await api.update('projects', selectedProjectId, { site_plan_image_url: base64String });
+          await fetchInitialData();
+          setIsUploadModalOpen(false);
+        } catch (error: any) {
+          alert(`Gagal menyimpan gambar: ${error.message}`);
+        } finally {
+          setLoading(false);
+        }
+      };
+      reader.readAsDataURL(file);
     } catch (error: any) {
-      alert(`Gagal upload: ${error.message}`);
-    } finally {
+      alert(`Gagal membaca file: ${error.message}`);
       setLoading(false);
     }
   };
@@ -385,10 +402,16 @@ const SitePlan: React.FC = () => {
 
       {/* Upload Modal */}
       <Modal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} title="Konfigurasi Master Plan">
-        <div className="p-12 text-center border-4 border-dashed border-white/10 rounded-[4rem] hover:border-indigo-600/30 transition-all cursor-pointer group bg-white/5" onClick={handleUploadImage}>
+        <div className="p-12 text-center border-4 border-dashed border-white/10 rounded-[4rem] hover:border-indigo-600/30 transition-all cursor-pointer group bg-white/5 relative">
+          <input 
+            type="file" 
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="absolute inset-0 opacity-0 cursor-pointer"
+          />
           <Upload className="w-12 h-12 text-indigo-500 mx-auto mb-6 group-hover:scale-110 transition-transform" />
-          <h3 className="text-xl font-black text-white mb-2">Update Gambar Site Plan</h3>
-          <p className="text-xs text-slate-500 font-medium px-8 leading-relaxed">Upload file gambar denah master plan (JPG/PNG). Rekomendasi ukuran 1200x900px untuk hasil presisi.</p>
+          <h3 className="text-xl font-black text-white mb-2">Upload Screenshot Denah</h3>
+          <p className="text-xs text-slate-500 font-medium px-8 leading-relaxed">Pilih file gambar denah (JPG/PNG). Denah akan otomatis terpasang sebagai latar belakang.</p>
         </div>
       </Modal>
     </div>
