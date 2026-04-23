@@ -27,34 +27,35 @@ async function seed() {
 
       if (blok === 'North' || blok === 'N') {
         if (num > 19) continue;
-        // 19 Units diagonal (Grey Boxes)
+        // 19 Units diagonal (N-01 to N-19)
         const i = num - 1;
-        x = 35.5 + (i * 1.5);
-        y = 48.5 + (i * -1.8);
-        rot = -48;
+        x = 24.5 + (i * 1.6);
+        y = 52.0 + (i * -2.05);
+        rot = -38;
         type = 'Rumah';
       } else if (blok === 'South' || blok === 'S') {
         if (num > 12) continue;
-        // 12 Units horizontal (Grey Boxes)
-        const i = num - 1;
-        x = 42.5 + (i * 2.1);
-        y = 52.8;
-        rot = 0;
+        // 12 Units horizontal (S-01 to S-12)
+        // Reverse order if needed, but let's assume 1 is on the right for now based on drawing
+        const i = 12 - num; 
+        x = 18.5 + (i * 2.8);
+        y = 74.0 + (i * -1.2);
+        rot = -22;
         type = 'Rumah';
       } else if (blok === 'East' || blok === 'E') {
         if (num <= 7) {
           // 7 Units Ruko (Top Right)
           const i = num - 1;
-          x = 73.0 + (i * 0.7);
-          y = 15.5 + (i * 2.5);
-          rot = -5;
+          x = 51.0 + (i * 1.5);
+          y = 23.0 + (i * 3.5);
+          rot = -10;
           type = 'Ruko';
         } else if (num <= 11) {
           // 4 Units Rumah (Bottom Right)
           const i = num - 8;
-          x = 71.0 + (i * 0.6);
-          y = 36.5 + (i * 2.2);
-          rot = -10;
+          x = 54.0 + (i * 1.2);
+          y = 52.0 + (i * 3.6);
+          rot = -15;
           type = 'Rumah';
         } else {
           continue;
