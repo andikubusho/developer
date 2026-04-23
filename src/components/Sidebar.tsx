@@ -124,7 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       name: 'Proyek', 
       icon: Building2, 
       path: '/projects', 
-      divisions: ['teknik', 'audit'] 
+      divisions: ['marketing', 'teknik', 'audit'] 
     },
     { 
       name: 'Unit Properti', 
@@ -142,12 +142,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       name: 'Progress Bangun', 
       icon: HardHat, 
       path: '/construction-progress', 
-      divisions: ['teknik', 'audit'] 
+      divisions: ['marketing', 'teknik', 'audit'] 
     },
     { 
       name: 'Stok Material', 
       icon: Package, 
       path: '/materials', 
+      divisions: ['teknik', 'audit'] 
+    },
+    { 
+      name: 'Purchase Order', 
+      icon: ShoppingCart, 
+      path: '/purchase-orders', 
       divisions: ['teknik', 'audit'] 
     },
     { 
@@ -282,6 +288,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       name: 'User & Role', 
       icon: ShieldCheck, 
       path: '/user-management', 
+      divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'] 
+    },
+    { 
+      name: 'Laporan', 
+      icon: BarChart3, 
+      path: '/reports', 
       divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'] 
     },
   ];
