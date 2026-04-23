@@ -238,7 +238,7 @@ const PriceList: React.FC = () => {
 
   return (
     <div id="price-list-container" className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
@@ -268,39 +268,96 @@ const PriceList: React.FC = () => {
         </div>
       </div>
 
+      <div className="hidden print:block mb-8">
+        <div className="flex items-center justify-between border-b-2 border-slate-900 pb-6">
+          <img src={logoProyek} alt="Logo" className="h-16 w-auto object-contain" />
+          <div className="text-right">
+            <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Daftar Harga Unit</h1>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{projects.find(p => p.id === selectedProjectId)?.name}</p>
+            <p className="text-xs text-slate-400 mt-1 font-medium">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          </div>
+        </div>
+      </div>
+
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          nav, .sidebar, .no-print, button, select, .flex-wrap, .flex-col {
+          /* Hide app UI elements */
+          nav, aside, .sidebar, header, [role="complementary"], 
+          button, select, .no-print, 
+          .flex.flex-wrap.items-center.gap-2, /* The top actions div */
+          .flex.flex-col.sm\\:flex-row /* The title section */ {
             display: none !important;
           }
-          #price-list-container {
-            margin: 0 !important;
+
+          /* Reset layout for print */
+          body, html, #root, .flex.min-h-screen, main {
+            background: white !important;
+            height: auto !important;
+            overflow: visible !important;
+            display: block !important;
             padding: 0 !important;
+            margin: 0 !important;
           }
+
+          /* Ensure main content is visible */
+          .flex-1.px-4.py-6.md\\:px-10 {
+            padding: 0 !important;
+            display: block !important;
+            overflow: visible !important;
+          }
+
+          #price-list-container {
+            display: block !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 20px !important;
+          }
+
           .Card {
             box-shadow: none !important;
-            border: 1px solid #e2e8f0 !important;
+            border: 1px solid #000 !important;
+            border-radius: 0 !important;
           }
+
           table {
             width: 100% !important;
-            font-size: 8pt !important;
+            border-collapse: collapse !important;
+            font-size: 7pt !important;
           }
+
           th, td {
-            padding: 4px 8px !important;
+            border: 0.5px solid #000 !important;
+            padding: 3px 6px !important;
           }
+
           .bg-slate-900 {
             background-color: #000 !important;
             color: #fff !important;
             -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
+
           .bg-slate-800 {
             background-color: #333 !important;
             color: #fff !important;
             -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
+
           .bg-slate-50 {
-            background-color: #f8fafc !important;
+            background-color: #f1f5f9 !important;
             -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          /* Hide action column */
+          th:last-child, td:last-child {
+            display: none !important;
+          }
+          
+          /* Force page breaks */
+          tr {
+            page-break-inside: avoid !important;
           }
         }
       `}} />
