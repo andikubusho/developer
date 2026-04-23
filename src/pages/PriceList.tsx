@@ -307,28 +307,28 @@ const PriceList: React.FC = () => {
 
       <Card className="p-0 overflow-hidden border-none shadow-premium rounded-2xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1200px]">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-900 text-white text-[10px] uppercase tracking-[0.2em] font-black">
-                <th rowSpan={2} className="px-4 py-4 text-center border-r border-slate-800">
-                  <input type="checkbox" className="rounded bg-slate-800 border-slate-700" checked={selectedItems.length === priceItems.length && priceItems.length > 0} onChange={(e) => setSelectedItems(e.target.checked ? priceItems.map(i => i.id) : [])} />
+              <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-wider font-black">
+                <th rowSpan={2} className="px-2 py-3 text-center border-r border-slate-800 w-8">
+                  <input type="checkbox" className="rounded bg-slate-800 border-slate-700 w-3 h-3" checked={selectedItems.length === priceItems.length && priceItems.length > 0} onChange={(e) => setSelectedItems(e.target.checked ? priceItems.map(i => i.id) : [])} />
                 </th>
-                <th rowSpan={2} className="px-6 py-4 border-r border-slate-800">Blok</th>
-                <th rowSpan={2} className="px-4 py-4 border-r border-slate-800">Unit</th>
-                <th rowSpan={2} className="px-6 py-4 border-r border-slate-800">Tipe</th>
-                <th colSpan={2} className="px-4 py-2 text-center border-b border-r border-slate-800">Luas (m2)</th>
-                <th rowSpan={2} className="px-6 py-4 border-r border-slate-800">Booking Fee</th>
-                <th rowSpan={2} className="px-6 py-4 border-r border-slate-800 text-center">Uang Muka</th>
-                <th colSpan={3} className="px-4 py-2 text-center border-b border-r border-slate-800">Angsuran KPR</th>
-                <th rowSpan={2} className="px-6 py-4 border-r border-slate-800 text-right">Harga Jual (Rp)</th>
-                <th rowSpan={2} className="px-4 py-4 text-center">Aksi</th>
+                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800 whitespace-nowrap">Blok</th>
+                <th rowSpan={2} className="px-2 py-3 border-r border-slate-800 whitespace-nowrap">Unit</th>
+                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800 whitespace-nowrap">Tipe</th>
+                <th colSpan={2} className="px-2 py-1.5 text-center border-b border-r border-slate-800">Luas</th>
+                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800 whitespace-nowrap">Booking</th>
+                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800 text-center whitespace-nowrap">Uang Muka</th>
+                <th colSpan={3} className="px-2 py-1.5 text-center border-b border-r border-slate-800">Angsuran KPR</th>
+                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800 text-right whitespace-nowrap">Harga Jual</th>
+                <th rowSpan={2} className="px-2 py-3 text-center w-12">Aksi</th>
               </tr>
-              <tr className="bg-slate-800 text-slate-300 text-[9px] uppercase tracking-wider font-bold">
-                <th className="px-4 py-2 text-center border-r border-slate-700">Tanah</th>
-                <th className="px-4 py-2 text-center border-r border-slate-700">Bangunan</th>
-                <th className="px-4 py-2 text-center border-r border-slate-700">5 Tahun</th>
-                <th className="px-4 py-2 text-center border-r border-slate-700">10 Tahun</th>
-                <th className="px-4 py-2 text-center border-r border-slate-700">15 Tahun</th>
+              <tr className="bg-slate-800 text-slate-300 text-[8px] uppercase tracking-tighter font-bold">
+                <th className="px-2 py-1.5 text-center border-r border-slate-700">Tnh</th>
+                <th className="px-2 py-1.5 text-center border-r border-slate-700">Bgn</th>
+                <th className="px-2 py-1.5 text-center border-r border-slate-700">5 Th</th>
+                <th className="px-2 py-1.5 text-center border-r border-slate-700">10 Th</th>
+                <th className="px-2 py-1.5 text-center border-r border-slate-700">15 Th</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -344,7 +344,7 @@ const PriceList: React.FC = () => {
                   return (
                     <React.Fragment key={cat}>
                       <tr className="bg-slate-50">
-                        <td colSpan={13} className="px-6 py-3 text-sm font-black text-slate-900 uppercase tracking-widest border-y border-slate-200">
+                        <td colSpan={13} className="px-4 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest border-y border-slate-200">
                           {cat}
                         </td>
                       </tr>
@@ -354,40 +354,40 @@ const PriceList: React.FC = () => {
                         
                         return (
                           <tr key={item.id} className={cn(
-                            "hover:bg-slate-50 transition-colors group",
+                            "hover:bg-slate-50 transition-colors group text-[10px]",
                             isSold && "bg-slate-50/50"
                           )}>
-                            <td className="px-4 py-4 text-center border-r border-slate-50">
-                              <input type="checkbox" className="rounded" checked={selectedItems.includes(item.id)} onChange={(e) => setSelectedItems(e.target.checked ? [...selectedItems, item.id] : selectedItems.filter(id => id !== item.id))} />
+                            <td className="px-2 py-2 text-center border-r border-slate-50">
+                              <input type="checkbox" className="rounded w-3 h-3" checked={selectedItems.includes(item.id)} onChange={(e) => setSelectedItems(e.target.checked ? [...selectedItems, item.id] : selectedItems.filter(id => id !== item.id))} />
                             </td>
-                            <td className="px-6 py-4 text-sm font-black text-slate-900 border-r border-slate-50 uppercase">{item.blok}</td>
-                            <td className="px-4 py-4 text-sm font-bold text-slate-600 border-r border-slate-50">{item.unit}</td>
-                            <td className="px-6 py-4 text-sm font-medium text-slate-600 border-r border-slate-50">{item.tipe}</td>
-                            <td className="px-4 py-4 text-sm text-center text-slate-600 border-r border-slate-50">{item.luas_tanah}</td>
-                            <td className="px-4 py-4 text-sm text-center text-slate-600 border-r border-slate-50">{item.luas_bangunan}</td>
+                            <td className="px-3 py-2 font-black text-slate-900 border-r border-slate-50 uppercase">{item.blok}</td>
+                            <td className="px-2 py-2 font-bold text-slate-600 border-r border-slate-50">{item.unit}</td>
+                            <td className="px-3 py-2 font-medium text-slate-600 border-r border-slate-50 truncate max-w-[80px]">{item.tipe}</td>
+                            <td className="px-2 py-2 text-center text-slate-600 border-r border-slate-50">{item.luas_tanah}</td>
+                            <td className="px-2 py-2 text-center text-slate-600 border-r border-slate-50">{item.luas_bangunan}</td>
                             
                             {isSold ? (
-                              <td colSpan={6} className="px-6 py-4 text-center bg-slate-100/50">
-                                <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">S O L D</span>
+                              <td colSpan={6} className="px-6 py-2 text-center bg-slate-100/50">
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">S O L D</span>
                               </td>
                             ) : (
                               <>
-                                <td className="px-6 py-4 text-sm text-slate-600 border-r border-slate-50">{formatCurrency(item.booking_fee)}</td>
-                                <td className="px-6 py-4 text-sm text-center border-r border-slate-50">
-                                  <p className="font-bold text-slate-900">{formatCurrency(calc.uang_muka_kpr)}</p>
-                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">DP {item.dp_percentage * 100}%</p>
+                                <td className="px-3 py-2 text-slate-600 border-r border-slate-50 whitespace-nowrap">{formatCurrency(item.booking_fee)}</td>
+                                <td className="px-3 py-2 text-center border-r border-slate-50">
+                                  <p className="font-bold text-slate-900 leading-tight">{formatCurrency(calc.uang_muka_kpr)}</p>
+                                  <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">DP {item.dp_percentage * 100}%</p>
                                 </td>
-                                <td className="px-4 py-4 text-xs text-center border-r border-slate-50 font-bold text-indigo-600">{formatCurrency(calc.angsuran_5)}</td>
-                                <td className="px-4 py-4 text-xs text-center border-r border-slate-50 font-bold text-indigo-600">{formatCurrency(calc.angsuran_10)}</td>
-                                <td className="px-4 py-4 text-xs text-center border-r border-slate-50 font-bold text-indigo-600">{formatCurrency(calc.angsuran_15)}</td>
-                                <td className="px-6 py-4 text-sm font-black text-slate-900 text-right border-r border-slate-50">{formatCurrency(item.harga_jual)}</td>
+                                <td className="px-2 py-2 text-center border-r border-slate-50 font-bold text-indigo-600 whitespace-nowrap">{formatCurrency(calc.angsuran_5)}</td>
+                                <td className="px-2 py-2 text-center border-r border-slate-50 font-bold text-indigo-600 whitespace-nowrap">{formatCurrency(calc.angsuran_10)}</td>
+                                <td className="px-2 py-2 text-center border-r border-slate-50 font-bold text-indigo-600 whitespace-nowrap">{formatCurrency(calc.angsuran_15)}</td>
+                                <td className="px-3 py-2 font-black text-slate-900 text-right border-r border-slate-50 whitespace-nowrap">{formatCurrency(item.harga_jual)}</td>
                               </>
                             )}
                             
-                            <td className="px-4 py-4">
-                              <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsItemModalOpen(true); }} className="p-2 h-auto hover:bg-white shadow-sm border border-slate-100"><Edit2 className="w-4 h-4 text-indigo-600" /></Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)} className="p-2 h-auto hover:bg-white shadow-sm border border-slate-100"><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                            <td className="px-2 py-2">
+                              <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsItemModalOpen(true); }} className="p-1 h-auto hover:bg-white shadow-sm border border-slate-100"><Edit2 className="w-3 h-3 text-indigo-600" /></Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)} className="p-1 h-auto hover:bg-white shadow-sm border border-slate-100"><Trash2 className="w-3 h-3 text-red-500" /></Button>
                               </div>
                             </td>
                           </tr>
