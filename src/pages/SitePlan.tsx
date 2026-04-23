@@ -92,13 +92,18 @@ const SitePlan: React.FC = () => {
           <img 
             src={selectedProject.site_plan_image_url} 
             alt="Site Plan Map" 
-            className="max-w-none opacity-80"
+            className="max-w-none"
             style={{ width: `${VIEWPORT_WIDTH}px`, height: `${VIEWPORT_HEIGHT}px`, objectFit: 'contain' }}
           />
         ) : (
-          <div className="bg-slate-800 rounded-[3rem] flex flex-col items-center justify-center gap-4" style={{ width: `${VIEWPORT_WIDTH}px`, height: `${VIEWPORT_HEIGHT}px` }}>
-            <ImageIcon className="w-20 h-20 text-slate-700" />
-            <p className="text-slate-500 font-black uppercase tracking-widest">Master Plan Not Uploaded</p>
+          <div className="bg-slate-900 rounded-[3rem] flex flex-col items-center justify-center gap-6 border-4 border-dashed border-white/5" style={{ width: `${VIEWPORT_WIDTH}px`, height: `${VIEWPORT_HEIGHT}px` }}>
+            <div className="w-24 h-24 bg-indigo-600/10 rounded-full flex items-center justify-center">
+              <ImageIcon className="w-12 h-12 text-indigo-500" />
+            </div>
+            <div className="text-center space-y-2">
+              <p className="text-white font-black uppercase tracking-[0.3em]">Master Plan Belum Di-upload</p>
+              <p className="text-slate-500 text-xs font-bold px-12">Silakan klik tombol "Upload BG" di atas dan masukkan URL gambar denah hitam putih Anda.</p>
+            </div>
           </div>
         )}
 
