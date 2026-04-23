@@ -252,13 +252,16 @@ const PriceList: React.FC = () => {
       </div>
 
       {/* PRINT-ONLY HEADER */}
-      <div className="hidden print:block mb-6 pt-4">
-        <div className="relative text-center border-b-[2px] border-black pb-4">
-          <img src={logoPerusahaan} alt="Logo" className="absolute top-0 right-0 h-12 w-auto grayscale brightness-0" />
-          <img src={logoProyek} alt="Logo" className="h-14 w-auto mx-auto mb-2" />
-          <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">DAFTAR HARGA UNIT</h1>
-          <h2 className="text-lg font-bold uppercase tracking-widest">{projects.find(p => p.id === selectedProjectId)?.name}</h2>
-          <p className="text-[10px] font-bold mt-1 uppercase">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      <div className="hidden print:block mb-8 pt-8 px-8">
+        <div className="relative text-center pb-4">
+          <img src={logoPerusahaan} alt="Logo" className="absolute top-0 right-0 h-16 w-auto" />
+          <div className="flex flex-col items-center">
+            <img src={logoProyek} alt="Logo" className="h-20 w-auto mb-4" />
+            <h1 className="text-3xl font-black uppercase tracking-tight leading-none text-black">DAFTAR HARGA UNIT</h1>
+            <h2 className="text-2xl font-bold uppercase tracking-[0.2em] text-black mt-1">GOLDEN CANYON</h2>
+            <p className="text-sm font-bold mt-2 text-black uppercase">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          </div>
+          <div className="mt-6 border-b-[3px] border-black w-full"></div>
         </div>
       </div>
 
@@ -266,9 +269,12 @@ const PriceList: React.FC = () => {
         @media print {
           @page {
             size: A4 portrait;
-            margin: 10mm;
+            margin: 0; /* This helps remove browser headers/footers */
           }
-          body * { visibility: hidden !important; }
+          body {
+            margin: 1.5cm; /* Re-add margin to body to keep content away from edge */
+            -webkit-print-color-adjust: exact;
+          }
           #price-list-container, #price-list-container * { visibility: visible !important; }
           #price-list-container {
             position: absolute !important;
@@ -276,32 +282,41 @@ const PriceList: React.FC = () => {
             width: 100% !important;
             display: block !important;
             background: white !important;
-            transform: scale(0.95);
-            transform-origin: top center;
           }
           .no-print, .action-column { display: none !important; }
           
           /* Classic Table Style for Print */
           .price-table { 
             width: 100% !important; 
-            border: 1.5px solid black !important; 
+            border: 2px solid black !important; 
             border-collapse: collapse !important;
           }
           .price-table th, .price-table td { 
-            border: 1px solid black !important; 
-            padding: 2px 4px !important; 
+            border: 1.5px solid black !important; 
+            padding: 4px 6px !important; 
             color: black !important; 
-            font-size: 7pt !important;
-            line-height: 1.1 !important;
+            font-size: 7.5pt !important;
+            line-height: 1.2 !important;
           }
           .price-table thead tr { background: white !important; }
-          .price-table .cat-row { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; }
+          .price-table .cat-row { background: #f3f4f6 !important; }
           
+          /* SOLD styling to match screenshot */
+          .sold-row-cell {
+            background-color: #e5e7eb !important;
+            color: #1f2937 !important;
+            font-weight: 900 !important;
+            letter-spacing: 1.5em !important;
+            text-align: center !important;
+            text-transform: uppercase !important;
+            font-size: 8pt !important;
+          }
+
           /* Footer compaction */
           .print-footer { 
-            margin-top: 15px !important;
-            padding-top: 10px !important;
-            border-top: 1.5px solid black !important;
+            margin-top: 30px !important;
+            padding-top: 15px !important;
+            border-top: 2px solid black !important;
           }
         }
       `}} />
@@ -427,7 +442,7 @@ const PriceList: React.FC = () => {
                         <td className="text-center">{item.luas_bangunan}</td>
                         
                         {isSold ? (
-                          <td colSpan={6} className="text-center text-slate-400 tracking-[1em] font-black uppercase bg-slate-50">S O L D</td>
+                          <td colSpan={6} className="sold-row-cell">S O L D</td>
                         ) : (
                           <>
                             <td className="text-center whitespace-nowrap">{formatCurrency(item.booking_fee)}</td>
