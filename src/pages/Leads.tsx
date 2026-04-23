@@ -88,7 +88,8 @@ const Leads: React.FC = () => {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .order('date', { ascending: false });
+        .order('date', { ascending: false })
+        .limit(50);
 
       if (error) throw error;
       setLeads(data || []);
@@ -192,7 +193,6 @@ const Leads: React.FC = () => {
             variant="ghost" 
             size="sm" 
             onClick={() => {
-              localStorage.removeItem('user_division');
               setDivision(null);
             }}
             className="p-2 h-auto"

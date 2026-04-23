@@ -13,7 +13,7 @@ interface AuthContextType {
   isMockMode: boolean;
   signOut: () => Promise<void>;
   mockLogin: () => void;
-  setDivision: (division: Division) => void;
+  setDivision: (division: Division | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,20 +21,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(() => {
-    const saved = localStorage.getItem('propdev_profile');
+    const saved = localStorage.getItem('user_profile');
     return saved ? JSON.parse(saved) : null;
   });
-  const [division, setDivisionState] = useState<Division | null>(null);
-  const [loading, setLoading] = useState(() => {
-    const hasProfile = localStorage.getItem('propdev_profile');
-    const hasDivision = localStorage.getItem('propdev_division');
-    return !(hasProfile && hasDivision);
+  const [division, setDivisionState] = useState<Division | null>(() => {
+    return localStorage.getItem('user_division') as Division | null;
   });
+  const [loading, setLoading] = useState(true);
   const [isMockMode, setIsMockMode] = useState(!isSupabaseConfigured);
 
-  const setDivision = (div: Division) => {
+  const setDivision = (div: Division | null) => {
     setDivisionState(div);
-    localStorage.setItem('propdev_division', div);
+    if (div) {
+      localStorage.setItem('user_division', div);
+    } else {
+      localStorage.removeItem('user_division');
+    }
   };
 
   const mockLogin = () => {
@@ -76,6 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id, session.user.email);
+        // If we already have a profile from localStorage, we can stop global loading now
+        if (profile) setLoading(false);
       } else {
         setLoading(false);
       }
@@ -141,8 +145,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setProfile(null);
     setDivisionState(null);
-    localStorage.removeItem('propdev_division');
-    localStorage.removeItem('propdev_profile');
+    localStorage.removeItem('user_division');
+    localStorage.removeItem('user_profile');
+    // Clear dashboard cache too
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('dashboard_stats_')) localStorage.removeItem(key);
+    });
   };
 
   return (

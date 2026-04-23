@@ -445,7 +445,6 @@ const Dashboard: React.FC = () => {
             variant="outline" 
             size="md" 
             onClick={() => {
-              localStorage.removeItem('user_division');
               setDivision(null);
             }}
             className="rounded-2xl border-slate-200/60"

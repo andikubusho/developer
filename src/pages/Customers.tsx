@@ -50,7 +50,8 @@ const Customers: React.FC = () => {
       const { data, error } = await supabase
         .from('customers')
         .select('*')
-        .order('full_name', { ascending: true });
+        .order('full_name', { ascending: true })
+        .limit(50);
 
       if (error) throw error;
       setCustomers(data || []);
@@ -93,7 +94,6 @@ const Customers: React.FC = () => {
             variant="ghost" 
             size="sm" 
             onClick={() => {
-              localStorage.removeItem('user_division');
               setDivision(null);
             }}
             className="p-2 h-auto"

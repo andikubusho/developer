@@ -59,7 +59,8 @@ const Units: React.FC = () => {
       const { data, error } = await supabase
         .from('units')
         .select('*, project:projects(name)')
-        .order('unit_number', { ascending: true });
+        .order('unit_number', { ascending: true })
+        .limit(50);
 
       if (error) throw error;
       setUnits(data || []);
