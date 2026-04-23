@@ -210,12 +210,12 @@ const SitePlan: React.FC = () => {
         </div>
 
         {/* Map Canvas */}
-        <div className="flex-1 relative bg-slate-50 rounded-[3rem] border-2 border-slate-200 overflow-hidden shadow-inner group/canvas">
+        <div className="flex-1 relative bg-slate-900 overflow-hidden shadow-2xl group/canvas border-[12px] border-slate-800 rounded-[3.5rem]">
           {/* Legend - Floating Design */}
-          <div className="absolute top-8 right-8 bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border border-slate-200 shadow-2xl z-20 w-52 transition-all hover:scale-105">
+          <div className="absolute top-8 right-8 bg-slate-900/90 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 shadow-2xl z-20 w-52 transition-all hover:scale-105">
             <div className="flex items-center gap-2 mb-4">
-              <LayoutGrid className="w-4 h-4 text-indigo-600" />
-              <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tipe Unit</h4>
+              <LayoutGrid className="w-4 h-4 text-indigo-400" />
+              <h4 className="text-[10px] font-black uppercase text-indigo-300 tracking-widest">Legenda Unit</h4>
             </div>
             <div className="grid grid-cols-1 gap-3">
               {[
@@ -226,35 +226,38 @@ const SitePlan: React.FC = () => {
                 { name: 'Black Canyon', color: '#92400E' }
               ].map(l => (
                 <div key={l.name} className="flex items-center gap-3 group/item">
-                  <div className="w-5 h-5 rounded-lg border border-slate-300 shadow-sm transition-transform group-hover/item:scale-110" style={{ backgroundColor: l.color }} />
-                  <span className="text-[10px] font-bold text-slate-700 tracking-tight">{l.name}</span>
+                  <div className="w-4 h-4 rounded-md border border-white/10 shadow-sm transition-transform group-hover/item:scale-110" style={{ backgroundColor: l.color }} />
+                  <span className="text-[9px] font-black text-slate-300 uppercase tracking-tight">{l.name}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Controls */}
-          <div className="absolute top-8 left-8 flex bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 p-2 shadow-2xl z-20">
-            <Button variant="ghost" size="sm" onClick={() => setZoom(prev => Math.min(prev + 0.1, 2.5))} className="h-10 w-10 rounded-xl">
+          <div className="absolute top-8 left-8 flex bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 p-2 shadow-2xl z-20">
+            <Button variant="ghost" size="sm" onClick={() => setZoom(prev => Math.min(prev + 0.1, 2.5))} className="h-10 w-10 rounded-xl text-white hover:bg-white/10">
               <ZoomIn className="w-5 h-5" />
             </Button>
-            <div className="w-px h-6 bg-slate-200 self-center mx-2" />
-            <Button variant="ghost" size="sm" onClick={() => setZoom(prev => Math.max(prev - 0.1, 0.2))} className="h-10 w-10 rounded-xl">
+            <div className="w-px h-6 bg-white/10 self-center mx-2" />
+            <Button variant="ghost" size="sm" onClick={() => setZoom(prev => Math.max(prev - 0.1, 0.2))} className="h-10 w-10 rounded-xl text-white hover:bg-white/10">
               <ZoomOut className="w-5 h-5" />
             </Button>
-            <div className="w-px h-6 bg-slate-200 self-center mx-2" />
-            <Button variant="ghost" size="sm" onClick={() => setZoom(0.8)} className="h-10 w-10 rounded-xl">
+            <div className="w-px h-6 bg-white/10 self-center mx-2" />
+            <Button variant="ghost" size="sm" onClick={() => setZoom(0.8)} className="h-10 w-10 rounded-xl text-white hover:bg-white/10">
               <Maximize2 className="w-5 h-5" />
             </Button>
           </div>
 
-          <div className="w-full h-full overflow-auto cursor-grab active:cursor-grabbing p-32 scrollbar-hide bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)] [background-size:40px_40px]">
-            {loading ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-6">
-                <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
-                <p className="font-black uppercase tracking-widest text-xs">Membangun Visualisasi...</p>
-              </div>
-            ) : renderInteractiveMap()}
+          {/* Locked Viewport Container */}
+          <div className="w-full h-full overflow-auto cursor-grab active:cursor-grabbing scrollbar-hide bg-slate-950">
+            <div className="flex items-center justify-center min-w-max min-h-max p-[200px]">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center text-indigo-400 gap-6">
+                  <div className="w-16 h-16 border-4 border-indigo-900 border-t-indigo-500 rounded-full animate-spin" />
+                  <p className="font-black uppercase tracking-widest text-xs">Loading Master Plan...</p>
+                </div>
+              ) : renderInteractiveMap()}
+            </div>
           </div>
         </div>
       </div>

@@ -22,35 +22,31 @@ async function seed() {
       let x = 0, y = 0, rot = 0;
 
       if (blok === 'North' || blok === 'N') {
-        // Mengikuti garis teknik miring ke kiri atas
         const i = num - 1;
-        const gap = num >= 14 ? 100 : 0; 
-        x = 160 + (i * 20) + gap;
-        y = 860 + (i * -38) - gap; // Lebih tegak miringnya
-        rot = -28; 
+        const gap = num >= 14 ? 110 : 0; 
+        x = 165 + (i * 19) + gap;
+        y = 865 + (i * -38) - gap; 
+        rot = -27; 
       } else if (blok === 'East' || blok === 'E') {
-        // Cluster kanan atas
         const i = num - 1;
-        x = 680 + (i * 10);
-        y = 120 + (i * 55);
-        rot = -10;
+        x = 690 + (i * 8);
+        y = 115 + (i * 58);
+        rot = -12;
       } else if (blok === 'GC') {
-        // Sisi kanan tengah
         if (num <= 9) {
-          x = 720 + ((num-1) * 15);
-          y = 420 + ((num-1) * 35);
-          rot = -15;
+          x = 730 + ((num-1) * 14);
+          y = 415 + ((num-1) * 36);
+          rot = -14;
         } else {
-          x = 420 + ((num-10) * 45);
-          y = 560 + ((num-10) * 18);
-          rot = -22;
+          x = 425 + ((num-10) * 46);
+          y = 565 + ((num-10) * 17);
+          rot = -21;
         }
       } else if (blok === 'South' || blok === 'S') {
-        // Mengikuti garis teknik bawah yang miring ke kanan atas
         const i = num - 1;
-        x = 240 + (i * 45);
-        y = 920 + (i * -18);
-        rot = -22;
+        x = 245 + (i * 44);
+        y = 925 + (i * -17);
+        rot = -21;
       }
 
       if (x > 0) {
