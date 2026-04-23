@@ -7,6 +7,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
 const priceItemSchema = z.object({
+  unit_id: z.string().min(1, 'Pilih unit'),
   category: z.enum(['Ruko', 'Rumah']),
   cluster: z.string().optional(),
   blok: z.string().min(1, 'Blok wajib diisi'),
@@ -24,7 +25,8 @@ type PriceItemFormData = z.infer<typeof priceItemSchema>;
 interface PriceItemFormProps {
   initialData?: PriceListItem;
   availableTypes?: string[];
-  onSubmit: (data: PriceItemFormData) => void;
+  projectId: string;
+  onSubmit: (data: PriceItemFormData & { unit_id?: string }) => void;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -32,10 +34,28 @@ interface PriceItemFormProps {
 export const PriceItemForm: React.FC<PriceItemFormProps> = ({
   initialData,
   availableTypes = [],
+  projectId,
   onSubmit,
   onCancel,
   loading
 }) => {
+  const [units, setUnits] = React.useState<any[]>([]);
+  const [fetchingUnits, setFetchingUnits] = React.useState(false);
+
+  useEffect(() => {
+    const fetchProjectUnits = async () => {
+      try {
+        setFetchingUnits(true);
+        const data = await api.get('units', `project_id=eq.${projectId}&order=unit_number.asc`);
+        setUnits(data || []);
+      } catch (err) {
+        console.error('Error fetching units:', err);
+      } finally {
+        setFetchingUnits(false);
+      }
+    };
+    if (projectId) fetchProjectUnits();
+  }, [projectId]);
   const {
     register,
     handleSubmit,
@@ -80,6 +100,29 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
     return parseInt(value.replace(/\D/g, '')) || 0;
   };
 
+  const watchUnitId = watch('unit_id');
+
+  useEffect(() => {
+    if (watchUnitId && !initialData) {
+      const selectedUnit = units.find(u => u.id === watchUnitId);
+      if (selectedUnit) {
+        // Try to parse Blok and Unit from unit_number (e.g. "GC - 01" or "GC01")
+        const parts = selectedUnit.unit_number.split(/[\s-]+/);
+        if (parts.length >= 2) {
+          setValue('blok', parts[0]);
+          setValue('unit', parts[parts.length - 1]);
+        } else {
+          setValue('blok', selectedUnit.unit_number.replace(/\d+$/, ''));
+          setValue('unit', selectedUnit.unit_number.match(/\d+$/)?.[0] || '');
+        }
+        setValue('tipe', selectedUnit.type);
+        if (selectedUnit.luas_tanah) setValue('luas_tanah', selectedUnit.luas_tanah);
+        if (selectedUnit.luas_bangunan) setValue('luas_bangunan', selectedUnit.luas_bangunan);
+        if (selectedUnit.price && !watch('harga_jual')) setValue('harga_jual', selectedUnit.price);
+      }
+    }
+  }, [watchUnitId, units, setValue, initialData]);
+
   const onFormSubmit = (data: PriceItemFormData) => {
     onSubmit({
       ...data,
@@ -89,7 +132,22 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-      {/* ... previous grid rows remain same ... */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-slate-700">Pilih Unit Properti *</label>
+        <select 
+          {...register('unit_id')}
+          className="w-full rounded-lg border-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+          disabled={fetchingUnits}
+        >
+          <option value="">-- Pilih Unit --</option>
+          {units.map(u => (
+            <option key={u.id} value={u.id}>{u.unit_number} - {u.type}</option>
+          ))}
+        </select>
+        {errors.unit_id && <p className="text-xs text-red-500">{errors.unit_id.message}</p>}
+        <p className="text-[10px] text-slate-400 italic">Pilih unit untuk otomatis mengisi data Blok, Unit, dan Tipe.</p>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Kategori *</label>

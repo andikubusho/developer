@@ -12,6 +12,8 @@ const unitSchema = z.object({
   project_id: z.string().min(1, 'Pilih proyek'),
   unit_number: z.string().min(1, 'Nomor unit wajib diisi'),
   type: z.string().min(1, 'Tipe unit wajib diisi'),
+  luas_tanah: z.number().min(0).optional(),
+  luas_bangunan: z.number().min(0).optional(),
   price: z.number().min(1000000, 'Harga minimal 1 juta'),
   status: z.enum(['available', 'booked', 'sold']),
 });
@@ -71,6 +73,20 @@ export const UnitForm: React.FC<UnitFormProps> = ({ projects, onSuccess, onCance
           placeholder="Tipe 36/72"
           {...register('type')} 
           error={errors.type?.message} 
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Input 
+          label="Luas Tanah (m2)" 
+          type="number"
+          {...register('luas_tanah', { valueAsNumber: true })} 
+          error={errors.luas_tanah?.message} 
+        />
+        <Input 
+          label="Luas Bangunan (m2)" 
+          type="number"
+          {...register('luas_bangunan', { valueAsNumber: true })} 
+          error={errors.luas_bangunan?.message} 
         />
       </div>
       <Controller

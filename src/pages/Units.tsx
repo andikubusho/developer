@@ -14,20 +14,21 @@ import { api } from '../lib/api';
 
 const Units: React.FC = () => {
   const { setDivision } = useAuth();
-  const [units, setUnits] = useState<Unit[]>([]);
+  const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<any | null>(null);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+
+  const GOLDEN_CANYON_ID = '28680951-0ab9-4722-a58c-6436a9401e42';
 
   useEffect(() => {
     const init = async () => {
       try {
         setLoading(true);
-        console.log('🏗️ INITIALIZING UNITS PAGE...');
         await Promise.all([fetchUnits(), fetchProjects()]);
       } catch (err: any) {
         setError(err.message);
@@ -40,11 +41,50 @@ const Units: React.FC = () => {
 
   const fetchUnits = async () => {
     try {
-      console.log('📡 FETCHING UNITS...');
-      // Simplify query: fetch units first, we'll handle project names via the projects state
-      const data = await api.get('units', 'select=*&order=unit_number.asc');
-      console.log('✅ UNITS FETCHED:', data?.length || 0);
-      setUnits(data || []);
+      const [standardUnits, priceListItems] = await Promise.all([
+        api.get('units', 'select=*&order=unit_number.asc'),
+        api.get('price_list_items', 'select=*')
+      ]);
+
+      const processedUnits = (standardUnits || []).map((u: any) => {
+        if (u.project_id === GOLDEN_CANYON_ID) {
+          const pli = (priceListItems || []).find((p: any) => p.unit_id === u.id);
+          if (pli) {
+            return {
+              ...u,
+              unit_number: `${pli.blok} - ${pli.unit}`,
+              type: pli.tipe,
+              price: pli.harga_jual,
+              luas_tanah: pli.luas_tanah,
+              luas_bangunan: pli.luas_bangunan,
+              category: pli.category,
+              cluster: pli.cluster
+            };
+          }
+        }
+        return u;
+      });
+
+      const existingUnitIds = processedUnits.map((u: any) => u.id);
+      const orphanPli = (priceListItems || []).filter((pli: any) => !existingUnitIds.includes(pli.unit_id));
+      
+      const finalUnits = [
+        ...processedUnits,
+        ...orphanPli.map((pli: any) => ({
+          id: pli.unit_id || pli.id,
+          project_id: pli.project_id,
+          unit_number: `${pli.blok} - ${pli.unit}`,
+          type: pli.tipe,
+          price: pli.harga_jual,
+          status: pli.status,
+          luas_tanah: pli.luas_tanah,
+          luas_bangunan: pli.luas_bangunan,
+          category: pli.category,
+          cluster: pli.cluster
+        }))
+      ];
+
+      setUnits(finalUnits);
     } catch (error: any) {
       console.error('❌ UNITS FETCH FAILED:', error);
       throw error;
@@ -53,9 +93,7 @@ const Units: React.FC = () => {
 
   const fetchProjects = async () => {
     try {
-      console.log('📡 FETCHING PROJECTS...');
       const data = await api.get('projects', 'select=id,name');
-      console.log('✅ PROJECTS FETCHED:', data?.length || 0);
       setProjects(data || []);
     } catch (error: any) {
       console.error('❌ PROJECTS FETCH FAILED:', error);
@@ -77,7 +115,7 @@ const Units: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleEdit = (unit: Unit) => {
+  const handleEdit = (unit: any) => {
     setSelectedUnit(unit);
     setIsModalOpen(true);
   };
@@ -121,7 +159,7 @@ const Units: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Unit Properti</h1>
             {error && <p className="text-red-500 text-xs font-mono">Error: {error}</p>}
-            <p className="text-slate-500">Daftar semua unit di setiap proyek</p>
+            <p className="text-slate-500">Manajemen stok unit dan sinkronisasi Price List</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -169,12 +207,13 @@ const Units: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">No. Unit</th>
                 <th className="px-6 py-3 font-semibold">Proyek</th>
-                <th className="px-6 py-3 font-semibold">Tipe</th>
+                <th className="px-6 py-3 font-semibold">Tipe / Kategori</th>
+                <th className="px-6 py-3 font-semibold">LT / LB</th>
                 <th className="px-6 py-3 font-semibold">Harga</th>
                 <th className="px-6 py-3 font-semibold">Status</th>
                 <th className="px-6 py-3 font-semibold text-right">Aksi</th>
@@ -182,16 +221,25 @@ const Units: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400 animate-pulse">Memuat data unit...</td></tr>
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-400 animate-pulse">Memuat data unit...</td></tr>
               ) : filteredUnits.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-500">Belum ada unit properti.</td></tr>
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500">Belum ada unit properti.</td></tr>
               ) : (
                 filteredUnits.map((unit) => (
                   <tr key={unit.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900">{unit.unit_number}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-slate-900">{unit.unit_number}</div>
+                      {unit.cluster && <div className="text-[10px] text-indigo-600 font-bold uppercase">{unit.cluster}</div>}
+                    </td>
                     <td className="px-6 py-4 text-sm text-slate-600">{getProjectName(unit.project_id)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{unit.type}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{formatCurrency(unit.price)}</td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-slate-900">{unit.type}</div>
+                      {unit.category && <div className="text-[10px] text-slate-400 uppercase">{unit.category}</div>}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {unit.luas_tanah ? `${unit.luas_tanah} / ${unit.luas_bangunan}` : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-black text-slate-900">{formatCurrency(unit.price)}</td>
                     <td className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',

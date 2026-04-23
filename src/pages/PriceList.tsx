@@ -503,7 +503,14 @@ const PriceList: React.FC = () => {
       </div>
 
       <Modal isOpen={isItemModalOpen} onClose={() => { setIsItemModalOpen(false); setEditingItem(null); }} title={editingItem ? "Edit Unit" : "Tambah Unit Baru"}>
-        <PriceItemForm initialData={editingItem || undefined} availableTypes={Array.from(new Set(priceItems.map(i => i.tipe))).filter(Boolean)} onSubmit={handleSubmitItem} onCancel={() => { setIsItemModalOpen(false); setEditingItem(null); }} loading={loading} />
+        <PriceItemForm 
+          initialData={editingItem || undefined} 
+          availableTypes={Array.from(new Set(priceItems.map(i => i.tipe))).filter(Boolean)} 
+          projectId={selectedProjectId}
+          onSubmit={handleSubmitItem} 
+          onCancel={() => { setIsItemModalOpen(false); setEditingItem(null); }} 
+          loading={loading} 
+        />
       </Modal>
 
       <Modal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} title="Update Harga Massal">
