@@ -16,6 +16,7 @@ const Units: React.FC = () => {
   const { setDivision } = useAuth();
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,35 +24,52 @@ const Units: React.FC = () => {
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    fetchUnits();
-    fetchProjects();
+    const init = async () => {
+      try {
+        setLoading(true);
+        console.log('🏗️ INITIALIZING UNITS PAGE...');
+        await Promise.all([fetchUnits(), fetchProjects()]);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
   }, []);
 
   const fetchUnits = async () => {
     try {
-      setLoading(true);
-      const data = await api.get('units', 'select=*,project:projects(name)&order=unit_number.asc&limit=100');
+      console.log('📡 FETCHING UNITS...');
+      // Simplify query: fetch units first, we'll handle project names via the projects state
+      const data = await api.get('units', 'select=*&order=unit_number.asc');
+      console.log('✅ UNITS FETCHED:', data?.length || 0);
       setUnits(data || []);
-    } catch (error) {
-      console.error('Error fetching units:', error);
-    } finally {
-      setLoading(false);
+    } catch (error: any) {
+      console.error('❌ UNITS FETCH FAILED:', error);
+      throw error;
     }
   };
 
   const fetchProjects = async () => {
     try {
+      console.log('📡 FETCHING PROJECTS...');
       const data = await api.get('projects', 'select=id,name');
+      console.log('✅ PROJECTS FETCHED:', data?.length || 0);
       setProjects(data || []);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
+    } catch (error: any) {
+      console.error('❌ PROJECTS FETCH FAILED:', error);
+      throw error;
     }
+  };
+
+  const getProjectName = (projectId: string) => {
+    return projects.find(p => p.id === projectId)?.name || 'Proyek Umum';
   };
 
   const filteredUnits = units.filter(u => 
     u.unit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.project?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    u.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAdd = () => {
@@ -76,32 +94,18 @@ const Units: React.FC = () => {
   const handleExportPDF = async () => {
     const element = document.getElementById('units-report');
     if (!element) return;
-
     try {
       setIsExporting(true);
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
-      
+      const canvas = await html2canvas(element, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      });
-
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Daftar-Unit-Properti-${new Date().toLocaleDateString('id-ID')}.pdf`);
+      pdf.save(`Stok-Unit-${new Date().toLocaleDateString()}.pdf`);
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Gagal mengekspor PDF.');
+      console.error('PDF Export Error:', error);
     } finally {
       setIsExporting(false);
     }
@@ -109,62 +113,25 @@ const Units: React.FC = () => {
 
   return (
     <div id="units-report" className="space-y-6">
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media print {
-          @page { 
-            size: landscape; 
-            margin: 5mm !important; 
-          }
-          body {
-            background: white !important;
-            -webkit-print-color-adjust: exact;
-          }
-          .print-no-shadow {
-            box-shadow: none !important;
-            border: 1px solid #e2e8f0 !important;
-          }
-        }
-      `}} />
-
-      <div className="hidden print:block text-center mb-6">
-        <h1 className="text-xl font-bold text-slate-900 uppercase">Daftar Stok Unit Properti - Abadi Lestari Mandiri</h1>
-        <p className="text-xs text-slate-500 mt-1">Dicetak pada: {new Date().toLocaleString('id-ID')}</p>
-      </div>
-
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setDivision(null)}
-            className="p-2 h-auto"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Unit Properti</h1>
+            {error && <p className="text-red-500 text-xs font-mono">Error: {error}</p>}
             <p className="text-slate-500">Daftar semua unit di setiap proyek</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handlePrint}
-            className="flex items-center gap-2"
-          >
+          <Button variant="outline" size="sm" onClick={handlePrint} className="flex items-center gap-2">
             <Printer className="w-4 h-4" />
-            <span className="hidden sm:inline">Cetak</span>
+            <span>Cetak</span>
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleExportPDF}
-            isLoading={isExporting}
-            className="flex items-center gap-2"
-          >
+          <Button variant="outline" size="sm" onClick={handleExportPDF} isLoading={isExporting} className="flex items-center gap-2">
             <FileDown className="w-4 h-4" />
-            <span className="hidden sm:inline">PDF</span>
+            <span>PDF</span>
           </Button>
           <Button className="w-full sm:w-auto" onClick={handleAdd}>
             <Plus className="w-4 h-4 mr-2" />
@@ -173,78 +140,36 @@ const Units: React.FC = () => {
         </div>
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title={selectedUnit ? 'Edit Unit' : 'Tambah Unit'}
-        size="lg"
-      >
-        <UnitForm 
-          projects={projects}
-          onSuccess={handleSuccess} 
-          onCancel={() => setIsModalOpen(false)} 
-          initialData={selectedUnit} 
-        />
-      </Modal>
-
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-indigo-50 rounded-lg">
-            <Home className="w-5 h-5 text-indigo-600" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Total Unit</p>
-            <p className="text-lg font-bold text-slate-900">{formatNumber(units.length)}</p>
-          </div>
+          <div className="p-2 bg-indigo-50 rounded-lg"><Home className="w-5 h-5 text-indigo-600" /></div>
+          <div><p className="text-xs text-slate-500 font-medium">Total Unit</p><p className="text-lg font-bold text-slate-900">{units.length}</p></div>
         </Card>
         <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-emerald-50 rounded-lg">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Tersedia</p>
-            <p className="text-lg font-bold text-slate-900">{formatNumber(units.filter(u => u.status === 'available').length)}</p>
-          </div>
+          <div className="p-2 bg-emerald-50 rounded-lg"><CheckCircle2 className="w-5 h-5 text-emerald-600" /></div>
+          <div><p className="text-xs text-slate-500 font-medium">Tersedia</p><p className="text-lg font-bold text-slate-900">{units.filter(u => u.status === 'available').length}</p></div>
         </Card>
         <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-amber-50 rounded-lg">
-            <Clock className="w-5 h-5 text-amber-600" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Booked</p>
-            <p className="text-lg font-bold text-slate-900">{formatNumber(units.filter(u => u.status === 'booked').length)}</p>
-          </div>
+          <div className="p-2 bg-amber-50 rounded-lg"><Clock className="w-5 h-5 text-amber-600" /></div>
+          <div><p className="text-xs text-slate-500 font-medium">Booked</p><p className="text-lg font-bold text-slate-900">{units.filter(u => u.status === 'booked').length}</p></div>
         </Card>
         <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-slate-50 rounded-lg">
-            <Tag className="w-5 h-5 text-slate-600" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Terjual</p>
-            <p className="text-lg font-bold text-slate-900">{formatNumber(units.filter(u => u.status === 'sold').length)}</p>
-          </div>
+          <div className="p-2 bg-slate-50 rounded-lg"><Tag className="w-5 h-5 text-slate-600" /></div>
+          <div><p className="text-xs text-slate-500 font-medium">Terjual</p><p className="text-lg font-bold text-slate-900">{units.filter(u => u.status === 'sold').length}</p></div>
         </Card>
       </div>
 
-      <Card className="p-0 print-no-shadow">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 print:hidden">
+      <Card className="p-0">
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input 
-              placeholder="Cari unit atau proyek..." 
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <Input placeholder="Cari nomor unit..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
+          <Button variant="outline"><Filter className="w-4 h-4 mr-2" />Filter</Button>
         </div>
 
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">No. Unit</th>
@@ -252,51 +177,44 @@ const Units: React.FC = () => {
                 <th className="px-6 py-3 font-semibold">Tipe</th>
                 <th className="px-6 py-3 font-semibold">Harga</th>
                 <th className="px-6 py-3 font-semibold">Status</th>
-                <th className="px-6 py-3 font-semibold text-right print:hidden">Aksi</th>
+                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center">
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                    </div>
-                  </td>
-                </tr>
+                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400 animate-pulse">Memuat data unit...</td></tr>
               ) : filteredUnits.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
-                    Tidak ada unit ditemukan.
-                  </td>
-                </tr>
+                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-500">Belum ada unit properti.</td></tr>
               ) : (
                 filteredUnits.map((unit) => (
                   <tr key={unit.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-slate-900">{unit.unit_number}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{unit.project?.name}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{getProjectName(unit.project_id)}</td>
                     <td className="px-6 py-4 text-sm text-slate-600">{unit.type}</td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-900">{formatCurrency(unit.price)}</td>
                     <td className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                         unit.status === 'available' ? 'bg-emerald-50 text-emerald-700' :
-                        unit.status === 'booked' ? 'bg-amber-50 text-amber-700' :
-                        'bg-slate-100 text-slate-700'
+                        unit.status === 'booked' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-700'
                       )}>
-                        {unit.status === 'available' ? 'Tersedia' :
-                         unit.status === 'booked' ? 'Booked' : 'Terjual'}
+                        {unit.status === 'available' ? 'Tersedia' : unit.status === 'booked' ? 'Booked' : 'Terjual'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right print:hidden">
+                    <td className="px-6 py-4 text-right">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(unit)}>Edit</Button>
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
-          </table></div>
+          </table>
+        </div>
       </Card>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedUnit ? 'Edit Unit' : 'Tambah Unit'} size="lg">
+        <UnitForm projects={projects} onSuccess={handleSuccess} onCancel={() => setIsModalOpen(false)} initialData={selectedUnit} />
+      </Modal>
     </div>
   );
 };

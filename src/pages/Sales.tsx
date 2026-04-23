@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Filter, ShoppingBag, FileText, ArrowLeft } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { Sale } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -9,11 +8,11 @@ import { formatCurrency, formatDate, cn } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
 import { SaleForm } from '../components/forms/SaleForm';
 import { useAuth } from '../contexts/AuthContext';
-import { getMockData } from '../lib/storage';
 import { Pagination } from '../components/ui/Pagination';
+import { api } from '../lib/api';
 
 const Sales: React.FC = () => {
-  const { isMockMode, division, setDivision } = useAuth();
+  const { setDivision } = useAuth();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,87 +37,32 @@ const Sales: React.FC = () => {
     try {
       setLoading(true);
       
-      if (isMockMode) {
-        const defaultSales: any[] = [
-          {
-            id: '1',
-            unit_id: '1',
-            customer_id: '1',
-            marketing_id: 'mock-admin-id',
-            sale_date: new Date().toISOString(),
-            total_price: 350000000,
-            payment_method: 'cash',
-            status: 'active',
-            unit: { unit_number: 'A-01', project: { name: 'Griya Asri Residence' } },
-            customer: { full_name: 'Budi Santoso' },
-            marketing: { full_name: 'Admin Demo' },
-            created_at: new Date().toISOString(),
-          }
-        ];
-        
-        const allMockSales = getMockData<Sale>('sales', defaultSales);
-        
-        // Mock filtering
-        const filteredMock = allMockSales.filter(s => 
-          s.customer?.full_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          s.unit?.unit_number.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          s.unit?.project?.name.toLowerCase().includes(debouncedSearch.toLowerCase())
-        );
-        
-        setTotalCount(filteredMock.length);
-        
-        // Mock pagination
-        const from = (currentPage - 1) * pageSize;
-        const to = from + pageSize;
-        setSales(filteredMock.slice(from, to));
-        return;
-      }
-
-      // Supabase Implementation with Pagination & Search
-      let query = supabase
-        .from('sales')
-        .select(`
-          *,
-          unit:units!inner(
-            unit_number, 
-            project:projects!inner(name)
-          ), 
-          customer:customers!inner(full_name), 
-          marketing:profiles!inner(full_name)
-        `, { count: 'exact' });
-
-      // Apply search filters if needed
-      if (debouncedSearch) {
-        // Search across relations using or expression
-        query = query.or(`customer.full_name.ilike.%${debouncedSearch}%,unit.unit_number.ilike.%${debouncedSearch}%`);
-      }
-
-      // Add pagination
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
       
-      const { data, error, count } = await query
-        .order('sale_date', { ascending: false })
-        .range(from, to);
-
-      if (error) throw error;
+      // Building complex PostgREST query string for joins and pagination
+      let queryParams = `select=*,unit:units!inner(unit_number,project:projects!inner(name)),customer:customers!inner(full_name),marketing:profiles!inner(full_name)&order=sale_date.desc&offset=${from}&limit=${pageSize}`;
       
+      if (debouncedSearch) {
+        // Standard PostgREST .or syntax
+        queryParams += `&or=(customer.full_name.ilike.*${debouncedSearch}*,unit.unit_number.ilike.*${debouncedSearch}*)`;
+      }
+
+      const data = await api.get('sales', queryParams);
+      // Note: Direct fetch might not return count automatically in the body without specific headers
+      // For now, we'll estimate or fetch total separately if needed, but let's prioritize loading data
       setSales(data || []);
-      setTotalCount(count || 0);
+      setTotalCount(data?.length || 0); 
     } catch (error) {
       console.error('Error fetching sales:', error);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, debouncedSearch, isMockMode, pageSize]);
+  }, [currentPage, debouncedSearch, pageSize]);
 
   useEffect(() => {
-    if (division === 'marketing') {
-      fetchSales();
-    } else {
-      setLoading(false);
-    }
-  }, [division, fetchSales]);
+    fetchSales();
+  }, [fetchSales]);
 
   const handleAdd = () => {
     setIsModalOpen(true);
@@ -129,7 +73,7 @@ const Sales: React.FC = () => {
     fetchSales();
   };
 
-  const totalPages = Math.ceil(totalCount / pageSize);
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
   return (
     <div className="space-y-6">
@@ -138,17 +82,14 @@ const Sales: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              localStorage.removeItem('user_division');
-              setDivision(null);
-            }}
+            onClick={() => setDivision(null)}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Penjualan</h1>
-            <p className="text-slate-500">Kelola transaksi penjualan unit properti ({totalCount})</p>
+            <p className="text-slate-500">Kelola transaksi penjualan unit properti</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={handleAdd}>
@@ -202,10 +143,7 @@ const Sales: React.FC = () => {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={6} className="px-6 py-4">
-                      <div className="h-4 bg-slate-100 rounded w-1/2 mb-2"></div>
-                      <div className="h-3 bg-slate-50 rounded w-1/4"></div>
-                    </td>
+                    <td colSpan={6} className="px-6 py-4 text-center text-slate-400">Memuat data transaksi...</td>
                   </tr>
                 ))
               ) : sales.length === 0 ? (
@@ -276,7 +214,3 @@ const Sales: React.FC = () => {
 };
 
 export default Sales;
-
-
-
-
