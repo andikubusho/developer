@@ -71,6 +71,34 @@ const Leads: React.FC = () => {
     try {
       if (leads.length === 0) setLoading(true);
       
+      if (isMockMode) {
+        const defaultLeads: Lead[] = [
+          {
+            id: '1',
+            date: new Date().toISOString(),
+            name: 'Andi Wijaya',
+            phone: '081234567890',
+            source: 'Facebook Ads',
+            status: 'hot',
+            description: 'Tertarik dengan unit A-01'
+          },
+          {
+            id: '2',
+            date: new Date().toISOString(),
+            name: 'Budi Santoso',
+            phone: '089876543210',
+            source: 'Walk-in',
+            status: 'medium',
+            description: 'Tanya-tanya tipe 36'
+          }
+        ];
+        const data = getMockData<Lead>('leads', defaultLeads);
+        setLeads(data);
+        localStorage.setItem('cache_leads', JSON.stringify(data));
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('leads')
         .select('*')
