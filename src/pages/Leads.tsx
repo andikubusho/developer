@@ -54,7 +54,7 @@ const Leads: React.FC = () => {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const data = await api.get('leads', 'select=*&order=date.desc&limit=50');
+      const data = await api.get('leads', 'select=*&order=created_at.desc&limit=50');
       setLeads(data || []);
       setError(null);
     } catch (err: any) {

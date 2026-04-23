@@ -42,7 +42,7 @@ const AttendancePage: React.FC = () => {
   const fetchAttendance = async () => {
     try {
       setLoading(true);
-      const data = await api.get('attendance', 'select=*,employee:employees(*)&order=date.desc');
+      const data = await api.get('attendance', 'select=*,employee:employees(*)&order=created_at.desc');
       setAttendance(data || []);
     } catch (error) {
       console.error('Error fetching attendance:', error);

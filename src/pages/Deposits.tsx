@@ -70,7 +70,7 @@ const Deposits: React.FC = () => {
   const fetchDeposits = async () => {
     try {
       setLoading(true);
-      const data = await api.get('deposits', 'select=*&order=date.desc');
+      const data = await api.get('deposits', 'select=*&order=created_at.desc');
       setDeposits(data || []);
     } catch (error) {
       console.error('Error fetching deposits:', error);

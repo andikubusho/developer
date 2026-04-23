@@ -69,7 +69,7 @@ const AuditStockPage: React.FC = () => {
     }
 
     try {
-      const data = await api.get('audit_stock', 'select=*&order=last_audit.desc');
+      const data = await api.get('audit_stock', 'select=*&order=created_at.desc');
       setStockItems(data || []);
     } catch (error) {
       console.error('Error fetching stock audit:', error);
