@@ -102,35 +102,23 @@ const Leads: React.FC = () => {
         return;
       }
 
-      // 30-second timeout for first-time cold start in Singapore
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Fetch timeout')), 30000)
-      );
-
       console.log('Executing Supabase query (Singapore Region)...');
-      const fetchPromise = supabase
+      const { data: fetchedData, error: fetchError } = await supabase
         .from('leads')
         .select('*')
         .order('date', { ascending: false })
         .limit(50);
-
-      const result: any = await Promise.race([fetchPromise, timeoutPromise]);
       
-      if (result.error) throw result.error;
+      if (fetchError) throw fetchError;
       
-      const fetchedData = result.data || [];
-      setLeads(fetchedData);
-      localStorage.setItem('cache_leads', JSON.stringify(fetchedData));
+      setLeads(fetchedData || []);
+      localStorage.setItem('cache_leads', JSON.stringify(fetchedData || []));
       setError(null);
       
       console.log(`Leads fetch completed in ${(performance.now() - start).toFixed(2)}ms`);
     } catch (err: any) {
-      console.error('Error in fetchLeads:', err);
-      if (err.message === 'Fetch timeout') {
-        setError('Koneksi database lambat. Silakan coba lagi beberapa saat lagi.');
-      } else {
-        setError('Gagal memuat data terbaru.');
-      }
+      console.error('FULL ERROR OBJECT:', err);
+      setError(err.message || 'Gagal memuat data terbaru.');
     } finally {
       setLoading(false);
     }
