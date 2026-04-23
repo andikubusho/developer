@@ -107,7 +107,7 @@ const Leads: React.FC = () => {
         setTimeout(() => reject(new Error('Fetch timeout')), 10000)
       );
 
-      console.log('Executing Supabase query (Tokyo Region)...');
+      console.log('Executing Supabase query (Singapore Region)...');
       const fetchPromise = supabase
         .from('leads')
         .select('*')
@@ -236,7 +236,7 @@ const Leads: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Calon Konsumen</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Calon Konsumen <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full ml-2">Singapore Mode</span></h1>
             <p className="text-slate-500">Kelola data prospek dan calon pembeli</p>
           </div>
         </div>
