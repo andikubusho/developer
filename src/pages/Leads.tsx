@@ -57,54 +57,31 @@ const Leads: React.FC = () => {
   const fetchLeads = async () => {
     const start = performance.now();
     setError(null);
+    console.log('STARTING DIRECT FETCH (Singapore Region)...');
     
     try {
-      if (leads.length === 0) setLoading(true);
+      setLoading(true);
       
-      if (isMockMode) {
-        const defaultLeads: Lead[] = [
-          {
-            id: '1',
-            date: new Date().toISOString(),
-            name: 'Andi Wijaya',
-            phone: '081234567890',
-            source: 'Facebook Ads',
-            status: 'hot',
-            description: 'Tertarik dengan unit A-01'
-          },
-          {
-            id: '2',
-            date: new Date().toISOString(),
-            name: 'Budi Santoso',
-            phone: '089876543210',
-            source: 'Walk-in',
-            status: 'medium',
-            description: 'Tanya-tanya tipe 36'
-          }
-        ];
-        const data = getMockData<Lead>('leads', defaultLeads);
-        setLeads(data);
-        localStorage.setItem('cache_leads', JSON.stringify(data));
-        setLoading(false);
-        return;
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/leads?select=*&order=date.desc&limit=50`, {
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP Error ${response.status}: ${errorText}`);
       }
 
-      console.log('Executing Supabase query (Singapore Region)...');
-      const { data: fetchedData, error: fetchError } = await supabase
-        .from('leads')
-        .select('*')
-        .order('date', { ascending: false })
-        .limit(50);
-      
-      if (fetchError) throw fetchError;
+      const fetchedData = await response.json();
+      console.log('DIRECT FETCH SUCCESS:', fetchedData.length, 'rows');
       
       setLeads(fetchedData || []);
       localStorage.setItem('cache_leads', JSON.stringify(fetchedData || []));
       setError(null);
-      
-      console.log(`Leads fetch completed in ${(performance.now() - start).toFixed(2)}ms`);
     } catch (err: any) {
-      console.error('FULL ERROR OBJECT:', err);
+      console.error('DIRECT FETCH FAILED:', err);
       setError(err.message || 'Gagal memuat data terbaru.');
     } finally {
       setLoading(false);
