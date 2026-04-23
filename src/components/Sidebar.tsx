@@ -59,6 +59,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       divisions: ['marketing'] 
     },
     { 
+      name: 'Data Konsumen', 
+      icon: Users, 
+      path: '/customers', 
+      divisions: ['marketing', 'audit'] 
+    },
+    { 
       name: 'Follow Up', 
       icon: MessageSquare, 
       path: '/follow-ups', 
