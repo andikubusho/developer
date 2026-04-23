@@ -82,11 +82,12 @@ const OpnamePage: React.FC = () => {
     try {
       setLoading(true);
       const [opRes, projRes, spkRes] = await Promise.all([
-        api.get('project_opnames', 'select=*,project:projects(name),spk:spks(id,contractor_name)&order=date.desc'),
+        api.get('project_opnames', 'select=*,project:projects(name),spk:spk(*)&order=date.desc'),
         api.get('projects', 'select=id,name'),
-        api.get('spks', 'select=id,contractor_name,total_value,project_id')
+        api.get('spks', 'select=*')
       ]);
 
+      console.log('🔍 SPK DATA STRUCTURE:', spkRes?.[0]);
       setOpnames(opRes || []);
       setProjects(projRes || []);
       setSpks(spkRes || []);
