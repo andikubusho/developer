@@ -22,33 +22,34 @@ async function seed() {
       let x = 0, y = 0, rot = 0;
 
       if (blok === 'North' || blok === 'N') {
-        // N-01: (200, 750), Interval +23X, -24Y, Rot -46
+        // Diagonal N-01 start at (180, 820)
         const i = num - 1;
-        const gap = num >= 14 ? 60 : 0; // Gap jalan antara N-10 dan N-14
-        x = 200 + (i * 23) + gap;
-        y = 750 + (i * -24) - gap;
+        const gap = num >= 14 ? 85 : 0; // Gap jalan yang lebih lebar
+        x = 180 + (i * 23) + gap;
+        y = 820 + (i * -24) - gap;
         rot = -46;
       } else if (blok === 'East' || blok === 'E') {
-        // E-01: (750, 100), Vertikal
+        // E-01 start at (680, 50), Vertical stack
         const i = num - 1;
-        x = 750;
-        y = 100 + (i * 45);
+        x = 680;
+        y = 50 + (i * 55);
         rot = 0;
       } else if (blok === 'GC') {
-        // GC-01 to 09 (Row 1), 10 to 18 (Row 2)
+        // GC-01 to 09 (Top row), GC-10 to 18 (Bottom row)
         if (num <= 9) {
-          x = 550 + ((num-1) * 35);
-          y = 550;
+          x = 580 + ((num-1) * 48);
+          y = 540;
         } else {
-          x = 515 + ((num-10) * 35);
+          x = 532 + ((num-10) * 48); // Shifted left like in screenshot
           y = 600;
         }
         rot = 0;
       } else if (blok === 'South' || blok === 'S') {
-        // S-12 at left, S-01 at right
-        const i = num; // 1 to 12
-        x = 350 + (i * 40);
-        y = 850;
+        // S-12 to S-01, Horizontal bottom
+        // S-12 start at 330
+        const i = 12 - num; // Reverse order as per screenshot? 
+        x = 330 + (num * 48);
+        y = 880;
         rot = 0;
       }
 
