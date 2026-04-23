@@ -263,9 +263,47 @@ const PriceList: React.FC = () => {
           </select>
           <Button variant="outline" onClick={() => setIsUpdateModalOpen(true)}><Percent className="w-4 h-4 mr-2" />Update Harga</Button>
           <Button variant="outline" onClick={() => { setEditingItem(null); setIsItemModalOpen(true); }}><Plus className="w-4 h-4 mr-2" />Tambah Unit</Button>
+          <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />Cetak Layar</Button>
           <Button onClick={generatePDF}><FileText className="w-4 h-4 mr-2" />Export PDF</Button>
         </div>
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          nav, .sidebar, .no-print, button, select, .flex-wrap, .flex-col {
+            display: none !important;
+          }
+          #price-list-container {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .Card {
+            box-shadow: none !important;
+            border: 1px solid #e2e8f0 !important;
+          }
+          table {
+            width: 100% !important;
+            font-size: 8pt !important;
+          }
+          th, td {
+            padding: 4px 8px !important;
+          }
+          .bg-slate-900 {
+            background-color: #000 !important;
+            color: #fff !important;
+            -webkit-print-color-adjust: exact;
+          }
+          .bg-slate-800 {
+            background-color: #333 !important;
+            color: #fff !important;
+            -webkit-print-color-adjust: exact;
+          }
+          .bg-slate-50 {
+            background-color: #f8fafc !important;
+            -webkit-print-color-adjust: exact;
+          }
+        }
+      `}} />
 
       <Card className="p-0 overflow-hidden border-none shadow-premium rounded-2xl">
         <div className="overflow-x-auto">
