@@ -87,7 +87,8 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleAddUser = async () => {
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
       if (!addUserForm.full_name || !addUserForm.email) {
         alert('Nama dan Email wajib diisi');
@@ -123,7 +124,11 @@ const UserManagement: React.FC = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        alert(`Gagal menambah user: ${error.message}`);
+        return;
+      }
 
       setProfiles([data, ...profiles]);
       setIsAddModalOpen(false);
@@ -134,9 +139,9 @@ const UserManagement: React.FC = () => {
         setSelectedProfile(data);
         setIsPermissionsModalOpen(true);
       }
-    } catch (error) {
-      console.error('Error adding user:', error);
-      alert('Gagal menambah user');
+    } catch (error: any) {
+      console.error('Execution error:', error);
+      alert(`Gagal menambah user: ${error.message || 'Terjadi kesalahan sistem'}`);
     }
   };
 
@@ -288,13 +293,14 @@ const UserManagement: React.FC = () => {
         title="Tambah User Baru"
         size="md"
       >
-        <div className="space-y-4">
+        <form onSubmit={handleAddUser} className="space-y-4">
           <div>
             <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1.5">Nama Lengkap</label>
             <Input 
               placeholder="Masukkan nama lengkap" 
               value={addUserForm.full_name}
               onChange={(e) => setAddUserForm({ ...addUserForm, full_name: e.target.value })}
+              required
             />
           </div>
           <div>
@@ -304,6 +310,7 @@ const UserManagement: React.FC = () => {
               placeholder="user@perusahaan.com" 
               value={addUserForm.email}
               onChange={(e) => setAddUserForm({ ...addUserForm, email: e.target.value })}
+              required
             />
           </div>
           <div>
@@ -317,10 +324,10 @@ const UserManagement: React.FC = () => {
             </select>
           </div>
           <div className="pt-4 flex gap-3">
-            <Button variant="ghost" className="flex-1" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
-            <Button className="flex-1" onClick={handleAddUser}>Simpan User</Button>
+            <Button type="button" variant="ghost" className="flex-1" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
+            <Button type="submit" className="flex-1">Simpan User</Button>
           </div>
-        </div>
+        </form>
       </Modal>
 
       {/* Permissions Modal */}
