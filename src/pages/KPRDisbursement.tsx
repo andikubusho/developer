@@ -33,7 +33,8 @@ const KPRDisbursementPage: React.FC = () => {
   const fetchDisbursements = async () => {
     try {
       setLoading(true);
-      const data = await api.get('kpr_disbursement', 'select=*,sale:sales(customer:customers(full_name),unit:units(unit_number))&order=disbursement_date.desc');
+      const data = await api.get('kpr_disbursement', 'select=*,sale:sales(customer:customers(full_name),unit:units(unit_number))&order=created_at.desc');
+      console.log('🔍 KPR DATA STRUCTURE:', data?.[0]);
       setDisbursements(data || []);
     } catch (error) {
       console.error('Error fetching disbursements:', error);
