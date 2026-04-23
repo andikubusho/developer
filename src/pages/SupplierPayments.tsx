@@ -36,7 +36,7 @@ const SupplierPaymentsPage: React.FC = () => {
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const data = await api.get('supplier_payments', 'select=*&order=payment_date.desc');
+      const data = await api.get('supplier_payment', 'select=*&order=payment_date.desc');
       setPayments(data || []);
     } catch (error) {
       console.error('Error fetching payments:', error);
@@ -62,9 +62,9 @@ const SupplierPaymentsPage: React.FC = () => {
     try {
       setLoading(true);
       if (editingId) {
-        await api.update('supplier_payments', editingId, formData);
+        await api.update('supplier_payment', editingId, formData);
       } else {
-        await api.insert('supplier_payments', formData);
+        await api.insert('supplier_payment', formData);
       }
       await fetchPayments();
       setIsModalOpen(false);
@@ -95,7 +95,7 @@ const SupplierPaymentsPage: React.FC = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus pembayaran ini?')) return;
     try {
       setLoading(true);
-      await api.delete('supplier_payments', id);
+      await api.delete('supplier_payment', id);
       await fetchPayments();
     } catch (error) {
       console.error('Error deleting payment:', error);
@@ -108,7 +108,7 @@ const SupplierPaymentsPage: React.FC = () => {
   const handleStatusUpdate = async (id: string, status: 'paid' | 'pending') => {
     try {
       setLoading(true);
-      await api.update('supplier_payments', id, { status });
+      await api.update('supplier_payment', id, { status });
       await fetchPayments();
     } catch (error) {
       console.error('Error updating status:', error);

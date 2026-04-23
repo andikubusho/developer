@@ -33,7 +33,7 @@ const KPRDisbursementPage: React.FC = () => {
   const fetchDisbursements = async () => {
     try {
       setLoading(true);
-      const data = await api.get('kpr_disbursements', 'select=*,sale:sales(customer:customers(full_name),unit:units(unit_number))&order=disbursement_date.desc');
+      const data = await api.get('kpr_disbursement', 'select=*,sale:sales(customer:customers(full_name),unit:units(unit_number))&order=disbursement_date.desc');
       setDisbursements(data || []);
     } catch (error) {
       console.error('Error fetching disbursements:', error);
@@ -55,7 +55,7 @@ const KPRDisbursementPage: React.FC = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      await api.insert('kpr_disbursements', formData);
+      await api.insert('kpr_disbursement', formData);
       await fetchDisbursements();
       setIsModalOpen(false);
       resetForm();
@@ -71,7 +71,7 @@ const KPRDisbursementPage: React.FC = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
     try {
       setLoading(true);
-      await api.delete('kpr_disbursements', id);
+      await api.delete('kpr_disbursement', id);
       await fetchDisbursements();
     } catch (error) {
       console.error('Error deleting disbursement:', error);
@@ -84,7 +84,7 @@ const KPRDisbursementPage: React.FC = () => {
   const handleStatusUpdate = async (id: string, status: 'received') => {
     try {
       setLoading(true);
-      await api.update('kpr_disbursements', id, { status });
+      await api.update('kpr_disbursement', id, { status });
       await fetchDisbursements();
     } catch (error) {
       console.error('Error updating status:', error);
