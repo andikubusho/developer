@@ -107,6 +107,8 @@ const SitePlan: React.FC = () => {
             const hasCoords = unit.sp_x !== null && unit.sp_y !== null;
             if (!hasCoords) return null;
 
+            const num = unit.unit_number ? (unit.unit_number.split('/')[1] || unit.unit_number) : '?';
+
             return (
               <div 
                 key={unit.id}
