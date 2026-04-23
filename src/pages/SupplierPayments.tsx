@@ -36,7 +36,7 @@ const SupplierPaymentsPage: React.FC = () => {
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const data = await api.get('supplier_payment', 'select=*&order=payment_date.desc');
+      const data = await api.get('supplier_payment', 'select=*&order=created_at.desc');
       setPayments(data || []);
     } catch (error) {
       console.error('Error fetching payments:', error);

@@ -3,7 +3,7 @@ import { db } from "../server/db";
 import { sql } from "drizzle-orm";
 
 async function checkColumns() {
-  const tables = ['project_opnames', 'kpr_disbursement', 'spks'];
+  const tables = ['supplier_payments', 'supplier_payment', 'payments'];
   try {
     for (const table of tables) {
       const result = await db.execute(sql`
