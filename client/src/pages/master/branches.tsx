@@ -50,7 +50,7 @@ import {
   CardHeader, 
   CardTitle,
   CardDescription 
-} from "@/components/ui/card";
+} from "@/components/ui/Card";
 import {
   AlertDialog,
   AlertDialogAction,

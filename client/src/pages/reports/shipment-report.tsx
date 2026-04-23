@@ -4,7 +4,7 @@ import { useGlobalPeriod } from "@/hooks/use-global-period";
 import { ReportLayout } from "@/components/reports/report-layout";
 import { ReportFilter } from "@/components/reports/report-filter";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/badge";
 import { Package, Truck, CheckCircle2, AlertCircle, MapPin, User, Calendar, Clock, ClipboardCheck, Send, FileCheck, Hash, ExternalLink, Box, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { format } from "date-fns";

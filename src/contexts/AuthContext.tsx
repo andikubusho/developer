@@ -22,7 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(() => {
     try {
-      const saved = localStorage.getItem('user_profile');
+      const saved = localStorage.getItem('propdev_profile');
       return saved ? JSON.parse(saved) : null;
     } catch (e) {
       console.error('Error parsing profile cache:', e);
@@ -30,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
   const [division, setDivisionState] = useState<Division | null>(() => {
-    return localStorage.getItem('user_division') as Division | null;
+    return localStorage.getItem('propdev_division') as Division | null;
   });
   const [loading, setLoading] = useState(true);
   const [isMockMode, setIsMockMode] = useState(!isSupabaseConfigured);
@@ -38,9 +38,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setDivision = (div: Division | null) => {
     setDivisionState(div);
     if (div) {
-      localStorage.setItem('user_division', div);
+      localStorage.setItem('propdev_division', div);
     } else {
-      localStorage.removeItem('user_division');
+      localStorage.removeItem('propdev_division');
     }
   };
 
@@ -67,7 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Safety timeout: Never let the loading screen hang for more than 5 seconds
     const safetyTimeout = setTimeout(() => {
       setLoading(false);
     }, 5000);
@@ -78,16 +77,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id, session.user.email);
-        // If we already have a profile from localStorage, we can stop global loading now
-        if (profile) {
-          setLoading(false);
-          clearTimeout(safetyTimeout);
-        }
       } else {
         setLoading(false);
         clearTimeout(safetyTimeout);
@@ -121,15 +114,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // Profile not found, create one
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert([
               { 
                 id: userId, 
                 email: userEmail || '', 
-                name: userEmail?.split('@')[0] || 'User',
-                role: 'admin' // Default to admin for first user/demo
+                full_name: userEmail?.split('@')[0] || 'User',
+                role: 'admin'
               }
             ])
             .select()
@@ -157,9 +149,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setProfile(null);
     setDivisionState(null);
-    localStorage.removeItem('user_division');
-    localStorage.removeItem('user_profile');
-    // Clear dashboard cache too
+    localStorage.removeItem('propdev_division');
+    localStorage.removeItem('propdev_profile');
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('dashboard_stats_')) localStorage.removeItem(key);
     });

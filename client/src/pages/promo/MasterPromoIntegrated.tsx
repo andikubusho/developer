@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
   Card, CardContent, CardHeader, CardTitle, CardDescription 
-} from "@/components/ui/card";
+} from "@/components/ui/Card";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";

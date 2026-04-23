@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Card, CardContent, CardHeader, CardTitle, CardDescription 
-} from "@/components/ui/card";
+} from "@/components/ui/Card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, RefreshCw, Trophy, Target, ArrowRight, CheckCircle2, 

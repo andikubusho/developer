@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ReportLayout } from "@/components/reports/report-layout";
 import { ReportFilter } from "@/components/reports/report-filter";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, ShoppingCart, CheckCircle2, AlertCircle, TrendingUp, User, Globe, Calendar, Hash, Receipt, ChevronLeft, ChevronRight } from "lucide-react";

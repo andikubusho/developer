@@ -21,7 +21,7 @@ import { insertPrincipalMasterSchema, type PrincipalMaster, type Branch } from "
 import { useBranch } from "@/hooks/use-branch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 
 export default function PrincipalMasterPage() {

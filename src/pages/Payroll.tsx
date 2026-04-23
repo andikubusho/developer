@@ -187,7 +187,7 @@ const PayrollPage: React.FC = () => {
             variant="ghost" 
             size="sm" 
             onClick={() => {
-              localStorage.removeItem('user_division');
+              setDivision(null);
               setDivision(null);
             }}
             className="p-2 h-auto"

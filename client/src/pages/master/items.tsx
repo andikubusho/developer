@@ -39,7 +39,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Controller } from "react-hook-form";
 import { useSettings } from "@/hooks/use-settings";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function ItemsPage() {

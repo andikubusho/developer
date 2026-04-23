@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Download, FileSpreadsheet, FileText, Monitor, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 

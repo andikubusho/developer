@@ -25,7 +25,7 @@ import { type Branch, type Role } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useBranch } from "@/hooks/use-branch";
 import { Controller } from "react-hook-form";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/hooks/use-settings";
 

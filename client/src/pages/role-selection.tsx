@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useAuth, useLogout } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useBranch } from "@/hooks/use-branch";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { LayoutDashboard, Users, Truck, ShoppingBag, ShieldCheck, Building2, MapPin, ChevronDown, LogOut } from "lucide-react";

@@ -3,7 +3,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useBranch } from "@/hooks/use-branch";
 import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { getSuperMenus } from "@/pages/dashboard";
