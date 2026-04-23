@@ -14,6 +14,7 @@ const Leads: React.FC = () => {
   const { isMockMode, division, setDivision } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -35,9 +36,9 @@ const Leads: React.FC = () => {
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        console.log('Loaded leads from cache:', parsed.length);
         setLeads(parsed);
-        setLoading(false);
+        // Hide spinner if we have some data
+        if (parsed.length > 0) setLoading(false);
       } catch (e) {
         console.error('Error parsing leads cache:', e);
       }
@@ -68,13 +69,12 @@ const Leads: React.FC = () => {
 
   const fetchLeads = async () => {
     const start = performance.now();
-    console.log('Starting fetchLeads...');
+    setError(null);
     
     try {
       if (leads.length === 0) setLoading(true);
       
       if (isMockMode) {
-        console.log('Using Mock Mode for Leads');
         const defaultLeads: Lead[] = [
           {
             id: '1',
@@ -102,12 +102,12 @@ const Leads: React.FC = () => {
         return;
       }
 
-      // Add a timeout to the fetch
+      // 10-second timeout for cross-region latency
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Fetch timeout')), 10000)
       );
 
-      console.log('Executing Supabase query for leads...');
+      console.log('Executing Supabase query (Tokyo Region)...');
       const fetchPromise = supabase
         .from('leads')
         .select('*')
@@ -119,44 +119,18 @@ const Leads: React.FC = () => {
       if (result.error) throw result.error;
       
       const fetchedData = result.data || [];
-      console.log(`Fetched ${fetchedData.length} leads successfully`);
-      
       setLeads(fetchedData);
       localStorage.setItem('cache_leads', JSON.stringify(fetchedData));
+      setError(null);
       
       console.log(`Leads fetch completed in ${(performance.now() - start).toFixed(2)}ms`);
-    } catch (error: any) {
-      console.error('Error in fetchLeads:', error);
-      
-      // If timeout or connection error, fallback to mock data so user is not stuck
-      if (error.message === 'Fetch timeout' || !navigator.onLine) {
-        console.warn('Database timeout! Switching to Mock Data for user experience.');
-        
-        const defaultLeads: Lead[] = [
-          {
-            id: 'mock-1',
-            date: new Date().toISOString(),
-            name: 'Andi Wijaya (Contoh)',
-            phone: '081234567890',
-            source: 'Facebook Ads',
-            status: 'hot',
-            description: 'Tertarik dengan unit A-01 (Data Contoh karena Database sedang lambat)'
-          },
-          {
-            id: 'mock-2',
-            date: new Date().toISOString(),
-            name: 'Budi Santoso (Contoh)',
-            phone: '089876543210',
-            source: 'Walk-in',
-            status: 'medium',
-            description: 'Tanya-tanya tipe 36 (Data Contoh)'
-          }
-        ];
-        
-        setLeads(defaultLeads);
+    } catch (err: any) {
+      console.error('Error in fetchLeads:', err);
+      if (err.message === 'Fetch timeout') {
+        setError('Koneksi lambat (Tokyo-Singapore). Menampilkan data terakhir.');
+      } else {
+        setError('Gagal memuat data terbaru.');
       }
-      
-      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -273,6 +247,13 @@ const Leads: React.FC = () => {
       </div>
 
       <Card className="p-0">
+        {error && (
+          <div className="m-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg flex items-center gap-2 text-sm">
+            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+            {error}
+            <button onClick={() => fetchLeads()} className="ml-auto underline font-medium">Coba Lagi</button>
+          </div>
+        )}
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
