@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, Plus, ArrowLeft, ChevronLeft, ChevronRight, Printer, FileDown } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
@@ -43,11 +43,7 @@ const MarketingSchedulePage: React.FC = () => {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('marketing_schedules')
-        .select('*, staff:marketing_staff(*)');
-
-      if (error) throw error;
+      const data = await api.get('marketing_schedules', 'select=*,staff:marketing_staff(*)');
       setSchedules(data || []);
     } catch (error) {
       console.error('Error fetching schedules:', error);
@@ -67,12 +63,7 @@ const MarketingSchedulePage: React.FC = () => {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('marketing_staff')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (error) throw error;
+      const data = await api.get('marketing_staff', 'select=*&order=name.asc');
       setStaff(data || []);
     } catch (error) {
       console.error('Error fetching staff:', error);
@@ -116,20 +107,17 @@ const MarketingSchedulePage: React.FC = () => {
 
       if (editingSchedule) {
         const entry = formData.staff_entries[0];
-        const { error } = await supabase
-          .from('marketing_schedules')
-          .update({ position: entry.position })
-          .eq('id', editingSchedule.id);
-        if (error) throw error;
+        await api.update('marketing_schedules', editingSchedule.id, { position: entry.position });
       } else {
-        const { error } = await supabase
-          .from('marketing_schedules')
-          .insert(formData.staff_entries.map(entry => ({
+        // We cannot batch insert directly via the api helper which uses insert single item. 
+        // We must loop and insert sequentially.
+        for (const entry of formData.staff_entries) {
+          await api.insert('marketing_schedules', {
             staff_id: entry.staff_id,
             date: formData.date,
             position: entry.position
-          })));
-        if (error) throw error;
+          });
+        }
       }
       
       fetchSchedules();
@@ -154,12 +142,7 @@ const MarketingSchedulePage: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
-        .from('marketing_schedules')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await api.delete('marketing_schedules', id);
       fetchSchedules();
       closeModal();
     } catch (error) {

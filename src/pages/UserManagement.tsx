@@ -65,15 +65,10 @@ const UserManagement: React.FC = () => {
   const handleSave = async () => {
     if (!editingId) return;
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: editForm.full_name,
-          role: editForm.role
-        })
-        .eq('id', editingId);
-
-      if (error) throw error;
+      await api.update('profiles', editingId, {
+        full_name: editForm.full_name,
+        role: editForm.role
+      });
       
       setProfiles(profiles.map(p => p.id === editingId ? { ...p, ...editForm } as Profile : p));
       setEditingId(null);
@@ -92,13 +87,9 @@ const UserManagement: React.FC = () => {
       }
 
       // Check if email already exists
-      const { data: existing } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', addUserForm.email)
-        .maybeSingle();
+      const existing = await api.get('profiles', `select=id&email=eq.${addUserForm.email}`);
 
-      if (existing) {
+      if (existing && existing.length > 0) {
         alert('Email sudah digunakan');
         return;
       }
@@ -106,25 +97,16 @@ const UserManagement: React.FC = () => {
       const newId = crypto.randomUUID();
       const defaultPerms = getDefaultPermissions(addUserForm.role);
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: newId,
-            full_name: addUserForm.full_name,
-            email: addUserForm.email,
-            role: addUserForm.role,
-            permissions: defaultPerms
-          }
-        ])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Database error:', error);
-        alert(`Gagal menambah user: ${error.message}`);
-        return;
-      }
+      await api.insert('profiles', {
+        id: newId,
+        full_name: addUserForm.full_name,
+        email: addUserForm.email,
+        role: addUserForm.role,
+        permissions: defaultPerms
+      });
+      
+      // Fetch the newly created profile
+      const [data] = await api.get('profiles', `select=*&id=eq.${newId}`);
 
       setProfiles([data, ...profiles]);
       setIsAddModalOpen(false);
@@ -153,12 +135,7 @@ const UserManagement: React.FC = () => {
     };
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ permissions: updatedPermissions })
-        .eq('id', selectedProfile.id);
-
-      if (error) throw error;
+      await api.update('profiles', selectedProfile.id, { permissions: updatedPermissions });
 
       const updated = { ...selectedProfile, permissions: updatedPermissions };
       setSelectedProfile(updated);

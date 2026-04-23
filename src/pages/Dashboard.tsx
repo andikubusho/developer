@@ -41,6 +41,7 @@ import {
 } from 'recharts';
 import { Skeleton } from '../components/ui/Skeleton';
 import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { Sale, Installment, Payment } from '../types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -149,13 +150,13 @@ const Dashboard: React.FC = () => {
     }
     
     try {
-      const { data: units } = await supabase.from('units').select('status');
+      const units = await api.get('units', 'select=status');
       if (units) {
         setStats(prev => ({
           ...prev,
           totalUnits: units.length,
-          soldUnits: units.filter(u => u.status === 'sold').length,
-          availableUnits: units.filter(u => u.status === 'available').length
+          soldUnits: units.filter((u: any) => u.status === 'sold').length,
+          availableUnits: units.filter((u: any) => u.status === 'available').length
         }));
       }
     } catch (e) {
@@ -262,11 +263,7 @@ const Dashboard: React.FC = () => {
       return;
     }
 
-    const { data } = await supabase
-      .from('installments')
-      .select('*, sales(customer_id, customers(name))')
-      .eq('status', 'overdue')
-      .limit(5);
+    const data = await api.get('installments', 'select=*,sales(customer_id,customers(name))&status=eq.overdue&limit=5');
     
     setOverdueInstallments(data || []);
   };
@@ -294,29 +291,20 @@ const Dashboard: React.FC = () => {
         return;
       }
 
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('status', 'verified');
+      const payments = await api.get('payments', 'select=amount&status=eq.verified');
       
-      const totalIncome = payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+      const totalIncome = payments?.reduce((sum: number, p: any) => sum + p.amount, 0) || 0;
 
-      const { count: salesCount } = await supabase
-        .from('sales')
-        .select('*', { count: 'exact', head: true });
+      const salesData = await api.get('sales', 'select=id');
+      const salesCount = salesData?.length || 0;
 
-      const { data: units } = await supabase
-        .from('units')
-        .select('status');
+      const units = await api.get('units', 'select=status');
       
       const totalUnits = units?.length || 0;
-      const soldUnits = units?.filter(u => u.status === 'sold').length || 0;
-      const availableUnits = units?.filter(u => u.status === 'available').length || 0;
+      const soldUnits = units?.filter((u: any) => u.status === 'sold').length || 0;
+      const availableUnits = units?.filter((u: any) => u.status === 'available').length || 0;
 
-      const { data: overdue } = await supabase
-        .from('installments')
-        .select('amount')
-        .eq('status', 'overdue');
+      const overdue = await api.get('installments', 'select=amount&status=eq.overdue');
       
       const overdueAmount = overdue?.reduce((sum, i) => sum + i.amount, 0) || 0;
 

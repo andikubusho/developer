@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, Filter, MoreVertical, Edit, Trash2, Package, Truck, CheckCircle2, ArrowLeft } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { PurchaseOrder, Material } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -65,12 +65,7 @@ const PurchaseOrders: React.FC = () => {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('purchase_orders')
-        .select('*, materials(*)')
-        .order('order_date', { ascending: false });
-
-      if (error) throw error;
+      const data = await api.get('purchase_orders', 'select=*,materials(*)&order=order_date.desc');
       setOrders(data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -87,7 +82,7 @@ const PurchaseOrders: React.FC = () => {
       ]);
       return;
     }
-    const { data } = await supabase.from('materials').select('*');
+    const data = await api.get('materials', 'select=*');
     setMaterials(data || []);
   };
 
@@ -109,21 +104,13 @@ const PurchaseOrders: React.FC = () => {
       return;
     }
     try {
-      const { error } = await supabase
-        .from('purchase_orders')
-        .update({ status })
-        .eq('id', id);
-
-      if (error) throw error;
+      await api.update('purchase_orders', id, { status });
 
       // If received, update material stock
       if (status === 'received') {
         const material = materials.find(m => m.id === materialId);
         if (material) {
-          await supabase
-            .from('materials')
-            .update({ stock: material.stock + quantity })
-            .eq('id', materialId);
+          await api.update('materials', materialId, { stock: material.stock + quantity });
         }
       }
 

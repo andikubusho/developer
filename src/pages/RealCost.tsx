@@ -6,7 +6,7 @@ import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { Project, RAB, PurchaseOrder, ProjectOpname } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { getMockData } from '../lib/storage';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, 
@@ -52,7 +52,7 @@ const RealCostPage: React.FC = () => {
       return;
     }
 
-    const { data } = await supabase.from('projects').select('*');
+    const data = await api.get('projects', 'select=*');
     setProjects(data || []);
     if (data && data.length > 0) setSelectedProjectId(data[0].id);
     setLoading(false);
@@ -98,15 +98,15 @@ const RealCostPage: React.FC = () => {
     }
 
     try {
-      const [rabRes, orderRes, opnameRes] = await Promise.all([
-        supabase.from('rab').select('*').eq('project_id', selectedProjectId),
-        supabase.from('purchase_orders').select('*').eq('project_id', selectedProjectId).eq('status', 'received'),
-        supabase.from('project_opnames').select('*').eq('project_id', selectedProjectId).in('status', ['approved', 'paid'])
+      const [rabData, orderData, opnameData] = await Promise.all([
+        api.get('rab', `select=*&project_id=eq.${selectedProjectId}`),
+        api.get('purchase_orders', `select=*&project_id=eq.${selectedProjectId}&status=eq.received`),
+        api.get('project_opnames', `select=*&project_id=eq.${selectedProjectId}&status=in.(approved,paid)`)
       ]);
 
-      const rabTotal = rabRes.data?.reduce((sum, r) => sum + r.total_price, 0) || 0;
-      const materialActual = orderRes.data?.reduce((sum, o) => sum + o.total_price, 0) || 0;
-      const wageActual = opnameRes.data?.reduce((sum, o) => sum + o.amount, 0) || 0;
+      const rabTotal = rabData?.reduce((sum: number, r: any) => sum + r.total_price, 0) || 0;
+      const materialActual = orderData?.reduce((sum: number, o: any) => sum + o.total_price, 0) || 0;
+      const wageActual = opnameData?.reduce((sum: number, o: any) => sum + o.amount, 0) || 0;
       const totalActual = materialActual + wageActual;
 
       setData({
@@ -115,9 +115,9 @@ const RealCostPage: React.FC = () => {
         wageActual,
         totalActual,
         variance: rabTotal - totalActual,
-        rabItems: rabRes.data || [],
-        materialOrders: orderRes.data || [],
-        wageOpnames: opnameRes.data || []
+        rabItems: rabData || [],
+        materialOrders: orderData || [],
+        wageOpnames: opnameData || []
       });
     } catch (e) {
       console.error(e);

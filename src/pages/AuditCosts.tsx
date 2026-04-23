@@ -7,7 +7,7 @@ import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
 import { AuditCostItem } from '../types';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { getMockData, saveMockData } from '../lib/storage';
 
 const AuditCostsPage: React.FC = () => {
@@ -68,11 +68,7 @@ const AuditCostsPage: React.FC = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('audit_costs')
-        .select('*')
-        .order('project_name', { ascending: true });
-      if (error) throw error;
+      const data = await api.get('audit_costs', 'select=*&order=project_name.asc');
       setCostItems(data || []);
     } catch (error) {
       console.error('Error fetching cost audit:', error);
@@ -101,10 +97,7 @@ const AuditCostsPage: React.FC = () => {
       saveMockData('audit_costs', updatedCosts);
     } else {
       try {
-        const { error } = await supabase
-          .from('audit_costs')
-          .insert([auditData]);
-        if (error) throw error;
+        await api.insert('audit_costs', auditData);
         fetchCostAudit();
       } catch (error) {
         console.error('Error saving cost audit:', error);

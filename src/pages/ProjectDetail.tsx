@@ -10,7 +10,7 @@ import {
   LayoutGrid,
   History
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { Project, ConstructionProgress, Unit } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -86,17 +86,15 @@ const ProjectDetail: React.FC = () => {
         return;
       }
 
-      const [projectRes, progressRes, unitsRes] = await Promise.all([
-        supabase.from('projects').select('*').eq('id', projectId).single(),
-        supabase.from('project_progress').select('*').eq('project_id', projectId).order('report_date', { ascending: false }),
-        supabase.from('units').select('*').eq('project_id', projectId).order('unit_number', { ascending: true })
+      const [projectData, progressData, unitsData] = await Promise.all([
+        api.get('projects', `select=*&id=eq.${projectId}`),
+        api.get('project_progress', `select=*&project_id=eq.${projectId}&order=report_date.desc`),
+        api.get('units', `select=*&project_id=eq.${projectId}&order=unit_number.asc`)
       ]);
 
-      if (projectRes.error) throw projectRes.error;
-      
-      setProject(projectRes.data);
-      setProgress(progressRes.data || []);
-      setUnits(unitsRes.data || []);
+      setProject(projectData?.[0] || null);
+      setProgress(progressData || []);
+      setUnits(unitsData || []);
     } catch (error) {
       console.error('Error fetching project detail:', error);
     } finally {

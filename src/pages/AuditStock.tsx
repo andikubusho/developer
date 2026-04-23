@@ -7,7 +7,7 @@ import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
 import { AuditStockItem } from '../types';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { getMockData, saveMockData } from '../lib/storage';
 
 const AuditStockPage: React.FC = () => {
@@ -69,11 +69,7 @@ const AuditStockPage: React.FC = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('audit_stock')
-        .select('*')
-        .order('last_audit', { ascending: false });
-      if (error) throw error;
+      const data = await api.get('audit_stock', 'select=*&order=last_audit.desc');
       setStockItems(data || []);
     } catch (error) {
       console.error('Error fetching stock audit:', error);
@@ -97,10 +93,7 @@ const AuditStockPage: React.FC = () => {
       saveMockData('audit_stock', updatedStock);
     } else {
       try {
-        const { error } = await supabase
-          .from('audit_stock')
-          .insert([auditData]);
-        if (error) throw error;
+        await api.insert('audit_stock', auditData);
         fetchStockAudit();
       } catch (error) {
         console.error('Error saving stock audit:', error);
