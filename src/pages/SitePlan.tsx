@@ -12,9 +12,9 @@ import {
   RefreshCw,
   Info
 } from 'lucide-react';
-import { Card } from '@/src/components/ui/card';
-import { Button } from '@/src/components/ui/button';
-import { Modal } from '@/src/components/ui/modal';
+import { Card } from '@/src/components/ui/Card';
+import { Button } from '@/src/components/ui/Button';
+import { Modal } from '@/src/components/ui/Modal';
 import { cn } from '@/src/lib/utils';
 
 const SitePlan = () => {
