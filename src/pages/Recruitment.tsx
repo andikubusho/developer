@@ -170,8 +170,7 @@ const RecruitmentPage: React.FC = () => {
           </Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
+        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Tgl Melamar</th>
@@ -249,7 +248,6 @@ const RecruitmentPage: React.FC = () => {
               )}
             </tbody>
           </table></div>
-        </div>
       </Card>
 
       <Modal
@@ -332,5 +330,6 @@ const RecruitmentPage: React.FC = () => {
 };
 
 export default RecruitmentPage;
+
 
 

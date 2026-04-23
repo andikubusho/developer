@@ -289,8 +289,7 @@ const OpnamePage: React.FC = () => {
           </Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
+        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50/80 text-slate-500 text-[10px] uppercase tracking-widest">
                 <th className="px-6 py-4 font-black">Tanggal</th>
@@ -370,7 +369,6 @@ const OpnamePage: React.FC = () => {
               )}
             </tbody>
           </table></div>
-        </div>
       </Card>
 
       <Modal
@@ -493,5 +491,6 @@ const OpnamePage: React.FC = () => {
 };
 
 export default OpnamePage;
+
 
 

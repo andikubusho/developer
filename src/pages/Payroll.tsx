@@ -229,8 +229,7 @@ const PayrollPage: React.FC = () => {
           </select>
         </div>
 
-        <div className="overflow-x-auto">
-          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
+        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Periode</th>
@@ -306,7 +305,6 @@ const PayrollPage: React.FC = () => {
               )}
             </tbody>
           </table></div>
-        </div>
       </Card>
 
       <Modal
@@ -403,5 +401,6 @@ const PayrollPage: React.FC = () => {
 };
 
 export default PayrollPage;
+
 
 

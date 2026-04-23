@@ -262,7 +262,6 @@ const Sales: React.FC = () => {
               )}
             </tbody>
           </table></div>
-        </div>
         
         <Pagination 
           currentPage={currentPage}
@@ -276,6 +275,7 @@ const Sales: React.FC = () => {
 };
 
 export default Sales;
+
 
 
 

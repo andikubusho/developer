@@ -539,8 +539,7 @@ const PriceList: React.FC = () => {
 
       {/* Content */}
       <Card className="p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
+        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
                 <tr className="bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider">
                   <th className="px-4 py-3 font-semibold text-center border-r print-hidden">
@@ -651,7 +650,6 @@ const PriceList: React.FC = () => {
                 })}
               </tbody>
             </table></div>
-        </div>
       </Card>
 
       {/* Modal Tambah/Edit Item */}
@@ -736,5 +734,6 @@ const PriceList: React.FC = () => {
 };
 
 export default PriceList;
+
 
 

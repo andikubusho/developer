@@ -229,8 +229,7 @@ const AttendancePage: React.FC = () => {
           <Input type="date" className="w-full sm:w-auto" defaultValue={new Date().toISOString().split('T')[0]} />
         </div>
 
-        <div className="overflow-x-auto">
-          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
+        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Tanggal</th>
@@ -296,7 +295,6 @@ const AttendancePage: React.FC = () => {
               )}
             </tbody>
           </table></div>
-        </div>
       </Card>
 
       <Modal
@@ -367,5 +365,6 @@ const AttendancePage: React.FC = () => {
 };
 
 export default AttendancePage;
+
 
 

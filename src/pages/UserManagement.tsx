@@ -368,7 +368,6 @@ const UserManagement: React.FC = () => {
               ))}
             </tbody>
           </table></div>
-        </div>
         <div className="mt-6 pt-6 border-t border-slate-100 flex justify-end">
           <Button onClick={() => setIsPermissionsModalOpen(false)}>Selesai</Button>
         </div>
@@ -378,4 +377,5 @@ const UserManagement: React.FC = () => {
 };
 
 export default UserManagement;
+
 
