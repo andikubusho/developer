@@ -212,7 +212,11 @@ const Leads: React.FC = () => {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Calon Konsumen <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full ml-2">Singapore Mode</span></h1>
-            <p className="text-slate-500">Kelola data prospek dan calon pembeli</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono">URL: {supabase.auth.getSession ? 'Initialized' : 'Error'}</span>
+              <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-mono">Status: {loading ? 'Connecting...' : 'Ready'}</span>
+            </div>
+            <p className="text-slate-500 mt-1">Kelola data prospek dan calon pembeli</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={handleAdd}>
