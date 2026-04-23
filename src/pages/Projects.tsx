@@ -4,7 +4,7 @@ import { Plus, Search, Filter, MoreVertical, Edit, Trash2, MapPin, ArrowLeft } f
 import { supabase } from '../lib/supabase';
 import { Project } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { formatDate, cn } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';

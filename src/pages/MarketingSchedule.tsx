@@ -4,7 +4,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { MarketingSchedule, MarketingStaff } from '../types';

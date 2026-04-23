@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, BarChart3, ArrowLeft, TrendingUp, TrendingDown, Target, Wallet, Package, HardHat, Info } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { Project, RAB, PurchaseOrder, ProjectOpname } from '../types';

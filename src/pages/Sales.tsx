@@ -3,7 +3,7 @@ import { Plus, Search, Filter, ShoppingBag, FileText, ArrowLeft } from 'lucide-r
 import { supabase } from '../lib/supabase';
 import { Sale } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';

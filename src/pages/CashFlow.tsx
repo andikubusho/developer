@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, ArrowLeft, ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDate, cn } from '../lib/utils';

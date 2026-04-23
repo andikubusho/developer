@@ -39,9 +39,10 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import { Skeleton } from '../components/ui/Skeleton';
 import { supabase } from '../lib/supabase';
 import { Sale, Installment, Payment } from '../types';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { formatDate, formatCurrency, formatNumber, cn } from '../lib/utils';
@@ -79,6 +80,13 @@ const Dashboard: React.FC = () => {
   const [activeSpks, setActiveSpks] = useState<any[]>([]);
 
   useEffect(() => {
+    // Instant Hydration from Cache
+    const cachedStats = localStorage.getItem(`dashboard_stats_${division}`);
+    if (cachedStats) {
+      setStats(JSON.parse(cachedStats));
+      setLoading(false); // Show cached data immediately
+    }
+
     if (division === 'marketing') {
       fetchMarketingData();
     } else if (division === 'teknik') {
@@ -89,24 +97,44 @@ const Dashboard: React.FC = () => {
   }, [division]);
 
   const fetchMarketingData = async () => {
-    setLoading(true);
-    await Promise.all([
-      fetchGeneralStats(),
-      fetchMarketingStats(),
-      fetchOverdueInstallments(),
-      fetchMarketingSpecifics()
-    ]);
-    setLoading(false);
+    // Only set loading true if no cache available
+    if (!localStorage.getItem(`dashboard_stats_${division}`)) {
+      setLoading(true);
+    }
+    
+    try {
+      await Promise.all([
+        fetchGeneralStats(),
+        fetchMarketingStats(),
+        fetchOverdueInstallments(),
+        fetchMarketingSpecifics()
+      ]);
+      // Save to cache after successful fetch
+      localStorage.setItem(`dashboard_stats_${division}`, JSON.stringify(stats));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchTeknikData = async () => {
-    setLoading(true);
-    await Promise.all([
-      fetchGeneralStats(),
-      fetchTeknikStats(),
-      fetchTeknikSpecifics()
-    ]);
-    setLoading(false);
+    if (!localStorage.getItem(`dashboard_stats_${division}`)) {
+      setLoading(true);
+    }
+    
+    try {
+      await Promise.all([
+        fetchGeneralStats(),
+        fetchTeknikStats(),
+        fetchTeknikSpecifics()
+      ]);
+      localStorage.setItem(`dashboard_stats_${division}`, JSON.stringify(stats));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchGeneralStats = async () => {
@@ -404,13 +432,6 @@ const Dashboard: React.FC = () => {
 
   const COLORS = ['#6366f1', '#10b981', '#f59e0b'];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-10">

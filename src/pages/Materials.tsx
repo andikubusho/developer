@@ -3,7 +3,7 @@ import { Plus, Search, Package, AlertTriangle, ArrowRightLeft, ArrowLeft } from 
 import { supabase } from '../lib/supabase';
 import { Material } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { MaterialForm } from '../components/forms/MaterialForm';

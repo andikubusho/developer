@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart3, ArrowLeft, Download, FileText, PieChart, TrendingUp, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../lib/utils';
 

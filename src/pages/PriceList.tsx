@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Upload, Printer, ArrowLeft, Trash2, Download, Table, Archive, Plus, Percent, CheckCircle2, XCircle, Edit2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';

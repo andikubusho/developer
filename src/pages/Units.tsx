@@ -5,7 +5,7 @@ import html2canvas from 'html2canvas';
 import { supabase } from '../lib/supabase';
 import { Unit } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { formatCurrency, formatNumber, cn } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';

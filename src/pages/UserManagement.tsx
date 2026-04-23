@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Profile, UserRole, Capabilities } from '../types';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Shield, User as UserIcon, Mail, Trash2, Save, UserCheck, UserPlus, Eye, Plus, Pencil, Printer, Check, X } from 'lucide-react';

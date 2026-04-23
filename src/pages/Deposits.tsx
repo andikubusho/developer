@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Wallet, ArrowLeft, Edit, Trash2, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { Modal } from '../components/ui/Modal';

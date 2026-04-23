@@ -13,7 +13,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { Project, ConstructionProgress, Unit } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { ProgressForm } from '../components/forms/ProgressForm';
 import { formatDate, cn } from '../lib/utils';

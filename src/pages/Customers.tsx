@@ -3,7 +3,7 @@ import { Plus, Search, Filter, UserPlus, Mail, Phone, MapPin, ArrowLeft } from '
 import { supabase } from '../lib/supabase';
 import { Customer } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { CustomerForm } from '../components/forms/CustomerForm';

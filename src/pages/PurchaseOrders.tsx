@@ -3,7 +3,7 @@ import { Plus, Search, Filter, MoreVertical, Edit, Trash2, Package, Truck, Check
 import { supabase } from '../lib/supabase';
 import { PurchaseOrder, Material } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { formatDate, formatCurrency } from '../lib/utils';
 import { PurchaseOrderForm } from '../components/forms/PurchaseOrderForm';

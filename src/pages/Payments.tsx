@@ -3,7 +3,7 @@ import { Plus, Search, Filter, CheckCircle2, XCircle, Clock, FileText, Download,
 import { supabase } from '../lib/supabase';
 import { Payment } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/card';
+import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { PaymentForm } from '../components/forms/PaymentForm';
