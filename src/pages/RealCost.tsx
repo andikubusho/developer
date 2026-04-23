@@ -271,8 +271,8 @@ const RealCostPage: React.FC = () => {
         </Card>
 
         <Card title="Pengeluaran Berdasarkan Kategori" subtitle="Distribusi real-cost antara material dan upah kerja">
-          <div className="h-[350px] w-full flex flex-col items-center justify-center">
-            <ResponsiveContainer width="100%" height="80%">
+          <div className="h-[280px] w-full mt-6">
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={breakdownData}
