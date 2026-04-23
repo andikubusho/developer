@@ -164,6 +164,63 @@ const PriceList: React.FC = () => {
     pdf.save(`Price-List-${projectName}.pdf`);
   };
 
+  const getGroupedItems = () => {
+    const categories = ['Ruko', 'Rumah'];
+    const result: any[] = [];
+
+    categories.forEach(cat => {
+      const catItems = priceItems.filter(i => i.category === cat);
+      if (catItems.length === 0) return;
+
+      const groupsByBlok: any = {};
+      catItems.forEach(item => {
+        if (!groupsByBlok[item.blok]) groupsByBlok[item.blok] = [];
+        groupsByBlok[item.blok].push(item);
+      });
+
+      const catGroups: any[] = [];
+      Object.keys(groupsByBlok).forEach(blok => {
+        const items = groupsByBlok[blok].sort((a: any, b: any) => {
+          const numA = parseInt(a.unit) || 0;
+          const numB = parseInt(b.unit) || 0;
+          return numA - numB;
+        });
+
+        const mergedInBlok: any[] = [];
+        let currentGroup: any[] = [];
+
+        items.forEach((item: any, idx: number) => {
+          if (idx === 0) {
+            currentGroup = [item];
+          } else {
+            const prev = items[idx - 1];
+            const isMatch = item.tipe === prev.tipe && 
+                           item.luas_tanah === prev.luas_tanah && 
+                           item.luas_bangunan === prev.luas_bangunan && 
+                           item.harga_jual === prev.harga_jual &&
+                           item.status === prev.status;
+
+            if (isMatch) {
+              currentGroup.push(item);
+            } else {
+              mergedInBlok.push(currentGroup);
+              currentGroup = [item];
+            }
+          }
+          if (idx === items.length - 1) {
+            mergedInBlok.push(currentGroup);
+          }
+        });
+
+        catGroups.push({ blok, groups: mergedInBlok });
+      });
+
+      result.push({ category: cat, bloks: catGroups });
+    });
+
+    return result;
+  };
+
   return (
     <div id="price-list-container" className="space-y-6 print:p-0 print:m-0">
       {/* ON-SCREEN UI - Modern Style */}
@@ -234,7 +291,7 @@ const PriceList: React.FC = () => {
             border: 1px solid black !important; 
             padding: 2px 4px !important; 
             color: black !important; 
-            font-size: 7.5pt !important;
+            font-size: 7pt !important;
             line-height: 1.1 !important;
           }
           .price-table thead tr { background: white !important; }
@@ -325,7 +382,7 @@ const PriceList: React.FC = () => {
         </div>
       </Card>
 
-      {/* PRINT-ONLY CLASSIC TABLE */}
+      {/* PRINT-ONLY CLASSIC TABLE WITH MERGING */}
       <div className="hidden print:block">
         <table className="price-table">
           <thead>
@@ -337,54 +394,59 @@ const PriceList: React.FC = () => {
               <th rowSpan={2}>Booking Fee</th>
               <th rowSpan={2}>Uang Muka</th>
               <th colSpan={3}>Angsuran KPR</th>
-              <th rowSpan={2} className="text-right">Harga Jual (Rp)</th>
+              <th rowSpan={2} className="text-right whitespace-nowrap">Harga Jual (Rp)</th>
             </tr>
-            <tr className="font-bold uppercase text-[8px]">
+            <tr className="font-bold uppercase text-[7px]">
               <th>Tanah</th>
               <th>Bgn</th>
-              <th>5 Thn</th>
-              <th>10 Thn</th>
-              <th>15 Thn</th>
+              <th>5 Tahun</th>
+              <th>10 Tahun</th>
+              <th>15 Tahun</th>
             </tr>
           </thead>
           <tbody className="font-bold">
-            {['Ruko', 'Rumah'].map((cat) => {
-              const catItems = priceItems.filter(i => i.category === cat);
-              if (catItems.length === 0) return null;
-              return (
-                <React.Fragment key={cat}>
-                  <tr className="cat-row"><td colSpan={11} className="font-black uppercase tracking-widest">{cat}</td></tr>
-                  {catItems.map((item) => {
+            {getGroupedItems().map((catGroup) => (
+              <React.Fragment key={catGroup.category}>
+                <tr className="cat-row"><td colSpan={11} className="font-black uppercase tracking-widest">{catGroup.category}</td></tr>
+                {catGroup.bloks.map((blokGroup: any) => {
+                  const totalRowsInBlok = blokGroup.groups.length;
+                  return blokGroup.groups.map((group: any[], gIdx: number) => {
+                    const item = group[0];
                     const calc = calculateKPR(item);
                     const isSold = item.status === 'sold';
+                    const unitRange = group.length > 1 ? `${group[0].unit}-${group[group.length - 1].unit}` : item.unit;
+
                     return (
-                      <tr key={item.id}>
-                        <td className="text-center">{item.blok}</td>
-                        <td className="text-center">{item.unit}</td>
+                      <tr key={`${catGroup.category}-${blokGroup.blok}-${gIdx}`}>
+                        {gIdx === 0 && (
+                          <td rowSpan={totalRowsInBlok} className="text-center font-black uppercase align-middle bg-white">{blokGroup.blok}</td>
+                        )}
+                        <td className="text-center whitespace-nowrap">{unitRange}</td>
                         <td className="text-center">{item.tipe}</td>
                         <td className="text-center">{item.luas_tanah}</td>
                         <td className="text-center">{item.luas_bangunan}</td>
+                        
                         {isSold ? (
-                          <td colSpan={6} className="text-center text-slate-400">S O L D</td>
+                          <td colSpan={6} className="text-center text-slate-400 tracking-[1em] font-black uppercase bg-slate-50">S O L D</td>
                         ) : (
                           <>
-                            <td className="text-center">{formatCurrency(item.booking_fee)}</td>
+                            <td className="text-center whitespace-nowrap">{formatCurrency(item.booking_fee)}</td>
                             <td className="text-center">
                               <div>{formatCurrency(calc.uang_muka_kpr)}</div>
-                              <div className="text-[7px] font-normal">DP {(item.dp_percentage || 0.1) * 100}%</div>
+                              <div className="text-[6px] font-normal uppercase">DP {Math.round((item.dp_percentage || 0.1) * 100)}%</div>
                             </td>
-                            <td className="text-center text-indigo-700">{formatCurrency(calc.angsuran_5)}</td>
-                            <td className="text-center text-indigo-700">{formatCurrency(calc.angsuran_10)}</td>
-                            <td className="text-center text-indigo-700">{formatCurrency(calc.angsuran_15)}</td>
-                            <td className="text-right font-black">{formatCurrency(item.harga_jual)}</td>
+                            <td className="text-center text-indigo-800 font-black">{formatCurrency(calc.angsuran_5)}</td>
+                            <td className="text-center text-indigo-800 font-black">{formatCurrency(calc.angsuran_10)}</td>
+                            <td className="text-center text-indigo-800 font-black">{formatCurrency(calc.angsuran_15)}</td>
+                            <td className="text-right font-black whitespace-nowrap">{formatCurrency(item.harga_jual)}</td>
                           </>
                         )}
                       </tr>
                     );
-                  })}
-                </React.Fragment>
-              );
-            })}
+                  });
+                })}
+              </React.Fragment>
+            ))}
           </tbody>
         </table>
       </div>
