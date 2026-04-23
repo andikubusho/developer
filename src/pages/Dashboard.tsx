@@ -41,7 +41,7 @@ import {
 } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { Sale, Installment, Payment } from '../types';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { formatDate, formatCurrency, formatNumber, cn } from '../lib/utils';
@@ -442,8 +442,8 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {statCards.map((card, idx) => (
           <Card key={idx} className="group p-1 bg-gradient-to-br from-white to-slate-50 border-none shadow-premium hover:shadow-2xl hover:shadow-indigo-200/20 transition-all duration-500">
-            <div className="p-8" onClick={() => card.path && (window.location.href = card.path)}>
-              <div className="flex items-center justify-between mb-6">
+            <div className="p-4 sm:p-8" onClick={() => card.path && (window.location.href = card.path)}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div className={cn('p-4 rounded-2xl shadow-sm transition-transform group-hover:scale-110 duration-300', card.bg)}>
                   <card.icon className={cn('w-7 h-7', card.color)} />
                 </div>
@@ -466,7 +466,7 @@ const Dashboard: React.FC = () => {
         <div className="lg:col-span-2 space-y-8">
           {division === 'marketing' ? (
             <Card title="Calon Konsumen Terbaru" subtitle="Peluang penjualan yang masuk hari ini">
-              <Table>
+              <div className="overflow-x-auto"><table>
                 <THead>
                   <TR isHoverable={false}>
                     <TH>Nama Konsumen</TH>
@@ -501,11 +501,11 @@ const Dashboard: React.FC = () => {
                     </TR>
                   ))}
                 </TBody>
-              </Table>
+              </table></div></div>
             </Card>
           ) : (
             <Card title="Progress Pembangunan" subtitle="Update terbaru lapangan">
-              <Table>
+              <div className="overflow-x-auto"><table>
                 <THead>
                   <TR isHoverable={false}>
                     <TH>Unit / Proyek</TH>
@@ -540,7 +540,7 @@ const Dashboard: React.FC = () => {
                     </TR>
                   ))}
                 </TBody>
-              </Table>
+              </table></div></div>
             </Card>
           )}
 
@@ -593,7 +593,7 @@ const Dashboard: React.FC = () => {
                 <Card title="Purchase Request" subtitle="Permintaan material pending">
                   <div className="space-y-4">
                     {pendingRequests.map((pr) => (
-                      <div key={pr.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-slate-100/50 group hover:bg-indigo-50/30 transition-colors">
+                      <div key={pr.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/50 border border-slate-100/50 group hover:bg-indigo-50/30 transition-colors">
                         <div>
                           <p className="text-sm font-black text-slate-900">{pr.item}</p>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Qty: {pr.qty} • {formatDate(pr.date)}</p>
@@ -681,7 +681,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 ) : (
                   overdueInstallments.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-rose-50/50 border border-rose-100/50 group hover:shadow-premium transition-all">
+                    <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-rose-50/50 border border-rose-100/50 group hover:shadow-premium transition-all">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 shadow-sm transition-transform group-hover:rotate-12">
                           <AlertTriangle className="w-5 h-5" />
@@ -727,7 +727,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 ) : (
                   materialStock.filter(m => m.stock < m.min).map((m) => (
-                    <div key={m.id} className="flex items-center justify-between p-4 rounded-2xl bg-rose-50/50 border border-rose-100/50 group">
+                    <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-rose-50/50 border border-rose-100/50 group">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 shadow-sm">
                           <Package className="w-5 h-5" />
@@ -753,3 +753,5 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
+

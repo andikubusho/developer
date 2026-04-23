@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Tag, ArrowLeft, Edit, Trash2, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/Input';
 import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { Modal } from '../components/ui/Modal';
@@ -197,7 +197,7 @@ const Promos: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Nama Promo</th>
@@ -258,7 +258,7 @@ const Promos: React.FC = () => {
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </Card>
 
@@ -312,3 +312,5 @@ const Promos: React.FC = () => {
 };
 
 export default Promos;
+
+

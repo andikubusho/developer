@@ -337,7 +337,12 @@ export const appSettings = pgTable("app_settings", {
   branchId: integer("branch_id").references(() => branches.id),
 });
 
-export const insertAppSettingSchema = createInsertSchema(appSettings);
+export const insertAppSettingSchema = z.object({
+  id: z.number().optional(),
+  key: z.string(),
+  value: z.string(),
+  branchId: z.number().nullable().optional(),
+});
 export type AppSetting = typeof appSettings.$inferSelect;
 export type InsertAppSetting = z.infer<typeof insertAppSettingSchema>;
 
@@ -676,43 +681,57 @@ export type InsertRole = z.infer<typeof insertRoleSchema>;
 
 export const MENU_KEYS = [
   // UTAMA
-  { key: "dashboard", label: "Home Beranda", group: "Utama", capabilities: { view: true, create: false, edit: false, delete: false } },
+  { key: "dashboard", label: "Dashboard", group: "Utama", capabilities: { view: true, create: false, edit: false, delete: false } },
 
-  // OPERASIONAL
-  { key: "input_pengiriman", label: "Input Pengiriman", group: "Operasional", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "packing", label: "Verifikasi & Packing", group: "Operasional", capabilities: { view: true, create: false, edit: true, delete: false } },
-  { key: "siap_kirim", label: "Jadwal Kirim", group: "Operasional", capabilities: { view: true, create: false, edit: false, delete: false } },
-  { key: "terkirim", label: "Riwayat Kirim", group: "Operasional", capabilities: { view: true, create: false, edit: false, delete: true, print: true, export: true } },
-  { key: "pengembalian", label: "Faktur Kembali", group: "Operasional", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "master_ekspedisi", label: "Ekspedisi", group: "Operasional", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "laporan_pengiriman", label: "Laporan Kirim", group: "Operasional", capabilities: { view: true, create: false, edit: false, delete: false, print: true, export: true } },
-  { key: "master_pelanggan", label: "Pelanggan", group: "Operasional", capabilities: { view: true, create: true, edit: true, delete: true } },
+  // MARKETING
+  { key: "leads", label: "Calon Konsumen", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "follow-ups", label: "Follow Up", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "deposits", label: "Titipan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "sales", label: "Penjualan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "promos", label: "Master Promo", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "price-list", label: "Price List", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "site-plan", label: "Siteplan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "floor-plan", label: "Denah", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "marketing-schedule", label: "Jadwal Marketing", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "marketing-master", label: "Master Marketing", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
 
-  // SALES & DATA
-  { key: "surat_order", label: "Surat Order", group: "Sales & Data", capabilities: { view: true, create: true, edit: true, delete: true, print: true, export: true } },
-  { key: "cek_stock", label: "Cek Stock", group: "Sales & Data", capabilities: { view: true, create: false, edit: true, delete: false } },
-  { key: "master_barang", label: "Master Barang", group: "Sales & Data", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "laporan_surat_order", label: "Laporan SO", group: "Sales & Data", capabilities: { view: true, create: false, edit: false, delete: false, print: true, export: true } },
+  // TEKNIK
+  { key: "projects", label: "Proyek", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "units", label: "Unit Properti", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "rab", label: "RAB Proyek", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "construction-progress", label: "Progress Bangun", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "materials", label: "Stok Material", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "purchase-requests", label: "Purchase Request", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "spk", label: "SPK Kontraktor", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "opname", label: "Opname/Upah", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "real-cost", label: "Real Cost", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
 
-  // PROMO UTAMA
-  { key: "klaim_principal", label: "Klaim Principal", group: "Promo Utama", capabilities: { view: true, create: false, edit: true, delete: false, print: true, export: true } },
-  { key: "master_principal", label: "Data Principal", group: "Promo Utama", capabilities: { view: true, create: true, edit: true, delete: true } },
+  // KEUANGAN
+  { key: "payments", label: "Pembayaran Konsumen", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "kpr-disbursement", label: "Pencairan KPR", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "supplier-payments", label: "Pembayaran Supplier", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "cash-flow", label: "Cash Flow", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "petty-cash", label: "Petty Cash", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true } },
 
-  // PROMO TERINTEGRASI
-  { key: "transaksi_promo", label: "Input Transaksi", group: "Promo Terintegrasi", capabilities: { view: true, create: true, edit: true, delete: true, print: true, export: true } },
-  { key: "monitoring_promo", label: "Monitoring Promo", group: "Promo Terintegrasi", capabilities: { view: true, create: false, edit: false, delete: false, print: true, export: true } },
-  { key: "pencairan_promo", label: "Pencairan", group: "Promo Terintegrasi", capabilities: { view: true, create: false, edit: true, delete: false, print: true, export: true } },
-  { key: "master_promo_integrated", label: "Master Data", group: "Promo Terintegrasi", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "master_merek_promo", label: "Master Merek", group: "Promo Terintegrasi", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "program_pelanggan", label: "Program Pelanggan", group: "Promo Terintegrasi", capabilities: { view: true, create: true, edit: true, delete: true } },
+  // ACCOUNTING
+  { key: "general-journal", label: "Jurnal Umum", group: "Accounting", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "ledger", label: "Buku Besar", group: "Accounting", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "financial-reports", label: "Laporan Keuangan", group: "Accounting", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "taxation", label: "Perpajakan", group: "Accounting", capabilities: { view: true, create: true, edit: true, delete: true } },
+
+  // HRD
+  { key: "employees", label: "Data Karyawan", group: "HRD", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "attendance", label: "Absensi & Cuti", group: "HRD", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "payroll", label: "Payroll", group: "HRD", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "recruitment", label: "Rekrutmen", group: "HRD", capabilities: { view: true, create: true, edit: true, delete: true } },
+
+  // AUDIT
+  { key: "audit-transactions", label: "Audit Transaksi", group: "Audit", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "audit-stock", label: "Audit Stok", group: "Audit", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "audit-costs", label: "Audit Biaya", group: "Audit", capabilities: { view: true, create: true, edit: true, delete: true } },
 
   // SISTEM
-  { key: "master_cabang", label: "Cabang", group: "Sistem", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "manajemen_pengguna", label: "Manajemen User", group: "Sistem", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "manajemen_role", label: "Atur Role", group: "Sistem", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "audit_logs", label: "Log Aktivitas", group: "Sistem", capabilities: { view: true, create: false, edit: false, delete: false } },
-  { key: "pengaturan_teks", label: "Setting Teks", group: "Sistem", capabilities: { view: true, create: false, edit: true, delete: false } },
-  { key: "pop_up_notif_so", label: "Pop Up Notifikasi SO", group: "Sistem", capabilities: { view: true, create: false, edit: false, delete: false } },
+  { key: "user-management", label: "User & Role", group: "Sistem", capabilities: { view: true, create: true, edit: true, delete: true } },
 ] as const;
 
 export const pelangganProgram = pgTable("pelanggan_program", {

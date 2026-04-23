@@ -3,7 +3,7 @@ import { Plus, Search, Filter, UserPlus, Mail, Phone, MapPin, ArrowLeft } from '
 import { supabase } from '../lib/supabase';
 import { Customer } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { CustomerForm } from '../components/forms/CustomerForm';
@@ -143,7 +143,7 @@ const Customers: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Nama Lengkap</th>
@@ -202,7 +202,7 @@ const Customers: React.FC = () => {
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </Card>
     </div>
@@ -210,3 +210,5 @@ const Customers: React.FC = () => {
 };
 
 export default Customers;
+
+

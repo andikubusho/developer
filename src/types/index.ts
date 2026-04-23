@@ -2,11 +2,21 @@ export type UserRole = 'admin' | 'marketing' | 'owner' | 'teknik' | 'keuangan' |
 
 export type LeadStatus = 'no respon' | 'low' | 'medium' | 'hot';
 
+export interface Capabilities {
+  view: boolean;
+  create: boolean;
+  edit: boolean;
+  delete: boolean;
+  print: boolean;
+}
+
 export interface Profile {
   id: string;
   full_name: string;
   role: UserRole;
+  email?: string;
   avatar_url?: string;
+  permissions?: Record<string, Capabilities>;
 }
 
 export interface Project {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, ShieldCheck, ArrowLeft, Eye, Download, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { AuditLog } from '../types';
@@ -124,7 +124,7 @@ const AuditTransactionsPage: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Waktu</th>
@@ -172,7 +172,7 @@ const AuditTransactionsPage: React.FC = () => {
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </Card>
     </div>
@@ -180,3 +180,5 @@ const AuditTransactionsPage: React.FC = () => {
 };
 
 export default AuditTransactionsPage;
+
+

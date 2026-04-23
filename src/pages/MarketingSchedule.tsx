@@ -4,7 +4,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { MarketingSchedule, MarketingStaff } from '../types';
@@ -348,7 +348,7 @@ const MarketingSchedulePage: React.FC = () => {
       </div>
 
       <Card id="calendar-content" className="p-6 border-none shadow-none sm:border sm:shadow-premium print:p-0 print:border-none print:shadow-none">
-        <div className="flex items-center justify-between mb-8 print:mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 print:mb-4">
           <h2 className="text-xl font-bold text-slate-900">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
@@ -517,3 +517,4 @@ const MarketingSchedulePage: React.FC = () => {
 };
 
 export default MarketingSchedulePage;
+

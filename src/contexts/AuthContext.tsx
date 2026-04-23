@@ -20,9 +20,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    const saved = localStorage.getItem('propdev_profile');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [division, setDivisionState] = useState<Division | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    const hasProfile = localStorage.getItem('propdev_profile');
+    const hasDivision = localStorage.getItem('propdev_division');
+    return !(hasProfile && hasDivision);
+  });
   const [isMockMode, setIsMockMode] = useState(!isSupabaseConfigured);
 
   const setDivision = (div: Division) => {
@@ -114,11 +121,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           if (createError) throw createError;
           setProfile(newProfile);
+          localStorage.setItem('propdev_profile', JSON.stringify(newProfile));
         } else {
           throw error;
         }
       } else {
         setProfile(data);
+        localStorage.setItem('propdev_profile', JSON.stringify(data));
       }
     } catch (error) {
       console.error('Error fetching/creating profile:', error);
@@ -133,6 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(null);
     setDivisionState(null);
     localStorage.removeItem('propdev_division');
+    localStorage.removeItem('propdev_profile');
   };
 
   return (

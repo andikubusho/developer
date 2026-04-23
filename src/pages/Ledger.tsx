@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, FileSpreadsheet, ArrowLeft, Download, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
@@ -144,7 +144,7 @@ const LedgerPage: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Tanggal</th>
@@ -185,7 +185,7 @@ const LedgerPage: React.FC = () => {
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </Card>
     </div>
@@ -193,3 +193,5 @@ const LedgerPage: React.FC = () => {
 };
 
 export default LedgerPage;
+
+

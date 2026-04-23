@@ -37,7 +37,11 @@ import {
 import { useAuth, Division } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const { profile, signOut, division, setDivision } = useAuth();
 
   const menuItems = [
@@ -304,6 +308,7 @@ const Sidebar: React.FC = () => {
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={() => onClose?.()}
             className={({ isActive }) => cn(
               'flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 group relative overflow-hidden',
               isActive 
@@ -338,8 +343,9 @@ const Sidebar: React.FC = () => {
         <div className="space-y-2">
           <button
             onClick={() => {
-              localStorage.removeItem('user_division');
+              localStorage.removeItem('propdev_division');
               setDivision(null);
+              onClose?.();
             }}
             className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-slate-50 text-slate-500 hover:text-primary transition-all duration-200 group"
           >
@@ -348,7 +354,10 @@ const Sidebar: React.FC = () => {
           </button>
           
           <button
-            onClick={() => signOut()}
+            onClick={() => {
+              signOut();
+              onClose?.();
+            }}
             className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-danger transition-all duration-200"
           >
             <LogOut className="w-4 h-4" />

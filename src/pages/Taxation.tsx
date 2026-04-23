@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Receipt, ArrowLeft, Edit, Trash2, Download, FileText } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
@@ -128,7 +128,7 @@ const TaxationPage: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Tanggal</th>
@@ -183,7 +183,7 @@ const TaxationPage: React.FC = () => {
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </Card>
 
@@ -219,3 +219,5 @@ const TaxationPage: React.FC = () => {
 };
 
 export default TaxationPage;
+
+

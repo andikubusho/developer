@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, ArrowLeft, ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
@@ -119,7 +119,7 @@ const CashFlowPage: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6 bg-green-50 border-green-100">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
               <ArrowUpCircle className="w-6 h-6" />
             </div>
@@ -130,7 +130,7 @@ const CashFlowPage: React.FC = () => {
         </Card>
 
         <Card className="p-6 bg-red-50 border-red-100">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-red-600">
               <ArrowDownCircle className="w-6 h-6" />
             </div>
@@ -141,7 +141,7 @@ const CashFlowPage: React.FC = () => {
         </Card>
 
         <Card className="p-6 bg-indigo-50 border-indigo-100">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
               <TrendingUp className="w-6 h-6" />
             </div>
@@ -169,7 +169,7 @@ const CashFlowPage: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Tanggal</th>
@@ -210,7 +210,7 @@ const CashFlowPage: React.FC = () => {
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </Card>
     </div>
@@ -218,3 +218,5 @@ const CashFlowPage: React.FC = () => {
 };
 
 export default CashFlowPage;
+
+

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, BarChart3, ArrowLeft, TrendingUp, TrendingDown, Target, Wallet, Package, HardHat, Info } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { Project, RAB, PurchaseOrder, ProjectOpname } from '../types';
@@ -310,7 +310,7 @@ const RealCostPage: React.FC = () => {
       </div>
 
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Detail <span className="text-primary tracking-tighter not-italic">Pengeluaran</span></h2>
           <div className="flex items-center gap-4 bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200">
             <Button variant="ghost" size="sm" className="rounded-xl px-4 font-black text-[10px] h-9 bg-white shadow-sm text-primary uppercase tracking-widest">Wages/Opname</Button>
@@ -320,7 +320,7 @@ const RealCostPage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="p-0 border-none shadow-premium overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
+            <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-indigo-50 rounded-xl text-primary">
                   <HardHat className="w-5 h-5" />
@@ -334,7 +334,7 @@ const RealCostPage: React.FC = () => {
             </div>
             <div className="divide-y divide-slate-100">
               {data.wageOpnames.map((op) => (
-                <div key={op.id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors group">
+                <div key={op.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors group">
                   <div className="flex items-center gap-4">
                     <div className="w-1.5 h-10 rounded-full bg-primary/20 group-hover:bg-primary transition-colors"></div>
                     <div>
@@ -355,7 +355,7 @@ const RealCostPage: React.FC = () => {
           </Card>
 
           <Card className="p-0 border-none shadow-premium overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
+            <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
                   <Package className="w-5 h-5" />
@@ -369,7 +369,7 @@ const RealCostPage: React.FC = () => {
             </div>
             <div className="divide-y divide-slate-100">
               {data.materialOrders.map((order) => (
-                <div key={order.id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors group">
+                <div key={order.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors group">
                   <div className="flex items-center gap-4">
                     <div className="w-1.5 h-10 rounded-full bg-emerald-200 group-hover:bg-emerald-500 transition-colors"></div>
                     <div>
@@ -395,3 +395,4 @@ const RealCostPage: React.FC = () => {
 };
 
 export default RealCostPage;
+

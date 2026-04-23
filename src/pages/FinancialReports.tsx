@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart3, ArrowLeft, Download, FileText, PieChart, TrendingUp, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../lib/utils';
 
@@ -69,8 +69,8 @@ const FinancialReportsPage: React.FC = () => {
         ))}
       </div>
 
-      <Card className="p-8">
-        <div className="flex items-center justify-between mb-8">
+      <Card className="p-4 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <h2 className="text-xl font-bold text-slate-900">
             {reports.find(r => r.id === selectedReport)?.name}
           </h2>
@@ -166,3 +166,4 @@ export default FinancialReportsPage;
 function cn(...classes: any[]) {
   return classes.filter(Boolean).join(' ');
 }
+

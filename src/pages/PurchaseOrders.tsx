@@ -3,7 +3,7 @@ import { Plus, Search, Filter, MoreVertical, Edit, Trash2, Package, Truck, Check
 import { supabase } from '../lib/supabase';
 import { PurchaseOrder, Material } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Modal } from '../components/ui/Modal';
 import { formatDate, formatCurrency } from '../lib/utils';
 import { PurchaseOrderForm } from '../components/forms/PurchaseOrderForm';
@@ -187,7 +187,7 @@ const PurchaseOrders: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50/50">
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">No. PO</th>
@@ -272,7 +272,7 @@ const PurchaseOrders: React.FC = () => {
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </Card>
 
@@ -311,3 +311,5 @@ const PurchaseOrders: React.FC = () => {
 };
 
 export default PurchaseOrders;
+
+

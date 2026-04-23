@@ -13,7 +13,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { Project, ConstructionProgress, Unit } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Modal } from '../components/ui/Modal';
 import { ProgressForm } from '../components/forms/ProgressForm';
 import { formatDate, cn } from '../lib/utils';
@@ -141,7 +141,7 @@ const ProjectDetail: React.FC = () => {
           {/* Progress Overview */}
           <Card title="Progress Pembangunan">
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <span className="text-sm font-medium text-slate-700">Total Progress</span>
                 <span className="text-2xl font-bold text-indigo-600">{latestProgress}%</span>
               </div>
@@ -152,7 +152,7 @@ const ProjectDetail: React.FC = () => {
                 />
               </div>
               
-              <div className="flex items-center justify-between pt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4">
                 <h4 className="font-semibold text-slate-900 flex items-center gap-2">
                   <History className="w-4 h-4" />
                   Riwayat Progress
@@ -179,7 +179,7 @@ const ProjectDetail: React.FC = () => {
                         )}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-1">
                           <span className="font-bold text-slate-900">{item.percentage}% Selesai</span>
                           <span className="text-xs text-slate-500 flex items-center">
                             <Calendar className="w-3 h-3 mr-1" />
@@ -251,19 +251,19 @@ const ProjectDetail: React.FC = () => {
 
           <Card title="Ringkasan Unit">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm">
                 <span className="text-slate-500">Tersedia</span>
                 <span className="font-bold text-emerald-600">{units.filter(u => u.status === 'available').length}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm">
                 <span className="text-slate-500">Booked</span>
                 <span className="font-bold text-amber-600">{units.filter(u => u.status === 'booked').length}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm">
                 <span className="text-slate-500">Terjual</span>
                 <span className="font-bold text-slate-900">{units.filter(u => u.status === 'sold').length}</span>
               </div>
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between font-bold">
+              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-bold">
                 <span>Total</span>
                 <span>{units.length}</span>
               </div>
@@ -291,3 +291,4 @@ const ProjectDetail: React.FC = () => {
 };
 
 export default ProjectDetail;
+

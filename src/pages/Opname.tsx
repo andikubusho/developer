@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, ClipboardList, ArrowLeft, Edit, Trash2, CheckCircle2, Clock, Calculator } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
@@ -290,7 +290,7 @@ const OpnamePage: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50/80 text-slate-500 text-[10px] uppercase tracking-widest">
                 <th className="px-6 py-4 font-black">Tanggal</th>
@@ -369,7 +369,7 @@ const OpnamePage: React.FC = () => {
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </Card>
 
@@ -458,7 +458,7 @@ const OpnamePage: React.FC = () => {
                 required
               />
             </div>
-            <div className="mt-6 pt-6 border-t border-slate-200 flex items-center justify-between">
+            <div className="mt-6 pt-6 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimasi Upah</p>
                 <div className="flex items-center gap-2 mt-1">
@@ -493,3 +493,5 @@ const OpnamePage: React.FC = () => {
 };
 
 export default OpnamePage;
+
+

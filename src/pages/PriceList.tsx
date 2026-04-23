@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Upload, Printer, ArrowLeft, Trash2, Download, Table, Archive, Plus, Percent, CheckCircle2, XCircle, Edit2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
@@ -540,7 +540,7 @@ const PriceList: React.FC = () => {
       {/* Content */}
       <Card className="p-0 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
                 <tr className="bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider">
                   <th className="px-4 py-3 font-semibold text-center border-r print-hidden">
@@ -650,7 +650,7 @@ const PriceList: React.FC = () => {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
         </div>
       </Card>
 
@@ -736,3 +736,5 @@ const PriceList: React.FC = () => {
 };
 
 export default PriceList;
+
+

@@ -3,7 +3,7 @@ import { Plus, Search, Filter, CheckCircle2, XCircle, Clock, FileText, Download,
 import { supabase } from '../lib/supabase';
 import { Payment } from '../types';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { PaymentForm } from '../components/forms/PaymentForm';
@@ -269,7 +269,7 @@ const Payments: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Pelanggan & Unit</th>
@@ -356,7 +356,7 @@ const Payments: React.FC = () => {
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </Card>
     </div>
@@ -364,3 +364,5 @@ const Payments: React.FC = () => {
 };
 
 export default Payments;
+
+

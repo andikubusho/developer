@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth, Division } from '../contexts/AuthContext';
 import { ShoppingCart, HardHat, Landmark, Building2, ShieldCheck, UserCheck, Calculator } from 'lucide-react';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 
 const DivisionSelection: React.FC = () => {
   const { setDivision, profile } = useAuth();
@@ -91,3 +91,4 @@ const DivisionSelection: React.FC = () => {
 };
 
 export default DivisionSelection;
+
