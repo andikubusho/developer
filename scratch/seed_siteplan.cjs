@@ -16,6 +16,9 @@ async function seed() {
     // 2. Fetch all units for Golden Canyon
     const { rows: units } = await client.query(`SELECT id, unit_number FROM units WHERE project_id = '${GOLDEN_CANYON_ID}'`);
 
+    // First, hide all units
+    await client.query(`UPDATE units SET sp_x = 0, sp_y = 0`);
+
     for (const unit of units) {
       const [blok, numStr] = unit.unit_number.split('/');
       const num = parseInt(numStr);
@@ -23,35 +26,42 @@ async function seed() {
       let type = 'Rumah';
 
       if (blok === 'North' || blok === 'N') {
-        // 19 Units diagonal miring kiri (Grey Boxes)
+        if (num > 19) continue;
+        // 19 Units diagonal (Grey Boxes) - Calibrated for B&W Drawing
         const i = num - 1;
-        x = 180 + (i * 22);
-        y = 780 + (i * -32);
-        rot = -35;
+        x = 220 + (i * 24.5);
+        y = 650 + (i * -28);
+        rot = -48;
         type = 'Rumah';
       } else if (blok === 'South' || blok === 'S') {
-        // 12 Units horizontal bawah (Grey Boxes)
+        if (num > 12) continue;
+        // 12 Units horizontal (Grey Boxes)
         const i = num - 1;
-        x = 240 + (i * 42);
-        y = 820;
+        x = 310 + (i * 35.5);
+        y = 705;
         rot = 0;
         type = 'Rumah';
       } else if (blok === 'East' || blok === 'E') {
         if (num <= 7) {
-          // 7 Units horizontal kanan atas (White Boxes - Ruko)
+          // 7 Units Ruko (Top Right)
           const i = num - 1;
-          x = 750 + (i * 12);
-          y = 150 + (i * 45);
+          x = 810 + (i * 12);
+          y = 125 + (i * 39);
           rot = -5;
           type = 'Ruko';
-        } else {
-          // 4 Units vertikal kanan bawah (Grey Boxes)
+        } else if (num <= 11) {
+          // 4 Units Rumah (Bottom Right)
           const i = num - 8;
-          x = 720 + (i * 8);
-          y = 520 + (i * 40);
+          x = 760 + (i * 11);
+          y = 450 + (i * 35);
           rot = -10;
           type = 'Rumah';
+        } else {
+          continue;
         }
+      } else {
+        // Hide all other blocks (GC, etc)
+        continue;
       }
 
       if (x > 0) {
