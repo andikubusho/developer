@@ -165,14 +165,17 @@ const PriceList: React.FC = () => {
   };
 
   return (
-    <div id="price-list-container" className="bg-white p-4 md:p-12 min-h-screen text-black">
-      {/* Top Controls - Hidden on Print */}
-      <div className="flex flex-wrap items-center justify-between gap-4 no-print border-b border-slate-100 pb-6 mb-8">
+    <div id="price-list-container" className="space-y-6 print:p-0 print:m-0">
+      {/* ON-SCREEN UI - Modern Style */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print px-4 pt-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-bold text-slate-900">Price List Editor</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Price List {projects.find(p => p.id === selectedProjectId)?.name}</h1>
+            <p className="text-slate-500 text-sm">Manajemen harga dan simulasi KPR</p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select 
@@ -191,99 +194,191 @@ const PriceList: React.FC = () => {
         </div>
       </div>
 
-      {/* Target Style Header */}
-      <div className="relative mb-12 text-center pt-8">
-        <img src={logoPerusahaan} alt="Logo" className="absolute top-0 right-0 h-14 w-auto grayscale brightness-0" />
-        <div className="inline-block border-b-2 border-black pb-4">
-          <img src={logoProyek} alt="Logo" className="h-16 w-auto mx-auto mb-2" />
-          <h1 className="text-3xl font-black uppercase tracking-tighter">Golden Canyon</h1>
-        </div>
-        <div className="mt-4 text-sm font-bold uppercase tracking-widest">
-          {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+      {/* PRINT-ONLY HEADER */}
+      <div className="hidden print:block mb-6 pt-4">
+        <div className="relative text-center border-b-[2px] border-black pb-4">
+          <img src={logoPerusahaan} alt="Logo" className="absolute top-0 right-0 h-12 w-auto grayscale brightness-0" />
+          <img src={logoProyek} alt="Logo" className="h-14 w-auto mx-auto mb-2" />
+          <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">DAFTAR HARGA UNIT</h1>
+          <h2 className="text-lg font-bold uppercase tracking-widest">{projects.find(p => p.id === selectedProjectId)?.name}</h2>
+          <p className="text-[10px] font-bold mt-1 uppercase">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          @page {
+            size: A4 portrait;
+            margin: 10mm;
+          }
           body * { visibility: hidden !important; }
           #price-list-container, #price-list-container * { visibility: visible !important; }
           #price-list-container {
             position: absolute !important;
             left: 0 !important; top: 0 !important;
             width: 100% !important;
-            padding: 0 !important;
             display: block !important;
             background: white !important;
+            transform: scale(0.95);
+            transform-origin: top center;
           }
-          .no-print { display: none !important; }
-          table { width: 100% !important; border: 1.5px solid black !important; }
-          th, td { border: 1px solid black !important; padding: 4px !important; color: black !important; font-size: 8pt !important; }
-          .action-column { display: none !important; }
-          .bg-slate-50 { background: #f8fafc !important; -webkit-print-color-adjust: exact; }
+          .no-print, .action-column { display: none !important; }
+          
+          /* Classic Table Style for Print */
+          .price-table { 
+            width: 100% !important; 
+            border: 1.5px solid black !important; 
+            border-collapse: collapse !important;
+          }
+          .price-table th, .price-table td { 
+            border: 1px solid black !important; 
+            padding: 2px 4px !important; 
+            color: black !important; 
+            font-size: 7.5pt !important;
+            line-height: 1.1 !important;
+          }
+          .price-table thead tr { background: white !important; }
+          .price-table .cat-row { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; }
+          
+          /* Footer compaction */
+          .print-footer { 
+            margin-top: 15px !important;
+            padding-top: 10px !important;
+            border-top: 1.5px solid black !important;
+          }
         }
       `}} />
 
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse border-[1.5px] border-black">
+      {/* MODERN ON-SCREEN TABLE WRAPPED IN CARD */}
+      <Card className="p-0 overflow-hidden border-none shadow-premium rounded-2xl no-print">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-wider font-black">
+                <th rowSpan={2} className="px-2 py-3 text-center border-r border-slate-800 w-8">
+                  <input type="checkbox" className="rounded bg-slate-800 border-slate-700 w-3 h-3" checked={selectedItems.length === priceItems.length && priceItems.length > 0} onChange={(e) => setSelectedItems(e.target.checked ? priceItems.map(i => i.id) : [])} />
+                </th>
+                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800">Blok</th>
+                <th rowSpan={2} className="px-2 py-3 border-r border-slate-800">Unit</th>
+                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800">Tipe</th>
+                <th colSpan={2} className="px-2 py-1.5 text-center border-b border-r border-slate-800">Luas</th>
+                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800">Booking</th>
+                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800 text-center">Uang Muka</th>
+                <th colSpan={3} className="px-2 py-1.5 text-center border-b border-r border-slate-800">Angsuran KPR</th>
+                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800 text-right">Harga Jual</th>
+                <th rowSpan={2} className="px-2 py-3 text-center w-12">Aksi</th>
+              </tr>
+              <tr className="bg-slate-800 text-slate-300 text-[8px] uppercase tracking-tighter font-bold">
+                <th className="px-2 py-1.5 text-center border-r border-slate-700">Tnh</th>
+                <th className="px-2 py-1.5 text-center border-r border-slate-700">Bgn</th>
+                <th className="px-2 py-1.5 text-center border-r border-slate-700">5 Th</th>
+                <th className="px-2 py-1.5 text-center border-r border-slate-700">10 Th</th>
+                <th className="px-2 py-1.5 text-center border-r border-slate-700">15 Th</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {['Ruko', 'Rumah'].map((cat) => {
+                const catItems = priceItems.filter(i => i.category === cat);
+                if (catItems.length === 0) return null;
+                return (
+                  <React.Fragment key={cat}>
+                    <tr className="bg-slate-50">
+                      <td colSpan={13} className="px-4 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest border-y border-slate-200">{cat}</td>
+                    </tr>
+                    {catItems.map((item) => {
+                      const calc = calculateKPR(item);
+                      const isSold = item.status === 'sold';
+                      return (
+                        <tr key={item.id} className={cn("hover:bg-slate-50 transition-colors group text-[10px]", isSold && "bg-slate-50/50")}>
+                          <td className="px-2 py-2 text-center border-r border-slate-50"><input type="checkbox" className="rounded w-3 h-3" checked={selectedItems.includes(item.id)} onChange={(e) => setSelectedItems(e.target.checked ? [...selectedItems, item.id] : selectedItems.filter(id => id !== item.id))} /></td>
+                          <td className="px-3 py-2 font-black text-slate-900 border-r border-slate-50 uppercase">{item.blok}</td>
+                          <td className="px-2 py-2 font-bold text-slate-600 border-r border-slate-50">{item.unit}</td>
+                          <td className="px-3 py-2 font-medium text-slate-600 border-r border-slate-50 truncate max-w-[80px]">{item.tipe}</td>
+                          <td className="px-2 py-2 text-center text-slate-600 border-r border-slate-50">{item.luas_tanah}</td>
+                          <td className="px-2 py-2 text-center text-slate-600 border-r border-slate-50">{item.luas_bangunan}</td>
+                          {isSold ? (
+                            <td colSpan={6} className="px-6 py-2 text-center bg-slate-100/50"><span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">S O L D</span></td>
+                          ) : (
+                            <>
+                              <td className="px-3 py-2 text-slate-600 border-r border-slate-50">{formatCurrency(item.booking_fee)}</td>
+                              <td className="px-3 py-2 text-center border-r border-slate-50"><p className="font-bold text-slate-900 leading-tight">{formatCurrency(calc.uang_muka_kpr)}</p></td>
+                              <td className="px-2 py-2 text-center border-r border-slate-50 font-bold text-indigo-600">{formatCurrency(calc.angsuran_5)}</td>
+                              <td className="px-2 py-2 text-center border-r border-slate-50 font-bold text-indigo-600">{formatCurrency(calc.angsuran_10)}</td>
+                              <td className="px-2 py-2 text-center border-r border-slate-50 font-bold text-indigo-600">{formatCurrency(calc.angsuran_15)}</td>
+                              <td className="px-3 py-2 font-black text-slate-900 text-right border-r border-slate-50">{formatCurrency(item.harga_jual)}</td>
+                            </>
+                          )}
+                          <td className="px-2 py-2">
+                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsItemModalOpen(true); }} className="p-1 h-auto hover:bg-white shadow-sm border border-slate-100"><Edit2 className="w-3 h-3 text-indigo-600" /></Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)} className="p-1 h-auto hover:bg-white shadow-sm border border-slate-100"><Trash2 className="w-3 h-3 text-red-500" /></Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* PRINT-ONLY CLASSIC TABLE */}
+      <div className="hidden print:block">
+        <table className="price-table">
           <thead>
-            <tr className="bg-white text-[10px] font-black uppercase">
-              <th rowSpan={2} className="p-2 border border-black no-print"><input type="checkbox" checked={selectedItems.length === priceItems.length && priceItems.length > 0} onChange={(e) => setSelectedItems(e.target.checked ? priceItems.map(i => i.id) : [])} /></th>
-              <th rowSpan={2} className="p-2 border border-black">Blok</th>
-              <th rowSpan={2} className="p-2 border border-black">Unit</th>
-              <th rowSpan={2} className="p-2 border border-black">Tipe</th>
-              <th colSpan={2} className="p-1 border border-black">Luas (m2)</th>
-              <th rowSpan={2} className="p-2 border border-black">Booking Fee</th>
-              <th rowSpan={2} className="p-2 border border-black">Uang Muka 20%</th>
-              <th colSpan={3} className="p-1 border border-black">Angsuran KPR</th>
-              <th rowSpan={2} className="p-2 border border-black text-right">Harga Jual (Rp)</th>
-              <th rowSpan={2} className="p-2 border border-black action-column no-print">Aksi</th>
+            <tr className="font-black uppercase">
+              <th rowSpan={2}>Blok</th>
+              <th rowSpan={2}>Unit</th>
+              <th rowSpan={2}>Tipe</th>
+              <th colSpan={2}>Luas (m2)</th>
+              <th rowSpan={2}>Booking Fee</th>
+              <th rowSpan={2}>Uang Muka</th>
+              <th colSpan={3}>Angsuran KPR</th>
+              <th rowSpan={2} className="text-right">Harga Jual (Rp)</th>
             </tr>
-            <tr className="bg-white text-[9px] font-bold uppercase">
-              <th className="p-1 border border-black">Tanah</th>
-              <th className="p-1 border border-black">Bangunan</th>
-              <th className="p-1 border border-black">5 Tahun</th>
-              <th className="p-1 border border-black">10 Tahun</th>
-              <th className="p-1 border border-black">15 Tahun</th>
+            <tr className="font-bold uppercase text-[8px]">
+              <th>Tanah</th>
+              <th>Bgn</th>
+              <th>5 Thn</th>
+              <th>10 Thn</th>
+              <th>15 Thn</th>
             </tr>
           </thead>
-          <tbody className="text-[10px] font-bold">
+          <tbody className="font-bold">
             {['Ruko', 'Rumah'].map((cat) => {
               const catItems = priceItems.filter(i => i.category === cat);
               if (catItems.length === 0) return null;
               return (
                 <React.Fragment key={cat}>
-                  <tr className="bg-slate-50">
-                    <td colSpan={13} className="p-2 border border-black font-black uppercase tracking-widest">{cat}</td>
-                  </tr>
+                  <tr className="cat-row"><td colSpan={11} className="font-black uppercase tracking-widest">{cat}</td></tr>
                   {catItems.map((item) => {
                     const calc = calculateKPR(item);
                     const isSold = item.status === 'sold';
                     return (
                       <tr key={item.id}>
-                        <td className="p-2 border border-black text-center no-print"><input type="checkbox" checked={selectedItems.includes(item.id)} onChange={(e) => setSelectedItems(e.target.checked ? [...selectedItems, item.id] : selectedItems.filter(id => id !== item.id))} /></td>
-                        <td className="p-2 border border-black text-center uppercase">{item.blok}</td>
-                        <td className="p-2 border border-black text-center">{item.unit}</td>
-                        <td className="p-2 border border-black text-center">{item.tipe}</td>
-                        <td className="p-2 border border-black text-center">{item.luas_tanah}</td>
-                        <td className="p-2 border border-black text-center">{item.luas_bangunan}</td>
+                        <td className="text-center">{item.blok}</td>
+                        <td className="text-center">{item.unit}</td>
+                        <td className="text-center">{item.tipe}</td>
+                        <td className="text-center">{item.luas_tanah}</td>
+                        <td className="text-center">{item.luas_bangunan}</td>
                         {isSold ? (
-                          <td colSpan={6} className="p-2 border border-black text-center tracking-[1em] text-slate-400">S O L D</td>
+                          <td colSpan={6} className="text-center text-slate-400">S O L D</td>
                         ) : (
                           <>
-                            <td className="p-2 border border-black text-center">{formatCurrency(item.booking_fee)}</td>
-                            <td className="p-2 border border-black text-center">{formatCurrency(calc.uang_muka_kpr)}</td>
-                            <td className="p-2 border border-black text-center text-blue-800">{formatCurrency(calc.angsuran_5)}</td>
-                            <td className="p-2 border border-black text-center text-blue-800">{formatCurrency(calc.angsuran_10)}</td>
-                            <td className="p-2 border border-black text-center text-blue-800">{formatCurrency(calc.angsuran_15)}</td>
-                            <td className="p-2 border border-black text-right">{formatCurrency(item.harga_jual)}</td>
+                            <td className="text-center">{formatCurrency(item.booking_fee)}</td>
+                            <td className="text-center">
+                              <div>{formatCurrency(calc.uang_muka_kpr)}</div>
+                              <div className="text-[7px] font-normal">DP {(item.dp_percentage || 0.1) * 100}%</div>
+                            </td>
+                            <td className="text-center text-indigo-700">{formatCurrency(calc.angsuran_5)}</td>
+                            <td className="text-center text-indigo-700">{formatCurrency(calc.angsuran_10)}</td>
+                            <td className="text-center text-indigo-700">{formatCurrency(calc.angsuran_15)}</td>
+                            <td className="text-right font-black">{formatCurrency(item.harga_jual)}</td>
                           </>
                         )}
-                        <td className="p-2 border border-black text-center action-column no-print">
-                          <div className="flex gap-1 justify-center">
-                            <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsItemModalOpen(true); }} className="p-1 h-auto"><Edit2 className="w-3 h-3" /></Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)} className="p-1 h-auto text-red-500"><Trash2 className="w-3 h-3" /></Button>
-                          </div>
-                        </td>
                       </tr>
                     );
                   })}
@@ -294,36 +389,37 @@ const PriceList: React.FC = () => {
         </table>
       </div>
 
-      <div className="grid grid-cols-2 gap-8 mt-12 text-[10px] font-bold border-t-[1.5px] border-black pt-8">
-        <div className="space-y-4">
+      {/* PRINT-ONLY FOOTER */}
+      <div className="hidden print:grid print-footer grid-cols-2 gap-8 text-[9px] font-bold">
+        <div className="space-y-3">
           <div>
-            <h3 className="underline uppercase mb-1">Harga Sudah Termasuk :</h3>
-            <ol className="list-decimal list-inside space-y-0.5">
+            <h3 className="underline uppercase mb-0.5">Harga Sudah Termasuk :</h3>
+            <ol className="list-decimal list-inside leading-tight">
               <li>Izin Mendirikan Bangunan ( IMB )</li>
               <li>Biaya Penyambungan Listrik & Air</li>
               <li>Akta Jual Beli & Biaya Balik Nama</li>
               <li>Biaya Keamanan & Lingkungan</li>
             </ol>
           </div>
-          <div className="pt-4 text-[9px] leading-relaxed">
-            <p className="mb-2 italic">1. Pembayaran booking fee maupun uang muka dianggap sah bila melalui kasir kantor pusat dan menerima kuitansi asli yang berstempel perusahaan, atau ke No. Rekening Bank :</p>
-            <div className="grid grid-cols-[80px_1fr_1fr] gap-x-4">
+          <div className="text-[8px] leading-tight">
+            <p className="mb-1 italic">1. Pembayaran sah melalui kasir atau Rekening Bank :</p>
+            <div className="grid grid-cols-[60px_1fr_1fr] gap-x-2">
               <span>BCA</span><span>045-068-1008</span><span>PT. Abadi Lestari Mandiri</span>
               <span>Mandiri</span><span>112-000-748-1042</span><span>PT. Abadi Lestari Mandiri</span>
               <span>BNI</span><span>020-568-0823</span><span>PT. Abadi Lestari Mandiri</span>
             </div>
           </div>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div>
-            <h3 className="underline uppercase mb-1">Harga Belum Termasuk :</h3>
-            <ol className="list-decimal list-inside space-y-0.5">
+            <h3 className="underline uppercase mb-0.5">Harga Belum Termasuk :</h3>
+            <ol className="list-decimal list-inside">
               <li>PBB</li>
               <li>Biaya KPR</li>
             </ol>
           </div>
-          <div className="pt-12 text-[9px] italic text-slate-500">
-            <p>2. Harga sewaktu-waktu dapat berubah tanpa pemberitahuan terlebih dahulu</p>
+          <div className="pt-4 text-[8px] italic text-slate-500 leading-tight">
+            <p>2. Harga dapat berubah sewaktu-waktu</p>
             <p>3. Harga Berlaku per 1 Maret 2026</p>
           </div>
         </div>
