@@ -20,37 +20,42 @@ async function seed() {
       const [blok, numStr] = unit.unit_number.split('/');
       const num = parseInt(numStr);
       let x = 0, y = 0, rot = 0;
+      let type = 'Rumah';
 
       if (blok === 'North' || blok === 'N') {
+        // 19 Units diagonal miring kiri (Grey Boxes)
         const i = num - 1;
-        const gap = num >= 14 ? 110 : 0; 
-        x = 165 + (i * 19) + gap;
-        y = 865 + (i * -38) - gap; 
-        rot = -27; 
-      } else if (blok === 'East' || blok === 'E') {
-        const i = num - 1;
-        x = 690 + (i * 8);
-        y = 115 + (i * 58);
-        rot = -12;
-      } else if (blok === 'GC') {
-        if (num <= 9) {
-          x = 730 + ((num-1) * 14);
-          y = 415 + ((num-1) * 36);
-          rot = -14;
-        } else {
-          x = 425 + ((num-10) * 46);
-          y = 565 + ((num-10) * 17);
-          rot = -21;
-        }
+        x = 180 + (i * 22);
+        y = 780 + (i * -32);
+        rot = -35;
+        type = 'Rumah';
       } else if (blok === 'South' || blok === 'S') {
+        // 12 Units horizontal bawah (Grey Boxes)
         const i = num - 1;
-        x = 245 + (i * 44);
-        y = 925 + (i * -17);
-        rot = -21;
+        x = 240 + (i * 42);
+        y = 820;
+        rot = 0;
+        type = 'Rumah';
+      } else if (blok === 'East' || blok === 'E') {
+        if (num <= 7) {
+          // 7 Units horizontal kanan atas (White Boxes - Ruko)
+          const i = num - 1;
+          x = 750 + (i * 12);
+          y = 150 + (i * 45);
+          rot = -5;
+          type = 'Ruko';
+        } else {
+          // 4 Units vertikal kanan bawah (Grey Boxes)
+          const i = num - 8;
+          x = 720 + (i * 8);
+          y = 520 + (i * 40);
+          rot = -10;
+          type = 'Rumah';
+        }
       }
 
       if (x > 0) {
-        await client.query(`UPDATE units SET sp_x = $1, sp_y = $2, sp_rotation = $3 WHERE id = $4`, [Math.round(x), Math.round(y), rot, unit.id]);
+        await client.query(`UPDATE units SET sp_x = $1, sp_y = $2, sp_rotation = $3, type = $4 WHERE id = $5`, [Math.round(x), Math.round(y), rot, type, unit.id]);
       }
     }
 

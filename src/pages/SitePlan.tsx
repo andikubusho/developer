@@ -109,29 +109,35 @@ const SitePlan: React.FC = () => {
 
             const num = unit.unit_number ? (unit.unit_number.split('/')[1] || unit.unit_number) : '?';
 
+            const isRuko = unit.type === 'Ruko';
+
             return (
               <div 
                 key={unit.id}
                 onClick={() => { setSelectedUnit(unit); setActiveTab('info'); }}
                 className={cn(
-                  "absolute w-8 h-11 border border-black/30 cursor-pointer transition-all hover:brightness-110 hover:z-50 shadow-md group flex items-center justify-center overflow-hidden",
+                  "absolute w-8 h-11 border-2 border-black/40 cursor-pointer transition-all hover:brightness-110 hover:z-50 shadow-md flex items-center justify-center overflow-hidden",
+                  isRuko ? "bg-white" : "",
                   unit.status === 'sold' ? "ring-1 ring-red-600/50" : "hover:ring-2 hover:ring-white"
                 )}
                 style={{ 
                   left: `${unit.sp_x}px`, 
                   top: `${unit.sp_y}px`, 
                   transform: `rotate(${unit.sp_rotation || 0}deg)`,
-                  backgroundColor: getStatusColor(unit.status)
+                  backgroundColor: isRuko ? 'white' : getStatusColor(unit.status)
                 }}
               >
                 {/* Always Show Unit Number Label */}
-                <div className="text-[7px] font-black text-white drop-shadow-md select-none">
+                <div className={cn("text-[7px] font-black drop-shadow-md select-none", isRuko ? "text-slate-900" : "text-white")}>
                    {num}
                 </div>
 
                 {/* Status Overlay for Sold/Booked */}
                 {unit.status !== 'available' && (
-                  <div className={cn("absolute inset-0 flex items-center justify-center uppercase text-[6px] font-black tracking-tighter mix-blend-overlay opacity-40")}>
+                  <div className={cn(
+                    "absolute inset-0 flex items-center justify-center uppercase text-[6px] font-black tracking-tighter mix-blend-overlay opacity-40",
+                    isRuko ? "text-red-600 opacity-100 mix-blend-normal bg-red-50/20" : ""
+                  )}>
                     {unit.status === 'sold' ? 'SOLD' : 'BKD'}
                   </div>
                 )}
