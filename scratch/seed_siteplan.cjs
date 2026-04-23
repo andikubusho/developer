@@ -22,35 +22,35 @@ async function seed() {
       let x = 0, y = 0, rot = 0;
 
       if (blok === 'North' || blok === 'N') {
-        // Diagonal N-01 start at (180, 820)
+        // Mengikuti garis teknik miring ke kiri atas
         const i = num - 1;
-        const gap = num >= 14 ? 85 : 0; // Gap jalan yang lebih lebar
-        x = 180 + (i * 23) + gap;
-        y = 820 + (i * -24) - gap;
-        rot = -46;
+        const gap = num >= 14 ? 100 : 0; 
+        x = 160 + (i * 20) + gap;
+        y = 860 + (i * -38) - gap; // Lebih tegak miringnya
+        rot = -28; 
       } else if (blok === 'East' || blok === 'E') {
-        // E-01 start at (680, 50), Vertical stack
+        // Cluster kanan atas
         const i = num - 1;
-        x = 680;
-        y = 50 + (i * 55);
-        rot = 0;
+        x = 680 + (i * 10);
+        y = 120 + (i * 55);
+        rot = -10;
       } else if (blok === 'GC') {
-        // GC-01 to 09 (Top row), GC-10 to 18 (Bottom row)
+        // Sisi kanan tengah
         if (num <= 9) {
-          x = 580 + ((num-1) * 48);
-          y = 540;
+          x = 720 + ((num-1) * 15);
+          y = 420 + ((num-1) * 35);
+          rot = -15;
         } else {
-          x = 532 + ((num-10) * 48); // Shifted left like in screenshot
-          y = 600;
+          x = 420 + ((num-10) * 45);
+          y = 560 + ((num-10) * 18);
+          rot = -22;
         }
-        rot = 0;
       } else if (blok === 'South' || blok === 'S') {
-        // S-12 to S-01, Horizontal bottom
-        // S-12 start at 330
-        const i = 12 - num; // Reverse order as per screenshot? 
-        x = 330 + (num * 48);
-        y = 880;
-        rot = 0;
+        // Mengikuti garis teknik bawah yang miring ke kanan atas
+        const i = num - 1;
+        x = 240 + (i * 45);
+        y = 920 + (i * -18);
+        rot = -22;
       }
 
       if (x > 0) {
