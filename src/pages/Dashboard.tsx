@@ -263,7 +263,7 @@ const Dashboard: React.FC = () => {
       return;
     }
 
-    const data = await api.get('installments', 'select=*,sales(customer_id,customers(name))&status=eq.overdue&limit=5');
+    const data = await api.get('installments', 'select=*,sales:sales(customer:customers(full_name,phone))&status=eq.overdue&limit=5');
     
     setOverdueInstallments(data || []);
   };
@@ -697,7 +697,7 @@ const Dashboard: React.FC = () => {
                           <AlertTriangle className="w-5 h-5" />
                         </div>
                         <div className="overflow-hidden">
-                          <p className="text-sm font-black text-slate-900 truncate">{(item as any).sales?.customers?.name}</p>
+                          <p className="text-sm font-black text-slate-900 truncate">{(item as any).sales?.customer?.full_name}</p>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap mt-0.5">Jatuh tempo: {formatDate(item.due_date)}</p>
                         </div>
                       </div>
@@ -710,8 +710,8 @@ const Dashboard: React.FC = () => {
                           size="sm" 
                           className="p-0 h-10 w-10 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50 rounded-xl"
                           onClick={() => {
-                            const phone = (item as any).sales?.customers?.phone || '';
-                            const name = (item as any).sales?.customers?.name || '';
+                            const phone = (item as any).sales?.customer?.phone || '';
+                            const name = (item as any).sales?.customer?.full_name || '';
                             const amount = formatCurrency(item.amount);
                             const message = `Halo Bapak/Ibu ${name}, ini pengingat untuk pembayaran cicilan properti Anda sebesar ${amount} yang telah jatuh tempo pada ${formatDate(item.due_date)}. Mohon segera melakukan pembayaran. Terima kasih.`;
                             window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');

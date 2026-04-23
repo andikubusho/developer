@@ -32,7 +32,7 @@ const AttendancePage: React.FC = () => {
 
   const fetchEmployees = async () => {
     try {
-      const data = await api.get('employees', 'select=id,full_name,employee_id&status=eq.active');
+      const data = await api.get('employees', 'select=*&status=eq.active');
       setEmployees(data || []);
     } catch (error) {
       console.error('Error fetching employees:', error);
@@ -118,8 +118,8 @@ const AttendancePage: React.FC = () => {
   };
 
   const filteredAttendance = attendance.filter(item => 
-    item.employee?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.employee?.employee_id.toLowerCase().includes(searchTerm.toLowerCase())
+    (item.employee?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.employee?.employee_id || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (

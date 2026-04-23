@@ -65,7 +65,7 @@ const PayrollPage: React.FC = () => {
     }
 
     try {
-      const data = await api.get('payroll', 'select=*,employee:employees(*)&order=period.desc');
+      const data = await api.get('payroll', 'select=*,employee:employees(*)&order=id.desc');
       setPayroll(data || []);
     } catch (error) {
       console.error('Error fetching payroll:', error);
@@ -160,8 +160,8 @@ const PayrollPage: React.FC = () => {
   };
 
   const filteredPayroll = payroll.filter(item => 
-    item.employee?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.employee?.employee_id.toLowerCase().includes(searchTerm.toLowerCase())
+    (item.employee?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.employee?.employee_id || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (

@@ -109,9 +109,9 @@ const EmployeesPage: React.FC = () => {
   };
 
   const filteredEmployees = employees.filter(item => 
-    item.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.division.toLowerCase().includes(searchTerm.toLowerCase())
+    (item.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.employee_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.division || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (

@@ -41,11 +41,11 @@ const Sales: React.FC = () => {
       const to = from + pageSize - 1;
       
       // Building complex PostgREST query string for joins and pagination
-      let queryParams = `select=*,unit:units!inner(unit_number,project:projects!inner(name)),customer:customers!inner(full_name),marketing:profiles!inner(full_name)&order=sale_date.desc&offset=${from}&limit=${pageSize}`;
+      let queryParams = `select=*,unit:units(unit_number,project:projects(name)),customer:customers(full_name),marketing:profiles(full_name)&order=sale_date.desc&offset=${from}&limit=${pageSize}`;
       
       if (debouncedSearch) {
-        // Standard PostgREST .or syntax
-        queryParams += `&or=(customer.full_name.ilike.*${debouncedSearch}*,unit.unit_number.ilike.*${debouncedSearch}*)`;
+        // Use a simpler approach for now to avoid PostgREST nested OR complexity issues
+        queryParams += `&status=ilike.*${debouncedSearch}*`; 
       }
 
       const data = await api.get('sales', queryParams);

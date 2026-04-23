@@ -33,7 +33,7 @@ const KPRDisbursementPage: React.FC = () => {
   const fetchDisbursements = async () => {
     try {
       setLoading(true);
-      const data = await api.get('kpr_disbursements', 'select=*,sale:sales(*,customer:customers(*),unit:units(*))&order=disbursement_date.desc');
+      const data = await api.get('kpr_disbursements', 'select=*,sale:sales(customer:customers(full_name),unit:units(unit_number))&order=disbursement_date.desc');
       setDisbursements(data || []);
     } catch (error) {
       console.error('Error fetching disbursements:', error);
@@ -44,7 +44,7 @@ const KPRDisbursementPage: React.FC = () => {
 
   const fetchSales = async () => {
     try {
-      const data = await api.get('sales', 'select=*,customer:customers(*),unit:units(*)&payment_method=eq.kpr');
+      const data = await api.get('sales', 'select=*,customer:customers(full_name),unit:units(unit_number)&payment_method=eq.kpr');
       setSales(data || []);
     } catch (error) {
       console.error('Error fetching sales:', error);

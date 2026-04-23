@@ -21,7 +21,7 @@ const SitePlan: React.FC = () => {
   const fetchDocs = async () => {
     try {
       setLoading(true);
-      const data = await api.get('marketing_documents', 'select=*&type=eq.siteplan&order=created_at.desc');
+      const data = await api.get('marketing_documents', 'select=*&type=eq.siteplan&order=id.desc');
       setDocs(data || []);
     } catch (error) {
       console.error('Error fetching docs:', error);
