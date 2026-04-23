@@ -27,45 +27,44 @@ async function seed() {
 
       if (blok === 'North' || blok === 'N') {
         if (num > 19) continue;
-        // 19 Units diagonal (Grey Boxes) - Calibrated for B&W Drawing
+        // 19 Units diagonal (Grey Boxes)
         const i = num - 1;
-        x = 220 + (i * 24.5);
-        y = 650 + (i * -28);
+        x = 35.5 + (i * 1.5);
+        y = 48.5 + (i * -1.8);
         rot = -48;
         type = 'Rumah';
       } else if (blok === 'South' || blok === 'S') {
         if (num > 12) continue;
         // 12 Units horizontal (Grey Boxes)
         const i = num - 1;
-        x = 310 + (i * 35.5);
-        y = 705;
+        x = 42.5 + (i * 2.1);
+        y = 52.8;
         rot = 0;
         type = 'Rumah';
       } else if (blok === 'East' || blok === 'E') {
         if (num <= 7) {
           // 7 Units Ruko (Top Right)
           const i = num - 1;
-          x = 810 + (i * 12);
-          y = 125 + (i * 39);
+          x = 73.0 + (i * 0.7);
+          y = 15.5 + (i * 2.5);
           rot = -5;
           type = 'Ruko';
         } else if (num <= 11) {
           // 4 Units Rumah (Bottom Right)
           const i = num - 8;
-          x = 760 + (i * 11);
-          y = 450 + (i * 35);
+          x = 71.0 + (i * 0.6);
+          y = 36.5 + (i * 2.2);
           rot = -10;
           type = 'Rumah';
         } else {
           continue;
         }
       } else {
-        // Hide all other blocks (GC, etc)
         continue;
       }
 
       if (x > 0) {
-        await client.query(`UPDATE units SET sp_x = $1, sp_y = $2, sp_rotation = $3, type = $4 WHERE id = $5`, [Math.round(x), Math.round(y), rot, type, unit.id]);
+        await client.query(`UPDATE units SET sp_x = $1, sp_y = $2, sp_rotation = $3, type = $4 WHERE id = $5`, [parseFloat(x.toFixed(2)), parseFloat(y.toFixed(2)), rot, type, unit.id]);
       }
     }
 

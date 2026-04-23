@@ -186,9 +186,9 @@ const SitePlan = () => {
                       isRuko ? "bg-white" : ""
                     )}
                     style={{ 
-                      left: `${x}px`, 
-                      top: `${y}px`, 
-                      transform: `rotate(${unit.sp_rotation || 0}deg)`,
+                      left: `${x}%`, 
+                      top: `${y}%`, 
+                      transform: `translate(-50%, -50%) rotate(${unit.sp_rotation || 0}deg)`,
                       backgroundColor: isRuko ? 'white' : getStatusColor(unit.status || 'available')
                     }}
                   >
