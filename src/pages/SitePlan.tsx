@@ -266,106 +266,91 @@ const SitePlan: React.FC = () => {
                 <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">ID: {selectedUnit.id.split('-')[0].toUpperCase()}</p>
               </div>
 
-              {/* Tabs */}
-              <div className="px-8 flex gap-6 border-b border-white/5 mt-4">
-                {[
-                  { id: 'info', name: 'Ringkasan' },
-                  { id: 'specs', name: 'Spesifikasi' },
-                  { id: 'denah', name: 'Denah' }
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={cn(
-                      "pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative",
-                      activeTab === tab.id ? "text-indigo-400" : "text-slate-500 hover:text-slate-300"
-                    )}
-                  >
-                    {tab.name}
-                    {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500 rounded-t-full shadow-[0_-4px_12px_rgba(99,102,241,0.6)]" />}
-                  </button>
-                ))}
-              </div>
-
-              {/* Tab Content */}
-              <div className="flex-1 overflow-auto p-8 scrollbar-hide">
-                {activeTab === 'info' && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-5 bg-white/5 rounded-[2.5rem] border border-white/5">
-                        <Building2 className="w-5 h-5 text-indigo-400 mb-3" />
-                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Tipe Unit</p>
-                        <p className="text-sm font-black text-white">{selectedUnit.type}</p>
-                      </div>
-                      <div className="p-5 bg-white/5 rounded-[2.5rem] border border-white/5">
-                        <Ruler className="w-5 h-5 text-indigo-400 mb-3" />
-                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Luas T/B</p>
-                        <p className="text-sm font-black text-white">120/45 m²</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] ml-1">Informasi Dasar</h4>
-                      <div className="space-y-2">
-                        {[
-                          { label: 'Cluster', value: selectedUnit.unit_number.split('/')[0] },
-                          { label: 'Kamar Tidur', value: '2 Ruang' },
-                          { label: 'Kamar Mandi', value: '1 Ruang' },
-                          { label: 'Sertifikat', value: 'SHM (Milik Adat)' },
-                        ].map((item, i) => (
-                          <div key={i} className="flex justify-between p-5 bg-white/5 rounded-[1.5rem] text-[11px] border border-white/5">
-                            <span className="text-slate-400 font-bold uppercase tracking-wider">{item.label}</span>
-                            <span className="text-white font-black">{item.value}</span>
-                          </div>
-                        ))}
-                      </div>
+              {/* Unified Scrollable Detail Content */}
+              <div className="flex-1 overflow-auto p-8 scrollbar-hide space-y-8">
+                {/* House Preview Section */}
+                <div className="space-y-4">
+                  <div className="aspect-video bg-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl relative border border-white/5">
+                    <img 
+                      src={`https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600`} 
+                      alt="Tampak Depan" 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-4 py-2 rounded-2xl text-[8px] font-black uppercase text-white tracking-widest border border-white/10">
+                      Tampak Depan
                     </div>
                   </div>
-                )}
+                  
+                  <div className="aspect-[4/3] bg-white rounded-[2.5rem] overflow-hidden shadow-xl flex items-center justify-center p-6 border border-white/5">
+                    <img 
+                      src={`https://placehold.co/600x400/ffffff/6366f1?text=Denah+Type+${selectedUnit.type}`} 
+                      alt="Denah Rumah" 
+                      className="max-w-full max-h-full object-contain"
+                    />
+                    <div className="absolute bottom-4 right-4 bg-slate-900/60 backdrop-blur-md px-4 py-2 rounded-2xl text-[8px] font-black uppercase text-white tracking-widest border border-white/10">
+                      Denah Ruang
+                    </div>
+                  </div>
+                </div>
 
-                {activeTab === 'specs' && (
-                  <div className="space-y-4">
+                {/* Key Specifications Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-6 bg-white/5 rounded-[2.5rem] border border-white/5 transition-all hover:bg-white/10">
+                    <Ruler className="w-5 h-5 text-indigo-400 mb-3" />
+                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Luas Tanah</p>
+                    <p className="text-sm font-black text-white">120 m²</p>
+                  </div>
+                  <div className="p-6 bg-white/5 rounded-[2.5rem] border border-white/5 transition-all hover:bg-white/10">
+                    <Building2 className="w-5 h-5 text-indigo-400 mb-3" />
+                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Luas Bangunan</p>
+                    <p className="text-sm font-black text-white">45 m²</p>
+                  </div>
+                </div>
+
+                {/* Technical Materials List */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between px-2">
+                    <h4 className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.3em]">Material Teknis</h4>
+                    <div className="h-px flex-1 bg-white/5 ml-4" />
+                  </div>
+                  <div className="space-y-2">
                     {[
-                      { icon: <Building2 className="w-4 h-4" />, label: 'Pondasi', value: selectedUnit.specs?.pondasi || 'Batu Kali & Beton Bertulang' },
-                      { icon: <Building2 className="w-4 h-4" />, label: 'Dinding', value: selectedUnit.specs?.dinding || 'Batu Bata, Plester, Aci' },
-                      { icon: <ImageIcon className="w-4 h-4" />, label: 'Lantai', value: selectedUnit.specs?.lantai || 'Granit 60x60' },
-                      { icon: <ImageIcon className="w-4 h-4" />, label: 'Atap', value: selectedUnit.specs?.atap || 'Baja Ringan & Genteng Metal' },
-                      { icon: <Lightbulb className="w-4 h-4" />, label: 'Listrik', value: selectedUnit.specs?.listrik || '1300 VA' },
-                      { icon: <Droplet className="w-4 h-4" />, label: 'Air', value: selectedUnit.specs?.air || 'Sumur Bor & Pompa' },
+                      { label: 'Struktur', value: 'Beton Bertulang' },
+                      { label: 'Pondasi', value: 'Batu Kali' },
+                      { label: 'Dinding', value: 'Batu Bata, Plester, Aci' },
+                      { label: 'Lantai', value: 'Granit 60x60' },
+                      { label: 'Atap', value: 'Baja Ringan & Genteng Metal' },
+                      { label: 'Plafon', value: 'Gypsum Rangka Hollow' },
+                      { label: 'Sanitasi', value: 'Closet Duduk & Shower' },
                     ].map((spec, i) => (
-                      <div key={i} className="flex items-start gap-4 p-5 bg-white/5 rounded-3xl border border-white/5">
-                        <div className="p-2 bg-indigo-600/20 rounded-xl text-indigo-400">{spec.icon}</div>
-                        <div>
-                          <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">{spec.label}</p>
-                          <p className="text-xs font-bold text-slate-200">{spec.value}</p>
-                        </div>
+                      <div key={i} className="flex justify-between p-5 bg-white/5 rounded-2xl border border-white/5 group hover:bg-white/[0.08] transition-all">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{spec.label}</span>
+                        <span className="text-[11px] text-white font-black">{spec.value}</span>
                       </div>
                     ))}
                   </div>
-                )}
+                </div>
 
-                {activeTab === 'denah' && (
-                  <div className="space-y-6">
-                    <div className="aspect-[3/4] bg-white rounded-[2.5rem] flex items-center justify-center p-8 shadow-2xl">
-                       <img src="https://placehold.co/400x600/fff/6366f1?text=Denah+Type+Spesial" alt="Denah" className="max-w-full" />
-                    </div>
-                    <Button variant="outline" className="w-full rounded-2xl py-4 text-[10px] font-black uppercase tracking-widest text-white border-white/10 hover:bg-white/5">
-                      <Download className="w-4 h-4 mr-2" /> Unduh Brosur Teknik
-                    </Button>
+                {/* Pricing Summary */}
+                <div className="p-8 bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[3rem] shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl transition-all group-hover:scale-150" />
+                  <p className="text-[10px] text-white/60 font-black uppercase tracking-[0.2em] mb-2 relative z-10">Harga Penawaran</p>
+                  <p className="text-3xl font-black text-white tracking-tighter relative z-10">{formatCurrency(selectedUnit.price)}</p>
+                  <div className="mt-6 flex items-center gap-2 text-[9px] font-black text-indigo-200 uppercase tracking-widest relative z-10">
+                    <Info className="w-3 h-3" /> Termasuk PPN & Balik Nama
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Action Footer */}
-              <div className="p-8 pt-4 border-t border-white/5">
-                {selectedUnit.status === 'available' && (
-                  <Button className="w-full py-5 text-sm font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-900/20 rounded-[2rem] transform transition hover:-translate-y-1">
-                    Beli Sekarang <ChevronRight className="w-4 h-4 ml-1" />
+              <div className="p-8 pt-4 border-t border-white/5 bg-slate-900/50 backdrop-blur-md">
+                {selectedUnit.status === 'available' ? (
+                  <Button className="w-full py-6 text-sm font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 shadow-[0_20px_40px_-10px_rgba(16,185,129,0.3)] rounded-[2rem] transform transition hover:-translate-y-1 active:scale-95">
+                    Pesan Unit Sekarang <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
-                )}
-                {selectedUnit.status !== 'available' && (
-                  <div className="text-center p-4 bg-white/5 rounded-[2rem] border border-white/5">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Unit ini Sudah {selectedUnit.status}</p>
+                ) : (
+                  <div className="w-full py-6 text-center bg-white/5 rounded-[2rem] border border-white/10">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Status: Unit {selectedUnit.status}</p>
                   </div>
                 )}
               </div>
@@ -378,8 +363,8 @@ const SitePlan: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-black text-white uppercase text-sm tracking-[0.3em] mb-4">Sikumbang Explorer</h3>
-                <p className="text-xs leading-relaxed text-slate-500 font-bold">
-                  Klik pada kavling untuk melihat spesifikasi teknis, harga subsidi, dan visual denah rumah secara lengkap.
+                <p className="text-xs leading-relaxed text-slate-500 font-bold px-6">
+                  Silakan pilih salah satu kavling pada peta untuk melihat spesifikasi teknis dan rincian harga unit secara detail.
                 </p>
               </div>
             </div>
@@ -388,11 +373,11 @@ const SitePlan: React.FC = () => {
       </div>
 
       {/* Upload Modal */}
-      <Modal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} title="Master Plan Configuration">
+      <Modal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} title="Konfigurasi Master Plan">
         <div className="p-12 text-center border-4 border-dashed border-white/10 rounded-[4rem] hover:border-indigo-600/30 transition-all cursor-pointer group bg-white/5" onClick={handleUploadImage}>
           <Upload className="w-12 h-12 text-indigo-500 mx-auto mb-6 group-hover:scale-110 transition-transform" />
-          <h3 className="text-xl font-black text-white mb-2">Update Site Plan Image</h3>
-          <p className="text-xs text-slate-500 font-medium px-8">Upload gambar teknik (CAD) untuk akurasi kavling maksimal.</p>
+          <h3 className="text-xl font-black text-white mb-2">Update Gambar Site Plan</h3>
+          <p className="text-xs text-slate-500 font-medium px-8 leading-relaxed">Upload file gambar denah master plan (JPG/PNG). Rekomendasi ukuran 1200x900px untuk hasil presisi.</p>
         </div>
       </Modal>
     </div>
