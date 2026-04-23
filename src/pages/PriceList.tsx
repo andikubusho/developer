@@ -268,7 +268,61 @@ const PriceList: React.FC = () => {
         </div>
       </div>
 
-      <div className="hidden print:block mb-8">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          /* Hide everything by default */
+          body * {
+            visibility: hidden !important;
+          }
+          
+          /* Only show the price list container and its children */
+          #price-list-container, #price-list-container * {
+            visibility: visible !important;
+          }
+
+          /* Reset positioning to avoid layout issues */
+          #price-list-container {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+          }
+
+          /* Specific hide rules for items inside the container that shouldn't be printed */
+          .no-print, button, select, .action-column {
+            display: none !important;
+            visibility: hidden !important;
+          }
+
+          /* Ensure table looks good */
+          table {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            font-size: 7pt !important;
+          }
+          
+          th, td {
+            border: 0.5px solid #000 !important;
+            padding: 4px !important;
+          }
+
+          .bg-slate-900 { background-color: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; }
+          .bg-slate-800 { background-color: #333 !important; color: #fff !important; -webkit-print-color-adjust: exact; }
+          .bg-slate-50 { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; }
+          
+          /* Force logo and header visibility */
+          .print-header {
+            display: block !important;
+            visibility: visible !important;
+            margin-bottom: 20px !important;
+          }
+        }
+      `}} />
+
+      <div className="hidden print:block print-header mb-8">
         <div className="flex items-center justify-between border-b-2 border-slate-900 pb-6">
           <img src={logoProyek} alt="Logo" className="h-16 w-auto object-contain" />
           <div className="text-right">
@@ -278,89 +332,6 @@ const PriceList: React.FC = () => {
           </div>
         </div>
       </div>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media print {
-          /* Hide app UI elements */
-          nav, aside, .sidebar, header, [role="complementary"], 
-          button, select, .no-print, 
-          .flex.flex-wrap.items-center.gap-2, /* The top actions div */
-          .flex.flex-col.sm\\:flex-row /* The title section */ {
-            display: none !important;
-          }
-
-          /* Reset layout for print */
-          body, html, #root, .flex.min-h-screen, main {
-            background: white !important;
-            height: auto !important;
-            overflow: visible !important;
-            display: block !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-
-          /* Ensure main content is visible */
-          .flex-1.px-4.py-6.md\\:px-10 {
-            padding: 0 !important;
-            display: block !important;
-            overflow: visible !important;
-          }
-
-          #price-list-container {
-            display: block !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 20px !important;
-          }
-
-          .Card {
-            box-shadow: none !important;
-            border: 1px solid #000 !important;
-            border-radius: 0 !important;
-          }
-
-          table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            font-size: 7pt !important;
-          }
-
-          th, td {
-            border: 0.5px solid #000 !important;
-            padding: 3px 6px !important;
-          }
-
-          .bg-slate-900 {
-            background-color: #000 !important;
-            color: #fff !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-
-          .bg-slate-800 {
-            background-color: #333 !important;
-            color: #fff !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-
-          .bg-slate-50 {
-            background-color: #f1f5f9 !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-
-          /* Hide action column */
-          th:last-child, td:last-child {
-            display: none !important;
-          }
-          
-          /* Force page breaks */
-          tr {
-            page-break-inside: avoid !important;
-          }
-        }
-      `}} />
 
       <Card className="p-0 overflow-hidden border-none shadow-premium rounded-2xl">
         <div className="overflow-x-auto">
