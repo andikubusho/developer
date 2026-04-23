@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, MoreVertical, Edit, Trash2, MapPin, ArrowLeft } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { Plus, Search, Filter, Edit, Trash2, MapPin, ArrowLeft } from 'lucide-react';
 import { Project } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -10,13 +9,15 @@ import { formatDate, cn } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
 import { ProjectForm } from '../components/forms/ProjectForm';
 import { useAuth } from '../contexts/AuthContext';
-import { getMockData, saveMockData } from '../lib/storage';
+import { api } from '../lib/api';
 
 const Projects: React.FC = () => {
-  const { isMockMode, division, setDivision } = useAuth();
+  const { setDivision } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   useEffect(() => {
     fetchProjects();
@@ -25,38 +26,7 @@ const Projects: React.FC = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      
-      if (isMockMode) {
-        const defaultProjects: Project[] = [
-          {
-            id: '1',
-            name: 'Griya Asri Residence',
-            location: 'Bandung, Jawa Barat',
-            description: 'Perumahan subsidi dengan fasilitas lengkap',
-            total_units: 50,
-            status: 'ongoing',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            name: 'Grand Emerald City',
-            location: 'Jakarta Timur',
-            description: 'Apartemen mewah di pusat kota',
-            total_units: 200,
-            status: 'planned',
-            created_at: new Date().toISOString(),
-          }
-        ];
-        setProjects(getMockData<Project>('projects', defaultProjects));
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await api.get('projects', 'select=*&order=created_at.desc');
       setProjects(data || []);
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -69,9 +39,6 @@ const Projects: React.FC = () => {
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const handleAdd = () => {
     setSelectedProject(null);
@@ -90,22 +57,15 @@ const Projects: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus proyek ini?')) return;
-
-    if (isMockMode) {
-      const updatedProjects = projects.filter(p => p.id !== id);
-      setProjects(updatedProjects);
-      saveMockData('projects', updatedProjects);
-    } else {
-      try {
-        const { error } = await supabase
-          .from('projects')
-          .delete()
-          .eq('id', id);
-        if (error) throw error;
-        fetchProjects();
-      } catch (error) {
-        console.error('Error deleting project:', error);
-      }
+    try {
+      setLoading(true);
+      await api.delete('projects', id);
+      await fetchProjects();
+    } catch (error: any) {
+      console.error('Error deleting project:', error);
+      alert(`Gagal menghapus: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -116,10 +76,7 @@ const Projects: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              localStorage.removeItem('user_division');
-              setDivision(null);
-            }}
+            onClick={() => setDivision(null)}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -147,7 +104,6 @@ const Projects: React.FC = () => {
           initialData={selectedProject} 
         />
       </Modal>
-
 
       <Card className="p-0">
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
@@ -180,11 +136,7 @@ const Projects: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center">
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                    </div>
-                  </td>
+                  <td colSpan={6} className="px-6 py-10 text-center text-slate-400">Memuat proyek...</td>
                 </tr>
               ) : filteredProjects.length === 0 ? (
                 <tr>
@@ -250,6 +202,3 @@ const Projects: React.FC = () => {
 };
 
 export default Projects;
-
-
-

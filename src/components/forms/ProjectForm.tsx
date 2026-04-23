@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { NumberInput } from '../ui/NumberInput';
-import { useAuth } from '../../contexts/AuthContext';
-import { getMockData, saveMockData } from '../../lib/storage';
+import { api } from '../../lib/api';
 
 const projectSchema = z.object({
   name: z.string().min(3, 'Nama proyek minimal 3 karakter'),
@@ -28,7 +26,6 @@ interface ProjectFormProps {
 }
 
 export const ProjectForm: React.FC<ProjectFormProps> = ({ onSuccess, onCancel, initialData }) => {
-  const { isMockMode } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const { register, handleSubmit, control, formState: { errors } } = useForm<ProjectFormValues>({
@@ -42,42 +39,15 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSuccess, onCancel, i
   const onSubmit = async (values: ProjectFormValues) => {
     setLoading(true);
     try {
-      if (isMockMode) {
-        const projects = getMockData<any>('projects', []);
-        let updatedProjects: any[];
-        
-        if (initialData?.id) {
-          updatedProjects = projects.map(p => p.id === initialData.id ? { ...p, ...values } : p);
-        } else {
-          const newProject = {
-            id: Math.random().toString(36).substr(2, 9),
-            ...values,
-            created_at: new Date().toISOString()
-          };
-          updatedProjects = [newProject, ...projects];
-        }
-        
-        saveMockData('projects', updatedProjects);
-        onSuccess();
-        return;
-      }
-
       if (initialData?.id) {
-        const { error } = await supabase
-          .from('projects')
-          .update(values)
-          .eq('id', initialData.id);
-        if (error) throw error;
+        await api.update('projects', initialData.id, values);
       } else {
-        const { error } = await supabase
-          .from('projects')
-          .insert([values]);
-        if (error) throw error;
+        await api.insert('projects', values);
       }
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving project:', error);
-      alert('Gagal menyimpan proyek.');
+      alert(`Gagal menyimpan: ${error.message}`);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, HardHat, ArrowLeft, Edit, Trash2, Camera, Clock } from 'lucide-react';
+import { Plus, Search, Filter, ArrowLeft, Edit, Trash2, Camera, Clock } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -7,11 +7,10 @@ import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { ConstructionProgress } from '../types';
 import { formatDate } from '../lib/utils';
-import { supabase } from '../lib/supabase';
-import { getMockData, saveMockData } from '../lib/storage';
+import { api } from '../lib/api';
 
 const ConstructionProgressPage: React.FC = () => {
-  const { isMockMode, division, setDivision } = useAuth();
+  const { setDivision } = useAuth();
   const [progressItems, setProgressItems] = useState<ConstructionProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,41 +51,10 @@ const ConstructionProgressPage: React.FC = () => {
   }, [selectedProgress, isModalOpen]);
 
   const fetchProgress = async () => {
-    setLoading(true);
-    if (isMockMode) {
-      const defaultProgress: ConstructionProgress[] = [
-        {
-          id: '1',
-          project_id: '1',
-          unit_id: '1',
-          percentage: 45,
-          description: 'Pekerjaan dinding lantai 1 selesai, persiapan pengecoran dak.',
-          photo_url: 'https://picsum.photos/seed/construction1/800/600',
-          report_date: new Date().toISOString(),
-          created_by: 'Neville Christian'
-        },
-        {
-          id: '2',
-          project_id: '1',
-          unit_id: '2',
-          percentage: 20,
-          description: 'Pondasi selesai, mulai pemasangan bata.',
-          photo_url: 'https://picsum.photos/seed/construction2/800/600',
-          report_date: new Date().toISOString(),
-          created_by: 'Neville Christian'
-        }
-      ];
-      setProgressItems(getMockData<ConstructionProgress>('construction_progress', defaultProgress));
-      setLoading(false);
-      return;
-    }
-
     try {
-      const { data, error } = await supabase
-        .from('construction_progress')
-        .select('*')
-        .order('report_date', { ascending: false });
-      if (error) throw error;
+      setLoading(true);
+      // Use the correct table name from the migration: project_progress
+      const data = await api.get('project_progress', 'select=*&order=report_date.desc');
       setProgressItems(data || []);
     } catch (error) {
       console.error('Error fetching progress:', error);
@@ -96,41 +64,27 @@ const ConstructionProgressPage: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (isMockMode) {
-      let updatedProgress: ConstructionProgress[];
+    try {
+      setLoading(true);
+      const payload = {
+        ...formData,
+        project_id: '1', // Default or fetch based on unit
+        created_by: 'Admin'
+      };
+
       if (selectedProgress) {
-        updatedProgress = progressItems.map(item => item.id === selectedProgress.id ? { ...item, ...formData } : item);
+        await api.update('project_progress', selectedProgress.id, payload);
       } else {
-        const newItem: ConstructionProgress = {
-          id: Math.random().toString(36).substr(2, 9),
-          project_id: '1',
-          ...formData,
-          created_by: 'Neville Christian'
-        };
-        updatedProgress = [newItem, ...progressItems];
+        await api.insert('project_progress', payload);
       }
-      setProgressItems(updatedProgress);
-      saveMockData('construction_progress', updatedProgress);
-    } else {
-      try {
-        if (selectedProgress) {
-          const { error } = await supabase
-            .from('construction_progress')
-            .update(formData)
-            .eq('id', selectedProgress.id);
-          if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('construction_progress')
-            .insert([{ ...formData, project_id: '1', created_by: 'Neville Christian' }]);
-          if (error) throw error;
-        }
-        fetchProgress();
-      } catch (error) {
-        console.error('Error saving progress:', error);
-      }
+      await fetchProgress();
+      setIsModalOpen(false);
+    } catch (error: any) {
+      console.error('Error saving progress:', error);
+      alert(`Gagal menyimpan: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-    setIsModalOpen(false);
   };
 
   const handleEdit = (item: ConstructionProgress) => {
@@ -140,27 +94,20 @@ const ConstructionProgressPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
-
-    if (isMockMode) {
-      const updatedProgress = progressItems.filter(item => item.id !== id);
-      setProgressItems(updatedProgress);
-      saveMockData('construction_progress', updatedProgress);
-    } else {
-      try {
-        const { error } = await supabase
-          .from('construction_progress')
-          .delete()
-          .eq('id', id);
-        if (error) throw error;
-        fetchProgress();
-      } catch (error) {
-        console.error('Error deleting progress:', error);
-      }
+    try {
+      setLoading(true);
+      await api.delete('project_progress', id);
+      await fetchProgress();
+    } catch (error: any) {
+      console.error('Error deleting progress:', error);
+      alert(`Gagal menghapus: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
   const filteredProgress = progressItems.filter(item => 
-    item.description.toLowerCase().includes(searchTerm.toLowerCase())
+    item.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -170,10 +117,7 @@ const ConstructionProgressPage: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              localStorage.removeItem('user_division');
-              setDivision(null);
-            }}
+            onClick={() => setDivision(null)}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -210,7 +154,7 @@ const ConstructionProgressPage: React.FC = () => {
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-semibold">Tanggal</th>
-                <th className="px-6 py-3 font-semibold">Unit</th>
+                <th className="px-6 py-3 font-semibold">Unit ID</th>
                 <th className="px-6 py-3 font-semibold">Progress (%)</th>
                 <th className="px-6 py-3 font-semibold">Keterangan</th>
                 <th className="px-6 py-3 font-semibold">Foto</th>
@@ -220,14 +164,12 @@ const ConstructionProgressPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                  </td>
+                  <td colSpan={6} className="px-6 py-10 text-center text-slate-400 animate-pulse">Memuat laporan...</td>
                 </tr>
               ) : filteredProgress.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
-                    Tidak ada laporan progress.
+                    Tidak ada laporan progress ditemukan.
                   </td>
                 </tr>
               ) : (
@@ -239,7 +181,7 @@ const ConstructionProgressPage: React.FC = () => {
                         {formatDate(item.report_date)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">Unit A-0{item.unit_id}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{item.unit_id}</td>
                     <td className="px-6 py-4">
                       <div className="w-full bg-slate-100 rounded-full h-2.5 max-w-[100px]">
                         <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: `${item.percentage}%` }}></div>
@@ -249,26 +191,15 @@ const ConstructionProgressPage: React.FC = () => {
                     <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{item.description}</td>
                     <td className="px-6 py-4">
                       {item.photo_url ? (
-                        <img 
-                          src={item.photo_url} 
-                          alt="Progress" 
-                          className="w-10 h-10 rounded object-cover cursor-pointer hover:scale-110 transition-transform" 
-                          referrerPolicy="no-referrer"
-                        />
+                        <img src={item.photo_url} alt="Progress" className="w-10 h-10 rounded object-cover" referrerPolicy="no-referrer" />
                       ) : (
-                        <div className="w-10 h-10 bg-slate-100 rounded flex items-center justify-center">
-                          <Camera className="w-4 h-4 text-slate-400" />
-                        </div>
+                        <div className="w-10 h-10 bg-slate-100 rounded flex items-center justify-center"><Camera className="w-4 h-4 text-slate-400" /></div>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(item)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(item.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(item)}><Edit className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(item.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </td>
                   </tr>
@@ -278,65 +209,21 @@ const ConstructionProgressPage: React.FC = () => {
           </table></div>
       </Card>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={selectedProgress ? 'Edit Laporan Progress' : 'Input Laporan Progress'}
-      >
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedProgress ? 'Edit Laporan' : 'Input Laporan'}>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-          <Input 
-            label="Tanggal Laporan" 
-            type="date" 
-            value={formData.report_date}
-            onChange={(e) => setFormData({ ...formData, report_date: e.target.value })}
-            required
-          />
+          <Input label="Tanggal Laporan" type="date" value={formData.report_date} onChange={(e) => setFormData({ ...formData, report_date: e.target.value })} required />
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Unit</label>
-              <select 
-                className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={formData.unit_id}
-                onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })}
-                required
-              >
-                <option value="">-- Pilih Unit --</option>
-                <option value="1">Unit A-01</option>
-                <option value="2">Unit A-02</option>
-              </select>
-            </div>
-            <Input 
-              label="Progress (%)" 
-              type="number" 
-              placeholder="0" 
-              value={formData.percentage}
-              onChange={(e) => setFormData({ ...formData, percentage: parseInt(e.target.value) || 0 })}
-              required
-            />
+            <Input label="ID Unit" placeholder="Contoh: Unit-01" value={formData.unit_id} onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })} required />
+            <Input label="Progress (%)" type="number" value={formData.percentage} onChange={(e) => setFormData({ ...formData, percentage: parseInt(e.target.value) || 0 })} required />
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Keterangan Pekerjaan</label>
-            <textarea 
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              rows={3}
-              placeholder="Isi rincian pekerjaan yang sudah selesai..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              required
-            />
+            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Keterangan</label>
+            <textarea className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
           </div>
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Foto Progress (URL)</label>
-            <Input 
-              placeholder="https://..." 
-              value={formData.photo_url}
-              onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
-            />
-            <p className="text-[10px] text-slate-400 mt-1 italic">*Gunakan URL gambar untuk demo</p>
-          </div>
+          <Input label="Foto URL" placeholder="https://..." value={formData.photo_url} onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })} />
           <div className="flex justify-end gap-3 mt-6">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button type="submit">Simpan Laporan</Button>
+            <Button type="submit" isLoading={loading}>Simpan Laporan</Button>
           </div>
         </form>
       </Modal>
@@ -345,6 +232,3 @@ const ConstructionProgressPage: React.FC = () => {
 };
 
 export default ConstructionProgressPage;
-
-
-
