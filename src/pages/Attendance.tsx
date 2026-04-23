@@ -32,7 +32,7 @@ const AttendancePage: React.FC = () => {
 
   const fetchEmployees = async () => {
     try {
-      const data = await api.get('employees', 'select=*&status=eq.active');
+      const data = await api.get('employees', 'select=*');
       setEmployees(data || []);
     } catch (error) {
       console.error('Error fetching employees:', error);

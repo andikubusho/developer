@@ -288,7 +288,6 @@ export interface Employee {
   division: string;
   position: string;
   join_date: string;
-  status: 'active' | 'inactive';
   salary: number;
   email: string;
   phone: string;

@@ -22,7 +22,6 @@ const EmployeesPage: React.FC = () => {
     division: 'Marketing',
     position: '',
     join_date: new Date().toISOString().split('T')[0],
-    status: 'active' as const,
     salary: 0,
     email: '',
     phone: ''
@@ -71,7 +70,6 @@ const EmployeesPage: React.FC = () => {
       division: employee.division,
       position: employee.position,
       join_date: employee.join_date,
-      status: employee.status,
       salary: employee.salary,
       email: employee.email,
       phone: employee.phone
@@ -101,7 +99,6 @@ const EmployeesPage: React.FC = () => {
       division: 'Marketing',
       position: '',
       join_date: new Date().toISOString().split('T')[0],
-      status: 'active',
       salary: 0,
       email: '',
       phone: ''
@@ -150,7 +147,6 @@ const EmployeesPage: React.FC = () => {
                 <th className="px-6 py-3 font-semibold">Divisi / Jabatan</th>
                 <th className="px-6 py-3 font-semibold">Kontak</th>
                 <th className="px-6 py-3 font-semibold">Tgl Bergabung</th>
-                <th className="px-6 py-3 font-semibold">Status</th>
                 <th className="px-6 py-3 font-semibold text-right">Aksi</th>
               </tr>
             </thead>
@@ -182,9 +178,6 @@ const EmployeesPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-600">{formatDate(item.join_date)}</td>
-                    <td className="px-6 py-4">
-                      <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize', item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}>{item.status}</span>
-                    </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(item)}><Edit className="w-4 h-4" /></Button>
