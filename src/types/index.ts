@@ -34,6 +34,7 @@ export interface Project {
     booking_fee: number;
   };
   active: boolean;
+  site_plan_image_url?: string;
   created_at: string;
 }
 
@@ -44,6 +45,9 @@ export interface Unit {
   type: string;
   price: number;
   status: 'available' | 'booked' | 'sold';
+  sp_x?: number;
+  sp_y?: number;
+  sp_rotation?: number;
   project?: Project;
 }
 
