@@ -28,13 +28,19 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
     });
 
     const zip = new PizZip(content);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+    const doc = new Docxtemplater(zip, { 
+      paragraphLoop: true, 
+      linebreaks: true,
+      nullGetter: () => "................" // Prevent "Multi error" by providing dots for missing data
+    });
 
     // ENHANCED DATA MAPPING for Agrements (Perjanjian)
     const dataMapping = {
       // Konsumen
       nama_konsumen: sale.customer?.full_name || "",
-      nik_konsumen: (sale.customer as any)?.nik || "",
+      nik_konsumen: (sale.customer as any)?.identity_number || (sale.customer as any)?.nik || "",
+      pekerjaan_konsumen: (sale.customer as any)?.job || "",
+      ttl_konsumen: (sale.customer as any)?.birth_info || "",
       alamat_konsumen: (sale.customer as any)?.address || "",
       telp_konsumen: (sale.customer as any)?.phone || "",
       email_konsumen: (sale.customer as any)?.email || "",

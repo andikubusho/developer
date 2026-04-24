@@ -16,6 +16,9 @@ const saleSchema = z.object({
   project_id: z.string().min(1, 'Pilih proyek'),
   unit_id: z.string().min(1, 'Pilih unit'),
   marketing_id: z.string().min(1, 'Pilih marketing'),
+  identity_number: z.string().optional().nullable(),
+  job: z.string().optional().nullable(),
+  birth_info: z.string().optional().nullable(),
   supervisor: z.string().optional().nullable(),
   manager: z.string().optional().nullable(),
   makelar: z.string().optional().nullable(),
@@ -67,6 +70,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       unit_id: initialData.unit_id || initialData.unit?.id,
       project_id: initialData.project_id || initialData.unit?.project_id,
       marketing_id: initialData.marketing_id || initialData.marketing?.id,
+      identity_number: initialData.identity_number || initialData.customer?.identity_number,
+      job: initialData.job || initialData.customer?.job,
+      birth_info: initialData.birth_info || initialData.customer?.birth_info,
       promo_id: initialData.promo_id || initialData.promo?.id,
       installments: initialData.installments || []
     } : {
@@ -152,8 +158,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           api.get('projects', 'select=id,name'),
           api.get('units', 'select=*'),
           api.get('price_list_items', 'select=*'),
-          api.get('customers', 'select=id,full_name'),
-          api.get('leads', 'select=id,name'),
+          api.get('customers', 'select=id,full_name,identity_number,job,birth_info'),
+          api.get('leads', 'select=id,name,phone,description'),
           api.get('marketing_staff', 'select=id,name'),
           api.get('promos', 'select=id,name,value')
         ]);
@@ -249,6 +255,15 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           // Optional: Update lead status to 'sold' or delete it
           await api.update('leads', lead.id, { status: 'hot', description: (lead.description || '') + ' [SUDAH BELI]' });
         }
+      }
+      
+      // Update or ensure customer identity info is synced regardless of source
+      if (finalCustomerId) {
+        await api.update('customers', finalCustomerId, {
+          identity_number: values.identity_number,
+          job: values.job,
+          birth_info: values.birth_info
+        });
       }
 
       // Insert or Update sale record
@@ -419,7 +434,13 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
             </label>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input label="NIK / No. KTP" {...register('identity_number')} placeholder="Masukkan 16 digit NIK" />
+            <Input label="Pekerjaan" {...register('job')} placeholder="Misal: Karyawan Swasta" />
+            <Input label="Tempat, Tgl Lahir" {...register('birth_info')} placeholder="Misal: Jakarta, 01-01-1990" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-4">
             <div className="space-y-2">
               <Controller
                 name="booking_fee"
