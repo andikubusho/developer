@@ -232,13 +232,25 @@ const MasterMaterial: React.FC = () => {
               required
             />
             <div className="grid grid-cols-2 gap-4">
-              <Input 
-                label="Satuan"
-                placeholder="Sak, Batang, M3, kg"
-                value={form.unit}
-                onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                required
-              />
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Satuan</label>
+                <select 
+                  className="w-full h-12 bg-slate-50 border-none rounded-xl px-4 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  value={form.unit}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                  required
+                >
+                  <option value="">Pilih Satuan</option>
+                  <option value="Sak">Sak (Semen)</option>
+                  <option value="m³">m³ (Pasir/Batu)</option>
+                  <option value="Batang">Batang (Besi/Kayu)</option>
+                  <option value="kg">kg (Paku/Kawat)</option>
+                  <option value="Liter">Liter (Cat/Cairan)</option>
+                  <option value="Lembar">Lembar (Triplek/Seng)</option>
+                  <option value="m²">m² (Keramik/Granit)</option>
+                  <option value="Unit">Unit (Pintu/Jendela)</option>
+                </select>
+              </div>
               <Input 
                 label="Harga Satuan (Rp)"
                 type="number"
@@ -249,7 +261,7 @@ const MasterMaterial: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Input 
-                label={editingMaterial ? "Update Stok" : "Stok Awal"}
+                label={editingMaterial ? "Total Stok Saat Ini" : "Stok Awal"}
                 type="number"
                 value={form.stock}
                 onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
