@@ -50,7 +50,7 @@ const PurchaseRequests: React.FC = () => {
       setLoading(true);
       const [reqData, projData, matData] = await Promise.all([
         api.get('purchase_requests', 'select=*,project:projects(name),unit:units(name),material:materials(name,unit,unit_price)&order=created_at.desc'),
-        api.get('projects', 'select=id,name&active=eq.true'),
+        api.get('projects', 'select=id,name&order=name.asc'),
         api.get('materials', 'select=id,name,unit,unit_price')
       ]);
       setRequests(reqData || []);
