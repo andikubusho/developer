@@ -44,9 +44,10 @@ type SaleFormValues = z.infer<typeof saleSchema>;
 interface SaleFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  initialData?: any;
 }
 
-export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
+export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initialData }) => {
   const [loading, setLoading] = useState(false);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [units, setUnits] = useState<{ id: string; unit_number: string; price: number; project_id: string }[]>([]);
@@ -58,7 +59,10 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
 
   const { register, handleSubmit, watch, setValue, control, formState: { errors } } = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
-    defaultValues: {
+    defaultValues: initialData ? {
+      ...initialData,
+      installments: initialData.installments || []
+    } : {
       sale_date: new Date().toISOString().split('T')[0],
       booking_fee_date: new Date().toISOString().split('T')[0],
       payment_method: 'cash',
@@ -184,8 +188,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
         }
       }
 
-      // 1. Insert into sales table
-      const saleData = await api.insert('sales', {
+      // Insert or Update sale record
+      const salePayload = {
         sale_date: values.sale_date || new Date().toISOString().split('T')[0],
         customer_id: finalCustomerId,
         project_id: values.project_id,
@@ -204,24 +208,41 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
         payment_method: values.payment_method,
         dp_amount: values.dp_amount || 0,
         dp_date: values.dp_date || null,
-        status: 'active'
-      });
+        status: initialData ? initialData.status : 'active'
+      };
+
+      let saleData;
+      if (initialData) {
+        saleData = await api.update('sales', initialData.id, salePayload);
+      } else {
+        saleData = await api.insert('sales', salePayload);
+      }
 
       if (!saleData || !saleData[0]) throw new Error('Gagal membuat transaksi penjualan.');
       const newSaleId = saleData[0].id;
 
       // 2. Update unit status
-      await api.update('units', values.unit_id, { status: 'sold' });
+      if (!initialData) {
+        await api.update('units', values.unit_id, { status: 'sold' });
+      } else if (initialData.unit_id !== values.unit_id) {
+        // If unit changed, free the old one and mark the new one as sold
+        await api.update('units', initialData.unit_id, { status: 'available' });
+        await api.update('units', values.unit_id, { status: 'sold' });
+      }
 
       // 3. Handle installments
       if (values.payment_method === 'installment' && values.installments && values.installments.length > 0) {
+        if (initialData) {
+          // Clear old installments first during edit
+          await api.delete('installments', `sale_id=eq.${initialData.id}`);
+        }
+        
         const installmentData = values.installments.map(inst => ({
-          sale_id: newSaleId,
+          sale_id: initialData ? initialData.id : newSaleId,
           due_date: inst.date,
           amount: inst.amount,
           status: 'unpaid'
         }));
-        // Note: PostgREST insert handles arrays automatically
         await api.insert('installments', installmentData);
       }
 

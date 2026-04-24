@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Plus, Search, Filter, ShoppingBag, FileText, ArrowLeft, TrendingUp, Users, CheckCircle2, MoreVertical, Download, X } from 'lucide-react';
+import { Plus, Search, Filter, ShoppingBag, FileText, ArrowLeft, TrendingUp, Users, CheckCircle2, MoreVertical, Download, X, Edit, Trash2 } from 'lucide-react';
 import { Sale } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -26,6 +26,7 @@ const Sales: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
   
   // Document Printing State
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -91,6 +92,31 @@ const Sales: React.FC = () => {
       const data = await api.get('document_templates', 'select=id,name,content');
       setTemplates(data || []);
     } catch (error) { console.error('Print Fetch Error:', error); } finally { setFetchingTemplates(false); }
+  };
+
+  const handleEditClick = (sale: Sale) => {
+    setEditingSale(sale);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteSale = async (id: string, unitId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini? Unit akan kembali berstatus available.')) return;
+    try {
+      setLoading(true);
+      // 1. Delete installments related to this sale
+      await api.delete('installments', `sale_id=eq.${id}`);
+      // 2. Delete the sale itself
+      await api.delete('sales', id);
+      // 3. Revert unit status to available
+      await api.update('units', unitId, { status: 'available' });
+      
+      await fetchSales();
+    } catch (error) {
+      console.error('Delete Sale Error:', error);
+      alert('Gagal menghapus transaksi.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDownloadTemplate = async (template: Template) => {
@@ -178,7 +204,8 @@ const Sales: React.FC = () => {
                   <td className="px-8 py-6 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Button variant="ghost" size="sm" onClick={() => handlePrintClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-indigo-600" title="Cetak Dokumen Word"><Download className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-slate-900"><MoreVertical className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-emerald-600" title="Edit Transaksi"><Edit className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteSale(sale.id, sale.unit_id)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-red-600" title="Hapus Transaksi"><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </td>
                 </tr>
@@ -188,7 +215,18 @@ const Sales: React.FC = () => {
         </div>
       </Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Transaksi Penjualan Baru" size="lg"><SaleForm onSuccess={() => { setIsModalOpen(false); fetchSales(); }} onCancel={() => setIsModalOpen(false)} /></Modal>
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => { setIsModalOpen(false); setEditingSale(null); }} 
+        title={editingSale ? "Edit Transaksi Penjualan" : "Transaksi Penjualan Baru"} 
+        size="lg"
+      >
+        <SaleForm 
+          initialData={editingSale}
+          onSuccess={() => { setIsModalOpen(false); setEditingSale(null); fetchSales(); }} 
+          onCancel={() => { setIsModalOpen(false); setEditingSale(null); }} 
+        />
+      </Modal>
 
       {/* PRINT MODAL (Template Selection) */}
       <Modal isOpen={isPrintModalOpen} onClose={() => setIsPrintModalOpen(false)} title="Cetak Dokumen Otomatis">
