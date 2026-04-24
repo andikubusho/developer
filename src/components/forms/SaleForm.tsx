@@ -57,7 +57,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const [marketingStaff, setMarketingStaff] = useState<{ id: string; full_name: string; role: string }[]>([]);
   const [promos, setPromos] = useState<{ id: string; name: string; value: number }[]>([]);
 
-  const { register, handleSubmit, watch, setValue, control, formState: { errors } } = useForm<SaleFormValues>({
+  const { register, handleSubmit, watch, setValue, control, reset, formState: { errors } } = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
     defaultValues: initialData ? {
       ...initialData,
@@ -88,6 +88,33 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const watchDiscount = watch('discount');
   const watchPromoId = watch('promo_id');
   const watchPaymentMethod = watch('payment_method');
+
+  // Force reset form when initialData changes (Crucial for Edit mode)
+  useEffect(() => {
+    if (initialData) {
+      reset({
+        ...initialData,
+        customer_id: initialData.customer_id || initialData.customer?.id,
+        unit_id: initialData.unit_id || initialData.unit?.id,
+        project_id: initialData.project_id || initialData.unit?.project_id,
+        marketing_id: initialData.marketing_id || initialData.marketing?.id,
+        promo_id: initialData.promo_id || initialData.promo?.id,
+        installments: initialData.installments || []
+      });
+    } else {
+      reset({
+        sale_date: new Date().toISOString().split('T')[0],
+        booking_fee_date: new Date().toISOString().split('T')[0],
+        payment_method: 'cash',
+        price: 0,
+        discount: 0,
+        total_price: 0,
+        final_price: 0,
+        booking_fee: 0,
+        installments: [],
+      });
+    }
+  }, [initialData, reset]);
 
   useEffect(() => {
     const fetchData = async () => {
