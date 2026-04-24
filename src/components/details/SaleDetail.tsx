@@ -54,6 +54,9 @@ export const SaleDetail: React.FC<SaleDetailProps> = ({ sale }) => {
       <DetailSection title="Informasi Dasar" icon={Calendar}>
         <DataField label="Tanggal Transaksi" value={sale.sale_date} />
         <DataField label="Nama Konsumen" value={sale.customer?.full_name} />
+        <DataField label="NIK / No. KTP" value={sale.customer?.identity_number} />
+        <DataField label="Pekerjaan" value={sale.customer?.job} />
+        <DataField label="Tempat, Tgl Lahir" value={sale.customer?.birth_info} />
         <DataField label="Proyek" value={sale.unit?.project?.name} />
         <DataField label="Blok / Unit" value={sale.unit?.unit_number} />
       </DetailSection>
