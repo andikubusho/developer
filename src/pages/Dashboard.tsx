@@ -564,6 +564,7 @@ const Dashboard: React.FC = () => {
                       { label: 'Siteplan', path: '/site-plan', icon: Map, color: 'text-emerald-500', bg: 'bg-emerald-50/50' },
                       { label: 'Denah Unit', path: '/floor-plan', icon: Layout, color: 'text-amber-500', bg: 'bg-amber-50/50' },
                       { label: 'Promo Unit', path: '/promos', icon: Tag, color: 'text-rose-500', bg: 'bg-rose-50/50' },
+                      { label: 'Template Dokumen', path: '/document-templates', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50/50' },
                     ].map((btn) => (
                       <button 
                         key={btn.label}
