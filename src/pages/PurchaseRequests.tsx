@@ -66,11 +66,10 @@ const PurchaseRequests: React.FC = () => {
 
     // Fetch Requests List
     try {
-      const reqData = await api.get('purchase_requests', 'select=*,project:projects(name),unit:units(name),material:materials(name,unit,unit_price)&order=created_at.desc');
+      const reqData = await api.get('purchase_requests', 'select=*,project:projects(name),unit:units(unit_number),material:materials(name,unit,unit_price)&order=created_at.desc');
       setRequests(reqData || []);
     } catch (err) {
       console.error('Error fetching requests list:', err);
-      // If this fails, it's likely due to missing columns unit_id or items
     }
 
     setLoading(false);
@@ -82,7 +81,7 @@ const PurchaseRequests: React.FC = () => {
       return;
     }
     try {
-      const unitData = await api.get('units', `select=id,name&project_id=eq.${projectId}`);
+      const unitData = await api.get('units', `select=id,unit_number&project_id=eq.${projectId}`);
       setUnits(unitData || []);
     } catch (error) {
       console.error('Error fetching units:', error);
@@ -212,9 +211,9 @@ const PurchaseRequests: React.FC = () => {
                     <td className="px-10 py-8 font-black text-slate-900 uppercase text-xs">PR-{r.id.substring(0, 8)}</td>
                     <td className="px-10 py-8">
                       <div className="flex flex-col">
-                        <span className="text-sm font-black text-slate-900">{r.project?.name || 'Proyek Umum'}</span>
+                        <span className="text-xs font-black text-slate-900">{r.project?.name || 'Proyek Umum'}</span>
                         <span className="text-xs font-bold text-indigo-500 uppercase tracking-tight mt-1 flex items-center gap-1">
-                          <Home className="w-3.5 h-3.5" /> {r.unit?.name || 'Gudang Utama'}
+                          <Home className="w-3.5 h-3.5" /> {r.unit?.unit_number || 'Gudang Utama'}
                         </span>
                       </div>
                     </td>
@@ -291,7 +290,7 @@ const PurchaseRequests: React.FC = () => {
                 disabled={!form.project_id}
               >
                 <option value="">Pilih Unit dari Unit Properti...</option>
-                {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                {units.map(u => <option key={u.id} value={u.id}>{u.unit_number}</option>)}
               </select>
             </div>
           </div>
