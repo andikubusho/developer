@@ -10,8 +10,12 @@ import {
   Trash2, 
   RefreshCw,
   MoreVertical,
-  ChevronRight
+  ChevronRight,
+  Download,
+  Upload,
+  FileSpreadsheet
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -73,6 +77,66 @@ const MasterMaterial: React.FC = () => {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    const template = [
+      {
+        'Nama Material': '',
+        'Spesifikasi': '',
+        'Satuan': 'Pilih: Sak, m³, Batang, kg, Liter, Lembar, m², Unit',
+        'Volume': 0,
+        'Harga Satuan': 0,
+        'Min Stok': 10
+      }
+    ];
+    
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "Template_Master_Material.xlsx");
+  };
+
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        setLoading(true);
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+
+        const mappedData = data.map((item: any) => ({
+          name: item['Nama Material'],
+          specification: item['Spesifikasi'] || '',
+          unit: item['Satuan'] || 'Unit',
+          stock: Number(item['Volume']) || 0,
+          unit_price: Number(item['Harga Satuan']) || 0,
+          min_stock: Number(item['Min Stok']) || 10
+        })).filter(i => i.name);
+
+        if (mappedData.length === 0) {
+          alert('Tidak ada data valid untuk diimpor');
+          return;
+        }
+
+        // Insert in bulk
+        await api.insert('materials', mappedData);
+        alert(`Berhasil mengimpor ${mappedData.length} material!`);
+        fetchMaterials();
+      } catch (err) {
+        console.error('Import error:', err);
+        alert('Gagal mengimpor file. Pastikan format benar.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus material ini?')) return;
     try {
@@ -111,9 +175,25 @@ const MasterMaterial: React.FC = () => {
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Master Material</h1>
           <p className="text-slate-500 font-medium">Manajemen data stok dan harga satuan material konstruksi</p>
         </div>
-        <Button onClick={() => { setEditingMaterial(null); setForm({ name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0 }); setIsModalOpen(true); }} className="rounded-2xl h-12 px-8">
-          <Plus className="w-5 h-5 mr-2" /> Tambah Material
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button variant="ghost" onClick={handleDownloadTemplate} className="rounded-2xl h-12 px-6 bg-white border border-slate-100 hover:bg-slate-50">
+            <Download className="w-5 h-5 mr-2 text-indigo-600" /> Template Excel
+          </Button>
+          <label className="relative cursor-pointer">
+            <input 
+              type="file" 
+              accept=".xlsx, .xls" 
+              className="hidden" 
+              onChange={handleImportExcel}
+            />
+            <div className="flex items-center justify-center rounded-2xl h-12 px-6 bg-white border border-slate-100 hover:bg-slate-50 font-bold text-slate-700 transition-all">
+              <Upload className="w-5 h-5 mr-2 text-emerald-600" /> Upload Excel
+            </div>
+          </label>
+          <Button onClick={() => { setEditingMaterial(null); setForm({ name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' }); setIsModalOpen(true); }} className="rounded-2xl h-12 px-8 shadow-lg shadow-primary/20">
+            <Plus className="w-5 h-5 mr-2" /> Tambah Manual
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
