@@ -51,7 +51,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [units, setUnits] = useState<{ id: string; unit_number: string; price: number; project_id: string }[]>([]);
   const [customers, setCustomers] = useState<{ id: string; full_name: string }[]>([]);
-  const [marketingStaff, setMarketingStaff] = useState<{ id: string; full_name: string }[]>([]);
+  const [marketingStaff, setMarketingStaff] = useState<{ id: string; full_name: string; role: string }[]>([]);
   const [promos, setPromos] = useState<{ id: string; name: string; value: number }[]>([]);
 
   const { register, handleSubmit, watch, setValue, control, formState: { errors } } = useForm<SaleFormValues>({
@@ -83,10 +83,10 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
       try {
         const [p, u, c, l, m, pr] = await Promise.all([
           api.get('projects', 'select=id,name'),
-          api.get('units', 'select=id,unit_number,price,project_id&status=eq.available'),
+          api.get('units', 'select=id,unit_number,price,project_id,status'),
           api.get('customers', 'select=id,full_name'),
           api.get('leads', 'select=id,name'),
-          api.get('profiles', 'select=id,full_name&role=eq.marketing'),
+          api.get('profiles', 'select=id,full_name,role'),
           api.get('promos', 'select=id,name,value')
         ]);
 
@@ -193,7 +193,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
         />
         <Select 
           label="Blok / Unit" 
-          options={filteredUnits.map(u => ({ label: u.unit_number, value: u.id }))}
+          options={filteredUnits.map(u => ({ label: `${u.unit_number} (${u.status})`, value: u.id }))}
           {...register('unit_id')}
           error={errors.unit_id?.message}
           disabled={!watchProjectId}
@@ -203,7 +203,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Select 
           label="Marketing" 
-          options={marketingStaff.map(m => ({ label: m.full_name, value: m.id }))}
+          options={marketingStaff.map(m => ({ label: `${m.full_name} (${m.role})`, value: m.id }))}
           {...register('marketing_id')}
           error={errors.marketing_id?.message}
         />
