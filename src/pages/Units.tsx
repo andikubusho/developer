@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Filter, Home, Tag, CheckCircle2, Clock, ArrowLeft, Printer, FileDown } from 'lucide-react';
+import { Plus, Search, Filter, Home, Tag, CheckCircle2, Clock, ArrowLeft, Printer, FileDown, Trash2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Unit } from '../types';
@@ -118,6 +118,20 @@ const Units: React.FC = () => {
   const handleEdit = (unit: any) => {
     setSelectedUnit(unit);
     setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus unit ini?')) return;
+    
+    try {
+      setLoading(true);
+      await api.delete('units', id);
+      fetchUnits();
+    } catch (error: any) {
+      alert('Gagal menghapus unit: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSuccess = () => {
@@ -250,7 +264,12 @@ const Units: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(unit)}>Edit</Button>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(unit)}>Edit</Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(unit.id)} className="text-rose-500 hover:bg-rose-50">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
