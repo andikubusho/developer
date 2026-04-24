@@ -106,19 +106,40 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
     if (watchUnitId && !initialData) {
       const selectedUnit = units.find(u => u.id === watchUnitId);
       if (selectedUnit) {
-        // Try to parse Blok and Unit from unit_number (e.g. "GC - 01" or "GC01")
-        const parts = selectedUnit.unit_number.split(/[\s-]+/);
+        console.log('Selected Unit for Auto-fill:', selectedUnit);
+        
+        // 1. Parsing Blok & Unit from unit_number (e.g. "GC - 01", "South - 09", "A1")
+        const unitNum = selectedUnit.unit_number || '';
+        const parts = unitNum.split(/[\s-]+/).filter(Boolean);
+        
         if (parts.length >= 2) {
           setValue('blok', parts[0]);
           setValue('unit', parts[parts.length - 1]);
         } else {
-          setValue('blok', selectedUnit.unit_number.replace(/\d+$/, ''));
-          setValue('unit', selectedUnit.unit_number.match(/\d+$/)?.[0] || '');
+          // Fallback parsing for strings like "GC01"
+          const blokMatch = unitNum.match(/^[a-zA-Z]+/);
+          const unitMatch = unitNum.match(/\d+$/);
+          setValue('blok', blokMatch ? blokMatch[0] : unitNum);
+          setValue('unit', unitMatch ? unitMatch[0] : '');
         }
-        setValue('tipe', selectedUnit.type);
-        if (selectedUnit.luas_tanah) setValue('luas_tanah', selectedUnit.luas_tanah);
-        if (selectedUnit.luas_bangunan) setValue('luas_bangunan', selectedUnit.luas_bangunan);
-        if (selectedUnit.price && !watch('harga_jual')) setValue('harga_jual', selectedUnit.price);
+
+        // 2. Fill other technical data
+        setValue('tipe', selectedUnit.type || '');
+        setValue('luas_tanah', selectedUnit.luas_tanah || 0);
+        setValue('luas_bangunan', selectedUnit.luas_bangunan || 0);
+        
+        // 3. Optional: Try to guess category if it's in the type or cluster
+        const typeStr = (selectedUnit.type || '').toLowerCase();
+        if (typeStr.includes('ruko') || typeStr.includes('office')) {
+          setValue('category', 'Ruko');
+        } else {
+          setValue('category', 'Rumah');
+        }
+
+        // 4. Fill price if available
+        if (selectedUnit.price) {
+          setValue('harga_jual', selectedUnit.price);
+        }
       }
     }
   }, [watchUnitId, units, setValue, initialData]);
