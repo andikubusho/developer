@@ -48,16 +48,14 @@ const PurchaseRequests: React.FC = () => {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const [reqData, projData, matData, unitData] = await Promise.all([
+      const [reqData, projData, matData] = await Promise.all([
         api.get('purchase_requests', 'select=*,project:projects(name),unit:units(name),material:materials(name,unit,unit_price)&order=created_at.desc'),
         api.get('projects', 'select=id,name&active=eq.true'),
-        api.get('materials', 'select=id,name,unit,unit_price'),
-        api.get('units', 'select=id,name,project_id')
+        api.get('materials', 'select=id,name,unit,unit_price')
       ]);
       setRequests(reqData || []);
       setProjects(projData || []);
       setMaterials(matData || []);
-      setUnits(unitData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -65,11 +63,26 @@ const PurchaseRequests: React.FC = () => {
     }
   };
 
+  const fetchUnitsForProject = async (projectId: string) => {
+    if (!projectId) {
+      setUnits([]);
+      return;
+    }
+    try {
+      const unitData = await api.get('units', `select=id,name&project_id=eq.${projectId}`);
+      setUnits(unitData || []);
+    } catch (error) {
+      console.error('Error fetching units:', error);
+    }
+  };
+
   useEffect(() => {
     fetchInitialData();
   }, []);
 
-  const projectUnits = units.filter(u => u.project_id === form.project_id);
+  useEffect(() => {
+    fetchUnitsForProject(form.project_id);
+  }, [form.project_id]);
 
   const addItemRow = () => {
     setForm({
@@ -265,7 +278,7 @@ const PurchaseRequests: React.FC = () => {
                 disabled={!form.project_id}
               >
                 <option value="">Pilih Unit dari Unit Properti...</option>
-                {projectUnits.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
           </div>
