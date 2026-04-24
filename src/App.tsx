@@ -31,6 +31,7 @@ const DocumentTemplates = lazy(() => import('./pages/DocumentTemplates'));
 
 // Teknik
 const RAB = lazy(() => import('./pages/RAB'));
+const RABForm = lazy(() => import('./pages/RABForm'));
 const ConstructionProgress = lazy(() => import('./pages/ConstructionProgress'));
 const PurchaseRequests = lazy(() => import('./pages/PurchaseRequests'));
 const SPK = lazy(() => import('./pages/SPK'));
@@ -119,6 +120,7 @@ export default function App() {
               
               {/* Teknik */}
               <Route path="rab" element={<RAB />} />
+              <Route path="rab/create" element={<ProtectedRoute><RABForm /></ProtectedRoute>} />
               <Route path="construction-progress" element={<ConstructionProgress />} />
               <Route path="purchase-requests" element={<PurchaseRequests />} />
               <Route path="spk" element={<SPK />} />
