@@ -81,8 +81,15 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
     doc.render(dataMapping);
     const out = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
     saveAs(out, `${filename}.docx`);
-  } catch (error) {
-    console.error("Error:", error);
+  } catch (error: any) {
+    // EXPERT DIAGNOSIS: Handle MultiError from docxtemplater
+    if (error.properties && error.properties.errors instanceof Array) {
+      const errorMessages = error.properties.errors.map((e: any) => e.properties.explanation).join("\n");
+      console.error("Docxtemplater MultiError Details:", errorMessages);
+      // Re-throw with more detail so the UI can show it
+      throw new Error(`Detail Kesalahan Template:\n${errorMessages}`);
+    }
+    console.error("Document Generation Crash:", error);
     throw error;
   }
 };
