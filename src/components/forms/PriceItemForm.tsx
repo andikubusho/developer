@@ -5,6 +5,7 @@ import * as z from 'zod';
 import { PriceListItem } from '../../types';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { api } from '../../lib/api';
 
 const priceItemSchema = z.object({
   unit_id: z.string().min(1, 'Pilih unit'),
@@ -16,8 +17,8 @@ const priceItemSchema = z.object({
   luas_tanah: z.number().min(1, 'Luas tanah minimal 1'),
   luas_bangunan: z.number().min(1, 'Luas bangunan minimal 1'),
   harga_jual: z.number().min(1000000, 'Harga jual minimal 1jt'),
-  booking_fee: z.number().default(15000000),
-  dp_percentage: z.number().min(0).max(100).default(20),
+  booking_fee: z.number().min(0, 'Booking fee minimal 0'),
+  dp_percentage: z.number().min(0).max(100),
 });
 
 type PriceItemFormData = z.infer<typeof priceItemSchema>;
@@ -79,6 +80,13 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
       category: 'Rumah',
       booking_fee: 15000000,
       dp_percentage: 20,
+      blok: '',
+      unit: '',
+      tipe: '',
+      luas_tanah: 0,
+      luas_bangunan: 0,
+      harga_jual: 0,
+      unit_id: ''
     }
   });
 
