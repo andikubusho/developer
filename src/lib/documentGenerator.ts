@@ -60,15 +60,15 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
       metode_bayar: sale.payment_method === 'cash' ? 'CASH KERAS' : sale.payment_method === 'installment' ? 'CASH BERTAHAP' : 'KPR',
       
       // Marketing & Tanggal
-      nama_marketing: sale.marketing?.full_name || "Internal",
+      nama_marketing: (sale.marketing as any)?.name || (sale.marketing as any)?.full_name || "Internal",
       tanggal_hari_ini: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-      tanggal_transaksi: new Date(sale.sale_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+      tanggal_transaksi: sale.sale_date ? new Date(sale.sale_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-",
       
       // Jadwal Cicilan (Looping support in Word using {{#installments}} ... {{/installments}})
       installments: (sale as any).installments?.map((inst: any, index: number) => ({
         no: index + 1,
-        tgl: new Date(inst.due_date).toLocaleDateString('id-ID'),
-        nilai: formatCurrency(inst.amount)
+        tgl: inst.due_date ? new Date(inst.due_date).toLocaleDateString('id-ID') : "-",
+        nilai: formatCurrency(inst.amount || 0)
       })) || []
     };
 

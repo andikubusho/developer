@@ -122,8 +122,9 @@ const Sales: React.FC = () => {
   const handleDownloadTemplate = async (template: Template) => {
     if (!selectedSale) return;
     try {
-      // Convert base64 to Blob
-      const byteCharacters = atob(template.content);
+      // Convert base64 to Blob safely
+      const cleanBase64 = template.content.replace(/^data:.*,/, '').replace(/\s/g, '');
+      const byteCharacters = atob(cleanBase64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -134,6 +135,7 @@ const Sales: React.FC = () => {
       await generateWordDocument(selectedSale, blob, `${template.name}_${selectedSale.customer?.full_name}`);
       setIsPrintModalOpen(false);
     } catch (error) {
+      console.error('Document generation error:', error);
       alert('Gagal membuat dokumen. Periksa konsol untuk detailnya.');
     }
   };
