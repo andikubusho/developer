@@ -46,21 +46,34 @@ const PurchaseRequests: React.FC = () => {
   });
 
   const fetchInitialData = async () => {
+    setLoading(true);
+    
+    // Fetch Projects
     try {
-      setLoading(true);
-      const [reqData, projData, matData] = await Promise.all([
-        api.get('purchase_requests', 'select=*,project:projects(name),unit:units(name),material:materials(name,unit,unit_price)&order=created_at.desc'),
-        api.get('projects', 'select=id,name&order=name.asc'),
-        api.get('materials', 'select=id,name,unit,unit_price')
-      ]);
-      setRequests(reqData || []);
+      const projData = await api.get('projects', 'select=id,name&order=name.asc');
       setProjects(projData || []);
-      setMaterials(matData || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching projects:', err);
     }
+
+    // Fetch Materials
+    try {
+      const matData = await api.get('materials', 'select=id,name,unit,unit_price');
+      setMaterials(matData || []);
+    } catch (err) {
+      console.error('Error fetching materials:', err);
+    }
+
+    // Fetch Requests List
+    try {
+      const reqData = await api.get('purchase_requests', 'select=*,project:projects(name),unit:units(name),material:materials(name,unit,unit_price)&order=created_at.desc');
+      setRequests(reqData || []);
+    } catch (err) {
+      console.error('Error fetching requests list:', err);
+      // If this fails, it's likely due to missing columns unit_id or items
+    }
+
+    setLoading(false);
   };
 
   const fetchUnitsForProject = async (projectId: string) => {
