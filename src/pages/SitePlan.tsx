@@ -18,67 +18,64 @@ import { cn } from '@/lib/utils';
 
 // Hardcoded Mapping Data for Golden Canyon
 // This follows the 762x600 coordinate system requested by the user
+// Hardcoded Mapping Data for Golden Canyon
+// This follows the 1270x800 high-fidelity coordinate system
 const GOLDEN_CANYON_MAP = [
-  // Blok N-Atas (Diagonal Kiri Atas) - 14 Unit
-  ...Array.from({ length: 14 }, (_, i) => ({
-    id: `N-${(i + 1).toString().padStart(2, '0')}`,
-    x: 100 + (i * 24),
-    y: 280 - (i * 12),
-    w: 20,
-    h: 35,
-    r: -30
-  })),
-  // Blok N-Bawah (Diagonal Kiri Bawah) - 14 Unit
-  ...Array.from({ length: 14 }, (_, i) => ({
-    id: `NB-${(i + 1).toString().padStart(2, '0')}`,
-    x: 95 + (i * 26),
-    y: 480 + (i * 8),
-    w: 20,
-    h: 35,
-    r: -20
-  })),
-  // Blok GC (Golden Canyon - Tengah)
-  ...Array.from({ length: 10 }, (_, i) => ({
-    id: `GC-${(i + 1).toString().padStart(2, '0')}`,
-    x: 250 + (i * 30),
-    y: 350,
-    w: 25,
-    h: 40,
-    r: 0
-  })),
-  // Blok E (Sisi Kanan - EA, EB, ET, EW)
-  ...Array.from({ length: 12 }, (_, i) => ({
-    id: `EA-${(i + 1).toString().padStart(2, '0')}`,
-    x: 650,
-    y: 50 + (i * 22),
-    w: 40,
-    h: 20,
-    r: 0
-  })),
-  ...Array.from({ length: 12 }, (_, i) => ({
-    id: `EB-${(i + 1).toString().padStart(2, '0')}`,
-    x: 710,
-    y: 50 + (i * 22),
-    w: 40,
-    h: 20,
-    r: 0
-  })),
-  ...Array.from({ length: 10 }, (_, i) => ({
-    id: `ET-${(i + 1).toString().padStart(2, '0')}`,
-    x: 650,
-    y: 320 + (i * 22),
-    w: 40,
-    h: 20,
-    r: 0
-  })),
-  ...Array.from({ length: 8 }, (_, i) => ({
-    id: `EW-${(i + 1).toString().padStart(2, '0')}`,
-    x: 650,
-    y: 550 + (i * 22),
-    w: 40,
-    h: 20,
-    r: 0
-  }))
+  // Blok N — diagonal kiri atas (N-01 s/d N-10)
+  { id: 'N-01', x: 168, y: 560, w: 54, h: 34, r: -22 },
+  { id: 'N-02', x: 214, y: 536, w: 54, h: 34, r: -22 },
+  { id: 'N-03', x: 260, y: 511, w: 54, h: 34, r: -22 },
+  { id: 'N-04', x: 306, y: 486, w: 54, h: 34, r: -22 },
+  { id: 'N-05', x: 352, y: 461, w: 54, h: 34, r: -22 },
+  { id: 'N-06', x: 398, y: 436, w: 54, h: 34, r: -22 },
+  { id: 'N-07', x: 444, y: 411, w: 54, h: 34, r: -22 },
+  { id: 'N-08', x: 490, y: 386, w: 54, h: 34, r: -22 },
+  { id: 'N-09', x: 536, y: 361, w: 54, h: 34, r: -22 },
+  { id: 'N-10', x: 582, y: 336, w: 54, h: 34, r: -22 },
+  // Blok N — diagonal kiri bawah (N-11 s/d N-20)
+  { id: 'N-11', x: 138, y: 608, w: 54, h: 34, r: -28 },
+  { id: 'N-12', x: 185, y: 636, w: 54, h: 34, r: -28 },
+  { id: 'N-13', x: 232, y: 660, w: 54, h: 34, r: -26 },
+  { id: 'N-14', x: 280, y: 680, w: 54, h: 34, r: -24 },
+  { id: 'N-15', x: 330, y: 695, w: 54, h: 34, r: -22 },
+  { id: 'N-16', x: 380, y: 708, w: 54, h: 34, r: -20 },
+  { id: 'N-17', x: 432, y: 716, w: 54, h: 34, r: -17 },
+  { id: 'N-18', x: 484, y: 720, w: 54, h: 34, r: -14 },
+  { id: 'N-19', x: 536, y: 720, w: 54, h: 34, r: -11 },
+  { id: 'N-20', x: 588, y: 716, w: 54, h: 34, r: -8 },
+  // Blok E — vertikal kanan atas
+  { id: 'E-01', x: 698, y: 178, w: 52, h: 36, r: 0 },
+  { id: 'E-02', x: 698, y: 218, w: 52, h: 36, r: 0 },
+  { id: 'E-03', x: 698, y: 258, w: 52, h: 36, r: 0 },
+  { id: 'E-04', x: 698, y: 298, w: 52, h: 36, r: 0 },
+  { id: 'E-05', x: 754, y: 178, w: 52, h: 36, r: 0 },
+  { id: 'E-06', x: 754, y: 218, w: 52, h: 36, r: 0 },
+  { id: 'E-07', x: 754, y: 258, w: 52, h: 36, r: 0 },
+  { id: 'E-08', x: 754, y: 298, w: 52, h: 36, r: 0 },
+  // Blok E — vertikal kanan tengah
+  { id: 'E-09', x: 698, y: 368, w: 52, h: 36, r: 0 },
+  { id: 'E-10', x: 698, y: 408, w: 52, h: 36, r: 0 },
+  { id: 'E-11', x: 698, y: 448, w: 52, h: 36, r: 0 },
+  { id: 'E-12', x: 698, y: 488, w: 52, h: 36, r: 0 },
+  { id: 'E-13', x: 754, y: 368, w: 52, h: 36, r: 0 },
+  { id: 'E-14', x: 754, y: 408, w: 52, h: 36, r: 0 },
+  { id: 'E-15', x: 754, y: 448, w: 52, h: 36, r: 0 },
+  { id: 'E-16', x: 754, y: 488, w: 52, h: 36, r: 0 },
+  // Blok GC — horizontal tengah
+  { id: 'GC-01', x: 356, y: 480, w: 46, h: 32, r: 0 },
+  { id: 'GC-02', x: 406, y: 480, w: 46, h: 32, r: 0 },
+  { id: 'GC-03', x: 456, y: 480, w: 46, h: 32, r: 0 },
+  { id: 'GC-04', x: 506, y: 480, w: 46, h: 32, r: 0 },
+  { id: 'GC-05', x: 556, y: 480, w: 46, h: 32, r: 0 },
+  { id: 'GC-06', x: 606, y: 480, w: 46, h: 32, r: 0 },
+  { id: 'GC-07', x: 656, y: 480, w: 46, h: 32, r: 0 },
+  { id: 'GC-08', x: 356, y: 516, w: 46, h: 32, r: 0 },
+  { id: 'GC-09', x: 406, y: 516, w: 46, h: 32, r: 0 },
+  { id: 'GC-10', x: 456, y: 516, w: 46, h: 32, r: 0 },
+  { id: 'GC-11', x: 506, y: 516, w: 46, h: 32, r: 0 },
+  { id: 'GC-12', x: 556, y: 516, w: 46, h: 32, r: 0 },
+  { id: 'GC-13', x: 606, y: 516, w: 46, h: 32, r: 0 },
+  { id: 'GC-14', x: 656, y: 516, w: 46, h: 32, r: 0 },
 ];
 
 const SitePlan = () => {
@@ -89,7 +86,7 @@ const SitePlan = () => {
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [scale, setScale] = useState(1);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [imgDims, setImgDims] = useState({ w: 1200, h: 900 });
+  const [imgDims, setImgDims] = useState({ w: 1270, h: 800 });
   
   // Panning & Locking States
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -298,7 +295,7 @@ const SitePlan = () => {
             }}
           >
             <svg 
-              viewBox={`0 0 762 600`} 
+              viewBox={`0 0 1270 800`} 
               className="max-w-full max-h-full shadow-2xl rounded-xl overflow-hidden bg-[#111114]"
               preserveAspectRatio="xMidYMid meet"
               style={{ width: '100%', height: 'auto', display: 'block' }}
@@ -307,8 +304,8 @@ const SitePlan = () => {
               <image 
                 href={selectedProject.site_plan_image_url} 
                 xlinkHref={selectedProject.site_plan_image_url}
-                width="762" 
-                height="600" 
+                width="1270" 
+                height="800" 
                 className="opacity-100"
                 preserveAspectRatio="xMidYMid slice"
               />
