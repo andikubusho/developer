@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'; // v2.0.1
+import React, { useState, useEffect, useRef } from 'react'; // v2.1.0 (Flexible Arrangement)
 import { api } from '@/src/lib/api';
 import { Project, Unit } from '@/src/types';
 import { 
@@ -10,7 +10,12 @@ import {
   ZoomIn,
   ZoomOut,
   RefreshCw,
-  Info
+  Info,
+  Lock,
+  Unlock,
+  Save,
+  RotateCcw,
+  X
 } from 'lucide-react';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
@@ -25,9 +30,14 @@ const SitePlan = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   
-  // New States for v2
+  // States for Arrangement Engine
   const [scale, setScale] = useState(1);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedUnits, setEditedUnits] = useState<Record<string, { sp_x: number; sp_y: number; sp_rotation: number; sp_width: number; sp_height: number }>>({});
+  const [draggedUnitId, setDraggedUnitId] = useState<string | null>(null);
+  const [resizingUnitId, setResizingUnitId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
 
   const fetchInitialData = async () => {
     try {
@@ -55,6 +65,8 @@ const SitePlan = () => {
   const handleProjectChange = async (projectId: string) => {
     setSelectedProjectId(projectId);
     setLoading(true);
+    setIsEditMode(false);
+    setEditedUnits({});
     try {
       const unitData = await api.get('units', `project_id=eq.${projectId}`);
       setUnits(unitData || []);
@@ -99,13 +111,135 @@ const SitePlan = () => {
     }
   };
 
+  const calculateCoords = (clientX: number, clientY: number) => {
+    if (!imageRef.current) return null;
+    const rect = imageRef.current.getBoundingClientRect();
+    
+    // Calculate percentage relative to the image
+    let x = ((clientX - rect.left) / rect.width) * 100;
+    let y = ((clientY - rect.top) / rect.height) * 100;
+
+    // Clamping 0-100%
+    x = Math.max(0, Math.min(100, x));
+    y = Math.max(0, Math.min(100, y));
+
+    return { x, y };
+  };
+
+  const handleStartDrag = (e: React.MouseEvent | React.TouchEvent, unitId: string) => {
+    if (!isEditMode || resizingUnitId) return;
+    e.stopPropagation();
+    setDraggedUnitId(unitId);
+  };
+
+  const handleStartResize = (e: React.MouseEvent | React.TouchEvent, unitId: string) => {
+    if (!isEditMode) return;
+    e.stopPropagation();
+    setResizingUnitId(unitId);
+  };
+
+  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isEditMode) return;
+    if (!draggedUnitId && !resizingUnitId) return;
+
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+    const coords = calculateCoords(clientX, clientY);
+    if (!coords) return;
+
+    if (draggedUnitId) {
+      const currentUnit = units.find(u => u.id === draggedUnitId);
+      const currentEdit = editedUnits[draggedUnitId] || { 
+        sp_x: currentUnit?.sp_x || 0, 
+        sp_y: currentUnit?.sp_y || 0,
+        sp_rotation: currentUnit?.sp_rotation || 0,
+        sp_width: currentUnit?.sp_width || 2,
+        sp_height: currentUnit?.sp_height || 3
+      };
+
+      setEditedUnits({
+        ...editedUnits,
+        [draggedUnitId]: { ...currentEdit, sp_x: coords.x, sp_y: coords.y }
+      });
+    } else if (resizingUnitId) {
+      const currentUnit = units.find(u => u.id === resizingUnitId);
+      const currentEdit = editedUnits[resizingUnitId] || { 
+        sp_x: currentUnit?.sp_x || 0, 
+        sp_y: currentUnit?.sp_y || 0,
+        sp_rotation: currentUnit?.sp_rotation || 0,
+        sp_width: currentUnit?.sp_width || 2,
+        sp_height: currentUnit?.sp_height || 3
+      };
+
+      // Width and Height are calculated as distance from current X,Y
+      const newWidth = Math.max(0.5, Math.abs(coords.x - currentEdit.sp_x) * 2);
+      const newHeight = Math.max(0.5, Math.abs(coords.y - currentEdit.sp_y) * 2);
+
+      setEditedUnits({
+        ...editedUnits,
+        [resizingUnitId]: { ...currentEdit, sp_width: newWidth, sp_height: newHeight }
+      });
+    }
+  };
+
+  const handleEndAction = () => {
+    setDraggedUnitId(null);
+    setResizingUnitId(null);
+  };
+
+  const handleRotate = (unitId: string) => {
+    if (!isEditMode) return;
+    const currentUnit = units.find(u => u.id === unitId);
+    const currentEdit = editedUnits[unitId] || { 
+      sp_x: currentUnit?.sp_x || 0, 
+      sp_y: currentUnit?.sp_y || 0,
+      sp_rotation: currentUnit?.sp_rotation || 0,
+      sp_width: currentUnit?.sp_width || 2,
+      sp_height: currentUnit?.sp_height || 3
+    };
+
+    setEditedUnits({
+      ...editedUnits,
+      [unitId]: {
+        ...currentEdit,
+        sp_rotation: (currentEdit.sp_rotation + 45) % 360
+      }
+    });
+  };
+
+  const handleSaveLayout = async () => {
+    try {
+      setLoading(true);
+      const promises = Object.entries(editedUnits).map(([id, data]) => 
+        api.update('units', id, data)
+      );
+      
+      await Promise.all(promises);
+      
+      // Update local state
+      const updatedUnits = units.map(u => 
+        editedUnits[u.id] ? { ...u, ...editedUnits[u.id] } : u
+      );
+      setUnits(updatedUnits);
+      setEditedUnits({});
+      setIsEditMode(false);
+      alert('Layout berhasil disimpan!');
+    } catch (error: any) {
+      alert(`Gagal menyimpan layout: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, isEdit: boolean = false) => {
+    const opacity = isEdit ? '66' : 'FF'; // 40% opacity in hex is approx 66
     switch (status) {
-      case 'sold': return '#ef4444';
-      case 'booked': return '#f59e0b';
-      default: return '#22c55e';
+      case 'sold': return `#ef4444${opacity}`;
+      case 'booked': return `#f59e0b${opacity}`;
+      default: return `#22c55e${opacity}`;
     }
   };
 
@@ -121,7 +255,14 @@ const SitePlan = () => {
   }
 
   return (
-    <div className="h-screen w-full flex flex-col bg-[#0a0a0c] overflow-hidden">
+    <div 
+      className="h-screen w-full flex flex-col bg-[#0a0a0c] overflow-hidden"
+      onMouseMove={handleMove}
+      onTouchMove={handleMove}
+      onMouseUp={handleEndAction}
+      onTouchEnd={handleEndAction}
+      onMouseLeave={handleEndAction}
+    >
       {/* Top Navigation Panel */}
       <div className="h-20 w-full bg-white/5 backdrop-blur-xl border-b border-white/10 px-8 flex items-center justify-between z-50">
         <div className="flex items-center gap-6">
@@ -144,6 +285,16 @@ const SitePlan = () => {
 
         <div className="flex items-center gap-4">
           <Button 
+            onClick={() => setIsEditMode(!isEditMode)}
+            className={cn(
+              "font-black uppercase text-xs tracking-widest px-6 h-12 rounded-2xl transition-all",
+              isEditMode ? "bg-amber-600 hover:bg-amber-500 shadow-amber-600/20" : "bg-slate-700 hover:bg-slate-600"
+            )}
+          >
+            {isEditMode ? <Unlock className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
+            {isEditMode ? 'Mode Edit Aktif' : 'Atur Posisi Unit'}
+          </Button>
+          <Button 
             onClick={() => setIsUploadModalOpen(true)}
             className="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase text-xs tracking-widest px-6 h-12 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-600/20"
           >
@@ -158,43 +309,78 @@ const SitePlan = () => {
         {/* Background Canvas */}
         <div 
           ref={containerRef}
-          className="relative w-full h-full flex items-center justify-center bg-[#111114] rounded-[3rem] border-2 border-white/5 shadow-2xl overflow-auto"
+          className={cn(
+            "relative w-full h-full flex items-center justify-center bg-[#111114] rounded-[3rem] border-2 border-white/5 shadow-2xl overflow-auto",
+            isEditMode && "cursor-crosshair"
+          )}
         >
           {selectedProject?.site_plan_image_url ? (
             <div className="relative inline-block transition-transform duration-300 ease-out" style={{ transform: `scale(${scale})` }}>
               <img 
+                ref={imageRef}
                 src={selectedProject.site_plan_image_url} 
                 alt="Master Plan" 
-                className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-sm"
-                onLoad={() => console.log('Image Loaded')}
+                className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-sm pointer-events-none select-none"
               />
               
-              {/* Unit Markers (v2: Coordinate based) */}
+              {/* Unit Markers */}
               {units.map((unit) => {
                 const isRuko = unit.type === 'Ruko';
-                const x = unit.sp_x || 0;
-                const y = unit.sp_y || 0;
+                const edit = editedUnits[unit.id];
                 
-                if (x === 0 && y === 0) return null;
+                const x = edit ? edit.sp_x : (unit.sp_x || 0);
+                const y = edit ? edit.sp_y : (unit.sp_y || 0);
+                const width = edit ? edit.sp_width : (unit.sp_width || 2);
+                const height = edit ? edit.sp_height : (unit.sp_height || 3);
+                const rotation = edit ? edit.sp_rotation : (unit.sp_rotation || 0);
+                
+                if (x === 0 && y === 0 && !isEditMode) return null;
+
+                const isDragged = draggedUnitId === unit.id;
+                const isResizing = resizingUnitId === unit.id;
 
                 return (
                   <div 
                     key={unit.id}
-                    onClick={() => setSelectedUnit(unit)}
+                    onMouseDown={(e) => handleStartDrag(e, unit.id)}
+                    onTouchStart={(e) => handleStartDrag(e, unit.id)}
+                    onClick={() => !isEditMode && setSelectedUnit(unit)}
                     className={cn(
-                      "absolute w-6 h-9 border border-black/40 cursor-pointer transition-all hover:scale-125 hover:z-50 shadow-lg flex items-center justify-center",
-                      isRuko ? "bg-white" : ""
+                      "absolute border border-black/40 cursor-pointer transition-all shadow-lg flex items-center justify-center group",
+                      isRuko ? "bg-white" : "",
+                      isEditMode && "hover:border-white hover:z-[100] border-2",
+                      (isDragged || isResizing) && "opacity-50 z-[100] border-white border-dashed",
+                      !isEditMode && "hover:scale-110 hover:z-50"
                     )}
                     style={{ 
                       left: `${x}%`, 
                       top: `${y}%`, 
-                      transform: `translate(-50%, -50%) rotate(${unit.sp_rotation || 0}deg)`,
-                      backgroundColor: isRuko ? 'white' : getStatusColor(unit.status || 'available')
+                      width: `${width}%`,
+                      height: `${height}%`,
+                      transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                      backgroundColor: isRuko ? 'white' : getStatusColor(unit.status || 'available', isEditMode),
+                      touchAction: 'none'
                     }}
                   >
-                    <span className={cn("text-[6px] font-black", isRuko ? "text-black" : "text-white")}>
+                    <span className={cn("text-[6px] font-black pointer-events-none select-none", isRuko ? "text-black" : "text-white")}>
                       {unit.unit_number.split('/')[1] || unit.unit_number}
                     </span>
+
+                    {isEditMode && (
+                      <>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleRotate(unit.id); }}
+                          className="absolute -top-4 -right-4 bg-indigo-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-[110] shadow-xl"
+                        >
+                          <RotateCcw className="w-3 h-3 text-white" />
+                        </button>
+                        <div 
+                          onMouseDown={(e) => handleStartResize(e, unit.id)}
+                          onTouchStart={(e) => handleStartResize(e, unit.id)}
+                          className="absolute -bottom-1 -right-1 w-3 h-3 bg-white rounded-full cursor-se-resize border-2 border-indigo-600 opacity-0 group-hover:opacity-100 z-[110]"
+                        />
+                      </>
+                    )}
                   </div>
                 );
               })}
@@ -207,7 +393,7 @@ const SitePlan = () => {
               <div className="space-y-4">
                 <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Site Plan Belum Tersedia</h2>
                 <p className="text-slate-500 font-bold leading-relaxed">
-                  Silakan upload denah proyek Anda dalam format JPG atau PNG. Denah akan otomatis disesuaikan dengan layar untuk tampilan maksimal.
+                  Silakan upload denah proyek Anda dalam format JPG atau PNG.
                 </p>
                 <Button 
                   onClick={() => setIsUploadModalOpen(true)}
@@ -221,8 +407,8 @@ const SitePlan = () => {
           )}
         </div>
 
-        {/* Floating Detail Overlay (If unit selected) */}
-        {selectedUnit && (
+        {/* Floating Detail Overlay */}
+        {selectedUnit && !isEditMode && (
           <div className="absolute right-12 top-12 bottom-12 w-96 bg-[#1a1a1e]/90 backdrop-blur-2xl border border-white/10 rounded-[3rem] shadow-2xl p-8 overflow-y-auto animate-in slide-in-from-right duration-500">
             <div className="flex justify-between items-start mb-8">
               <div>
@@ -240,7 +426,7 @@ const SitePlan = () => {
                 onClick={() => setSelectedUnit(null)}
                 className="text-white/40 hover:text-white hover:bg-white/5 rounded-full"
               >
-                <ChevronDown className="w-6 h-6 rotate-90" />
+                <X className="w-6 h-6" />
               </Button>
             </div>
 
@@ -279,16 +465,39 @@ const SitePlan = () => {
         )}
 
         {/* Floating Control Toolbar */}
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-12 h-16 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl flex items-center px-6 gap-6 shadow-2xl">
-          <div className="flex items-center gap-4 border-r border-white/10 pr-6">
-            <button onClick={() => setScale(s => Math.min(s + 0.1, 3))} className="text-white/60 hover:text-indigo-400 transition-colors"><ZoomIn className="w-5 h-5" /></button>
-            <span className="text-white font-black text-[10px] w-12 text-center tracking-widest">{Math.round(scale * 100)}%</span>
-            <button onClick={() => setScale(s => Math.max(s - 0.1, 0.5))} className="text-white/60 hover:text-indigo-400 transition-colors"><ZoomOut className="w-5 h-5" /></button>
-          </div>
-          <button onClick={() => setScale(1)} className="text-white/60 hover:text-indigo-400 transition-colors flex items-center gap-2">
-            <RefreshCw className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Reset View</span>
-          </button>
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-12 h-16 bg-[#1a1a1e]/90 backdrop-blur-xl border border-white/10 rounded-3xl flex items-center px-6 gap-6 shadow-2xl">
+          {isEditMode ? (
+            <div className="flex items-center gap-4">
+              <Button 
+                onClick={handleSaveLayout}
+                disabled={Object.keys(editedUnits).length === 0}
+                className="bg-green-600 hover:bg-green-500 text-white font-black uppercase text-xs tracking-widest h-10 px-6 rounded-xl"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Simpan Layout ({Object.keys(editedUnits).length})
+              </Button>
+              <Button 
+                onClick={() => { setIsEditMode(false); setEditedUnits({}); }}
+                variant="ghost"
+                className="text-white/60 hover:text-red-400 font-black uppercase text-xs tracking-widest h-10 px-4 rounded-xl"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Batal
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-4 border-r border-white/10 pr-6">
+                <button onClick={() => setScale(s => Math.min(s + 0.1, 3))} className="text-white/60 hover:text-indigo-400 transition-colors"><ZoomIn className="w-5 h-5" /></button>
+                <span className="text-white font-black text-[10px] w-12 text-center tracking-widest">{Math.round(scale * 100)}%</span>
+                <button onClick={() => setScale(s => Math.max(s - 0.1, 0.5))} className="text-white/60 hover:text-indigo-400 transition-colors"><ZoomOut className="w-5 h-5" /></button>
+              </div>
+              <button onClick={() => setScale(1)} className="text-white/60 hover:text-indigo-400 transition-colors flex items-center gap-2">
+                <RefreshCw className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Reset View</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 

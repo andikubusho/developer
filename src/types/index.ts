@@ -47,6 +47,8 @@ export interface Unit {
   status: 'available' | 'booked' | 'sold';
   sp_x?: number;
   sp_y?: number;
+  sp_width?: number;
+  sp_height?: number;
   sp_rotation?: number;
   specs?: {
     pondasi?: string;
