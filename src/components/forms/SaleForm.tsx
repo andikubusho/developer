@@ -138,6 +138,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
         booking_fee: values.booking_fee,
         booking_fee_date: values.booking_fee_date,
         payment_method: values.payment_method,
+        dp_amount: values.dp_amount || 0,
+        dp_date: values.dp_date,
         status: 'active'
       });
 
