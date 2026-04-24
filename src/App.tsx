@@ -86,8 +86,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ErrorBoundary>
+    <ErrorBoundary>
+      <AuthProvider>
         <Router>
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
@@ -158,8 +158,8 @@ export default function App() {
             </Routes>
           </Suspense>
         </Router>
-      </ErrorBoundary>
-    </AuthProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
