@@ -47,9 +47,10 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { formatDate, formatCurrency, formatNumber, cn } from '../lib/utils';
-import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { profile, isMockMode, division, setDivision } = useAuth();
   const [stats, setStats] = useState({
     // Marketing Stats
@@ -450,7 +451,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {statCards.map((card, idx) => (
           <Card key={idx} className="group p-1 bg-gradient-to-br from-white to-slate-50 border-none shadow-premium hover:shadow-2xl hover:shadow-indigo-200/20 transition-all duration-500">
-            <div className="p-4 sm:p-8" onClick={() => card.path && (window.location.href = card.path)}>
+            <div className="p-4 sm:p-8 cursor-pointer" onClick={() => card.path && navigate(card.path)}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div className={cn('p-4 rounded-2xl shadow-sm transition-transform group-hover:scale-110 duration-300', card.bg)}>
                   <card.icon className={cn('w-7 h-7', card.color)} />
@@ -568,7 +569,7 @@ const Dashboard: React.FC = () => {
                     ].map((btn) => (
                       <button 
                         key={btn.label}
-                        onClick={() => window.location.href = btn.path}
+                        onClick={() => navigate(btn.path)}
                         className="group p-6 flex flex-col items-center gap-3 rounded-2xl bg-white border border-slate-100 transition-all hover:bg-slate-50 hover:shadow-premium hover:-translate-y-1"
                       >
                         <div className={cn('p-3 rounded-xl transition-transform group-hover:scale-110', btn.bg)}>
@@ -614,7 +615,7 @@ const Dashboard: React.FC = () => {
                         </Button>
                       </div>
                     ))}
-                    <Button variant="outline" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2" onClick={() => window.location.href = '/purchase-requests'}>
+                    <Button variant="outline" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2" onClick={() => navigate('/purchase-requests')}>
                       Lihat Semua Request
                     </Button>
                   </div>
@@ -634,7 +635,7 @@ const Dashboard: React.FC = () => {
                         <p className="text-xs font-black text-slate-900">{formatCurrency(spk.value)}</p>
                       </div>
                     ))}
-                    <Button variant="outline" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2" onClick={() => window.location.href = '/spk'}>
+                    <Button variant="outline" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2" onClick={() => navigate('/spk')}>
                       Kelola SPK
                     </Button>
                   </div>
@@ -748,7 +749,7 @@ const Dashboard: React.FC = () => {
                           <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mt-0.5">Stok: {m.stock} {m.unit} (Min: {m.min})</p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="text-primary font-black text-[10px] h-10 px-3 rounded-xl hover:bg-white" onClick={() => window.location.href = '/purchase-requests'}>
+                      <Button variant="ghost" size="sm" className="text-primary font-black text-[10px] h-10 px-3 rounded-xl hover:bg-white" onClick={() => navigate('/purchase-requests')}>
                         ORDER
                       </Button>
                     </div>

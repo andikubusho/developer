@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 interface Template {
@@ -14,6 +15,7 @@ interface Template {
 }
 
 const DocumentTemplates: React.FC = () => {
+  const navigate = useNavigate();
   const { setDivision } = useAuth();
   const [templates, setTemplates] = useState<Record<string, Template>>({});
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ const DocumentTemplates: React.FC = () => {
   return (
     <div className="space-y-10 pb-20 pt-6">
       <div className="flex items-center gap-6">
-        <Button variant="ghost" size="sm" onClick={() => window.location.href = '/'} className="p-3 h-auto rounded-2xl bg-white shadow-sm border border-slate-100">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-3 h-auto rounded-2xl bg-white shadow-sm border border-slate-100">
           <ArrowLeft className="w-5 h-5 text-slate-600" />
         </Button>
         <div>
