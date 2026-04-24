@@ -17,9 +17,68 @@ import { Modal } from '@/components/ui/Modal';
 import { cn } from '@/lib/utils';
 
 // Hardcoded Mapping Data for Golden Canyon
-// This follows the 1200x900 coordinate system
-const GOLDEN_CANYON_MAP: any[] = [
-  // Units are currently hidden to leave the background image clean
+// This follows the 762x600 coordinate system requested by the user
+const GOLDEN_CANYON_MAP = [
+  // Blok N-Atas (Diagonal Kiri Atas) - 14 Unit
+  ...Array.from({ length: 14 }, (_, i) => ({
+    id: `N-${(i + 1).toString().padStart(2, '0')}`,
+    x: 100 + (i * 24),
+    y: 280 - (i * 12),
+    w: 20,
+    h: 35,
+    r: -30
+  })),
+  // Blok N-Bawah (Diagonal Kiri Bawah) - 14 Unit
+  ...Array.from({ length: 14 }, (_, i) => ({
+    id: `NB-${(i + 1).toString().padStart(2, '0')}`,
+    x: 95 + (i * 26),
+    y: 480 + (i * 8),
+    w: 20,
+    h: 35,
+    r: -20
+  })),
+  // Blok GC (Golden Canyon - Tengah)
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `GC-${(i + 1).toString().padStart(2, '0')}`,
+    x: 250 + (i * 30),
+    y: 350,
+    w: 25,
+    h: 40,
+    r: 0
+  })),
+  // Blok E (Sisi Kanan - EA, EB, ET, EW)
+  ...Array.from({ length: 12 }, (_, i) => ({
+    id: `EA-${(i + 1).toString().padStart(2, '0')}`,
+    x: 650,
+    y: 50 + (i * 22),
+    w: 40,
+    h: 20,
+    r: 0
+  })),
+  ...Array.from({ length: 12 }, (_, i) => ({
+    id: `EB-${(i + 1).toString().padStart(2, '0')}`,
+    x: 710,
+    y: 50 + (i * 22),
+    w: 40,
+    h: 20,
+    r: 0
+  })),
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `ET-${(i + 1).toString().padStart(2, '0')}`,
+    x: 650,
+    y: 320 + (i * 22),
+    w: 40,
+    h: 20,
+    r: 0
+  })),
+  ...Array.from({ length: 8 }, (_, i) => ({
+    id: `EW-${(i + 1).toString().padStart(2, '0')}`,
+    x: 650,
+    y: 550 + (i * 22),
+    w: 40,
+    h: 20,
+    r: 0
+  }))
 ];
 
 const SitePlan = () => {
@@ -239,7 +298,7 @@ const SitePlan = () => {
             }}
           >
             <svg 
-              viewBox={`0 0 ${imgDims.w} ${imgDims.h}`} 
+              viewBox={`0 0 762 600`} 
               className="max-w-full max-h-full shadow-2xl rounded-xl overflow-hidden bg-[#111114]"
               preserveAspectRatio="xMidYMid meet"
               style={{ width: '100%', height: 'auto', display: 'block' }}
@@ -248,8 +307,8 @@ const SitePlan = () => {
               <image 
                 href={selectedProject.site_plan_image_url} 
                 xlinkHref={selectedProject.site_plan_image_url}
-                width={imgDims.w} 
-                height={imgDims.h} 
+                width="762" 
+                height="600" 
                 className="opacity-100"
                 preserveAspectRatio="xMidYMid slice"
               />
@@ -274,10 +333,10 @@ const SitePlan = () => {
                       height={mapUnit.h}
                       transform={`rotate(${mapUnit.r}, ${mapUnit.x}, ${mapUnit.y})`}
                       fill={color}
-                      fillOpacity={isSelected ? 0.7 : 0.4}
-                      stroke={isSelected ? "#fff" : color}
+                      fillOpacity={isSelected ? 0.3 : 0.15}
+                      stroke={color}
                       strokeWidth={isSelected ? 3 : 1}
-                      className="transition-all duration-300 group-hover:fill-opacity-60"
+                      className="transition-all duration-300 group-hover:fill-opacity-40"
                     />
                     <text 
                       x={mapUnit.x}
@@ -285,7 +344,7 @@ const SitePlan = () => {
                       transform={`rotate(${mapUnit.r}, ${mapUnit.x}, ${mapUnit.y})`}
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      className="text-[8px] font-black pointer-events-none select-none fill-white drop-shadow-md"
+                      className="text-[6px] font-black pointer-events-none select-none fill-white drop-shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       {mapUnit.id.split('-')[1] || mapUnit.id}
                     </text>
