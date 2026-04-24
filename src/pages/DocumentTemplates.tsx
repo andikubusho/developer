@@ -89,36 +89,38 @@ const DocumentTemplates: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 pb-20">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto rounded-xl">
-          <ArrowLeft className="w-6 h-6 text-slate-600" />
+    <div className="space-y-10 pb-20 pt-6">
+      <div className="flex items-center gap-6">
+        <Button variant="ghost" size="sm" onClick={() => window.location.href = '/'} className="p-3 h-auto rounded-2xl bg-white shadow-sm border border-slate-100">
+          <ArrowLeft className="w-5 h-5 text-slate-600" />
         </Button>
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Manajemen Template Form</h1>
-          <p className="text-slate-500 font-medium text-sm">Unggah 6 dokumen standar perusahaan untuk otomatisasi</p>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Manajemen Template Form</h1>
+          <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] mt-1">Standar Administrasi Perusahaan</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {REQUIRED_FORMS.map((form) => {
           const isUploaded = !!templates[form.id];
           const isUploading = uploadingId === form.id;
 
           return (
             <Card key={form.id} className={cn(
-              "p-8 border-none shadow-premium rounded-[2.5rem] transition-all flex flex-col items-center text-center group",
+              "p-10 border-none shadow-premium rounded-[3rem] transition-all flex flex-col items-center text-center group",
               isUploaded ? "bg-white" : "bg-slate-50/50 border-2 border-dashed border-slate-200"
             )}>
               <div className={cn(
-                "p-5 rounded-2xl mb-6 transition-all",
-                isUploaded ? "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white" : "bg-slate-100 text-slate-400"
+                "p-6 rounded-[1.5rem] mb-8 transition-all shadow-sm",
+                isUploaded ? "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white" : "bg-slate-100 text-slate-300"
               )}>
-                {form.type === 'xlsx' ? <FileSpreadsheet className="w-8 h-8" /> : <FileText className="w-8 h-8" />}
+                {form.type === 'xlsx' ? <FileSpreadsheet className="w-10 h-10" /> : <FileText className="w-10 h-10" />}
               </div>
               
-              <h3 className="font-black text-slate-900 mb-2 leading-tight px-4">{form.name}</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Format: .{form.type}</p>
+              <h3 className="font-black text-slate-900 mb-2 leading-tight text-lg px-2 min-h-[3.5rem] flex items-center justify-center">
+                {form.name}
+              </h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-10">Format: .{form.type}</p>
               
               <div className="mt-auto w-full">
                 <input 
@@ -128,20 +130,20 @@ const DocumentTemplates: React.FC = () => {
                   accept={`.${form.type}`}
                   onChange={(e) => handleFileUpload(e, form.id, form.name, form.type)}
                 />
-                <label htmlFor={`upload-${form.id}`}>
+                <label htmlFor={`upload-${form.id}`} className="block w-full">
                   <Button 
                     as="span" 
                     variant={isUploaded ? "outline" : "primary"} 
-                    className="w-full rounded-2xl font-bold cursor-pointer h-12"
+                    className="w-full rounded-[1.2rem] font-black h-16 shadow-lg tracking-widest text-xs cursor-pointer"
                     isLoading={isUploading}
                   >
                     {isUploaded ? (
                       <span className="flex items-center justify-center gap-2">
-                        <CheckCircle2 className="w-4 h-4" /> Update File
+                        <CheckCircle2 className="w-5 h-5" /> UPDATE DOKUMEN
                       </span>
                     ) : (
                       <span className="flex items-center justify-center gap-2">
-                        <Upload className="w-4 h-4" /> Unggah Sekarang
+                        <Upload className="w-5 h-5" /> UNGGAH FILE
                       </span>
                     )}
                   </Button>
@@ -149,26 +151,13 @@ const DocumentTemplates: React.FC = () => {
               </div>
 
               {isUploaded && (
-                <div className="mt-4 text-[9px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1 justify-center">
-                   <CheckCircle2 className="w-3 h-3" /> Dokumen Sudah Aktif
+                <div className="mt-6 text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> File Siap Digunakan
                 </div>
               )}
             </Card>
           );
         })}
-      </div>
-
-      <div className="bg-amber-50 border border-amber-100 p-6 rounded-[2rem] flex gap-4 max-w-4xl mx-auto">
-        <div className="p-3 bg-amber-100 rounded-2xl h-fit">
-          <Upload className="w-5 h-5 text-amber-600" />
-        </div>
-        <div>
-          <h4 className="font-black text-amber-900 text-sm">Instruksi Penggunaan</h4>
-          <p className="text-xs text-amber-800/80 leading-relaxed mt-1">
-            Pastikan file Word (.docx) Anda sudah berisi placeholder seperti <b>{"{{nama_konsumen}}"}</b> sesuai panduan. 
-            Sistem akan secara otomatis mengenali dokumen ini saat Anda melakukan transaksi penjualan.
-          </p>
-        </div>
       </div>
     </div>
   );
