@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Plus, Search, Filter, ShoppingBag, FileText, ArrowLeft, TrendingUp, Users, CheckCircle2, MoreVertical, Download, X, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, ShoppingBag, FileText, ArrowLeft, TrendingUp, Users, CheckCircle2, MoreVertical, Download, X, Edit, Trash2, Eye } from 'lucide-react';
 import { Sale } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -7,6 +7,7 @@ import { Input } from '../components/ui/Input';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
 import { SaleForm } from '../components/forms/SaleForm';
+import { SaleDetail } from '../components/details/SaleDetail';
 import { useAuth } from '../contexts/AuthContext';
 import { Pagination } from '../components/ui/Pagination';
 import { api } from '../lib/api';
@@ -27,6 +28,8 @@ const Sales: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [viewingSale, setViewingSale] = useState<Sale | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   
   // Document Printing State
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -97,6 +100,23 @@ const Sales: React.FC = () => {
   const handleEditClick = (sale: Sale) => {
     setEditingSale(sale);
     setIsModalOpen(true);
+  };
+
+  const handleViewClick = async (sale: Sale) => {
+    try {
+      setLoading(true);
+      // Fetch full details including installments for viewing
+      const fullData = await api.get('sales', `select=*,unit:units(*,project:projects(*)),customer:customers(*),marketing:marketing_staff(*),promo:promos(*),installments:installments(*)&id=eq.${sale.id}`);
+      if (fullData && fullData.length > 0) {
+        setViewingSale(fullData[0]);
+        setIsViewModalOpen(true);
+      }
+    } catch (error) {
+      console.error('View Fetch Error:', error);
+      alert('Gagal memuat detail transaksi.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeleteSale = async (id: string, unitId: string) => {
@@ -215,6 +235,7 @@ const Sales: React.FC = () => {
                   <td className="px-6 py-6"><div className="text-xs font-bold text-slate-600">{sale.marketing?.name || 'Internal'}</div></td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-indigo-600" title="Lihat Detail"><Eye className="w-4 h-4" /></Button>
                       <Button variant="ghost" size="sm" onClick={() => handlePrintClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-indigo-600" title="Cetak Dokumen Word"><Download className="w-4 h-4" /></Button>
                       <Button variant="ghost" size="sm" onClick={() => handleEditClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-emerald-600" title="Edit Transaksi"><Edit className="w-4 h-4" /></Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDeleteSale(sale.id, sale.unit_id)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-red-600" title="Hapus Transaksi"><Trash2 className="w-4 h-4" /></Button>
@@ -237,6 +258,18 @@ const Sales: React.FC = () => {
           initialData={editingSale}
           onSuccess={() => { setIsModalOpen(false); setEditingSale(null); fetchSales(); }} 
           onCancel={() => { setIsModalOpen(false); setEditingSale(null); }} 
+        />
+      </Modal>
+      
+      <Modal 
+        isOpen={isViewModalOpen} 
+        onClose={() => { setIsViewModalOpen(false); setViewingSale(null); }} 
+        title="Detail Transaksi Penjualan" 
+        size="lg"
+      >
+        <SaleDetail 
+          sale={viewingSale}
+          onClose={() => { setIsViewModalOpen(false); setViewingSale(null); }} 
         />
       </Modal>
 
