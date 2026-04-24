@@ -176,7 +176,7 @@ const Promos: React.FC = () => {
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
           <Input label="Nama Promo" placeholder="Contoh: Promo Akhir Tahun" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
           <Input label="Masa Berlaku" type="date" value={formData.valid_until} onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })} required />
-          <CurrencyInput label="Nilai Promo" placeholder="Rp 0 (Isi 0 jika non-moneter)" value={formData.value} onChange={(val) => setFormData({ ...formData, value: val })} />
+          <CurrencyInput label="Nilai Promo" placeholder="Rp 0 (Isi 0 jika non-moneter)" value={formData.value} onValueChange={(values) => setFormData({ ...formData, value: values.floatValue || 0 })} />
           <textarea className="w-full rounded-lg border border-slate-300 p-2 text-sm" rows={3} placeholder="Detail promo..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
           <div className="flex justify-end gap-3 mt-6">
             <Button variant="outline" type="button" onClick={() => { setIsModalOpen(false); resetForm(); }}>Batal</Button>

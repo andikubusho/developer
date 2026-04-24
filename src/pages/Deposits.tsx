@@ -224,7 +224,7 @@ const Deposits: React.FC = () => {
           </div>
           <Input label="Nama" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
           <Input label="No. Telp" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
-          <CurrencyInput label="Nilai Titipan" value={formData.amount} onChange={(val) => setFormData({ ...formData, amount: val })} required />
+          <CurrencyInput label="Nilai Titipan" value={formData.amount} onValueChange={(values) => setFormData({ ...formData, amount: values.floatValue || 0 })} required />
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Metode Pembayaran</label>
             <div className="flex gap-4">
