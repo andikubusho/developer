@@ -57,7 +57,7 @@ const Sales: React.FC = () => {
     try {
       setLoading(true);
       const from = (currentPage - 1) * pageSize;
-      let queryParams = `select=*,unit:units(unit_number,price,project:projects(name)),customer:customers(full_name),marketing:marketing_staff(name)&order=sale_date.desc&offset=${from}&limit=${pageSize}`;
+      let queryParams = `select=*,unit:units(id,unit_number,price,project_id,project:projects(id,name)),customer:customers(id,full_name),marketing:marketing_staff(id,name)&order=sale_date.desc&offset=${from}&limit=${pageSize}`;
       
       if (activeTab !== 'all') queryParams += `&status=eq.${activeTab}`;
       if (debouncedSearch) queryParams += `&or=(status.ilike.*${debouncedSearch}*,payment_method.ilike.*${debouncedSearch}*)`;

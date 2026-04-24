@@ -100,6 +100,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         marketing_id: initialData.marketing_id || initialData.marketing?.id,
         promo_id: initialData.promo_id || initialData.promo?.id,
         installments: initialData.installments || []
+      }, {
+        keepDefaultValues: false
       });
     } else {
       reset({
