@@ -84,7 +84,7 @@ const Sales: React.FC = () => {
     try {
       setFetchingTemplates(true);
       // Fetch full details including installments for printing
-      const fullData = await api.get('sales', `select=*,unit:units(*,project:projects(*)),customer:customers(*),marketing:profiles(*),installments:installments(*)&id=eq.${sale.id}`);
+      const fullData = await api.get('sales', `select=*,unit:units(*,project:projects(*)),customer:customers(*),marketing:marketing_staff(*),installments:installments(*)&id=eq.${sale.id}`);
       if (fullData && fullData.length > 0) {
         setSelectedSale(fullData[0]);
       }

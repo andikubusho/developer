@@ -83,7 +83,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [p, u, pli, c, l, m, pr] = await Promise.all([
+        setLoading(true);
+        const results = await Promise.allSettled([
           api.get('projects', 'select=id,name'),
           api.get('units', 'select=*'),
           api.get('price_list_items', 'select=*'),
@@ -93,9 +94,19 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
           api.get('promos', 'select=id,name,value')
         ]);
 
-        // Merge logic exactly like Units.tsx
-        const processedUnits = (u || []).map((unit: any) => {
-          const pliItem = (pli || []).find((p: any) => p.unit_id === unit.id);
+        const [p, u, pli, c, l, m, pr] = results.map(res => res.status === 'fulfilled' ? (res as any).value : []);
+        
+        const toArr = (val: any) => Array.isArray(val) ? val : [];
+        const projectsData = toArr(p);
+        const unitsData = toArr(u);
+        const pliData = toArr(pli);
+        const customersData = toArr(c);
+        const leadsData = toArr(l);
+        const marketingData = toArr(m);
+        const promosData = toArr(pr);
+
+        const processedUnits = unitsData.map((unit: any) => {
+          const pliItem = pliData.find((p: any) => p.unit_id === unit.id);
           if (pliItem) {
             return {
               ...unit,
@@ -108,7 +119,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
         });
 
         const existingIds = processedUnits.map((u: any) => u.id);
-        const orphans = (pli || []).filter((p: any) => !existingIds.includes(p.unit_id)).map((p: any) => ({
+        const orphans = pliData.filter((p: any) => !existingIds.includes(p.unit_id)).map((p: any) => ({
           id: p.unit_id || p.id,
           project_id: p.project_id,
           unit_number: `${p.blok} - ${p.unit}`,
@@ -118,20 +129,23 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
 
         const finalUnits = [...processedUnits, ...orphans].filter(unit => unit.status === 'available');
 
-        setProjects(p || []);
+        setProjects(projectsData);
         setUnits(finalUnits);
-        setRawCustomers(c || []);
-        setRawLeads(l || []);
+        setRawCustomers(customersData);
+        setRawLeads(leadsData);
         setCustomers([
-          ...(c || []).map((item: any) => ({ id: item.id, full_name: item.full_name })),
-          ...(l || []).map((item: any) => ({ id: item.id, full_name: item.name + ' (Lead)' }))
+          ...customersData.map((item: any) => ({ id: item.id, full_name: item.full_name })),
+          ...leadsData.map((item: any) => ({ id: item.id, full_name: item.name + ' (Lead)' }))
         ]);
-        setMarketingStaff((m || []).map((item: any) => ({ id: item.id, full_name: item.name, role: 'Marketing' })));
-        setPromos(pr || []);
-      } catch (err) {
-        console.error('Fetch error in SaleForm:', err);
+        setMarketingStaff(marketingData.map((item: any) => ({ id: item.id, full_name: item.name, role: 'Marketing' })));
+        setPromos(promosData);
+      } catch (error) {
+        console.error('Error fetching SaleForm data:', error);
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
@@ -172,7 +186,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
 
       // 1. Insert into sales table
       const saleData = await api.insert('sales', {
-        sale_date: values.sale_date,
+        sale_date: values.sale_date || new Date().toISOString().split('T')[0],
         customer_id: finalCustomerId,
         project_id: values.project_id,
         unit_id: values.unit_id,
@@ -181,11 +195,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
         manager: values.manager || null,
         makelar: values.makelar || null,
         freelance: values.freelance || null,
-        total_price: values.total_price,
-        discount: values.discount,
+        total_price: values.total_price || 0,
+        discount: values.discount || 0,
         promo_id: values.promo_id || null,
-        final_price: values.final_price,
-        booking_fee: values.booking_fee,
+        final_price: values.final_price || 0,
+        booking_fee: values.booking_fee || 0,
         booking_fee_date: values.booking_fee_date || null,
         payment_method: values.payment_method,
         dp_amount: values.dp_amount || 0,
