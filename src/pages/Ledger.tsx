@@ -29,39 +29,49 @@ const LedgerPage: React.FC = () => {
 
   const fetchLedger = async () => {
     setLoading(true);
-    if (isMockMode) {
-      const mockLedger: LedgerEntry[] = [
-        {
-          id: '1',
-          date: '2026-03-27',
-          description: 'Penerimaan Booking Fee - Cici Lestari',
-          reference_no: 'BF-001',
-          debit: 5000000,
-          credit: 0,
-          balance: 105000000
-        },
-        {
-          id: '2',
-          date: '2026-03-26',
-          description: 'Pembayaran Listrik Kantor',
-          reference_no: 'EXP-001',
-          debit: 0,
-          credit: 1500000,
-          balance: 100000000
-        },
-        {
-          id: '3',
-          date: '2026-03-25',
-          description: 'Saldo Awal',
-          reference_no: 'SA-001',
-          debit: 101500000,
-          credit: 0,
-          balance: 101500000
-        }
-      ];
-      setLedgerEntries(mockLedger);
+    try {
+      if (isMockMode) {
+        const mockLedger: LedgerEntry[] = [
+          {
+            id: '1',
+            date: '2026-03-27',
+            description: 'Penerimaan Booking Fee - Cici Lestari',
+            reference_no: 'BF-001',
+            debit: 5000000,
+            credit: 0,
+            balance: 105000000
+          },
+          {
+            id: '2',
+            date: '2026-03-26',
+            description: 'Pembayaran Listrik Kantor',
+            reference_no: 'EXP-001',
+            debit: 0,
+            credit: 1500000,
+            balance: 100000000
+          },
+          {
+            id: '3',
+            date: '2026-03-25',
+            description: 'Saldo Awal',
+            reference_no: 'SA-001',
+            debit: 101500000,
+            credit: 0,
+            balance: 101500000
+          }
+        ];
+        setLedgerEntries(mockLedger);
+      } else {
+        const data = await api.get('ledger', `select=*&order=date.desc`);
+        // Basic fallback if table doesn't exist yet
+        setLedgerEntries(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching ledger:', error);
+      setLedgerEntries([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const filteredLedger = ledgerEntries.filter(item => 

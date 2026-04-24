@@ -68,6 +68,12 @@ const Sales: React.FC = () => {
       const data = await api.get('sales', queryParams);
       setSales(data || []);
       
+      let countQuery = `select=id`;
+      if (activeTab !== 'all') countQuery += `&status=eq.${activeTab}`;
+      if (debouncedSearch) countQuery += `&or=(status.ilike.*${debouncedSearch}*,payment_method.ilike.*${debouncedSearch}*)`;
+      const countData = await api.get('sales', countQuery);
+      setTotalCount(countData?.length || 0);
+      
       const allSales = await api.get('sales', 'select=final_price,status');
       if (allSales) {
         setStats({
@@ -76,7 +82,6 @@ const Sales: React.FC = () => {
           activeLeads: allSales.filter((s: any) => s.status === 'active').length
         });
       }
-      setTotalCount(data?.length || 0); 
     } catch (error) { console.error(error); } finally { setLoading(false); }
   }, [currentPage, debouncedSearch, pageSize, activeTab]);
 

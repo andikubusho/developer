@@ -19,42 +19,52 @@ const AuditTransactionsPage: React.FC = () => {
 
   const fetchAuditLogs = async () => {
     setLoading(true);
-    if (isMockMode) {
-      const mockLogs: AuditLog[] = [
-        {
-          id: '1',
-          action: 'create',
-          module: 'Sales',
-          description: 'Membuat pesanan baru untuk unit A-01',
-          user_id: '1',
-          timestamp: '2026-03-27T10:00:00Z',
-          metadata: { unit_id: 'A-01', amount: 500000000 },
-          user: { full_name: 'Neville Christian' } as any
-        },
-        {
-          id: '2',
-          action: 'update',
-          module: 'Keuangan',
-          description: 'Mengubah status pembayaran KPR unit B-05',
-          user_id: '2',
-          timestamp: '2026-03-27T09:30:00Z',
-          metadata: { old_status: 'pending', new_status: 'paid' },
-          user: { full_name: 'Siti Aminah' } as any
-        },
-        {
-          id: '3',
-          action: 'delete',
-          module: 'Teknik',
-          description: 'Menghapus item RAB Proyek X',
-          user_id: '1',
-          timestamp: '2026-03-26T15:45:00Z',
-          metadata: { item_id: 'RAB-123' },
-          user: { full_name: 'Neville Christian' } as any
-        }
-      ];
-      setAuditLogs(mockLogs);
+    try {
+      if (isMockMode) {
+        const mockLogs: AuditLog[] = [
+          {
+            id: '1',
+            action: 'create',
+            module: 'Sales',
+            description: 'Membuat pesanan baru untuk unit A-01',
+            user_id: '1',
+            timestamp: '2026-03-27T10:00:00Z',
+            metadata: { unit_id: 'A-01', amount: 500000000 },
+            user: { full_name: 'Neville Christian' } as any
+          },
+          {
+            id: '2',
+            action: 'update',
+            module: 'Keuangan',
+            description: 'Mengubah status pembayaran KPR unit B-05',
+            user_id: '2',
+            timestamp: '2026-03-27T09:30:00Z',
+            metadata: { old_status: 'pending', new_status: 'paid' },
+            user: { full_name: 'Siti Aminah' } as any
+          },
+          {
+            id: '3',
+            action: 'delete',
+            module: 'Teknik',
+            description: 'Menghapus item RAB Proyek X',
+            user_id: '1',
+            timestamp: '2026-03-26T15:45:00Z',
+            metadata: { item_id: 'RAB-123' },
+            user: { full_name: 'Neville Christian' } as any
+          }
+        ];
+        setAuditLogs(mockLogs);
+      } else {
+        // Fallback for real users
+        const data = await api.get('audit_logs', 'select=*');
+        setAuditLogs(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+      setAuditLogs([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const getActionColor = (action: string) => {
