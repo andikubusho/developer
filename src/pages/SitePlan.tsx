@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '@/src/lib/api';
-import { Project, Unit } from '@/src/types';
+import { api } from '@/lib/api';
+import { Project, Unit } from '@/types';
 import { 
   ChevronDown, 
   Image as ImageIcon,
@@ -10,9 +10,9 @@ import {
   X,
   Upload
 } from 'lucide-react';
-import { Button } from '@/src/components/ui/Button';
-import { Modal } from '@/src/components/ui/Modal';
-import { cn } from '@/src/lib/utils';
+import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { cn } from '@/lib/utils';
 
 // Hardcoded Mapping Data for Golden Canyon
 // This follows the 1200x900 coordinate system
@@ -102,6 +102,8 @@ const SitePlan = () => {
     }
   };
 
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+
   useEffect(() => {
     if (selectedProject?.site_plan_image_url) {
       const img = new Image();
@@ -111,8 +113,6 @@ const SitePlan = () => {
       img.src = selectedProject.site_plan_image_url;
     }
   }, [selectedProject?.site_plan_image_url]);
-
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   const getStatusColor = (status: string) => {
     switch (status) {
