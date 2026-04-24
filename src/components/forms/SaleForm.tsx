@@ -83,7 +83,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
       try {
         const [p, u, c, l, m, pr] = await Promise.all([
           api.get('projects', 'select=id,name'),
-          api.get('units', 'select=id,unit_number,price,project_id,status'),
+          api.get('units', 'select=id,unit_number,price,project_id,status&status=eq.available'),
           api.get('customers', 'select=id,full_name'),
           api.get('leads', 'select=id,name'),
           api.get('profiles', 'select=id,full_name'), // Keep profiles for other potential uses if needed, or remove if unused
@@ -194,7 +194,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
         />
         <Select 
           label="Blok / Unit" 
-          options={filteredUnits.map(u => ({ label: `${u.unit_number} (${u.status})`, value: u.id }))}
+          options={filteredUnits.map(u => ({ label: u.unit_number, value: u.id }))}
           {...register('unit_id')}
           error={errors.unit_id?.message}
           disabled={!watchProjectId}
