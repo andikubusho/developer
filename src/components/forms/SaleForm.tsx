@@ -81,17 +81,43 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [p, u, c, l, m, pr] = await Promise.all([
+        const [p, u, pli, c, l, m, pr] = await Promise.all([
           api.get('projects', 'select=id,name'),
-          api.get('units', 'select=id,unit_number,price,project_id,status&status=eq.available'),
+          api.get('units', 'select=*'),
+          api.get('price_list_items', 'select=*'),
           api.get('customers', 'select=id,full_name'),
           api.get('leads', 'select=id,name'),
           api.get('marketing_staff', 'select=id,name'),
           api.get('promos', 'select=id,name,value')
         ]);
 
+        // Merge logic exactly like Units.tsx
+        const processedUnits = (u || []).map((unit: any) => {
+          const pliItem = (pli || []).find((p: any) => p.unit_id === unit.id);
+          if (pliItem) {
+            return {
+              ...unit,
+              unit_number: `${pliItem.blok} - ${pliItem.unit}`,
+              price: pliItem.harga_jual,
+              status: pliItem.status
+            };
+          }
+          return unit;
+        });
+
+        const existingIds = processedUnits.map((u: any) => u.id);
+        const orphans = (pli || []).filter((p: any) => !existingIds.includes(p.unit_id)).map((p: any) => ({
+          id: p.unit_id || p.id,
+          project_id: p.project_id,
+          unit_number: `${p.blok} - ${p.unit}`,
+          price: p.harga_jual,
+          status: p.status
+        }));
+
+        const finalUnits = [...processedUnits, ...orphans].filter(unit => unit.status === 'available');
+
         setProjects(p || []);
-        setUnits(u || []);
+        setUnits(finalUnits);
         setCustomers([
           ...(c || []).map((item: any) => ({ id: item.id, full_name: item.full_name })),
           ...(l || []).map((item: any) => ({ id: item.id, full_name: item.name + ' (Lead)' }))
