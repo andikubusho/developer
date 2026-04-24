@@ -97,10 +97,19 @@ const Deposits: React.FC = () => {
   const handleSave = async () => {
     try {
       setLoading(true);
+      const payload = {
+        date: formData.date,
+        name: formData.name,
+        phone: formData.phone,
+        amount: formData.amount,
+        payment_type: formData.payment_type,
+        submission: formData.submission,
+        // description: formData.description // Temporarily disabled: column missing in DB
+      };
       if (selectedDeposit) {
-        await api.update('deposits', selectedDeposit.id, formData);
+        await api.update('deposits', selectedDeposit.id, payload);
       } else {
-        await api.insert('deposits', formData);
+        await api.insert('deposits', payload);
       }
       await fetchDeposits();
       setIsModalOpen(false);
