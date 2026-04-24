@@ -51,6 +51,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [units, setUnits] = useState<{ id: string; unit_number: string; price: number; project_id: string }[]>([]);
   const [customers, setCustomers] = useState<{ id: string; full_name: string }[]>([]);
+  const [rawCustomers, setRawCustomers] = useState<any[]>([]);
+  const [rawLeads, setRawLeads] = useState<any[]>([]);
   const [marketingStaff, setMarketingStaff] = useState<{ id: string; full_name: string; role: string }[]>([]);
   const [promos, setPromos] = useState<{ id: string; name: string; value: number }[]>([]);
 
@@ -118,6 +120,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
 
         setProjects(p || []);
         setUnits(finalUnits);
+        setRawCustomers(c || []);
+        setRawLeads(l || []);
         setCustomers([
           ...(c || []).map((item: any) => ({ id: item.id, full_name: item.full_name })),
           ...(l || []).map((item: any) => ({ id: item.id, full_name: item.name + ' (Lead)' }))
@@ -147,10 +151,29 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
   const onSubmit = async (values: SaleFormValues) => {
     setLoading(true);
     try {
+      let finalCustomerId = values.customer_id;
+
+      // Check if selected ID is from Leads
+      const lead = rawLeads.find(l => l.id === values.customer_id);
+      if (lead) {
+        // Convert Lead to Customer
+        console.log('Converting Lead to Customer...');
+        const newCustomer = await api.insert('customers', {
+          full_name: lead.name,
+          phone: lead.phone,
+          address: lead.description || 'Alamat belum diisi',
+        });
+        if (newCustomer && newCustomer[0]) {
+          finalCustomerId = newCustomer[0].id;
+          // Optional: Update lead status to 'sold' or delete it
+          await api.update('leads', lead.id, { status: 'hot', description: (lead.description || '') + ' [SUDAH BELI]' });
+        }
+      }
+
       // 1. Insert into sales table
       const saleData = await api.insert('sales', {
         sale_date: values.sale_date,
-        customer_id: values.customer_id,
+        customer_id: finalCustomerId,
         project_id: values.project_id,
         unit_id: values.unit_id,
         marketing_id: values.marketing_id,
