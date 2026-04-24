@@ -56,8 +56,10 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const [rawLeads, setRawLeads] = useState<any[]>([]);
   const [marketingStaff, setMarketingStaff] = useState<{ id: string; full_name: string; role: string }[]>([]);
   const [promos, setPromos] = useState<{ id: string; name: string; value: number }[]>([]);
+  const [hasLoadedMasterData, setHasLoadedMasterData] = useState(false);
+  const hasSyncedRef = useRef(false);
 
-  const { register, handleSubmit, watch, setValue, control, reset, formState: { errors } } = useForm<SaleFormValues>({
+  const { register, handleSubmit, watch, setValue, control, reset, formState: { errors, isSubmitting } } = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
     defaultValues: initialData ? {
       ...initialData,
@@ -89,10 +91,31 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const watchPromoId = watch('promo_id');
   const watchPaymentMethod = watch('payment_method');
 
-  // Force reset form when initialData changes (Crucial for Edit mode)
+  // Debug: Log validation errors
   useEffect(() => {
-    if (initialData) {
-      reset({
+    if (Object.keys(errors).length > 0) {
+      console.log('Form Validation Errors:', errors);
+    }
+  }, [errors]);
+
+  // Cleanup sync ref on unmount
+  useEffect(() => {
+    return () => {
+      hasSyncedRef.current = false;
+    };
+  }, []);
+
+  // Force reset form when initialData AND Master Data are ready
+  useEffect(() => {
+    // If modal is closed (initialData is null), reset synced ref
+    if (!initialData) {
+      hasSyncedRef.current = false;
+    }
+
+    if (initialData && hasLoadedMasterData && !hasSyncedRef.current) {
+      console.log('Syncing SaleForm with initialData:', initialData);
+      
+      const mappedData = {
         ...initialData,
         customer_id: initialData.customer_id || initialData.customer?.id,
         unit_id: initialData.unit_id || initialData.unit?.id,
@@ -100,10 +123,12 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         marketing_id: initialData.marketing_id || initialData.marketing?.id,
         promo_id: initialData.promo_id || initialData.promo?.id,
         installments: initialData.installments || []
-      }, {
-        keepDefaultValues: false
-      });
-    } else {
+      };
+
+      reset(mappedData, { keepDefaultValues: false });
+      hasSyncedRef.current = true;
+    } else if (!initialData && !hasSyncedRef.current) {
+      // New Sale mode
       reset({
         sale_date: new Date().toISOString().split('T')[0],
         booking_fee_date: new Date().toISOString().split('T')[0],
@@ -115,8 +140,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         booking_fee: 0,
         installments: [],
       });
+      hasSyncedRef.current = true;
     }
-  }, [initialData, reset]);
+  }, [initialData, hasLoadedMasterData, reset]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -177,6 +203,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         ]);
         setMarketingStaff(marketingData.map((item: any) => ({ id: item.id, full_name: item.name, role: 'Marketing' })));
         setPromos(promosData);
+        setHasLoadedMasterData(true);
       } catch (error) {
         console.error('Error fetching SaleForm data:', error);
       } finally {
@@ -440,7 +467,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
 
       <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
         <Button type="button" variant="outline" onClick={onCancel}>Batal</Button>
-        <Button type="submit" isLoading={loading}>Simpan Transaksi</Button>
+        <Button type="submit" isLoading={loading || isSubmitting} disabled={loading || isSubmitting}>
+          {loading || isSubmitting ? 'Menyimpan...' : 'Simpan Transaksi'}
+        </Button>
       </div>
     </form>
   );
