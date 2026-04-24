@@ -24,12 +24,24 @@ const Leads: React.FC = () => {
     phone: '',
     source: '',
     status: 'no respon' as LeadStatus,
-    description: ''
+    description: '',
+    marketing_id: ''
   });
+  const [staff, setStaff] = useState<any[]>([]);
 
   useEffect(() => {
     fetchLeads();
+    fetchStaff();
   }, []);
+
+  const fetchStaff = async () => {
+    try {
+      const data = await api.get('marketing_staff', 'select=id,name&order=name.asc');
+      setStaff(data || []);
+    } catch (err) {
+      console.error('Fetch Staff Failed:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedLead) {
@@ -38,7 +50,8 @@ const Leads: React.FC = () => {
         phone: selectedLead.phone,
         source: selectedLead.source,
         status: selectedLead.status,
-        description: selectedLead.description
+        description: selectedLead.description,
+        marketing_id: (selectedLead as any).marketing_id || ''
       });
     } else {
       setFormData({
@@ -46,7 +59,8 @@ const Leads: React.FC = () => {
         phone: '',
         source: '',
         status: 'no respon',
-        description: ''
+        description: '',
+        marketing_id: ''
       });
     }
   }, [selectedLead, isModalOpen]);
@@ -54,7 +68,7 @@ const Leads: React.FC = () => {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const data = await api.get('leads', 'select=*&order=created_at.desc&limit=50');
+      const data = await api.get('leads', 'select=*,marketing:marketing_staff(name)&order=created_at.desc&limit=50');
       setLeads(data || []);
       setError(null);
     } catch (err: any) {
@@ -176,6 +190,7 @@ const Leads: React.FC = () => {
                 <th className="px-6 py-3 font-semibold">Nama</th>
                 <th className="px-6 py-3 font-semibold">No. Telp</th>
                 <th className="px-6 py-3 font-semibold">Asal Data</th>
+                <th className="px-6 py-3 font-semibold">Marketing</th>
                 <th className="px-6 py-3 font-semibold">Status</th>
                 <th className="px-6 py-3 font-semibold text-right">Aksi</th>
               </tr>
@@ -200,6 +215,9 @@ const Leads: React.FC = () => {
                     <td className="px-6 py-4 font-medium text-slate-900">{lead.name}</td>
                     <td className="px-6 py-4 text-sm text-slate-600">{lead.phone}</td>
                     <td className="px-6 py-4 text-sm text-slate-600">{lead.source}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-indigo-600">
+                      {(lead as any).marketing?.name || '-'}
+                    </td>
                     <td className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
@@ -257,6 +275,19 @@ const Leads: React.FC = () => {
             value={formData.source}
             onChange={(e) => setFormData({ ...formData, source: e.target.value })}
           />
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Marketing</label>
+            <select 
+              className="w-full h-10 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              value={formData.marketing_id}
+              onChange={(e) => setFormData({ ...formData, marketing_id: e.target.value })}
+            >
+              <option value="">-- Pilih Marketing --</option>
+              {staff.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Status</label>
             <div className="flex flex-wrap gap-2">
