@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
-import { Project } from '@/types';
+import { api } from '../lib/api';
+import { Project } from '../types';
 import { 
   Image as ImageIcon,
   ZoomIn,
@@ -12,9 +12,9 @@ import {
   Unlock,
   Save
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
-import { cn } from '@/lib/utils';
+import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
+import { cn } from '../lib/utils';
 
 const SitePlan = () => {
   const [projects, setProjects] = useState<Project[]>([]);
