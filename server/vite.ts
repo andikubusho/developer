@@ -11,11 +11,12 @@ const viteLogger = createLogger();
 export async function setupVite(server: Server, app: Express) {
   const serverOptions = {
     middlewareMode: true,
+    allowedHosts: true,
   };
 
   console.log("[Vite] Starting createViteServer...");
   const vite = await createViteServer({
-    ...viteConfig,
+    ...(typeof viteConfig === 'function' ? viteConfig({ mode: 'development', command: 'serve' }) : viteConfig),
     configFile: false,
     customLogger: {
       ...viteLogger,
