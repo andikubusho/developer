@@ -7,15 +7,18 @@ import { formatCurrency } from "./utils";
 // Helper for Indonesian Terbilang (Numbers to Words)
 const terbilang = (nilai: number): string => {
   const bilangan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
-  if (nilai < 12) return " " + bilangan[nilai];
-  if (nilai < 20) return terbilang(nilai - 10) + " Belas";
-  if (nilai < 100) return terbilang(Math.floor(nilai / 10)) + " Puluh" + terbilang(nilai % 10);
-  if (nilai < 200) return " Seratus" + terbilang(nilai - 100);
-  if (nilai < 1000) return terbilang(Math.floor(nilai / 100)) + " Ratus" + terbilang(nilai % 100);
-  if (nilai < 2000) return " Seribu" + terbilang(nilai - 1000);
-  if (nilai < 1000000) return terbilang(Math.floor(nilai / 1000)) + " Ribu" + terbilang(nilai % 1000);
-  if (nilai < 1000000000) return terbilang(Math.floor(nilai / 1000000)) + " Juta" + terbilang(nilai % 1000000);
-  return "";
+  let hasil = "";
+  if (nilai < 12) hasil = " " + bilangan[nilai];
+  else if (nilai < 20) hasil = terbilang(nilai - 10) + " Belas";
+  else if (nilai < 100) hasil = terbilang(Math.floor(nilai / 10)) + " Puluh" + terbilang(nilai % 10);
+  else if (nilai < 200) hasil = " Seratus" + terbilang(nilai - 100);
+  else if (nilai < 1000) hasil = terbilang(Math.floor(nilai / 100)) + " Ratus" + terbilang(nilai % 100);
+  else if (nilai < 2000) hasil = " Seribu" + terbilang(nilai - 1000);
+  else if (nilai < 1000000) hasil = terbilang(Math.floor(nilai / 1000)) + " Ribu" + terbilang(nilai % 1000);
+  else if (nilai < 1000000000) hasil = terbilang(Math.floor(nilai / 1000000)) + " Juta" + terbilang(nilai % 1000000);
+  else if (nilai < 1000000000000) hasil = terbilang(Math.floor(nilai / 1000000000)) + " Miliar" + terbilang(nilai % 1000000000);
+  else if (nilai < 1000000000000000) hasil = terbilang(Math.floor(nilai / 1000000000000)) + " Triliun" + terbilang(nilai % 1000000000000);
+  return hasil.replace(/\s+/g, ' ').trim();
 };
 
 export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filename: string) => {
