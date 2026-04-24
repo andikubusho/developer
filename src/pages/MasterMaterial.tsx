@@ -303,75 +303,93 @@ const MasterMaterial: React.FC = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title={editingMaterial ? "Edit Material" : "Tambah Material Baru"}
-        size="md"
+        size="5xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <Input 
-              label="Nama Material"
-              placeholder="Contoh: Semen Gresik, Besi 10mm"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Satuan</label>
-                <select 
-                  className="w-full h-12 bg-slate-50 border-none rounded-xl px-4 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                  value={form.unit}
-                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                  required
-                >
-                  <option value="">Pilih Satuan</option>
-                  <option value="Sak">Sak (Semen)</option>
-                  <option value="m³">m³ (Pasir/Batu)</option>
-                  <option value="Batang">Batang (Besi/Kayu)</option>
-                  <option value="kg">kg (Paku/Kawat)</option>
-                  <option value="Liter">Liter (Cat/Cairan)</option>
-                  <option value="Lembar">Lembar (Triplek/Seng)</option>
-                  <option value="m²">m² (Keramik/Granit)</option>
-                  <option value="Unit">Unit (Pintu/Jendela)</option>
-                </select>
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">Nama Material</label>
               <Input 
-                label="Harga Satuan (Rp)"
-                type="number"
-                value={form.unit_price}
-                onChange={(e) => setForm({ ...form, unit_price: Number(e.target.value) })}
+                placeholder="Contoh: Semen Gresik, Besi 10mm"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="h-14 text-base font-bold rounded-2xl border-slate-200 focus:border-primary shadow-sm"
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">Spesifikasi Detail</label>
               <Input 
-                label={editingMaterial ? "Total Stok Saat Ini" : "Stok Awal"}
-                type="number"
-                value={form.stock}
-                onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
-                required
-              />
-              <Input 
-                label="Batas Minimal Stok"
-                type="number"
-                value={form.min_stock}
-                onChange={(e) => setForm({ ...form, min_stock: Number(e.target.value) })}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Spesifikasi Detail</label>
-              <textarea 
-                className="w-full h-24 bg-slate-50 border-none rounded-xl p-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
                 placeholder="Contoh: Ukuran, Merk, Standar SNI, dll."
                 value={form.specification}
                 onChange={(e) => setForm({ ...form, specification: e.target.value })}
+                className="h-14 text-base font-bold rounded-2xl border-slate-200 focus:border-primary shadow-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">Jenis Satuan</label>
+              <select 
+                className="w-full h-14 bg-white border border-slate-200 rounded-2xl px-6 text-base font-bold text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-sm"
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                required
+              >
+                <option value="">Pilih Satuan...</option>
+                <option value="Sak">Sak (Semen)</option>
+                <option value="m³">m³ (Pasir/Batu)</option>
+                <option value="Batang">Batang (Besi/Kayu)</option>
+                <option value="kg">kg (Paku/Kawat)</option>
+                <option value="Liter">Liter (Cat/Cairan)</option>
+                <option value="Lembar">Lembar (Triplek/Seng)</option>
+                <option value="m²">m² (Keramik/Granit)</option>
+                <option value="Unit">Unit (Pintu/Jendela)</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">Harga Satuan (Rp)</label>
+              <Input 
+                type="number"
+                placeholder="0"
+                value={form.unit_price}
+                onChange={(e) => setForm({ ...form, unit_price: Number(e.target.value) })}
+                className="h-14 text-base font-bold rounded-2xl border-slate-200 focus:border-primary shadow-sm"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">
+                {editingMaterial ? "Total Stok Saat Ini" : "Stok Awal (Volume)"}
+              </label>
+              <Input 
+                type="number"
+                placeholder="0"
+                value={form.stock}
+                onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
+                className="h-14 text-base font-bold rounded-2xl border-slate-200 focus:border-primary shadow-sm"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">Batas Minimal Stok</label>
+              <Input 
+                type="number"
+                placeholder="10"
+                value={form.min_stock}
+                onChange={(e) => setForm({ ...form, min_stock: Number(e.target.value) })}
+                className="h-14 text-base font-bold rounded-2xl border-slate-200 focus:border-primary shadow-sm"
+                required
               />
             </div>
           </div>
           
-          <div className="pt-4 flex gap-3">
-            <Button type="button" variant="ghost" className="flex-1" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button type="submit" className="flex-1" isLoading={loading}>
+          <div className="pt-6 flex gap-4">
+            <Button type="button" variant="ghost" className="flex-1 h-14 rounded-2xl text-base font-bold" onClick={() => setIsModalOpen(false)}>Batal</Button>
+            <Button type="submit" className="flex-1 h-14 rounded-2xl text-base font-extrabold shadow-xl shadow-primary/20" isLoading={loading}>
               {editingMaterial ? "Simpan Perubahan" : "Tambahkan Material"}
             </Button>
           </div>

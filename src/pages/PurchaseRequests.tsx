@@ -175,41 +175,41 @@ const PurchaseRequests: React.FC = () => {
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
               <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
-                <th className="px-8 py-5 font-black">No. Request</th>
-                <th className="px-8 py-5 font-black">Proyek & Unit</th>
-                <th className="px-8 py-5 font-black">Item Material</th>
-                <th className="px-8 py-5 font-black text-right">Estimasi Biaya</th>
-                <th className="px-8 py-5 font-black text-center">Status</th>
-                <th className="px-8 py-5 font-black">Tanggal</th>
+                <th className="px-10 py-7 font-black">No. Request</th>
+                <th className="px-10 py-7 font-black">Proyek & Unit</th>
+                <th className="px-10 py-7 font-black">Item Material</th>
+                <th className="px-10 py-7 font-black text-right">Estimasi Biaya</th>
+                <th className="px-10 py-7 font-black text-center">Status</th>
+                <th className="px-10 py-7 font-black">Tanggal</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {loading ? (
-                <tr><td colSpan={6} className="px-8 py-20 text-center text-slate-400">Memuat data...</td></tr>
+                <tr><td colSpan={6} className="px-10 py-24 text-center text-slate-400">Memuat data...</td></tr>
               ) : requests.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-8 py-20 text-center">
-                    <ClipboardList className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                    <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Belum ada data permintaan.</p>
+                  <td colSpan={6} className="px-10 py-24 text-center">
+                    <ClipboardList className="w-16 h-16 text-slate-200 mx-auto mb-6" />
+                    <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Belum ada data permintaan.</p>
                   </td>
                 </tr>
               ) : (
                 requests.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-6 font-black text-slate-900 uppercase text-xs">PR-{r.id.substring(0, 8)}</td>
-                    <td className="px-8 py-6">
+                    <td className="px-10 py-8 font-black text-slate-900 uppercase text-xs">PR-{r.id.substring(0, 8)}</td>
+                    <td className="px-10 py-8">
                       <div className="flex flex-col">
-                        <span className="text-xs font-black text-slate-900">{r.project?.name || 'Proyek Umum'}</span>
-                        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tight mt-1 flex items-center gap-1">
-                          <Home className="w-3 h-3" /> {r.unit?.name || 'Gudang Utama'}
+                        <span className="text-sm font-black text-slate-900">{r.project?.name || 'Proyek Umum'}</span>
+                        <span className="text-xs font-bold text-indigo-500 uppercase tracking-tight mt-1 flex items-center gap-1">
+                          <Home className="w-3.5 h-3.5" /> {r.unit?.name || 'Gudang Utama'}
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-10 py-8">
                       {r.items && Array.isArray(r.items) ? (
-                        <div className="flex flex-col gap-1">
-                           <span className="text-xs font-bold text-slate-700">{r.items.length} Macam Material</span>
-                           <span className="text-[9px] text-slate-400 truncate max-w-[200px]">
+                        <div className="flex flex-col gap-1.5">
+                           <span className="text-sm font-bold text-slate-700">{r.items.length} Macam Material</span>
+                           <span className="text-[11px] text-slate-400 truncate max-w-[250px]">
                               {r.items.map((i: any) => {
                                 const m = materials.find(mat => mat.id === i.material_id);
                                 return m ? `${m.name} (${i.quantity} ${m.unit})` : '';
@@ -217,14 +217,14 @@ const PurchaseRequests: React.FC = () => {
                            </span>
                         </div>
                       ) : (
-                        <span className="text-xs font-bold text-slate-700">{r.material?.name || 'Material'} ({r.quantity})</span>
+                        <span className="text-sm font-bold text-slate-700">{r.material?.name || 'Material'} ({r.quantity})</span>
                       )}
                     </td>
-                    <td className="px-8 py-6 text-sm font-black text-indigo-600 text-right">{formatCurrency(r.estimated_cost)}</td>
-                    <td className="px-8 py-6">
+                    <td className="px-10 py-8 text-base font-black text-indigo-600 text-right">{formatCurrency(r.estimated_cost)}</td>
+                    <td className="px-10 py-8 text-center">
                       <div className="flex justify-center items-center gap-2">
                         <span className={cn(
-                          'px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border',
+                          'px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border',
                           r.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                           r.status === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-100' : 
                           'bg-amber-50 text-amber-600 border-amber-100'
@@ -233,7 +233,7 @@ const PurchaseRequests: React.FC = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-6 text-xs font-bold text-slate-500">{formatDate(r.created_at)}</td>
+                    <td className="px-10 py-8 text-sm font-bold text-slate-500">{formatDate(r.created_at)}</td>
                   </tr>
                 ))
               )}
@@ -247,17 +247,17 @@ const PurchaseRequests: React.FC = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title="Buat Purchase Request Baru"
-        size="xl"
+        size="6xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-10">
           {/* Header Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
-            <div className="space-y-1.5">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center gap-2">
-                <Building2 className="w-3 h-3 text-indigo-500" /> Pilih Daftar Proyek
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
+            <div className="space-y-2.5">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block flex items-center gap-2 ml-1">
+                <Building2 className="w-4 h-4 text-indigo-500" /> Pilih Daftar Proyek
               </label>
               <select 
-                className="w-full h-12 bg-white border border-slate-200 rounded-xl px-4 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-sm"
+                className="w-full h-14 bg-white border border-slate-200 rounded-2xl px-6 text-base font-bold text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-sm"
                 value={form.project_id}
                 onChange={(e) => setForm({ ...form, project_id: e.target.value, unit_id: '' })}
                 required
@@ -267,12 +267,12 @@ const PurchaseRequests: React.FC = () => {
               </select>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center gap-2">
-                <Home className="w-3 h-3 text-indigo-500" /> Pilih Unit Properti (Opsional)
+            <div className="space-y-2.5">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block flex items-center gap-2 ml-1">
+                <Home className="w-4 h-4 text-indigo-500" /> Pilih Unit Properti (Opsional)
               </label>
               <select 
-                className="w-full h-12 bg-white border border-slate-200 rounded-xl px-4 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-sm disabled:opacity-50"
+                className="w-full h-14 bg-white border border-slate-200 rounded-2xl px-6 text-base font-bold text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-sm disabled:opacity-50"
                 value={form.unit_id}
                 onChange={(e) => setForm({ ...form, unit_id: e.target.value })}
                 disabled={!form.project_id}
