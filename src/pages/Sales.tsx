@@ -103,17 +103,24 @@ const Sales: React.FC = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini? Unit akan kembali berstatus available.')) return;
     try {
       setLoading(true);
-      // 1. Delete related records first (Payments & Installments)
-      await api.delete('payments', `sale_id=eq.${id}`);
-      await api.delete('installments', `sale_id=eq.${id}`);
+      // 1. Delete ALL related records (Cascade Cleanup)
+      await Promise.allSettled([
+        api.apiRequest(`payments?sale_id=eq.${id}`, { method: 'DELETE' }),
+        api.apiRequest(`installments?sale_id=eq.${id}`, { method: 'DELETE' }),
+        api.apiRequest(`kpr_disbursement?sale_id=eq.${id}`, { method: 'DELETE' }),
+        api.apiRequest(`deposits?sale_id=eq.${id}`, { method: 'DELETE' }),
+      ]);
       
       // 2. Delete the sale itself
       await api.delete('sales', id);
       
       // 3. Revert unit status to available
-      await api.update('units', unitId, { status: 'available' });
+      if (unitId) {
+        await api.update('units', unitId, { status: 'available' });
+      }
       
       await fetchSales();
+      alert('Transaksi berhasil dihapus');
     } catch (error) {
       console.error('Delete Sale Error:', error);
       alert('Gagal menghapus transaksi.');
