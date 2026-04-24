@@ -45,8 +45,8 @@ const Layout: React.FC = () => {
           </Button>
         </header>
 
-        <div className="flex-1 px-4 py-6 md:px-10 md:py-12 overflow-y-auto overflow-x-hidden transition-all duration-300 print:p-0 print:overflow-visible">
-          <div className="max-w-7xl mx-auto space-y-8 md:space-y-12 print:max-w-none print:space-y-0">
+        <div className="flex-1 px-4 py-6 md:px-6 md:py-12 overflow-y-auto overflow-x-hidden transition-all duration-300 print:p-0 print:overflow-visible">
+          <div className="max-w-[1600px] mx-auto space-y-8 md:space-y-12 print:max-w-none print:space-y-0">
             <Outlet />
           </div>
         </div>
