@@ -118,6 +118,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       path: '/marketing-master', 
       divisions: ['marketing'] 
     },
+    { 
+      name: 'Template Dokumen', 
+      icon: FileText, 
+      path: '/document-templates', 
+      divisions: ['marketing', 'audit'] 
+    },
 
     // Teknik Specific Menus
     { 
