@@ -103,13 +103,12 @@ const Sales: React.FC = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini? Unit akan kembali berstatus available.')) return;
     try {
       setLoading(true);
-      // 1. Delete ALL related records (Cascade Cleanup)
-      await Promise.allSettled([
-        api.apiRequest(`payments?sale_id=eq.${id}`, { method: 'DELETE' }),
-        api.apiRequest(`installments?sale_id=eq.${id}`, { method: 'DELETE' }),
-        api.apiRequest(`kpr_disbursement?sale_id=eq.${id}`, { method: 'DELETE' }),
-        api.apiRequest(`deposits?sale_id=eq.${id}`, { method: 'DELETE' }),
-      ]);
+      // 1. Delete ALL related records (Sequential for stability)
+      // We use sequential await to ensure DB consistency
+      await api.apiRequest(`payments?sale_id=eq.${id}`, { method: 'DELETE' });
+      await api.apiRequest(`installments?sale_id=eq.${id}`, { method: 'DELETE' });
+      await api.apiRequest(`kpr_disbursement?sale_id=eq.${id}`, { method: 'DELETE' });
+      await api.apiRequest(`deposits?sale_id=eq.${id}`, { method: 'DELETE' });
       
       // 2. Delete the sale itself
       await api.delete('sales', id);
@@ -121,9 +120,10 @@ const Sales: React.FC = () => {
       
       await fetchSales();
       alert('Transaksi berhasil dihapus');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Delete Sale Error:', error);
-      alert('Gagal menghapus transaksi.');
+      // Show detailed error to help pinpoint the blocking table
+      alert(`Gagal menghapus transaksi: ${error.message || 'Error tidak diketahui'}`);
     } finally {
       setLoading(false);
     }
