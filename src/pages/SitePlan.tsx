@@ -8,7 +8,9 @@ import {
   ZoomOut,
   RefreshCw,
   X,
-  Upload
+  Upload,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -29,6 +31,12 @@ const SitePlan = () => {
   const [scale, setScale] = useState(1);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [imgDims, setImgDims] = useState({ w: 1200, h: 900 });
+  
+  // Panning & Locking States
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isLocked, setIsLocked] = useState(true);
 
   const fetchInitialData = async () => {
     try {
@@ -57,6 +65,7 @@ const SitePlan = () => {
   const handleProjectChange = async (projectId: string) => {
     setSelectedProjectId(projectId);
     setLoading(true);
+    setOffset({ x: 0, y: 0 }); // Reset position on project change
     try {
       const unitData = await api.get('units', `project_id=eq.${projectId}`);
       setDbUnits(unitData || []);
@@ -66,6 +75,24 @@ const SitePlan = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (isLocked) return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || isLocked) return;
+    setOffset({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,11 +183,31 @@ const SitePlan = () => {
         </div>
 
         <div className="flex items-center gap-4">
+          <Button 
+            onClick={() => setIsLocked(!isLocked)}
+            className={cn(
+              "font-black uppercase text-[10px] tracking-widest px-6 h-11 rounded-2xl transition-all",
+              isLocked ? "bg-slate-800 text-slate-400 border border-white/5" : "bg-amber-600 text-white shadow-lg shadow-amber-600/20"
+            )}
+          >
+            {isLocked ? <Lock className="w-4 h-4 mr-2" /> : <Unlock className="w-4 h-4 mr-2" />}
+            {isLocked ? 'Locked' : 'Unlocked (Draggable)'}
+          </Button>
+          
           <div className="flex items-center bg-white/5 rounded-2xl p-1 border border-white/5">
              <button onClick={() => setScale(s => Math.max(s - 0.2, 0.5))} className="p-2 text-white/40 hover:text-white transition-colors"><ZoomOut className="w-5 h-5" /></button>
              <span className="px-4 text-white font-black text-xs min-w-[60px] text-center">{Math.round(scale * 100)}%</span>
              <button onClick={() => setScale(s => Math.min(s + 0.2, 3))} className="p-2 text-white/40 hover:text-white transition-colors"><ZoomIn className="w-5 h-5" /></button>
           </div>
+          
+          <Button 
+            onClick={() => { setScale(1); setOffset({ x: 0, y: 0 }); }} 
+            className="border-white/10 text-white font-black uppercase text-[10px] tracking-widest h-11 px-4 rounded-2xl"
+            variant="outline"
+          >
+             Reset View
+          </Button>
+          
           <Button 
             onClick={() => setIsUploadModalOpen(true)}
             className="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase text-[10px] tracking-widest h-11 px-6 rounded-2xl shadow-lg shadow-indigo-600/20"
@@ -172,12 +219,24 @@ const SitePlan = () => {
       </div>
 
       {/* Main Map Area */}
-      <div className="flex-1 relative overflow-hidden bg-[#0a0a0c] flex items-center justify-center p-4">
+      <div 
+        className="flex-1 relative overflow-hidden bg-[#0a0a0c] flex items-center justify-center p-4 select-none"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         {selectedProject?.site_plan_image_url ? (
           <div 
             key={selectedProject.site_plan_image_url}
-            className="relative cursor-grab active:cursor-grabbing transition-transform duration-300 w-full h-full flex items-center justify-center"
-            style={{ transform: `scale(${scale})` }}
+            className={cn(
+              "relative transition-transform duration-300 w-full h-full flex items-center justify-center",
+              !isLocked && (isDragging ? "cursor-grabbing" : "cursor-grab")
+            )}
+            style={{ 
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+              transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+            }}
           >
             <svg 
               viewBox={`0 0 ${imgDims.w} ${imgDims.h}`} 
