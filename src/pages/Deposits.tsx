@@ -119,7 +119,7 @@ const Deposits: React.FC = () => {
         payment_type: formData.payment_type,
         submission: formData.submission,
         marketing_id: formData.marketing_id || null,
-        // description: formData.description // Temporarily disabled: column missing in DB
+        description: formData.description
       };
       if (selectedDeposit) {
         await api.update('deposits', selectedDeposit.id, payload);
