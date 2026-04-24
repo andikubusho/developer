@@ -164,20 +164,24 @@ const SitePlan = () => {
       <div className="flex-1 relative overflow-hidden bg-[#0a0a0c] flex items-center justify-center p-4">
         {selectedProject?.site_plan_image_url ? (
           <div 
-            className="relative cursor-grab active:cursor-grabbing transition-transform duration-300"
+            key={selectedProject.site_plan_image_url}
+            className="relative cursor-grab active:cursor-grabbing transition-transform duration-300 w-full h-full flex items-center justify-center"
             style={{ transform: `scale(${scale})` }}
           >
             <svg 
               viewBox="0 0 1200 900" 
-              className="max-w-[90vw] max-h-[80vh] shadow-2xl rounded-xl overflow-hidden"
+              className="max-w-full max-h-full shadow-2xl rounded-xl overflow-hidden bg-[#111114]"
               preserveAspectRatio="xMidYMid meet"
+              style={{ width: '100%', height: 'auto', display: 'block' }}
             >
               {/* Background Image Tracing Reference */}
               <image 
                 href={selectedProject.site_plan_image_url} 
+                xlinkHref={selectedProject.site_plan_image_url}
                 width="1200" 
                 height="900" 
                 className="opacity-100"
+                preserveAspectRatio="xMidYMid slice"
               />
 
               {/* Hardcoded Unit Shapes */}
