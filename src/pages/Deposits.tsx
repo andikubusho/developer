@@ -26,13 +26,25 @@ const Deposits: React.FC = () => {
     amount: 0,
     payment_type: 'cash' as 'cash' | 'bank',
     submission: '',
-    description: ''
+    description: '',
+    marketing_id: ''
   });
+  const [staff, setStaff] = useState<any[]>([]);
 
   useEffect(() => {
     fetchDeposits();
     fetchLeads();
+    fetchStaff();
   }, []);
+
+  const fetchStaff = async () => {
+    try {
+      const data = await api.get('marketing_staff', 'select=id,name&order=name.asc');
+      setStaff(data || []);
+    } catch (err) {
+      console.error('Fetch Staff Failed:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedDeposit) {
@@ -43,7 +55,8 @@ const Deposits: React.FC = () => {
         amount: selectedDeposit.amount,
         payment_type: selectedDeposit.payment_type,
         submission: selectedDeposit.submission,
-        description: selectedDeposit.description || ''
+        description: selectedDeposit.description || '',
+        marketing_id: (selectedDeposit as any).marketing_id || ''
       });
     } else {
       setFormData({
@@ -53,7 +66,8 @@ const Deposits: React.FC = () => {
         amount: 0,
         payment_type: 'cash',
         submission: '',
-        description: ''
+        description: '',
+        marketing_id: ''
       });
     }
   }, [selectedDeposit, isModalOpen]);
@@ -70,7 +84,7 @@ const Deposits: React.FC = () => {
   const fetchDeposits = async () => {
     try {
       setLoading(true);
-      const data = await api.get('deposits', 'select=*&order=created_at.desc');
+      const data = await api.get('deposits', 'select=*,marketing:marketing_staff(name)&order=created_at.desc');
       setDeposits(data || []);
     } catch (error) {
       console.error('Error fetching deposits:', error);
@@ -104,6 +118,7 @@ const Deposits: React.FC = () => {
         amount: formData.amount,
         payment_type: formData.payment_type,
         submission: formData.submission,
+        marketing_id: formData.marketing_id || null,
         // description: formData.description // Temporarily disabled: column missing in DB
       };
       if (selectedDeposit) {
@@ -178,6 +193,7 @@ const Deposits: React.FC = () => {
                 <th className="px-6 py-3 font-semibold">Tanggal</th>
                 <th className="px-6 py-3 font-semibold">Nama</th>
                 <th className="px-6 py-3 font-semibold">No. Telp</th>
+                <th className="px-6 py-3 font-semibold">Marketing</th>
                 <th className="px-6 py-3 font-semibold">Nilai Titipan</th>
                 <th className="px-6 py-3 font-semibold">Metode</th>
                 <th className="px-6 py-3 font-semibold">Pengajuan</th>
@@ -195,6 +211,9 @@ const Deposits: React.FC = () => {
                     <td className="px-6 py-4 text-sm text-slate-600">{formatDate(d.date)}</td>
                     <td className="px-6 py-4 font-medium text-slate-900">{d.name}</td>
                     <td className="px-6 py-4 text-sm text-slate-600">{d.phone}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-indigo-600">
+                      {(d as any).marketing?.name || '-'}
+                    </td>
                     <td className="px-6 py-4 text-sm font-bold text-emerald-600">{formatCurrency(d.amount)}</td>
                     <td className="px-6 py-4">
                       <span className={cn(
@@ -228,6 +247,19 @@ const Deposits: React.FC = () => {
               <option value="">-- Pilih Konsumen --</option>
               {leads.map(l => (
                 <option key={l.id} value={l.id}>{l.name} ({l.phone})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Marketing</label>
+            <select 
+              className="w-full h-10 rounded-lg border border-slate-300 p-2 text-sm" 
+              value={formData.marketing_id}
+              onChange={(e) => setFormData({ ...formData, marketing_id: e.target.value })}
+            >
+              <option value="">-- Pilih Marketing --</option>
+              {staff.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
