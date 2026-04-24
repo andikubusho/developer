@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import DivisionSelection from './pages/DivisionSelection';
 import Login from './pages/Login';
 import MasterMaterial from './pages/MasterMaterial';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -86,76 +87,78 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<Dashboard />} />
-              <Route path="projects" element={<Projects />} />
-              <Route path="projects/:id" element={<ProjectDetail />} />
-              <Route path="units" element={<Units />} />
-              <Route path="sales" element={<Sales />} />
-              <Route path="customers" element={<Customers />} />
-              <Route path="payments" element={<Payments />} />
-              <Route path="materials" element={<Materials />} />
-              <Route path="purchase-orders" element={<PurchaseOrders />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="leads" element={<Leads />} />
-              <Route path="follow-ups" element={<FollowUps />} />
-              <Route path="deposits" element={<Deposits />} />
-              <Route path="promos" element={<Promos />} />
-              <Route path="price-list" element={<PriceList />} />
-              <Route path="site-plan" element={<SitePlan />} />
-              <Route path="floor-plan" element={<FloorPlan />} />
-              <Route path="master-material" element={<MasterMaterial />} />
-              <Route path="marketing-schedule" element={<MarketingSchedule />} />
-              <Route path="marketing-master" element={<MarketingMaster />} />
-              <Route path="document-templates" element={<DocumentTemplates />} />
+      <ErrorBoundary>
+        <Router>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
               
-              {/* Teknik */}
-              <Route path="rab" element={<RAB />} />
-              <Route path="rab/create" element={<ProtectedRoute><RABForm /></ProtectedRoute>} />
-              <Route path="construction-progress" element={<ConstructionProgress />} />
-              <Route path="purchase-requests" element={<PurchaseRequests />} />
-              <Route path="spk" element={<SPK />} />
-              <Route path="opname" element={<Opname />} />
-              <Route path="real-cost" element={<RealCost />} />
-              
-              {/* Keuangan */}
-              <Route path="kpr-disbursement" element={<KPRDisbursement />} />
-              <Route path="supplier-payments" element={<SupplierPayments />} />
-              <Route path="cash-flow" element={<CashFlow />} />
-              <Route path="petty-cash" element={<PettyCash />} />
-              
-              {/* Accounting */}
-              <Route path="general-journal" element={<GeneralJournal />} />
-              <Route path="ledger" element={<Ledger />} />
-              <Route path="financial-reports" element={<FinancialReports />} />
-              <Route path="taxation" element={<Taxation />} />
-              
-              {/* HRD */}
-              <Route path="employees" element={<Employees />} />
-              <Route path="attendance" element={<Attendance />} />
-              <Route path="payroll" element={<Payroll />} />
-              <Route path="recruitment" element={<Recruitment />} />
-              
-              {/* Audit */}
-              <Route path="audit-transactions" element={<AuditTransactions />} />
-              <Route path="audit-stock" element={<AuditStock />} />
-              <Route path="audit-costs" element={<AuditCosts />} />
-              <Route path="user-management" element={<UserManagement />} />
-              
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
-        </Suspense>
-      </Router>
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<Dashboard />} />
+                <Route path="projects" element={<Projects />} />
+                <Route path="projects/:id" element={<ProjectDetail />} />
+                <Route path="units" element={<Units />} />
+                <Route path="sales" element={<Sales />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="payments" element={<Payments />} />
+                <Route path="materials" element={<Materials />} />
+                <Route path="purchase-orders" element={<PurchaseOrders />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="leads" element={<Leads />} />
+                <Route path="follow-ups" element={<FollowUps />} />
+                <Route path="deposits" element={<Deposits />} />
+                <Route path="promos" element={<Promos />} />
+                <Route path="price-list" element={<PriceList />} />
+                <Route path="site-plan" element={<SitePlan />} />
+                <Route path="floor-plan" element={<FloorPlan />} />
+                <Route path="master-material" element={<MasterMaterial />} />
+                <Route path="marketing-schedule" element={<MarketingSchedule />} />
+                <Route path="marketing-master" element={<MarketingMaster />} />
+                <Route path="document-templates" element={<DocumentTemplates />} />
+                
+                {/* Teknik */}
+                <Route path="rab" element={<RAB />} />
+                <Route path="rab/create" element={<ProtectedRoute><RABForm /></ProtectedRoute>} />
+                <Route path="construction-progress" element={<ConstructionProgress />} />
+                <Route path="purchase-requests" element={<PurchaseRequests />} />
+                <Route path="spk" element={<SPK />} />
+                <Route path="opname" element={<Opname />} />
+                <Route path="real-cost" element={<RealCost />} />
+                
+                {/* Keuangan */}
+                <Route path="kpr-disbursement" element={<KPRDisbursement />} />
+                <Route path="supplier-payments" element={<SupplierPayments />} />
+                <Route path="cash-flow" element={<CashFlow />} />
+                <Route path="petty-cash" element={<PettyCash />} />
+                
+                {/* Accounting */}
+                <Route path="general-journal" element={<GeneralJournal />} />
+                <Route path="ledger" element={<Ledger />} />
+                <Route path="financial-reports" element={<FinancialReports />} />
+                <Route path="taxation" element={<Taxation />} />
+                
+                {/* HRD */}
+                <Route path="employees" element={<Employees />} />
+                <Route path="attendance" element={<Attendance />} />
+                <Route path="payroll" element={<Payroll />} />
+                <Route path="recruitment" element={<Recruitment />} />
+                
+                {/* Audit */}
+                <Route path="audit-transactions" element={<AuditTransactions />} />
+                <Route path="audit-stock" element={<AuditStock />} />
+                <Route path="audit-costs" element={<AuditCosts />} />
+                <Route path="user-management" element={<UserManagement />} />
+                
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            </Routes>
+          </Suspense>
+        </Router>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }
