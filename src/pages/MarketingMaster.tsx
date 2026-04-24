@@ -42,10 +42,15 @@ const MarketingMaster: React.FC = () => {
     e.preventDefault();
     try {
       setLoading(true);
+      const payload = {
+        name: formData.name,
+        phone: formData.phone,
+        // address: formData.address // Temporarily disabled: address column missing in DB
+      };
       if (selectedStaff) {
-        await api.update('marketing_staff', selectedStaff.id, formData);
+        await api.update('marketing_staff', selectedStaff.id, payload);
       } else {
-        await api.insert('marketing_staff', formData);
+        await api.insert('marketing_staff', payload);
       }
       await fetchStaff();
       setIsModalOpen(false);
