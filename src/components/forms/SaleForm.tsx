@@ -86,7 +86,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
           api.get('units', 'select=id,unit_number,price,project_id,status&status=eq.available'),
           api.get('customers', 'select=id,full_name'),
           api.get('leads', 'select=id,name'),
-          api.get('profiles', 'select=id,full_name'), // Keep profiles for other potential uses if needed, or remove if unused
           api.get('marketing_staff', 'select=id,name'),
           api.get('promos', 'select=id,name,value')
         ]);
