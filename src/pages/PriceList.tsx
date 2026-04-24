@@ -171,6 +171,18 @@ const PriceList: React.FC = () => {
   };
 
   const handleSubmitItem = async (data: any) => {
+    // Check for duplicates (Blok and Unit must be unique within the project)
+    const isDuplicate = priceItems.some(item => 
+      item.blok.toLowerCase() === data.blok.toLowerCase() && 
+      item.unit.toLowerCase() === data.unit.toLowerCase() &&
+      (!editingItem || item.id !== editingItem.id)
+    );
+
+    if (isDuplicate) {
+      alert(`PERINGATAN: Unit dengan Blok "${data.blok}" dan Nomor "${data.unit}" sudah ada dalam Price List. Gunakan Blok/Unit lain atau edit data yang sudah ada.`);
+      return;
+    }
+
     try {
       setLoading(true);
       const payload = { project_id: selectedProjectId, ...data };
