@@ -7,7 +7,10 @@ import {
   ZoomOut,
   RefreshCw,
   Upload,
-  Maximize2
+  Maximize2,
+  Lock,
+  Unlock,
+  Save
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -22,6 +25,7 @@ const SitePlan = () => {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isLocked, setIsLocked] = useState(true);
 
   const fetchInitialData = async () => {
     try {
@@ -32,6 +36,13 @@ const SitePlan = () => {
       if (projData && projData.length > 0) {
         const gcProj = projData.find((p: Project) => p.name.toLowerCase().includes('golden canyon')) || projData[0];
         setSelectedProjectId(gcProj.id);
+        
+        // Load saved config
+        if (gcProj.settings?.site_plan_config) {
+          const config = gcProj.settings.site_plan_config;
+          setOffset(config.offset || { x: 0, y: 0 });
+          setScale(config.scale || 1);
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -46,17 +57,25 @@ const SitePlan = () => {
 
   const handleProjectChange = (projectId: string) => {
     setSelectedProjectId(projectId);
-    setOffset({ x: 0, y: 0 });
-    setScale(1);
+    const proj = projects.find(p => p.id === projectId);
+    if (proj?.settings?.site_plan_config) {
+      const config = proj.settings.site_plan_config;
+      setOffset(config.offset || { x: 0, y: 0 });
+      setScale(config.scale || 1);
+    } else {
+      setOffset({ x: 0, y: 0 });
+      setScale(1);
+    }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isLocked) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDragging || isLocked) return;
     setOffset({
       x: e.clientX - dragStart.x,
       y: e.clientY - dragStart.y
@@ -64,6 +83,32 @@ const SitePlan = () => {
   };
 
   const handleMouseUp = () => setIsDragging(false);
+
+  const handleSaveConfig = async () => {
+    try {
+      setLoading(true);
+      const proj = projects.find(p => p.id === selectedProjectId);
+      if (!proj) return;
+
+      const updatedSettings = {
+        ...(proj.settings || {}),
+        site_plan_config: { offset, scale }
+      };
+
+      await api.update('projects', selectedProjectId, { settings: updatedSettings });
+      
+      const updatedProjects = projects.map(p => 
+        p.id === selectedProjectId ? { ...p, settings: updatedSettings } : p
+      );
+      setProjects(updatedProjects);
+      setIsLocked(true);
+      alert('Posisi site plan berhasil disimpan!');
+    } catch (error: any) {
+      alert(`Gagal menyimpan posisi: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -104,30 +149,48 @@ const SitePlan = () => {
         <div className="flex items-center gap-10">
            <div className="flex flex-col">
               <span className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-1">Project View</span>
-              <select 
-                value={selectedProjectId}
-                onChange={(e) => handleProjectChange(e.target.value)}
-                className="bg-transparent text-white font-black text-xl focus:outline-none cursor-pointer appearance-none"
-              >
-                {projects.map(p => <option key={p.id} value={p.id} className="bg-slate-900 text-white">{p.name}</option>)}
-              </select>
+              <div className="flex items-center gap-4">
+                <select 
+                  value={selectedProjectId}
+                  onChange={(e) => handleProjectChange(e.target.value)}
+                  className="bg-transparent text-white font-black text-xl focus:outline-none cursor-pointer appearance-none min-w-[200px]"
+                >
+                  {projects.map(p => <option key={p.id} value={p.id} className="bg-slate-900 text-white">{p.name}</option>)}
+                </select>
+                <ImageIcon className="text-indigo-400 w-5 h-5 opacity-50" />
+              </div>
            </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/5 rounded-2xl p-1 border border-white/10">
-             <button onClick={() => setScale(s => Math.max(s - 0.2, 0.1))} className="p-3 text-white/40 hover:text-white transition-colors"><ZoomOut className="w-5 h-5" /></button>
+          <div className="flex items-center bg-white/5 rounded-2xl p-1 border border-white/10 mr-4">
+             <button onClick={() => setScale(s => Math.max(s - 0.1, 0.1))} className="p-3 text-white/40 hover:text-white transition-colors"><ZoomOut className="w-5 h-5" /></button>
              <span className="px-4 text-white font-black text-xs min-w-[60px] text-center">{Math.round(scale * 100)}%</span>
              <button onClick={() => setScale(s => Math.min(s + 0.5, 5))} className="p-3 text-white/40 hover:text-white transition-colors"><ZoomIn className="w-5 h-5" /></button>
           </div>
 
           <Button 
-            onClick={() => { setScale(1); setOffset({ x: 0, y: 0 }); }} 
-            className="bg-white/5 hover:bg-white/10 text-white border-white/10 font-black uppercase text-[10px] tracking-[0.2em] h-12 px-6 rounded-2xl"
-            variant="outline"
+            onClick={() => setIsLocked(!isLocked)}
+            className={cn(
+              "font-black uppercase text-[10px] tracking-[0.2em] px-6 h-12 rounded-2xl transition-all",
+              isLocked 
+                ? "bg-white/5 text-white/50 border border-white/10" 
+                : "bg-amber-500 text-white shadow-lg shadow-amber-500/20"
+            )}
           >
-             Reset View
+            {isLocked ? <Lock className="w-4 h-4 mr-2" /> : <Unlock className="w-4 h-4 mr-2" />}
+            {isLocked ? 'KUNCI' : 'GESER AKTIF'}
           </Button>
+
+          {!isLocked && (
+            <Button 
+              onClick={handleSaveConfig}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-[10px] tracking-[0.2em] h-12 px-6 rounded-2xl shadow-xl shadow-emerald-600/20"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Simpan Posisi
+            </Button>
+          )}
 
           <Button 
             onClick={() => setIsUploadModalOpen(true)}
@@ -153,7 +216,7 @@ const SitePlan = () => {
           <div 
             className={cn(
               "relative transition-all duration-300 flex items-center justify-center",
-              isDragging ? "cursor-grabbing" : "cursor-grab"
+              !isLocked && (isDragging ? "cursor-grabbing" : "cursor-grab")
             )}
             style={{ 
               transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
@@ -182,9 +245,13 @@ const SitePlan = () => {
         {/* Cinematic Overlays */}
         <div className="absolute bottom-10 left-10 p-6 rounded-3xl bg-slate-900/40 backdrop-blur-md border border-white/5 flex items-center gap-6 pointer-events-none">
            <div className="flex flex-col">
-              <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Navigation</span>
+              <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Status View</span>
               <span className="text-[10px] font-bold text-white/60 mt-1 flex items-center gap-2">
-                 <Maximize2 className="w-3 h-3" /> Scroll to Zoom • Drag to Pan
+                 {isLocked ? (
+                   <><Lock className="w-3 h-3" /> Tampilan Terkunci</>
+                 ) : (
+                   <><Unlock className="w-3 h-3 text-amber-400" /> Mode Penyesuaian Aktif</>
+                 )}
               </span>
            </div>
         </div>
