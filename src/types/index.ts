@@ -347,6 +347,7 @@ export interface Material {
   unit: string;
   stock: number;
   min_stock: number;
+  specification?: string;
 }
 
 export interface PurchaseOrder {

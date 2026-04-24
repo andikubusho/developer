@@ -32,7 +32,8 @@ const MasterMaterial: React.FC = () => {
     unit: '',
     stock: 0,
     min_stock: 10,
-    unit_price: 0
+    unit_price: 0,
+    specification: ''
   });
 
   const fetchMaterials = async () => {
@@ -62,7 +63,7 @@ const MasterMaterial: React.FC = () => {
       }
       setIsModalOpen(false);
       setEditingMaterial(null);
-      setForm({ name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0 });
+      setForm({ name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' });
       fetchMaterials();
     } catch (error) {
       console.error('Error saving material:', error);
@@ -164,6 +165,7 @@ const MasterMaterial: React.FC = () => {
             <THead>
               <TR isHoverable={false}>
                 <TH>Nama Material</TH>
+                <TH>Spesifikasi</TH>
                 <TH>Satuan</TH>
                 <TH>Harga Satuan</TH>
                 <TH>Stok</TH>
@@ -187,6 +189,7 @@ const MasterMaterial: React.FC = () => {
                 return (
                   <TR key={m.id}>
                     <TD className="font-black text-slate-900">{m.name}</TD>
+                    <TD className="text-[10px] text-slate-500 font-medium max-w-[200px] truncate">{m.specification || '-'}</TD>
                     <TD><span className="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest">{m.unit}</span></TD>
                     <TD className="font-bold text-slate-600">{formatCurrency((m as any).unit_price || 0)}</TD>
                     <TD className="font-black text-slate-900">{formatNumber(m.stock)}</TD>
@@ -199,7 +202,7 @@ const MasterMaterial: React.FC = () => {
                     <TD className="text-right font-black text-slate-900">{formatCurrency(totalValue)}</TD>
                     <TD className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => { setEditingMaterial(m); setForm({ name: m.name, unit: m.unit, stock: m.stock, min_stock: m.min_stock, unit_price: (m as any).unit_price || 0 }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-slate-100">
+                        <Button variant="ghost" size="sm" onClick={() => { setEditingMaterial(m); setForm({ name: m.name, unit: m.unit, stock: m.stock, min_stock: m.min_stock, unit_price: (m as any).unit_price || 0, specification: m.specification || '' }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-slate-100">
                           <Pencil className="w-4 h-4 text-indigo-600" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(m.id)} className="h-9 w-9 p-0 rounded-xl hover:bg-rose-50">
@@ -273,6 +276,15 @@ const MasterMaterial: React.FC = () => {
                 value={form.min_stock}
                 onChange={(e) => setForm({ ...form, min_stock: Number(e.target.value) })}
                 required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Spesifikasi Detail</label>
+              <textarea 
+                className="w-full h-24 bg-slate-50 border-none rounded-xl p-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
+                placeholder="Contoh: Ukuran, Merk, Standar SNI, dll."
+                value={form.specification}
+                onChange={(e) => setForm({ ...form, specification: e.target.value })}
               />
             </div>
           </div>
