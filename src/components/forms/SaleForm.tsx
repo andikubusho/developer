@@ -61,6 +61,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
     resolver: zodResolver(saleSchema),
     defaultValues: initialData ? {
       ...initialData,
+      customer_id: initialData.customer_id || initialData.customer?.id,
+      unit_id: initialData.unit_id || initialData.unit?.id,
+      project_id: initialData.project_id || initialData.unit?.project_id,
+      marketing_id: initialData.marketing_id || initialData.marketing?.id,
+      promo_id: initialData.promo_id || initialData.promo?.id,
       installments: initialData.installments || []
     } : {
       sale_date: new Date().toISOString().split('T')[0],
@@ -72,7 +77,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       final_price: 0,
       booking_fee: 0,
       installments: [],
-    },
+    }
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "installments" });

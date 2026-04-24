@@ -153,6 +153,7 @@ export interface PriceListItem {
 export interface Sale {
   id: string;
   unit_id: string;
+  project_id?: string;
   customer_id: string;
   marketing_id: string;
   supervisor?: string;
