@@ -241,7 +241,7 @@ const PurchaseRequests: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
             <div className="space-y-1.5">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center gap-2">
-                <Building2 className="w-3 h-3 text-indigo-500" /> Pilih Proyek
+                <Building2 className="w-3 h-3 text-indigo-500" /> Pilih Daftar Proyek
               </label>
               <select 
                 className="w-full h-12 bg-white border border-slate-200 rounded-xl px-4 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-sm"
@@ -249,14 +249,14 @@ const PurchaseRequests: React.FC = () => {
                 onChange={(e) => setForm({ ...form, project_id: e.target.value, unit_id: '' })}
                 required
               >
-                <option value="">Pilih Proyek...</option>
+                <option value="">Pilih Proyek dari Daftar Proyek...</option>
                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center gap-2">
-                <Home className="w-3 h-3 text-indigo-500" /> Pilih Unit (Opsional)
+                <Home className="w-3 h-3 text-indigo-500" /> Pilih Unit Properti (Opsional)
               </label>
               <select 
                 className="w-full h-12 bg-white border border-slate-200 rounded-xl px-4 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-sm disabled:opacity-50"
@@ -264,7 +264,7 @@ const PurchaseRequests: React.FC = () => {
                 onChange={(e) => setForm({ ...form, unit_id: e.target.value })}
                 disabled={!form.project_id}
               >
-                <option value="">Gudang Utama / Umum</option>
+                <option value="">Pilih Unit dari Unit Properti...</option>
                 {projectUnits.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
