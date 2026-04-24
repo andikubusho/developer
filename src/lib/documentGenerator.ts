@@ -8,17 +8,28 @@ import { formatCurrency } from "./utils";
 const terbilang = (nilai: number): string => {
   const bilangan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
   let hasil = "";
-  if (nilai < 12) hasil = " " + bilangan[nilai];
-  else if (nilai < 20) hasil = terbilang(nilai - 10) + " Belas";
-  else if (nilai < 100) hasil = terbilang(Math.floor(nilai / 10)) + " Puluh" + terbilang(nilai % 10);
-  else if (nilai < 200) hasil = " Seratus" + terbilang(nilai - 100);
-  else if (nilai < 1000) hasil = terbilang(Math.floor(nilai / 100)) + " Ratus" + terbilang(nilai % 100);
-  else if (nilai < 2000) hasil = " Seribu" + terbilang(nilai - 1000);
-  else if (nilai < 1000000) hasil = terbilang(Math.floor(nilai / 1000)) + " Ribu" + terbilang(nilai % 1000);
-  else if (nilai < 1000000000) hasil = terbilang(Math.floor(nilai / 1000000)) + " Juta" + terbilang(nilai % 1000000);
-  else if (nilai < 1000000000000) hasil = terbilang(Math.floor(nilai / 1000000000)) + " Miliar" + terbilang(nilai % 1000000000);
-  else if (nilai < 1000000000000000) hasil = terbilang(Math.floor(nilai / 1000000000000)) + " Triliun" + terbilang(nilai % 1000000000000);
-  return hasil.replace(/\s+/g, ' ').trim();
+  if (nilai < 12) {
+    hasil = bilangan[nilai];
+  } else if (nilai < 20) {
+    hasil = terbilang(nilai - 10) + " Belas";
+  } else if (nilai < 100) {
+    hasil = terbilang(Math.floor(nilai / 10)) + " Puluh " + terbilang(nilai % 10);
+  } else if (nilai < 200) {
+    hasil = "Seratus " + terbilang(nilai - 100);
+  } else if (nilai < 1000) {
+    hasil = terbilang(Math.floor(nilai / 100)) + " Ratus " + terbilang(nilai % 100);
+  } else if (nilai < 2000) {
+    hasil = "Seribu " + terbilang(nilai - 1000);
+  } else if (nilai < 1000000) {
+    hasil = terbilang(Math.floor(nilai / 1000)) + " Ribu " + terbilang(nilai % 1000);
+  } else if (nilai < 1000000000) {
+    hasil = terbilang(Math.floor(nilai / 1000000)) + " Juta " + terbilang(nilai % 1000000);
+  } else if (nilai < 1000000000000) {
+    hasil = terbilang(Math.floor(nilai / 1000000000)) + " Miliar " + terbilang(nilai % 1000000000);
+  } else if (nilai < 1000000000000000) {
+    hasil = terbilang(Math.floor(nilai / 1000000000000)) + " Triliun " + terbilang(nilai % 1000000000000);
+  }
+  return hasil.trim().replace(/\s+/g, ' ');
 };
 
 export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filename: string) => {
