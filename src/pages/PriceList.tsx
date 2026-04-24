@@ -136,6 +136,64 @@ const PriceList: React.FC = () => {
     return result;
   };
 
+  const handleDeleteItem = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus unit ini?')) return;
+    try {
+      setLoading(true);
+      await api.delete('price_list_items', id);
+      await fetchPriceItems();
+    } catch (error: any) {
+      console.error('Error deleting item:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMassUpdate = async () => {
+    if (!confirm(`Update harga ${selectedItems.length} unit?`)) return;
+    try {
+      setLoading(true);
+      for (const id of selectedItems) {
+        const item = priceItems.find(i => i.id === id);
+        if (item) {
+          const newPrice = Math.round(item.harga_jual * (1 + updatePercent / 100));
+          await api.update('price_list_items', id, { harga_jual: newPrice });
+        }
+      }
+      await fetchPriceItems();
+      setIsUpdateModalOpen(false);
+      setSelectedItems([]);
+    } catch (error: any) {
+      console.error('Mass update error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitItem = async (data: any) => {
+    try {
+      setLoading(true);
+      const payload = { project_id: selectedProjectId, ...data };
+      if (editingItem) {
+        await api.update('price_list_items', editingItem.id, payload);
+      } else {
+        await api.insert('price_list_items', {
+          ...payload,
+          unit_id: `unit-${data.blok.toLowerCase()}-${data.unit.toLowerCase()}-${Math.random().toString(36).substr(2, 4)}`,
+          status: 'available'
+        });
+      }
+      await fetchPriceItems();
+      setIsItemModalOpen(false);
+      setEditingItem(null);
+    } catch (error: any) {
+      console.error('Error saving item:', error);
+      alert(`Gagal menyimpan: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div id="price-list-container" className="space-y-6 print:p-0 print:m-0">
       
@@ -343,13 +401,13 @@ const PriceList: React.FC = () => {
       </div>
 
       <Modal isOpen={isItemModalOpen} onClose={() => { setIsItemModalOpen(false); setEditingItem(null); }} title={editingItem ? "Edit Unit" : "Tambah Unit Baru"}>
-        <PriceItemForm initialData={editingItem || undefined} availableTypes={Array.from(new Set(priceItems.map(i => i.tipe))).filter(Boolean)} projectId={selectedProjectId} onSubmit={async (data) => { try { setLoading(true); const payload = { project_id: selectedProjectId, ...data }; if (editingItem) { await api.update('price_list_items', editingItem.id, payload); } else { await api.insert('price_list_items', { ...payload, status: 'available', unit_id: `unit-${Math.random().toString(36).substr(2, 4)}` }); } await fetchPriceItems(); setIsItemModalOpen(false); setEditingItem(null); } catch (error) { console.error(error); } finally { setLoading(false); } }} onCancel={() => { setIsItemModalOpen(false); setEditingItem(null); }} loading={loading} />
+        <PriceItemForm initialData={editingItem || undefined} availableTypes={Array.from(new Set(priceItems.map(i => i.tipe))).filter(Boolean)} projectId={selectedProjectId} onSubmit={handleSubmitItem} onCancel={() => { setIsItemModalOpen(false); setEditingItem(null); }} loading={loading} />
       </Modal>
 
       <Modal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} title="Update Harga Massal">
         <div className="p-6 space-y-4">
           <Input type="number" label="Persentase Kenaikan (%)" value={updatePercent} onChange={(e) => setUpdatePercent(parseFloat(e.target.value) || 0)} />
-          <Button onClick={() => alert('Update applied')} className="w-full bg-indigo-600 mt-4">Apply Update</Button>
+          <Button onClick={handleMassUpdate} className="w-full bg-indigo-600 mt-4">Apply Update</Button>
         </div>
       </Modal>
     </div>
