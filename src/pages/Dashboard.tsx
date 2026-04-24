@@ -135,7 +135,7 @@ const Dashboard: React.FC = () => {
                 
                 <div className="mt-auto w-full">
                   <input type="file" id={`dash-upload-${form.id}`} className="hidden" accept={`.${form.type}`} onChange={(e) => handleFileUpload(e, form.id, form.name, form.type)} />
-                  <label htmlFor={`dash-upload-${form.id}`}>
+                  <label htmlFor={`dash-upload-${form.id}`} className="block w-full">
                     <Button as="span" variant={isUploaded ? "outline" : "primary"} className="w-full rounded-2xl font-bold cursor-pointer h-14 shadow-sm" isLoading={isUploading}>
                       {isUploaded ? <><CheckCircle2 className="w-4 h-4 mr-2" /> Ganti File</> : <><Upload className="w-4 h-4 mr-2" /> Unggah Sekarang</>}
                     </Button>

@@ -1,10 +1,11 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement | HTMLSpanElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
+  as?: 'button' | 'span' | 'div';
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -14,6 +15,7 @@ export const Button: React.FC<ButtonProps> = ({
   isLoading,
   children,
   disabled,
+  as = 'button',
   ...props
 }) => {
   const variants = {
@@ -30,15 +32,17 @@ export const Button: React.FC<ButtonProps> = ({
     lg: 'px-8 py-4 text-base',
   };
 
+  const Component = as as any;
+
   return (
-    <button
+    <Component
       className={cn(
         'inline-flex items-center justify-center rounded-xl font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none',
         variants[variant],
         sizes[size],
         className
       )}
-      disabled={disabled || isLoading}
+      disabled={Component === 'button' ? (disabled || isLoading) : undefined}
       {...props}
     >
       {isLoading ? (
@@ -48,6 +52,6 @@ export const Button: React.FC<ButtonProps> = ({
         </svg>
       ) : null}
       {children}
-    </button>
+    </Component>
   );
 };
