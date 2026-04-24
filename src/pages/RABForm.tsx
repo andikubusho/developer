@@ -73,11 +73,8 @@ const getIndexLabel = (level: number, index: number): string => {
 
 const calculateNodeTotal = (node: RABNode): number => {
   if (node.level === 3) {
-    const parent = findParentInTree(globalTree, node.parent_id); // This is tricky in recursive, better pass parent volume
-    // But per request: total_material = jumlah_material * harga_rab
-    // jumlah_material = volume_item_level2 * koeff
-    // We'll calculate it differently to avoid global dependency:
-    return 0; // Handled by specialized function
+    // Level 3 total is handled in useMemo calculation
+    return 0;
   }
   return node.children.reduce((sum, child) => sum + calculateNodeTotal(child), 0);
 };
