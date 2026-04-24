@@ -186,6 +186,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       path: '/real-cost', 
       divisions: ['teknik', 'audit'] 
     },
+    { 
+      name: 'Master Material', 
+      icon: Package, 
+      path: '/master-material', 
+      divisions: ['teknik', 'audit'] 
+    },
 
     // Keuangan Specific Menus
     { 

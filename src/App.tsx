@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import DivisionSelection from './pages/DivisionSelection';
 import Login from './pages/Login';
+import MasterMaterial from './pages/MasterMaterial';
 
 // Lazy load pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -26,6 +27,7 @@ const FloorPlan = lazy(() => import('./pages/FloorPlan'));
 const MarketingSchedule = lazy(() => import('./pages/MarketingSchedule'));
 const MarketingMaster = lazy(() => import('./pages/MarketingMaster'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
+const DocumentTemplates = lazy(() => import('./pages/DocumentTemplates'));
 
 // Teknik
 const RAB = lazy(() => import('./pages/RAB'));
@@ -110,8 +112,10 @@ export default function App() {
               <Route path="price-list" element={<PriceList />} />
               <Route path="site-plan" element={<SitePlan />} />
               <Route path="floor-plan" element={<FloorPlan />} />
+              <Route path="master-material" element={<MasterMaterial />} />
               <Route path="marketing-schedule" element={<MarketingSchedule />} />
               <Route path="marketing-master" element={<MarketingMaster />} />
+              <Route path="document-templates" element={<DocumentTemplates />} />
               
               {/* Teknik */}
               <Route path="rab" element={<RAB />} />
