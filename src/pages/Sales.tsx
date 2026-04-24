@@ -144,9 +144,9 @@ const Sales: React.FC = () => {
 
       await generateWordDocument(selectedSale, blob, `${template.name}_${selectedSale.customer?.full_name}`);
       setIsPrintModalOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Document generation error:', error);
-      alert('Gagal membuat dokumen. Periksa konsol untuk detailnya.');
+      alert(`Gagal membuat dokumen: ${error.message || 'Periksa konsol untuk detailnya'}`);
     }
   };
 
