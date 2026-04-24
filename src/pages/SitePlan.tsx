@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '@/src/lib/api';
-import { Project, Unit } from '@/src/types';
+import { api } from '@/lib/api';
+import { Project, Unit } from '@/types';
 import { 
   ChevronDown, 
   Image as ImageIcon,
@@ -9,8 +9,8 @@ import {
   RefreshCw,
   X
 } from 'lucide-react';
-import { Button } from '@/src/components/ui/Button';
-import { cn } from '@/src/lib/utils';
+import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 
 // Hardcoded Mapping Data for Golden Canyon
 // This follows the 1200x900 coordinate system
