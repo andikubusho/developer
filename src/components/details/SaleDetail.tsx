@@ -75,6 +75,8 @@ export const SaleDetail: React.FC<SaleDetailProps> = ({ sale }) => {
         <DataField label="Total Harga" value={sale.total_price} isCurrency />
         <DataField label="Booking Fee" value={sale.booking_fee} isCurrency />
         <DataField label="Tgl Booking Fee" value={sale.booking_fee_date} />
+        <DataField label="Down Payment (DP)" value={sale.dp_amount} isCurrency />
+        <DataField label="Tgl Down Payment" value={sale.dp_date} />
       </DetailSection>
 
       {/* INSTALLMENTS IF ANY */}

@@ -84,6 +84,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       total_price: 0,
       final_price: 0,
       booking_fee: 0,
+      dp_amount: 0,
+      dp_date: new Date().toISOString().split('T')[0],
       installments: [],
     }
   });
@@ -441,29 +443,51 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-4">
+            <Controller
+              name="booking_fee"
+              control={control}
+              render={({ field }) => (
+                <CurrencyInput label="Nilai Booking Fee" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} error={errors.booking_fee?.message} />
+              )}
+            />
+            <Input label="Tanggal Booking Fee" type="date" {...register('booking_fee_date')} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-4">
             <div className="space-y-2">
               <Controller
-                name="booking_fee"
+                name="dp_amount"
                 control={control}
                 render={({ field }) => (
-                  <CurrencyInput label="Nilai Booking Fee" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} error={errors.booking_fee?.message} />
+                  <CurrencyInput 
+                    label="Nilai DP (Down Payment)" 
+                    value={field.value} 
+                    onValueChange={(v) => field.onChange(v.floatValue || 0)} 
+                    error={errors.dp_amount?.message} 
+                    placeholder="Masukkan nilai DP"
+                  />
                 )}
               />
-              {watch('booking_fee') > 0 && (
+              {(watch('booking_fee') > 0 || watch('dp_amount') > 0) && (
                 <div className="p-4 bg-indigo-50 border-2 border-indigo-200 rounded-xl shadow-sm">
-                  <p className="text-xs font-bold text-indigo-600 uppercase mb-2 flex items-center gap-2"><Calendar className="w-3 h-3" /> Panduan Sisa</p>
+                  <p className="text-xs font-bold text-indigo-600 uppercase mb-2 flex items-center gap-2"><Calendar className="w-3 h-3" /> Panduan Sisa Pembayaran</p>
                   <div className="space-y-1 text-sm">
-                    <div className="flex justify-between"><span>Total:</span><span>{formatCurrency(watch('final_price'))}</span></div>
-                    <div className="flex justify-between text-red-600"><span>Booking:</span><span>-{formatCurrency(watch('booking_fee'))}</span></div>
+                    <div className="flex justify-between"><span>Total Harga Akhir:</span><span>{formatCurrency(watch('final_price'))}</span></div>
+                    {watch('booking_fee') > 0 && (
+                      <div className="flex justify-between text-red-600"><span>Booking Fee:</span><span>-{formatCurrency(watch('booking_fee'))}</span></div>
+                    )}
+                    {watch('dp_amount') > 0 && (
+                      <div className="flex justify-between text-red-600"><span>DP (Down Payment):</span><span>-{formatCurrency(watch('dp_amount'))}</span></div>
+                    )}
                     <div className="pt-2 border-t border-indigo-200 flex justify-between font-bold text-indigo-700">
-                      <span>Sisa:</span>
-                      <span>{formatCurrency(Math.max(0, watch('final_price') - watch('booking_fee')))}</span>
+                      <span>Sisa Piutang:</span>
+                      <span>{formatCurrency(Math.max(0, watch('final_price') - (watch('booking_fee') || 0) - (watch('dp_amount') || 0)))}</span>
                     </div>
                   </div>
                 </div>
               )}
             </div>
-            <Input label="Tanggal Booking Fee" type="date" {...register('booking_fee_date')} />
+            <Input label="Tanggal DP" type="date" {...register('dp_date')} />
           </div>
 
           {watchPaymentMethod === 'installment' && (
