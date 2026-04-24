@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import DivisionSelection from './pages/DivisionSelection';
 import Login from './pages/Login';
+import MasterMaterial from './pages/MasterMaterial';
 
 // Lazy load pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -23,7 +24,6 @@ const Promos = lazy(() => import('./pages/Promos'));
 const PriceList = lazy(() => import('./pages/PriceList'));
 const SitePlan = lazy(() => import('./pages/SitePlan'));
 const FloorPlan = lazy(() => import('./pages/FloorPlan'));
-const MasterMaterial = lazy(() => import('./pages/MasterMaterial'));
 const MarketingSchedule = lazy(() => import('./pages/MarketingSchedule'));
 const MarketingMaster = lazy(() => import('./pages/MarketingMaster'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
