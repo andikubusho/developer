@@ -47,7 +47,7 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
     const fetchProjectUnits = async () => {
       try {
         setFetchingUnits(true);
-        const data = await api.get('units', `project_id=eq.${projectId}&order=unit_number.asc`);
+        const data = await api.get('units', `select=*&project_id=eq.${projectId}&order=unit_number.asc`);
         setUnits(data || []);
       } catch (err) {
         console.error('Error fetching units:', err);
