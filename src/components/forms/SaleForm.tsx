@@ -191,7 +191,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           status: p.status
         }));
 
-        const finalUnits = [...processedUnits, ...orphans].filter(unit => unit.status === 'available');
+        const finalUnits = [...processedUnits, ...orphans].filter(unit => 
+          unit.status === 'available' || (initialData && unit.id === (initialData.unit_id || initialData.unit?.id))
+        );
 
         setProjects(projectsData);
         setUnits(finalUnits);
