@@ -24,45 +24,66 @@ const TaxationPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [formData, setFormData] = useState({
+    date: new Date().toISOString().split('T')[0],
+    type: 'PPN' as const,
+    description: '',
+    amount: 0,
+    due_date: '',
+    status: 'unpaid' as const
+  });
+
   useEffect(() => {
     fetchTaxRecords();
   }, []);
 
   const fetchTaxRecords = async () => {
-    setLoading(true);
-    if (isMockMode) {
-      const mockTax: TaxRecord[] = [
-        {
-          id: '1',
-          date: '2026-03-27',
-          type: 'PPh Final',
-          description: 'Pajak Final Penjualan Unit A-01',
-          amount: 7500000,
-          status: 'paid',
-          due_date: '2026-04-10'
-        },
-        {
-          id: '2',
-          date: '2026-03-20',
-          type: 'PPh 21',
-          description: 'Pajak Gaji Karyawan Maret 2026',
-          amount: 12500000,
-          status: 'unpaid',
-          due_date: '2026-04-10'
-        },
-        {
-          id: '3',
-          date: '2026-03-15',
-          type: 'PPN',
-          description: 'PPN Masukan Pembelian Material',
-          amount: 1500000,
-          status: 'paid',
-          due_date: '2026-04-15'
-        }
-      ];
-      setTaxRecords(mockTax);
+    try {
+      setLoading(true);
+      const data = await api.get('taxation', 'select=*&order=date.desc');
+      setTaxRecords(data || []);
+    } catch (err) {
+      console.error('Fetch Tax Failed:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await api.insert('taxation', formData);
+      await fetchTaxRecords();
+      setIsModalOpen(false);
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        type: 'PPN',
+        description: '',
+        amount: 0,
+        due_date: '',
+        status: 'unpaid'
+      });
+    } catch (error: any) {
+      console.error('Error saving tax:', error);
+      alert(`Gagal menyimpan: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Hapus data pajak ini?')) return;
+    try {
+      setLoading(true);
+      await api.delete('taxation', id);
+      await fetchTaxRecords();
+    } catch (error: any) {
+      console.error('Error deleting tax:', error);
+      alert(`Gagal menghapus: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -173,7 +194,7 @@ const TaxationPage: React.FC = () => {
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(item.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -190,12 +211,16 @@ const TaxationPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         title="Input Data Pajak"
       >
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-4" onSubmit={handleSave}>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Tanggal Transaksi" type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+            <Input label="Tanggal Transaksi" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">Jenis Pajak</label>
-              <select className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <select 
+                className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+              >
                 <option value="PPN">PPN (11%)</option>
                 <option value="PPh 21">PPh 21 (Gaji)</option>
                 <option value="PPh 23">PPh 23 (Jasa)</option>
@@ -203,12 +228,25 @@ const TaxationPage: React.FC = () => {
               </select>
             </div>
           </div>
-          <Input label="Keterangan" placeholder="Contoh: Pajak Penjualan Unit A-01" />
-          <Input label="Nilai Pajak (Rp)" type="number" placeholder="Rp 0" />
-          <Input label="Jatuh Tempo Pembayaran" type="date" />
+          <Input label="Keterangan" placeholder="Contoh: Pajak Penjualan Unit A-01" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Nilai Pajak (Rp)" type="number" placeholder="Rp 0" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })} required />
+            <Input label="Jatuh Tempo" type="date" value={formData.due_date} onChange={(e) => setFormData({ ...formData, due_date: e.target.value })} required />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Status</label>
+            <select 
+              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+            >
+              <option value="unpaid">Belum Bayar (Unpaid)</option>
+              <option value="paid">Sudah Bayar (Paid)</option>
+            </select>
+          </div>
           <div className="flex justify-end gap-3 mt-6">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button onClick={() => setIsModalOpen(false)}>Simpan Data Pajak</Button>
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
+            <Button type="submit" isLoading={loading}>Simpan Data</Button>
           </div>
         </form>
       </Modal>

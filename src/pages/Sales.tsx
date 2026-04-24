@@ -56,7 +56,7 @@ const Sales: React.FC = () => {
     try {
       setLoading(true);
       const from = (currentPage - 1) * pageSize;
-      let queryParams = `select=*,unit:units(unit_number,price,project:projects(name)),customer:customers(full_name),marketing:profiles(full_name)&order=sale_date.desc&offset=${from}&limit=${pageSize}`;
+      let queryParams = `select=*,unit:units(unit_number,price,project:projects(name)),customer:customers(full_name),marketing:marketing_staff(name)&order=sale_date.desc&offset=${from}&limit=${pageSize}`;
       
       if (activeTab !== 'all') queryParams += `&status=eq.${activeTab}`;
       if (debouncedSearch) queryParams += `&or=(status.ilike.*${debouncedSearch}*,payment_method.ilike.*${debouncedSearch}*)`;
@@ -174,7 +174,7 @@ const Sales: React.FC = () => {
                     <span className={cn("inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider", sale.status === 'active' ? "bg-amber-50 text-amber-600 border border-amber-100" : sale.status === 'completed' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-slate-100 text-slate-400 border border-slate-200")}>{sale.status}</span>
                   </td>
                   <td className="px-6 py-6"><div className="font-black text-slate-900 text-sm">{formatCurrency(sale.final_price)}</div></td>
-                  <td className="px-6 py-6"><div className="text-xs font-bold text-slate-600">{sale.marketing?.full_name || 'Internal'}</div></td>
+                  <td className="px-6 py-6"><div className="text-xs font-bold text-slate-600">{sale.marketing?.name || 'Internal'}</div></td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Button variant="ghost" size="sm" onClick={() => handlePrintClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-indigo-600" title="Cetak Dokumen Word"><Download className="w-4 h-4" /></Button>

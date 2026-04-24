@@ -45,7 +45,7 @@ const MarketingMaster: React.FC = () => {
       const payload = {
         name: formData.name,
         phone: formData.phone,
-        // address: formData.address // Temporarily disabled: address column missing in DB
+        address: formData.address
       };
       if (selectedStaff) {
         await api.update('marketing_staff', selectedStaff.id, payload);

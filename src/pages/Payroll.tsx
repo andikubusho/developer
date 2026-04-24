@@ -31,40 +31,25 @@ const PayrollPage: React.FC = () => {
     fetchPayroll();
   }, []);
 
-  const fetchPayroll = async () => {
-    setLoading(true);
-    if (isMockMode) {
-      const defaultPayroll: Payroll[] = [
-        {
-          id: '1',
-          employee_id: '1',
-          period: 'Maret 2026',
-          basic_salary: 15000000,
-          allowances: 2500000,
-          deductions: 500000,
-          net_salary: 17000000,
-          status: 'paid',
-          payment_date: '2026-03-25',
-          employee: { full_name: 'Neville Christian', employee_id: 'EMP001' } as any
-        },
-        {
-          id: '2',
-          employee_id: '2',
-          period: 'Maret 2026',
-          basic_salary: 8000000,
-          allowances: 1000000,
-          deductions: 200000,
-          net_salary: 8800000,
-          status: 'pending',
-          employee: { full_name: 'Siti Aminah', employee_id: 'EMP002' } as any
-        }
-      ];
-      setPayroll(getMockData<Payroll>('payroll', defaultPayroll));
-      setLoading(false);
-      return;
-    }
+  const [employees, setEmployees] = useState<any[]>([]);
 
+  useEffect(() => {
+    fetchPayroll();
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
     try {
+      const data = await api.get('employees', 'select=*&order=full_name.asc');
+      setEmployees(data || []);
+    } catch (err) {
+      console.error('Fetch Employees Failed:', err);
+    }
+  };
+
+  const fetchPayroll = async () => {
+    try {
+      setLoading(true);
       const data = await api.get('payroll', 'select=*,employee:employees(*)&order=id.desc');
       setPayroll(data || []);
     } catch (error) {
@@ -76,42 +61,22 @@ const PayrollPage: React.FC = () => {
 
   const handleSave = async () => {
     const net_salary = formData.basic_salary + formData.allowances - formData.deductions;
-
-    if (isMockMode) {
-      const mockEmployee = formData.employee_id === '1' 
-        ? { full_name: 'Neville Christian', employee_id: 'EMP001' }
-        : { full_name: 'Siti Aminah', employee_id: 'EMP002' };
-
-      let updatedPayroll: Payroll[];
+    try {
+      setLoading(true);
+      const payload = { ...formData, net_salary };
       if (editingId) {
-        updatedPayroll = payroll.map(p => p.id === editingId ? { ...p, ...formData, net_salary, employee: mockEmployee as any } : p);
+        await api.update('payroll', editingId, payload);
       } else {
-        const newPayroll: Payroll = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...formData,
-          net_salary,
-          employee: mockEmployee as any
-        };
-        updatedPayroll = [newPayroll, ...payroll];
+        await api.insert('payroll', payload);
       }
-      setPayroll(updatedPayroll);
-      saveMockData('payroll', updatedPayroll);
+      await fetchPayroll();
       setIsModalOpen(false);
       resetForm();
-    } else {
-      try {
-        const payload = { ...formData, net_salary };
-        if (editingId) {
-          await api.update('payroll', editingId, payload);
-        } else {
-          await api.insert('payroll', payload);
-        }
-        fetchPayroll();
-        setIsModalOpen(false);
-        resetForm();
-      } catch (error) {
-        console.error('Error saving payroll:', error);
-      }
+    } catch (error: any) {
+      console.error('Error saving payroll:', error);
+      alert(`Gagal menyimpan: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -131,18 +96,15 @@ const PayrollPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus data payroll ini?')) return;
-
-    if (isMockMode) {
-      const updatedPayroll = payroll.filter(p => p.id !== id);
-      setPayroll(updatedPayroll);
-      saveMockData('payroll', updatedPayroll);
-    } else {
-      try {
-        await api.delete('payroll', id);
-        fetchPayroll();
-      } catch (error) {
-        console.error('Error deleting payroll:', error);
-      }
+    try {
+      setLoading(true);
+      await api.delete('payroll', id);
+      await fetchPayroll();
+    } catch (error: any) {
+      console.error('Error deleting payroll:', error);
+      alert(`Gagal menghapus: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -318,12 +280,20 @@ const PayrollPage: React.FC = () => {
             <select 
               className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               value={formData.employee_id}
-              onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
+              onChange={(e) => {
+                const emp = employees.find(emp => emp.id === e.target.value);
+                setFormData({ 
+                  ...formData, 
+                  employee_id: e.target.value,
+                  basic_salary: emp ? Number(emp.salary) : 0 
+                });
+              }}
               required
             >
               <option value="">Pilih Karyawan</option>
-              <option value="1">Neville Christian (EMP001)</option>
-              <option value="2">Siti Aminah (EMP002)</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.full_name} ({emp.position})</option>
+              ))}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">

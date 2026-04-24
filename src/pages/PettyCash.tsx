@@ -24,45 +24,64 @@ const PettyCashPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [formData, setFormData] = useState({
+    date: new Date().toISOString().split('T')[0],
+    requested_by: '',
+    description: '',
+    amount: 0,
+    type: 'out' as const
+  });
+
   useEffect(() => {
     fetchPettyCash();
   }, []);
 
   const fetchPettyCash = async () => {
-    setLoading(true);
-    if (isMockMode) {
-      const mockPetty: PettyCashItem[] = [
-        {
-          id: '1',
-          date: '2026-03-27',
-          description: 'Pembelian ATK Kantor',
-          type: 'out',
-          amount: 250000,
-          requested_by: 'Siti Aminah',
-          status: 'approved'
-        },
-        {
-          id: '2',
-          date: '2026-03-26',
-          description: 'Top up Petty Cash',
-          type: 'in',
-          amount: 5000000,
-          requested_by: 'Keuangan',
-          status: 'approved'
-        },
-        {
-          id: '3',
-          date: '2026-03-25',
-          description: 'Biaya Konsumsi Rapat',
-          type: 'out',
-          amount: 150000,
-          requested_by: 'Budi Santoso',
-          status: 'pending'
-        }
-      ];
-      setPettyCash(mockPetty);
+    try {
+      setLoading(true);
+      const data = await api.get('petty_cash', 'select=*&order=date.desc');
+      setPettyCash(data || []);
+    } catch (err) {
+      console.error('Fetch Petty Cash Failed:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await api.insert('petty_cash', formData);
+      await fetchPettyCash();
+      setIsModalOpen(false);
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        requested_by: '',
+        description: '',
+        amount: 0,
+        type: 'out'
+      });
+    } catch (error: any) {
+      console.error('Error saving petty cash:', error);
+      alert(`Gagal menyimpan: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Hapus data kas kecil ini?')) return;
+    try {
+      setLoading(true);
+      await api.delete('petty_cash', id);
+      await fetchPettyCash();
+    } catch (error: any) {
+      console.error('Error deleting petty cash:', error);
+      alert(`Gagal menghapus: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const currentBalance = pettyCash
@@ -189,7 +208,7 @@ const PettyCashPage: React.FC = () => {
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(item.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -206,14 +225,27 @@ const PettyCashPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         title="Input Pengeluaran Kas Kecil"
       >
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-          <Input label="Tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} />
-          <Input label="Pemohon" placeholder="Nama pemohon" />
-          <Input label="Deskripsi Pengeluaran" placeholder="Contoh: Pembelian ATK" />
-          <Input label="Jumlah (Rp)" type="number" placeholder="Rp 0" />
+        <form className="space-y-4" onSubmit={handleSave}>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Tanggal" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Tipe</label>
+              <select 
+                className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+              >
+                <option value="out">Keluar</option>
+                <option value="in">Masuk</option>
+              </select>
+            </div>
+          </div>
+          <Input label="Pemohon" placeholder="Nama pemohon" value={formData.requested_by} onChange={(e) => setFormData({ ...formData, requested_by: e.target.value })} required />
+          <Input label="Deskripsi" placeholder="Contoh: Pembelian ATK" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
+          <Input label="Jumlah (Rp)" type="number" placeholder="Rp 0" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })} required />
           <div className="flex justify-end gap-3 mt-6">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button onClick={() => setIsModalOpen(false)}>Simpan Pengeluaran</Button>
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
+            <Button type="submit" isLoading={loading}>Simpan Data</Button>
           </div>
         </form>
       </Modal>
