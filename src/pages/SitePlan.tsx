@@ -14,69 +14,8 @@ import { cn } from '@/src/lib/utils';
 
 // Hardcoded Mapping Data for Golden Canyon
 // This follows the 1200x900 coordinate system
-const GOLDEN_CANYON_MAP = [
-  // Blok N-Atas: ~14 unit, diagonal kiri atas, rotasi ±-30°
-  ...Array.from({ length: 14 }, (_, i) => ({
-    id: `N-${(i + 1).toString().padStart(2, '0')}`,
-    x: 150 + (i * 32),
-    y: 400 - (i * 18),
-    w: 28,
-    h: 55,
-    r: -30
-  })),
-  // Blok N-Bawah: ~14 unit, diagonal kiri bawah, rotasi ±-20°
-  ...Array.from({ length: 14 }, (_, i) => ({
-    id: `NB-${(i + 1).toString().padStart(2, '0')}`,
-    x: 150 + (i * 35),
-    y: 680 + (i * 12),
-    w: 28,
-    h: 55,
-    r: -20
-  })),
-  // Blok GC (Golden Canyon) - Tengah/Main Area
-  ...Array.from({ length: 10 }, (_, i) => ({
-    id: `GC-${(i + 1).toString().padStart(2, '0')}`,
-    x: 450 + (i * 40),
-    y: 500,
-    w: 35,
-    h: 60,
-    r: 0
-  })),
-  // Blok E-Atas (2 Kolom)
-  ...Array.from({ length: 12 }, (_, i) => ({
-    id: `EA-${(i + 1).toString().padStart(2, '0')}`,
-    x: 1000,
-    y: 100 + (i * 38),
-    w: 55,
-    h: 34,
-    r: 0
-  })),
-  ...Array.from({ length: 12 }, (_, i) => ({
-    id: `EB-${(i + 1).toString().padStart(2, '0')}`,
-    x: 1080,
-    y: 100 + (i * 38),
-    w: 55,
-    h: 34,
-    r: 0
-  })),
-  // Blok E-Tengah
-  ...Array.from({ length: 10 }, (_, i) => ({
-    id: `ET-${(i + 1).toString().padStart(2, '0')}`,
-    x: 1000,
-    y: 580 + (i * 38),
-    w: 55,
-    h: 34,
-    r: 0
-  })),
-  // Blok E-Bawah
-  ...Array.from({ length: 8 }, (_, i) => ({
-    id: `EW-${(i + 1).toString().padStart(2, '0')}`,
-    x: 1000,
-    y: 800 + (i * 38),
-    w: 55,
-    h: 34,
-    r: 0
-  }))
+const GOLDEN_CANYON_MAP: any[] = [
+  // Units are currently hidden to leave the background image clean
 ];
 
 const SitePlan = () => {
