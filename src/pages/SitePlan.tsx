@@ -7,9 +7,11 @@ import {
   ZoomIn,
   ZoomOut,
   RefreshCw,
-  X
+  X,
+  Upload
 } from 'lucide-react';
 import { Button } from '@/src/components/ui/Button';
+import { Modal } from '@/src/components/ui/Modal';
 import { cn } from '@/src/lib/utils';
 
 // Hardcoded Mapping Data for Golden Canyon
@@ -25,6 +27,7 @@ const SitePlan = () => {
   const [loading, setLoading] = useState(true);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [scale, setScale] = useState(1);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   const fetchInitialData = async () => {
     try {
@@ -34,7 +37,7 @@ const SitePlan = () => {
       
       if (projData && projData.length > 0) {
         // Find Golden Canyon or default to first
-        const gcProj = projData.find((p: Project) => p.name.includes('Golden Canyon')) || projData[0];
+        const gcProj = projData.find((p: Project) => p.name.toLowerCase().includes('golden canyon')) || projData[0];
         setSelectedProjectId(gcProj.id);
         const unitData = await api.get('units', `project_id=eq.${gcProj.id}`);
         setDbUnits(unitData || []);
@@ -60,6 +63,40 @@ const SitePlan = () => {
     } catch (error) {
       console.error('Error switching project:', error);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Mohon pilih file gambar (JPG/PNG)');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        try {
+          await api.update('projects', selectedProjectId, { site_plan_image_url: base64String });
+          const updatedProjects = projects.map(p => 
+            p.id === selectedProjectId ? { ...p, site_plan_image_url: base64String } : p
+          );
+          setProjects(updatedProjects);
+          setIsUploadModalOpen(false);
+          alert('Site plan berhasil diupload!');
+        } catch (error: any) {
+          alert(`Gagal menyimpan: ${error.message}`);
+        } finally {
+          setLoading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error: any) {
+      alert(`Gagal membaca file: ${error.message}`);
       setLoading(false);
     }
   };
@@ -113,8 +150,12 @@ const SitePlan = () => {
              <span className="px-4 text-white font-black text-xs min-w-[60px] text-center">{Math.round(scale * 100)}%</span>
              <button onClick={() => setScale(s => Math.min(s + 0.2, 3))} className="p-2 text-white/40 hover:text-white transition-colors"><ZoomIn className="w-5 h-5" /></button>
           </div>
-          <Button variant="outline" onClick={() => setScale(1)} className="border-white/10 text-white font-black uppercase text-[10px] tracking-widest h-11 px-4 rounded-2xl">
-             Reset
+          <Button 
+            onClick={() => setIsUploadModalOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase text-[10px] tracking-widest h-11 px-6 rounded-2xl shadow-lg shadow-indigo-600/20"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Denah
           </Button>
         </div>
       </div>
@@ -185,11 +226,19 @@ const SitePlan = () => {
                 <ImageIcon className="w-10 h-10 text-white/20" />
              </div>
              <p className="text-white/40 font-bold uppercase tracking-widest text-xs">Denah belum tersedia</p>
+             <Button 
+                onClick={() => setIsUploadModalOpen(true)}
+                variant="outline"
+                className="border-white/10 text-white font-black uppercase text-[10px] tracking-widest h-11 px-6 rounded-2xl"
+             >
+                Upload Sekarang
+             </Button>
           </div>
         )}
 
-        {/* Info Sidebar Overlay */}
+        {/* Info Sidebar Overlay (Keep as is) */}
         {selectedUnit && (
+          // ... (existing sidebar code)
           <div className="absolute right-8 top-8 bottom-8 w-[400px] bg-[#111114]/90 backdrop-blur-2xl border border-white/5 rounded-[3rem] shadow-3xl p-10 flex flex-col animate-in slide-in-from-right duration-500 z-50">
             <div className="flex justify-between items-start mb-10">
               <div>
@@ -259,6 +308,23 @@ const SitePlan = () => {
           </div>
         )}
       </div>
+
+      {/* Upload Modal */}
+      <Modal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} title="Upload Site Plan">
+        <div className="p-12 text-center border-4 border-dashed border-white/10 rounded-[4rem] hover:border-indigo-600/30 transition-all cursor-pointer group bg-white/5 relative">
+          <input 
+            type="file" 
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="absolute inset-0 opacity-0 cursor-pointer"
+          />
+          <Upload className="w-12 h-12 text-indigo-500 mx-auto mb-6 group-hover:scale-110 transition-transform" />
+          <h3 className="text-xl font-black text-white mb-2">Pilih File Site Plan</h3>
+          <p className="text-xs text-slate-500 font-medium px-8 leading-relaxed">
+            Format JPG atau PNG. Gambar akan otomatis menjadi background denah.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 };
