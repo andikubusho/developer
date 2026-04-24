@@ -86,7 +86,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
           api.get('units', 'select=id,unit_number,price,project_id,status'),
           api.get('customers', 'select=id,full_name'),
           api.get('leads', 'select=id,name'),
-          api.get('profiles', 'select=id,full_name,role'),
+          api.get('profiles', 'select=id,full_name'), // Keep profiles for other potential uses if needed, or remove if unused
+          api.get('marketing_staff', 'select=id,name'),
           api.get('promos', 'select=id,name,value')
         ]);
 
@@ -96,7 +97,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
           ...(c || []).map((item: any) => ({ id: item.id, full_name: item.full_name })),
           ...(l || []).map((item: any) => ({ id: item.id, full_name: item.name + ' (Lead)' }))
         ]);
-        setMarketingStaff(m || []);
+        setMarketingStaff((m || []).map((item: any) => ({ id: item.id, full_name: item.name, role: 'Marketing' })));
         setPromos(pr || []);
       } catch (err) {
         console.error('Fetch error in SaleForm:', err);
@@ -203,7 +204,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Select 
           label="Marketing" 
-          options={marketingStaff.map(m => ({ label: `${m.full_name} (${m.role})`, value: m.id }))}
+          options={marketingStaff.map(m => ({ label: m.full_name, value: m.id }))}
           {...register('marketing_id')}
           error={errors.marketing_id?.message}
         />
