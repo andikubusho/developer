@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, ArrowLeft, Upload, CheckCircle2, FileSpreadsheet } from 'lucide-react';
+import { FileText, ArrowLeft, Upload, CheckCircle2, FileSpreadsheet, Download } from 'lucide-react';
+import { saveAs } from 'file-saver';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { api } from '../lib/api';
@@ -90,6 +91,32 @@ const DocumentTemplates: React.FC = () => {
     }
   };
 
+  const handleDownload = (formId: string) => {
+    const template = templates[formId];
+    if (!template || !template.content) return;
+
+    try {
+      // Convert base64 to blob
+      const byteCharacters = atob(template.content);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      
+      const form = REQUIRED_FORMS.find(f => f.id === formId);
+      const mimeType = form?.type === 'xlsx' 
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+        : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        
+      const blob = new Blob([byteArray], { type: mimeType });
+      saveAs(blob, `${template.name}.${form?.type || 'docx'}`);
+    } catch (error) {
+      console.error('Download Error:', error);
+      alert('Gagal mengunduh file.');
+    }
+  };
+
   return (
     <div className="space-y-10 pb-20 pt-6">
       <div className="flex items-center gap-6">
@@ -150,6 +177,16 @@ const DocumentTemplates: React.FC = () => {
                     )}
                   </Button>
                 </label>
+                
+                {isUploaded && (
+                  <Button 
+                    variant="ghost"
+                    onClick={() => handleDownload(form.id)}
+                    className="w-full mt-3 rounded-[1.2rem] font-black h-12 text-indigo-600 hover:bg-indigo-50 tracking-widest text-[10px] border border-indigo-100"
+                  >
+                    <Download className="w-4 h-4 mr-2" /> UNDUH MASTER FILE
+                  </Button>
+                )}
               </div>
 
               {isUploaded && (
