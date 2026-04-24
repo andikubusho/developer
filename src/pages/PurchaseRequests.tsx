@@ -247,7 +247,7 @@ const PurchaseRequests: React.FC = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title="Buat Purchase Request Baru"
-        size="6xl"
+        size="4xl"
       >
         <form onSubmit={handleSubmit} className="space-y-10">
           {/* Header Info */}

@@ -303,7 +303,7 @@ const MasterMaterial: React.FC = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title={editingMaterial ? "Edit Material" : "Tambah Material Baru"}
-        size="5xl"
+        size="4xl"
       >
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
