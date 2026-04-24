@@ -38,6 +38,7 @@ const UserManagement: React.FC = () => {
   const [addUserForm, setAddUserForm] = useState({
     full_name: '',
     email: '',
+    password: '',
     role: 'marketing' as UserRole
   });
 
@@ -81,22 +82,46 @@ const UserManagement: React.FC = () => {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (!addUserForm.full_name || !addUserForm.email) {
-        alert('Nama dan Email wajib diisi');
+      if (!addUserForm.full_name || !addUserForm.email || !addUserForm.password) {
+        alert('Semua field wajib diisi');
         return;
       }
 
-      // Check if email already exists
-      const existing = await api.get('profiles', `select=id&email=eq.${addUserForm.email}`);
+      setLoading(true);
 
-      if (existing && existing.length > 0) {
-        alert('Email sudah digunakan');
-        return;
-      }
+      // 1. Create a temporary Supabase client that doesn't share session
+      // This prevents the admin from being logged out
+      const { createClient } = await import('@supabase/supabase-js');
+      const tempSupabase = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+          }
+        }
+      );
 
-      const newId = crypto.randomUUID();
+      // 2. Sign up the new user in Supabase Auth
+      const { data: authData, error: authError } = await tempSupabase.auth.signUp({
+        email: addUserForm.email,
+        password: addUserForm.password,
+        options: {
+          data: {
+            full_name: addUserForm.full_name,
+          }
+        }
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Gagal mendapatkan ID user baru');
+
+      const newId = authData.user.id;
       const defaultPerms = getDefaultPermissions(addUserForm.role);
 
+      // 3. Insert into public.profiles with the same ID
       await api.insert('profiles', {
         id: newId,
         full_name: addUserForm.full_name,
@@ -110,16 +135,15 @@ const UserManagement: React.FC = () => {
 
       setProfiles([data, ...profiles]);
       setIsAddModalOpen(false);
-      setAddUserForm({ full_name: '', email: '', role: 'marketing' });
+      setAddUserForm({ full_name: '', email: '', password: '', role: 'marketing' });
       
-      // Ask to set detail permissions
-      if (confirm('User berhasil ditambahkan. Apakah Anda ingin mengatur Hak Akses Detail sekarang?')) {
-        setSelectedProfile(data);
-        setIsPermissionsModalOpen(true);
-      }
+      alert('User berhasil ditambahkan! User sekarang bisa login dengan email dan password yang Anda buat.');
+
     } catch (error: any) {
       console.error('Execution error:', error);
       alert(`Gagal menambah user: ${error.message || 'Terjadi kesalahan sistem'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -283,6 +307,16 @@ const UserManagement: React.FC = () => {
               placeholder="user@perusahaan.com" 
               value={addUserForm.email}
               onChange={(e) => setAddUserForm({ ...addUserForm, email: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1.5">Kata Sandi (Password)</label>
+            <Input 
+              type="password"
+              placeholder="••••••••" 
+              value={addUserForm.password}
+              onChange={(e) => setAddUserForm({ ...addUserForm, password: e.target.value })}
               required
             />
           </div>
