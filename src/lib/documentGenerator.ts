@@ -31,7 +31,8 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
     const doc = new Docxtemplater(zip, { 
       paragraphLoop: true, 
       linebreaks: true,
-      nullGetter: () => "................" // Prevent "Multi error" by providing dots for missing data
+      delimiters: { start: '{{', end: '}}' }, // Force standard delimiters
+      nullGetter: () => "................" 
     });
 
     // ENHANCED DATA MAPPING for Agrements (Perjanjian)
