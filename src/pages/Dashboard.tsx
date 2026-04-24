@@ -47,6 +47,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { formatDate, formatCurrency, formatNumber, cn } from '../lib/utils';
+import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {

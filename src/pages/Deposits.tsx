@@ -94,8 +94,8 @@ const Deposits: React.FC = () => {
   };
 
   const filteredDeposits = deposits.filter(d => 
-    d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.phone.includes(searchTerm)
+    (d.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (d.phone || '').includes(searchTerm)
   );
 
   const handleAdd = () => {
@@ -208,13 +208,13 @@ const Deposits: React.FC = () => {
               ) : (
                 filteredDeposits.map((d) => (
                   <tr key={d.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-600">{formatDate(d.date)}</td>
-                    <td className="px-6 py-4 font-medium text-slate-900">{d.name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{d.phone}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{d.date ? formatDate(d.date) : '-'}</td>
+                    <td className="px-6 py-4 font-medium text-slate-900">{d.name || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{d.phone || '-'}</td>
                     <td className="px-6 py-4 text-sm font-medium text-indigo-600">
                       {(d as any).marketing?.name || '-'}
                     </td>
-                    <td className="px-6 py-4 text-sm font-bold text-emerald-600">{formatCurrency(d.amount)}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-emerald-600">{formatCurrency(d.amount || 0)}</td>
                     <td className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
