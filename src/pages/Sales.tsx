@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Plus, Search, Filter, ShoppingBag, FileText, ArrowLeft } from 'lucide-react';
+import { Plus, Search, Filter, ShoppingBag, FileText, ArrowLeft, TrendingUp, Users, CheckCircle2, MoreVertical, Download } from 'lucide-react';
 import { Sale } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -18,17 +18,24 @@ const Sales: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 10;
 
-  // Debounce search term
+  // Stats State
+  const [stats, setStats] = useState({
+    totalOmzet: 0,
+    totalUnits: 0,
+    activeLeads: 0
+  });
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setCurrentPage(1); // Reset to first page on new search
+      setCurrentPage(1);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
@@ -36,162 +43,203 @@ const Sales: React.FC = () => {
   const fetchSales = useCallback(async () => {
     try {
       setLoading(true);
-      
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
       
-      // Building complex PostgREST query string for joins and pagination
       let queryParams = `select=*,unit:units(unit_number,project:projects(name)),customer:customers(full_name),marketing:profiles(full_name)&order=sale_date.desc&offset=${from}&limit=${pageSize}`;
       
+      if (activeTab !== 'all') {
+        queryParams += `&status=eq.${activeTab}`;
+      }
+      
       if (debouncedSearch) {
-        // Use a simpler approach for now to avoid PostgREST nested OR complexity issues
-        queryParams += `&status=ilike.*${debouncedSearch}*`; 
+        queryParams += `&or=(status.ilike.*${debouncedSearch}*,payment_method.ilike.*${debouncedSearch}*)`;
       }
 
       const data = await api.get('sales', queryParams);
-      // Note: Direct fetch might not return count automatically in the body without specific headers
-      // For now, we'll estimate or fetch total separately if needed, but let's prioritize loading data
       setSales(data || []);
+      
+      // Fetch stats for the header
+      const allSales = await api.get('sales', 'select=final_price,status');
+      if (allSales) {
+        const omzet = allSales.reduce((acc: number, curr: any) => acc + (curr.status !== 'cancelled' ? curr.final_price : 0), 0);
+        setStats({
+          totalOmzet: omzet,
+          totalUnits: allSales.filter((s: any) => s.status !== 'cancelled').length,
+          activeLeads: allSales.filter((s: any) => s.status === 'active').length
+        });
+      }
+      
       setTotalCount(data?.length || 0); 
     } catch (error) {
       console.error('Error fetching sales:', error);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, debouncedSearch, pageSize]);
+  }, [currentPage, debouncedSearch, pageSize, activeTab]);
 
   useEffect(() => {
     fetchSales();
   }, [fetchSales]);
 
-  const handleAdd = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleSuccess = () => {
-    setIsModalOpen(false);
-    fetchSales();
-  };
-
-  const totalPages = Math.ceil(totalCount / pageSize) || 1;
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 pb-20">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setDivision(null)}
-            className="p-2 h-auto"
-          >
-            <ArrowLeft className="w-5 h-5" />
+          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto hover:bg-slate-100 rounded-xl">
+            <ArrowLeft className="w-6 h-6 text-slate-600" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Penjualan</h1>
-            <p className="text-slate-500">Kelola transaksi penjualan unit properti</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Penjualan Properti</h1>
+            <p className="text-slate-500 font-medium text-sm flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Monitoring Transaksi Real-time
+            </p>
           </div>
         </div>
-        <Button className="w-full sm:w-auto" onClick={handleAdd}>
-          <Plus className="w-4 h-4 mr-2" />
+        <Button className="bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-200 rounded-2xl h-12 px-6 font-bold transition-all hover:scale-[1.02]" onClick={() => setIsModalOpen(true)}>
+          <Plus className="w-5 h-5 mr-2" />
           Transaksi Baru
         </Button>
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title="Transaksi Penjualan Baru"
-        size="lg"
-      >
-        <SaleForm 
-          onSuccess={handleSuccess} 
-          onCancel={() => setIsModalOpen(false)} 
-        />
-      </Modal>
-
-      <Card className="p-0 overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input 
-              placeholder="Cari pelanggan atau nomor unit..." 
-              className="pl-10 h-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      {/* STATS CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="p-6 border-none shadow-premium rounded-3xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-2 bg-white/20 rounded-xl"><TrendingUp className="w-5 h-5" /></div>
+            <span className="text-[10px] font-bold uppercase tracking-widest bg-white/20 px-2 py-1 rounded-lg">Total Omzet</span>
           </div>
-          <Button variant="outline" className="h-10">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
-        </div>
+          <div className="text-2xl font-black">{formatCurrency(stats.totalOmzet)}</div>
+          <div className="text-[10px] mt-1 text-indigo-100">Akumulasi seluruh unit terjual</div>
+        </Card>
+        
+        <Card className="p-6 border-none shadow-premium rounded-3xl bg-white group hover:bg-slate-50 transition-colors">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors"><ShoppingBag className="w-5 h-5" /></div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Unit Terjual</span>
+          </div>
+          <div className="text-2xl font-black text-slate-900">{stats.totalUnits} <span className="text-sm font-medium text-slate-400">Unit</span></div>
+          <div className="text-[10px] mt-1 text-slate-400">Total closing saat ini</div>
+        </Card>
 
-        <div className="overflow-x-auto min-h-[400px]">
-          <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
+        <Card className="p-6 border-none shadow-premium rounded-3xl bg-white group hover:bg-slate-50 transition-colors">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-600 group-hover:text-white transition-colors"><Users className="w-5 h-5" /></div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Proses Aktif</span>
+          </div>
+          <div className="text-2xl font-black text-slate-900">{stats.activeLeads} <span className="text-sm font-medium text-slate-400">Konsumen</span></div>
+          <div className="text-[10px] mt-1 text-slate-400">Sedang dalam pembayaran</div>
+        </Card>
+      </div>
+
+      {/* FILTER & SEARCH */}
+      <div className="bg-white p-2 rounded-[2rem] shadow-premium flex flex-col md:flex-row gap-2 items-center">
+        <div className="flex p-1 bg-slate-100 rounded-2xl w-full md:w-auto">
+          {[
+            { id: 'all', label: 'Semua' },
+            { id: 'active', label: 'Aktif' },
+            { id: 'completed', label: 'Selesai' },
+            { id: 'cancelled', label: 'Batal' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={cn(
+                "flex-1 px-6 py-2 rounded-xl text-xs font-bold transition-all",
+                activeTab === tab.id ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="relative flex-1 w-full group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+          <input 
+            placeholder="Cari transaksi, unit, atau pelanggan..." 
+            className="w-full bg-slate-50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* SALES TABLE */}
+      <Card className="p-0 border-none shadow-premium rounded-[2.5rem] overflow-hidden bg-white">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Pelanggan & Unit</th>
-                <th className="px-6 py-3 font-semibold">Total Harga</th>
-                <th className="px-6 py-3 font-semibold">Metode</th>
-                <th className="px-6 py-3 font-semibold">Status</th>
-                <th className="px-6 py-3 font-semibold">Tanggal</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
+              <tr className="bg-slate-50/50 text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">
+                <th className="px-8 py-6">Konsumen & Unit</th>
+                <th className="px-6 py-6">Status Pembayaran</th>
+                <th className="px-6 py-6">Total Transaksi</th>
+                <th className="px-6 py-6">Marketing</th>
+                <th className="px-8 py-6 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-50">
               {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
+                Array.from({ length: 3 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={6} className="px-6 py-4 text-center text-slate-400">Memuat data transaksi...</td>
+                    <td colSpan={5} className="px-8 py-10 text-center text-slate-300 font-bold uppercase tracking-widest">Sinkronisasi Data...</td>
                   </tr>
                 ))
               ) : sales.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
-                    Tidak ada transaksi ditemukan.
+                  <td colSpan={5} className="px-8 py-20 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <ShoppingBag className="w-10 h-10 text-slate-200" />
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Belum ada transaksi di kategori ini</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 sales.map((sale) => (
-                  <tr key={sale.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{sale.customer?.full_name}</div>
-                      <div className="text-xs text-slate-500">
-                        {sale.unit?.project?.name} - {sale.unit?.unit_number}
+                  <tr key={sale.id} className="hover:bg-slate-50/50 transition-all group">
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-xs shadow-sm">
+                          {sale.customer?.full_name?.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-black text-slate-900 text-sm">{sale.customer?.full_name}</div>
+                          <div className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
+                            {sale.unit?.unit_number} • {sale.unit?.project?.name}
+                          </div>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">
-                      {formatCurrency(sale.total_price)}
+                    <td className="px-6 py-6">
+                      <div className="flex flex-col gap-1.5">
+                        <span className={cn(
+                          "inline-flex items-center w-fit px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider",
+                          sale.status === 'active' ? "bg-amber-50 text-amber-600 border border-amber-100" :
+                          sale.status === 'completed' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
+                          "bg-slate-100 text-slate-400 border border-slate-200"
+                        )}>
+                          {sale.status === 'active' ? "Proses Cicilan" : sale.status === 'completed' ? "Lunas" : "Batal"}
+                        </span>
+                        <div className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> {sale.payment_method?.toUpperCase()}
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="text-xs font-medium text-slate-600 uppercase bg-slate-100 px-2 py-1 rounded">
-                        {sale.payment_method}
-                      </span>
+                    <td className="px-6 py-6">
+                      <div className="font-black text-slate-900 text-sm">{formatCurrency(sale.final_price)}</div>
+                      <div className="text-[10px] font-medium text-slate-400">Order: {formatDate(sale.sale_date)}</div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={cn(
-                        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                        sale.status === 'active' ? 'bg-indigo-50 text-indigo-700' :
-                        sale.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
-                        sale.status === 'cancelled' ? 'bg-red-50 text-red-700' :
-                        'bg-amber-50 text-amber-700'
-                      )}>
-                        {sale.status === 'active' ? 'Aktif' :
-                         sale.status === 'completed' ? 'Selesai' : 
-                         sale.status === 'cancelled' ? 'Batal' : 'Pending'}
-                      </span>
+                    <td className="px-6 py-6">
+                      <div className="text-xs font-bold text-slate-600">{sale.marketing?.full_name || 'Internal'}</div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-500">
-                      {formatDate(sale.sale_date)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-8 py-6 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Invoice">
-                          <FileText className="w-4 h-4" />
+                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-indigo-600" title="Cetak Dokumen Word">
+                          <Download className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Detail">
-                          <ShoppingBag className="w-4 h-4" />
+                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-slate-900" title="Detail Transaksi">
+                          <MoreVertical className="w-4 h-4" />
                         </Button>
                       </div>
                     </td>
@@ -199,16 +247,17 @@ const Sales: React.FC = () => {
                 ))
               )}
             </tbody>
-          </table></div>
+          </table>
         </div>
         
-        <Pagination 
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          isLoading={loading}
-        />
+        <div className="p-8 bg-slate-50/30 border-t border-slate-50">
+          <Pagination currentPage={currentPage} totalPages={Math.ceil(totalCount / pageSize) || 1} onPageChange={setCurrentPage} isLoading={loading} />
+        </div>
       </Card>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Transaksi Penjualan Baru" size="lg">
+        <SaleForm onSuccess={() => { setIsModalOpen(false); fetchSales(); }} onCancel={() => setIsModalOpen(false)} />
+      </Modal>
     </div>
   );
 };
