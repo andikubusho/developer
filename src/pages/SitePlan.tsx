@@ -28,6 +28,7 @@ const SitePlan = () => {
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [scale, setScale] = useState(1);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [imgDims, setImgDims] = useState({ w: 1200, h: 900 });
 
   const fetchInitialData = async () => {
     try {
@@ -101,6 +102,16 @@ const SitePlan = () => {
     }
   };
 
+  useEffect(() => {
+    if (selectedProject?.site_plan_image_url) {
+      const img = new Image();
+      img.onload = () => {
+        setImgDims({ w: img.naturalWidth, h: img.naturalHeight });
+      };
+      img.src = selectedProject.site_plan_image_url;
+    }
+  }, [selectedProject?.site_plan_image_url]);
+
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   const getStatusColor = (status: string) => {
@@ -169,7 +180,7 @@ const SitePlan = () => {
             style={{ transform: `scale(${scale})` }}
           >
             <svg 
-              viewBox="0 0 1200 900" 
+              viewBox={`0 0 ${imgDims.w} ${imgDims.h}`} 
               className="max-w-full max-h-full shadow-2xl rounded-xl overflow-hidden bg-[#111114]"
               preserveAspectRatio="xMidYMid meet"
               style={{ width: '100%', height: 'auto', display: 'block' }}
@@ -178,8 +189,8 @@ const SitePlan = () => {
               <image 
                 href={selectedProject.site_plan_image_url} 
                 xlinkHref={selectedProject.site_plan_image_url}
-                width="1200" 
-                height="900" 
+                width={imgDims.w} 
+                height={imgDims.h} 
                 className="opacity-100"
                 preserveAspectRatio="xMidYMid slice"
               />
