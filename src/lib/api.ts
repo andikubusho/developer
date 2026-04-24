@@ -47,4 +47,6 @@ export const api = {
     
   delete: (table: string, id: string | number) => 
     apiRequest(`${table}?id=eq.${id}`, { method: 'DELETE' }),
+    
+  apiRequest: apiRequest
 };
