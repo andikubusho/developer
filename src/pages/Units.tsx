@@ -71,7 +71,9 @@ const Units: React.FC = () => {
       const finalUnits = [
         ...processedUnits,
         ...orphanPli.map((pli: any) => ({
-          id: pli.unit_id || pli.id,
+          id: pli.id, // Use PLI ID for the record itself
+          unit_id: pli.unit_id,
+          isOrphan: true,
           project_id: pli.project_id,
           unit_number: `${pli.blok} - ${pli.unit}`,
           type: pli.tipe,
@@ -120,12 +122,18 @@ const Units: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus unit ini?')) return;
+  const handleDelete = async (unit: any) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus unit ${unit.unit_number}?`)) return;
     
     try {
       setLoading(true);
-      await api.delete('units', id);
+      if (unit.isOrphan) {
+        // If it only exists in price list, delete from there
+        await api.delete('price_list_items', unit.id);
+      } else {
+        // Standard unit deletion
+        await api.delete('units', unit.id);
+      }
       fetchUnits();
     } catch (error: any) {
       alert('Gagal menghapus unit: ' + error.message);
@@ -266,7 +274,7 @@ const Units: React.FC = () => {
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(unit)}>Edit</Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(unit.id)} className="text-rose-500 hover:bg-rose-50">
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(unit)} className="text-rose-500 hover:bg-rose-50">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
