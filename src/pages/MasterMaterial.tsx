@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Package, 
   Plus, 
@@ -13,7 +14,8 @@ import {
   ChevronRight,
   Download,
   Upload,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ArrowLeft
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Card } from '../components/ui/Card';
@@ -24,8 +26,11 @@ import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { api } from '../lib/api';
 import { formatCurrency, formatNumber, cn } from '../lib/utils';
 import { Material } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 const MasterMaterial: React.FC = () => {
+  const navigate = useNavigate();
+  const { setDivision } = useAuth();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -171,9 +176,14 @@ const MasterMaterial: React.FC = () => {
     <div className="space-y-8 pb-10">
       {/* Header & Stats */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Master Material</h1>
-          <p className="text-slate-500 font-medium">Manajemen data stok dan harga satuan material konstruksi</p>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Master Material</h1>
+            <p className="text-slate-500 font-medium">Manajemen data stok dan harga satuan material konstruksi</p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-3">
           <Button variant="ghost" onClick={handleDownloadTemplate} className="rounded-2xl h-12 px-6 bg-white border border-slate-100 hover:bg-slate-50">

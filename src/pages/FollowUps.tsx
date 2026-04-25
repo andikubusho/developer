@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, MessageSquare, Clock, ArrowLeft, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -10,7 +11,7 @@ import { cn, formatDateTime } from '../lib/utils';
 import { api } from '../lib/api';
 
 const FollowUps: React.FC = () => {
-  const { setDivision } = useAuth();
+  const { setDivision, profile } = useAuth();
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +53,13 @@ const FollowUps: React.FC = () => {
   const fetchFollowUps = async () => {
     try {
       setLoading(true);
-      const data = await api.get('follow_ups', 'select=*,lead:leads(name,phone)&order=date_time.desc');
+      const isMarketingOnly = profile?.role === 'marketing';
+      // Use !inner to filter the parent follow_ups based on the joined lead's marketing_id
+      const query = isMarketingOnly 
+        ? `select=*,lead:leads!inner(name,phone,marketing_id)&lead.marketing_id=eq.${profile.id}&order=date_time.desc`
+        : `select=*,lead:leads(name,phone)&order=date_time.desc`;
+      
+      const data = await api.get('follow_ups', query);
       setFollowUps(data || []);
     } catch (error) {
       console.error('Error fetching follow ups:', error);
@@ -63,7 +70,9 @@ const FollowUps: React.FC = () => {
 
   const fetchLeads = async () => {
     try {
-      const data = await api.get('leads', 'select=*&order=name.asc');
+      const isMarketingOnly = profile?.role === 'marketing';
+      const marketingFilter = isMarketingOnly ? `&marketing_id=eq.${profile.id}` : '';
+      const data = await api.get('leads', `select=*&order=name.asc${marketingFilter}`);
       setLeads(data || []);
     } catch (error) {
       console.error('Error fetching leads:', error);
@@ -134,7 +143,7 @@ const FollowUps: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => setDivision(null)}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Package, AlertTriangle, ArrowRightLeft, ArrowLeft } from 'lucide-react';
 import { Material } from '../types';
 import { Button } from '../components/ui/Button';
@@ -11,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 
 const Materials: React.FC = () => {
+  const navigate = useNavigate();
   const { setDivision } = useAuth();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,7 @@ const Materials: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>

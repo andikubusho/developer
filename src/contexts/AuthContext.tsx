@@ -10,7 +10,9 @@ interface AuthContextType {
   profile: Profile | null;
   division: Division | null;
   loading: boolean;
+  error: string | null;
   isMockMode: boolean;
+  signIn: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   mockLogin: () => void;
   setDivision: (division: Division | null) => void;
@@ -33,6 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return localStorage.getItem('propdev_division') as Division | null;
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isMockMode, setIsMockMode] = useState(!isSupabaseConfigured);
 
   const setDivision = (div: Division | null) => {
@@ -58,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const mockProfile: Profile = {
       id: 'mock-admin-id',
       full_name: 'Admin Demo (Mock Mode)',
+      username: 'admin',
       role: 'admin',
     };
     
@@ -67,42 +71,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const safetyTimeout = setTimeout(() => {
-      setLoading(false);
-    }, 5000);
-
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      clearTimeout(safetyTimeout);
-      return;
-    }
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id, session.user.email);
-      } else {
+    const initAuth = async () => {
+      try {
+        const savedUserId = localStorage.getItem('propdev_user_id');
+        
+        if (savedUserId) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', savedUserId)
+            .single();
+            
+          if (profileData) {
+            setProfile(profileData);
+            setUser({ id: profileData.id, email: profileData.email } as User);
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
         setLoading(false);
-        clearTimeout(safetyTimeout);
       }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id, session.user.email);
-      } else {
-        setProfile(null);
-        setLoading(false);
-        clearTimeout(safetyTimeout);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(safetyTimeout);
     };
+
+    initAuth();
   }, []);
+
+  // Fungsi Hashing Sederhana (SHA-256) untuk keamanan sesuai guideline
+  const hashPassword = async (password: string) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hash = await window.crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  };
+
+  const signIn = async (usernameInput: string, passwordInput: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const cleanUsername = usernameInput.trim().toLowerCase();
+      const hashedPassword = await hashPassword(passwordInput);
+
+      // Cari di kolom username ATAU email
+      const { data: profilesData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .or(`username.eq.${cleanUsername},email.eq.${cleanUsername},email.eq.${cleanUsername}@internal.com`)
+        .eq('password', hashedPassword)
+        .limit(1);
+
+      if (profileError || !profilesData || profilesData.length === 0) {
+        throw new Error('Username atau Password salah.');
+      }
+
+      const profileData = profilesData[0];
+
+      setProfile(profileData);
+      setUser({ id: profileData.id, email: profileData.email } as User);
+      
+      localStorage.setItem('propdev_user_id', profileData.id);
+      localStorage.setItem('propdev_profile', JSON.stringify(profileData));
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Gagal masuk ke sistem.');
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchProfile = async (userId: string, userEmail?: string) => {
     try {
@@ -121,6 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 id: userId, 
                 email: userEmail || '', 
                 full_name: userEmail?.split('@')[0] || 'User',
+                username: userEmail?.split('@')[0] || 'user',
                 role: 'admin'
               }
             ])
@@ -145,19 +187,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
-    setDivisionState(null);
+    localStorage.removeItem('propdev_user_id');
     localStorage.removeItem('propdev_division');
     localStorage.removeItem('propdev_profile');
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('dashboard_stats_')) localStorage.removeItem(key);
-    });
+    setProfile(null);
+
+    // 3. Trigger Supabase SignOut (Fire and forget)
+    if (isSupabaseConfigured) {
+      supabase.auth.signOut().catch(() => {});
+    }
+
+    // 4. PAKSA browser pindah ke login (Cara paling ampuh)
+    // Ini akan merestart seluruh aplikasi dan memastikan state bersih
+    window.location.replace('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, division, loading, isMockMode, signOut, mockLogin, setDivision }}>
+    <AuthContext.Provider value={{ user, profile, division, loading, error, isMockMode, signIn, signOut, mockLogin, setDivision }}>
       {children}
     </AuthContext.Provider>
   );

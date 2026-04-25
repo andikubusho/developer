@@ -388,7 +388,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
               signOut();
               onClose?.();
             }}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-danger transition-all duration-200"
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all duration-200"
           >
             <LogOut className="w-4 h-4" />
             <span className="font-bold text-xs">Keluar Sistem</span>

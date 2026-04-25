@@ -16,9 +16,6 @@ const saleSchema = z.object({
   project_id: z.string().min(1, 'Pilih proyek'),
   unit_id: z.string().min(1, 'Pilih unit'),
   marketing_id: z.string().min(1, 'Pilih marketing'),
-  identity_number: z.string().optional().nullable(),
-  job: z.string().optional().nullable(),
-  birth_info: z.string().optional().nullable(),
   supervisor: z.string().optional().nullable(),
   manager: z.string().optional().nullable(),
   makelar: z.string().optional().nullable(),
@@ -68,13 +65,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
     resolver: zodResolver(saleSchema),
     defaultValues: initialData ? {
       ...initialData,
-      customer_id: initialData.customer_id || initialData.customer?.id,
-      unit_id: initialData.unit_id || initialData.unit?.id,
-      project_id: initialData.project_id || initialData.unit?.project_id,
       marketing_id: initialData.marketing_id || initialData.marketing?.id,
-      identity_number: initialData.identity_number || initialData.customer?.identity_number,
-      job: initialData.job || initialData.customer?.job,
-      birth_info: initialData.birth_info || initialData.customer?.birth_info,
       promo_id: initialData.promo_id || initialData.promo?.id,
       installments: initialData.installments || []
     } : {
@@ -102,6 +93,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const watchDiscount = watch('discount');
   const watchPromoId = watch('promo_id');
   const watchPaymentMethod = watch('payment_method');
+  const watchDpDate = watch('dp_date');
+  const watchPelunasanDate = watch('pelunasan_date');
+  const watchCustomerId = watch('customer_id');
 
   // Debug: Log validation errors
   useEffect(() => {
@@ -241,6 +235,13 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
     setValue('final_price', Math.max(0, totalPrice - promoValue));
   }, [watchPrice, watchDiscount, watchPromoId, promos, setValue]);
 
+  // Otomatisasi Tanggal UKL/Pelunasan mengikuti Tanggal DP
+  useEffect(() => {
+    if (watchDpDate && !watchPelunasanDate) {
+      setValue('pelunasan_date', watchDpDate);
+    }
+  }, [watchDpDate, setValue]);
+
   const onSubmit = async (values: SaleFormValues) => {
     setLoading(true);
     try {
@@ -265,11 +266,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       
       // Update or ensure customer identity info is synced regardless of source
       if (finalCustomerId) {
-        await api.update('customers', finalCustomerId, {
-          identity_number: values.identity_number,
-          job: values.job,
-          birth_info: values.birth_info
-        });
+        // We no longer update identity info from SaleForm as it's handled in CustomerForm
       }
 
       // Insert or Update sale record
@@ -440,12 +437,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
               <input type="radio" value="kpr" {...register('payment_method')} className="w-4 h-4 text-indigo-600" />
               <span className="text-sm text-slate-600">KPR</span>
             </label>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input label="NIK / No. KTP" {...register('identity_number')} placeholder="Masukkan 16 digit NIK" />
-            <Input label="Pekerjaan" {...register('job')} placeholder="Misal: Karyawan Swasta" />
-            <Input label="Tempat, Tgl Lahir" {...register('birth_info')} placeholder="Misal: Jakarta, 01-01-1990" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-4">

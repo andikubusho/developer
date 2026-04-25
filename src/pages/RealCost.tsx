@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter, BarChart3, ArrowLeft, TrendingUp, TrendingDown, Target, Wallet, Package, HardHat, Info } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -14,6 +15,7 @@ import {
 } from 'recharts';
 
 const RealCostPage: React.FC = () => {
+  const navigate = useNavigate();
   const { isMockMode, setDivision } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -142,7 +144,7 @@ const RealCostPage: React.FC = () => {
     <div className="space-y-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto text-slate-400 hover:text-primary transition-colors">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto text-slate-400 hover:text-primary transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Plus, Search, Filter, ShoppingBag, FileText, ArrowLeft, TrendingUp, Users, CheckCircle2, MoreVertical, Download, X, Edit, Trash2, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Sale } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -20,7 +21,8 @@ interface Template {
 }
 
 const Sales: React.FC = () => {
-  const { setDivision } = useAuth();
+  const navigate = useNavigate();
+  const { setDivision, profile } = useAuth();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,7 +62,12 @@ const Sales: React.FC = () => {
     try {
       setLoading(true);
       const from = (currentPage - 1) * pageSize;
-      let queryParams = `select=*,unit:units(id,unit_number,price,project_id,project:projects(id,name)),customer:customers(id,full_name),marketing:marketing_staff(id,name)&order=sale_date.desc&offset=${from}&limit=${pageSize}`;
+      
+      // Determine if filtering is needed based on role
+      const isMarketingOnly = profile?.role === 'marketing';
+      const marketingFilter = isMarketingOnly ? `&marketing_id=eq.${profile.id}` : '';
+
+      let queryParams = `select=*,unit:units(id,unit_number,price,project_id,project:projects(id,name)),customer:customers(id,full_name),marketing:marketing_staff(id,name)&order=sale_date.desc&offset=${from}&limit=${pageSize}${marketingFilter}`;
       
       if (activeTab !== 'all') queryParams += `&status=eq.${activeTab}`;
       if (debouncedSearch) queryParams += `&or=(status.ilike.*${debouncedSearch}*,payment_method.ilike.*${debouncedSearch}*)`;
@@ -68,13 +75,14 @@ const Sales: React.FC = () => {
       const data = await api.get('sales', queryParams);
       setSales(data || []);
       
-      let countQuery = `select=id`;
+      let countQuery = `select=id${marketingFilter}`;
       if (activeTab !== 'all') countQuery += `&status=eq.${activeTab}`;
       if (debouncedSearch) countQuery += `&or=(status.ilike.*${debouncedSearch}*,payment_method.ilike.*${debouncedSearch}*)`;
       const countData = await api.get('sales', countQuery);
       setTotalCount(countData?.length || 0);
       
-      const allSales = await api.get('sales', 'select=final_price,status');
+      const allSalesParams = `select=final_price,status${marketingFilter}`;
+      const allSales = await api.get('sales', allSalesParams);
       if (allSales) {
         setStats({
           totalOmzet: allSales.reduce((acc: number, curr: any) => acc + (curr.status !== 'cancelled' ? curr.final_price : 0), 0),
@@ -179,7 +187,7 @@ const Sales: React.FC = () => {
     <div className="space-y-6 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto hover:bg-slate-100 rounded-xl"><ArrowLeft className="w-6 h-6 text-slate-600" /></Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto hover:bg-slate-100 rounded-xl"><ArrowLeft className="w-6 h-6 text-slate-600" /></Button>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Penjualan Properti</h1>
             <p className="text-slate-500 font-medium text-sm flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />Monitoring Transaksi Real-time</p>

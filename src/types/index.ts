@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'marketing' | 'owner' | 'teknik' | 'keuangan' | 'audit' | 'hrd' | 'accounting';
+export type UserRole = 'admin' | 'marketing' | 'owner' | 'supervisor' | 'manager' | 'teknik' | 'keuangan' | 'audit' | 'hrd' | 'accounting';
 
 export type LeadStatus = 'no respon' | 'low' | 'medium' | 'hot';
 
@@ -13,10 +13,20 @@ export interface Capabilities {
 export interface Profile {
   id: string;
   full_name: string;
+  username: string;
   role: UserRole;
+  role_id?: string | null;
   email?: string;
   avatar_url?: string;
   permissions?: Record<string, Capabilities>;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  division: UserRole;
+  permissions: Record<string, Capabilities>;
+  created_at: string;
 }
 
 export interface Project {
@@ -69,6 +79,8 @@ export interface Customer {
   phone: string;
   address: string;
   identity_number: string;
+  job?: string;
+  birth_info?: string;
 }
 
 export interface Lead {

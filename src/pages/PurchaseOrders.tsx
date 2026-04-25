@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, MoreVertical, Edit, Trash2, Package, Truck, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { api } from '../lib/api';
 import { PurchaseOrder, Material } from '../types';
@@ -11,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getMockData, saveMockData } from '../lib/storage';
 
 const PurchaseOrders: React.FC = () => {
+  const navigate = useNavigate();
   const { isMockMode, division, setDivision } = useAuth();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -133,10 +135,7 @@ const PurchaseOrders: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setDivision(null);
-              setDivision(null);
-            }}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />

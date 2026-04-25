@@ -116,6 +116,7 @@ export default function App() {
               <Route path="master-material" element={<MasterMaterial />} />
               <Route path="marketing-schedule" element={<MarketingSchedule />} />
               <Route path="marketing-master" element={<MarketingMaster />} />
+              <Route path="user-management" element={<UserManagement />} />
               <Route path="document-templates" element={<DocumentTemplates />} />
               
               {/* Teknik */}

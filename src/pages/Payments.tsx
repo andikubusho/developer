@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, CheckCircle2, XCircle, Clock, FileText, Download, ArrowLeft } from 'lucide-react';
 import { Payment } from '../types';
 import { Button } from '../components/ui/Button';
@@ -13,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 
 const Payments: React.FC = () => {
+  const navigate = useNavigate();
   const { setDivision } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +104,7 @@ const Payments: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>

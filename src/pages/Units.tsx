@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Home, Tag, CheckCircle2, Clock, ArrowLeft, Printer, FileDown, Trash2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -13,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 
 const Units: React.FC = () => {
+  const navigate = useNavigate();
   const { setDivision } = useAuth();
   const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,7 +177,7 @@ const Units: React.FC = () => {
     <div id="units-report" className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Banknote, ArrowLeft, Edit, Trash2, Printer, Download, FileText } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -11,6 +12,7 @@ import { api } from '../lib/api';
 import { getMockData, saveMockData } from '../lib/storage';
 
 const PayrollPage: React.FC = () => {
+  const navigate = useNavigate();
   const { isMockMode, division, setDivision } = useAuth();
   const [payroll, setPayroll] = useState<Payroll[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,10 +135,7 @@ const PayrollPage: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setDivision(null);
-              setDivision(null);
-            }}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />

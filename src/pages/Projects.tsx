@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Edit, Trash2, MapPin, ArrowLeft } from 'lucide-react';
 import { Project } from '../types';
 import { Button } from '../components/ui/Button';
@@ -12,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 
 const Projects: React.FC = () => {
+  const navigate = useNavigate();
   const { setDivision } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +77,7 @@ const Projects: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => setDivision(null)}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter, DollarSign, ArrowLeft, Eye, Download, AlertTriangle, CheckCircle, TrendingDown, TrendingUp, Plus } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -11,6 +12,7 @@ import { api } from '../lib/api';
 import { getMockData, saveMockData } from '../lib/storage';
 
 const AuditCostsPage: React.FC = () => {
+  const navigate = useNavigate();
   const { isMockMode, division, setDivision } = useAuth();
   const [costItems, setCostItems] = useState<AuditCostItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,10 +126,7 @@ const AuditCostsPage: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setDivision(null);
-              setDivision(null);
-            }}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />

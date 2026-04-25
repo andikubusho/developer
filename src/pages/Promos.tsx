@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, ArrowLeft, Edit, Trash2, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -11,6 +12,7 @@ import { formatDate, formatCurrency } from '../lib/utils';
 import { api } from '../lib/api';
 
 const Promos: React.FC = () => {
+  const navigate = useNavigate();
   const { setDivision } = useAuth();
   const [promos, setPromos] = useState<Promo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +109,7 @@ const Promos: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>

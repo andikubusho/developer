@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FileText, Printer, ArrowLeft, Trash2, Plus, Percent, Edit2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -14,6 +15,7 @@ import logoPerusahaan from '../assets/logo-perusahaan.png';
 import { api } from '../lib/api';
 
 const PriceList: React.FC = () => {
+  const navigate = useNavigate();
   const { setDivision } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -212,7 +214,7 @@ const PriceList: React.FC = () => {
       {/* ─── SCREEN UI: Modern App View (REVERTED TO ORIGINAL) ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print px-4 pt-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>

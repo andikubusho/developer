@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, History, ArrowLeft, Edit, Trash2, Download } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -9,6 +10,7 @@ import { JournalEntry } from '../types';
 import { formatDate, formatCurrency, cn } from '../lib/utils';
 
 const GeneralJournalPage: React.FC = () => {
+  const navigate = useNavigate();
   const { isMockMode, division, setDivision } = useAuth();
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,10 +153,7 @@ const GeneralJournalPage: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setDivision(null);
-              setDivision(null);
-            }}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />

@@ -9,10 +9,12 @@ import { Textarea } from '../ui/Textarea';
 
 const customerSchema = z.object({
   full_name: z.string().min(3, 'Nama minimal 3 karakter'),
-  email: z.string().email('Email tidak valid'),
+  email: z.string().email('Email tidak valid').optional().nullable().or(z.literal('')),
   phone: z.string().min(10, 'Nomor telepon minimal 10 digit'),
   address: z.string().min(5, 'Alamat minimal 5 karakter'),
   identity_number: z.string().min(16, 'NIK minimal 16 digit'),
+  job: z.string().optional().nullable(),
+  birth_info: z.string().optional().nullable(),
 });
 
 type CustomerFormValues = z.infer<typeof customerSchema>;
@@ -68,10 +70,24 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ onSuccess, onCancel,
           error={errors.phone?.message} 
         />
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input 
+          label="Nomor Identitas (NIK)" 
+          {...register('identity_number')} 
+          error={errors.identity_number?.message} 
+        />
+        <Input 
+          label="Pekerjaan" 
+          {...register('job')} 
+          error={errors.job?.message} 
+          placeholder="Misal: Karyawan Swasta"
+        />
+      </div>
       <Input 
-        label="Nomor Identitas (NIK)" 
-        {...register('identity_number')} 
-        error={errors.identity_number?.message} 
+        label="Tempat, Tgl Lahir" 
+        {...register('birth_info')} 
+        error={errors.birth_info?.message} 
+        placeholder="Misal: Jakarta, 01-01-1990"
       />
       <Textarea 
         label="Alamat Lengkap" 

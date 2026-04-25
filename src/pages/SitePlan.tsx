@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Project } from '../types';
 import { 
@@ -10,13 +11,15 @@ import {
   Maximize2,
   Lock,
   Unlock,
-  Save
+  Save,
+  ArrowLeft
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { cn } from '../lib/utils';
 
 const SitePlan = () => {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -147,6 +150,9 @@ const SitePlan = () => {
       {/* Cinematic Minimalist Header */}
       <div className="h-20 w-full bg-slate-900/50 backdrop-blur-xl border-b border-white/5 px-8 flex items-center justify-between z-50">
         <div className="flex items-center gap-10">
+           <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="text-white hover:bg-white/10 rounded-xl p-2 h-auto">
+              <ArrowLeft className="w-6 h-6" />
+           </Button>
            <div className="flex flex-col">
               <span className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-1">Project View</span>
               <div className="flex items-center gap-4">

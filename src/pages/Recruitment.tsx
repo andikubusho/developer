@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, UserPlus, ArrowLeft, Edit, Trash2, Mail, Phone, FileText } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -9,6 +10,7 @@ import { Recruitment } from '../types';
 import { formatDate, cn } from '../lib/utils';
 
 const RecruitmentPage: React.FC = () => {
+  const navigate = useNavigate();
   const { isMockMode, division, setDivision } = useAuth();
   const [recruitment, setRecruitment] = useState<Recruitment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,10 +136,7 @@ const RecruitmentPage: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setDivision(null);
-              setDivision(null);
-            }}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Filter, UserPlus, Mail, Phone, MapPin, ArrowLeft } from 'lucide-react';
+import { Plus, Search, Filter, UserPlus, Mail, Phone, MapPin, ArrowLeft, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Customer } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -8,8 +9,10 @@ import { Input } from '../components/ui/Input';
 import { CustomerForm } from '../components/forms/CustomerForm';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 const Customers: React.FC = () => {
+  const navigate = useNavigate();
   const { setDivision } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +52,30 @@ const Customers: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus konsumen "${name}"? Data ini mungkin terkait dengan transaksi penjualan.`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      alert('Konsumen berhasil dihapus.');
+      fetchCustomers();
+    } catch (error: any) {
+      console.error('Error deleting customer:', error);
+      alert(`Gagal menghapus konsumen: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSuccess = () => {
     setIsModalOpen(false);
     fetchCustomers();
@@ -61,7 +88,7 @@ const Customers: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => setDivision(null)}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -161,7 +188,17 @@ const Customers: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(customer)}>Edit</Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(customer)}>Edit</Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleDelete(customer.id, customer.full_name)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))

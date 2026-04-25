@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart3, FileText, Download, Calendar, Filter, ArrowLeft } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -9,6 +10,7 @@ import 'jspdf-autotable';
 import { useAuth } from '../contexts/AuthContext';
 
 const Reports: React.FC = () => {
+  const navigate = useNavigate();
   const { division, setDivision } = useAuth();
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -21,10 +23,7 @@ const Reports: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setDivision(null);
-              setDivision(null);
-            }}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -75,10 +74,7 @@ const Reports: React.FC = () => {
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={() => {
-            setDivision(null);
-            setDivision(null);
-          }}
+          onClick={() => navigate('/')}
           className="p-2 h-auto"
         >
           <ArrowLeft className="w-5 h-5" />

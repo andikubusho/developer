@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart3, ArrowLeft, Download, FileText, PieChart, TrendingUp, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, cn } from '../lib/utils';
 
 const FinancialReportsPage: React.FC = () => {
+  const navigate = useNavigate();
   const { division, setDivision } = useAuth();
   const [selectedReport, setSelectedReport] = useState<'pnl' | 'balance' | 'cashflow'>('pnl');
 
@@ -22,10 +24,7 @@ const FinancialReportsPage: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setDivision(null);
-              setDivision(null);
-            }}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />

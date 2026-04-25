@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Plus, ArrowLeft, ChevronLeft, ChevronRight, Printer, FileDown } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -12,6 +13,7 @@ import { cn } from '../lib/utils';
 import { getMockData, saveMockData } from '../lib/storage';
 
 const MarketingSchedulePage: React.FC = () => {
+  const navigate = useNavigate();
   const { isMockMode, division, setDivision } = useAuth();
   const [schedules, setSchedules] = useState<MarketingSchedule[]>([]);
   const [staff, setStaff] = useState<MarketingStaff[]>([]);
@@ -293,10 +295,7 @@ const MarketingSchedulePage: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setDivision(null);
-              setDivision(null);
-            }}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />

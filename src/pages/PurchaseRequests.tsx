@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ClipboardList, 
   Plus, 
@@ -29,6 +30,7 @@ interface PRItem {
 }
 
 const PurchaseRequests: React.FC = () => {
+  const navigate = useNavigate();
   const { setDivision, profile } = useAuth();
   const [requests, setRequests] = useState<any[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -169,7 +171,7 @@ const PurchaseRequests: React.FC = () => {
     <div className="space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="flex items-center gap-6">
-          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-3 h-auto rounded-2xl bg-white shadow-sm border border-slate-100">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-3 h-auto rounded-2xl bg-white shadow-sm border border-slate-100">
             <ArrowLeft className="w-5 h-5 text-slate-600" />
           </Button>
           <div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Receipt, ArrowLeft, Edit, Trash2, Download, FileText } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -18,6 +19,7 @@ interface TaxRecord {
 }
 
 const TaxationPage: React.FC = () => {
+  const navigate = useNavigate();
   const { isMockMode, division, setDivision } = useAuth();
   const [taxRecords, setTaxRecords] = useState<TaxRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,10 +108,7 @@ const TaxationPage: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setDivision(null);
-              setDivision(null);
-            }}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />

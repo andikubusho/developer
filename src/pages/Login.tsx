@@ -7,9 +7,9 @@ import { Building2, Sparkles, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {
-  const { user, mockLogin } = useAuth();
+  const { user, signIn, mockLogin } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,11 +26,13 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
+      const internalEmail = `${username.toLowerCase()}@internal.com`;
+      const result = await signIn(username, password);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Username atau Password salah.');
+      }
+      
       navigate('/');
     } catch (err: any) {
       if (err.message === 'Failed to fetch') {
@@ -103,11 +105,11 @@ const Login: React.FC = () => {
               </div>
             )}
             <Input
-              label="Email Perusahaan"
-              type="email"
-              placeholder="nama@perusahaan.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              label="Username"
+              type="text"
+              placeholder="Masukkan username Anda"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
               required
             />
             <div className="space-y-2">
@@ -122,6 +124,20 @@ const Login: React.FC = () => {
             </div>
             <Button type="submit" className="w-full h-14 rounded-2xl text-md font-black shadow-xl shadow-indigo-100" isLoading={loading}>
               Masuk ke Dashboard
+            </Button>
+
+            <div className="relative flex items-center justify-center py-2">
+              <div className="border-t border-slate-100 w-full"></div>
+              <span className="bg-white px-4 text-[10px] font-black text-slate-300 uppercase tracking-widest absolute">Atau</span>
+            </div>
+
+            <Button 
+              type="button" 
+              variant="ghost" 
+              onClick={mockLogin}
+              className="w-full h-14 rounded-2xl text-slate-500 border-2 border-slate-100 hover:bg-slate-50 font-bold"
+            >
+              Masuk Mode Demo (Admin)
             </Button>
           </form>
 

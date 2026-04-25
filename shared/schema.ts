@@ -681,57 +681,57 @@ export type InsertRole = z.infer<typeof insertRoleSchema>;
 
 export const MENU_KEYS = [
   // UTAMA
-  { key: "dashboard", label: "Dashboard", group: "Utama", capabilities: { view: true, create: false, edit: false, delete: false } },
+  { key: "dashboard", label: "Dashboard", group: "Utama", capabilities: { view: true, create: false, edit: false, delete: false, print: false } },
 
   // MARKETING
-  { key: "leads", label: "Calon Konsumen", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "follow-ups", label: "Follow Up", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "leads", label: "Calon Konsumen", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "follow-ups", label: "Follow Up", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "deposits", label: "Titipan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
   { key: "sales", label: "Penjualan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
-  { key: "promos", label: "Master Promo", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "promos", label: "Master Promo", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "price-list", label: "Price List", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
-  { key: "site-plan", label: "Siteplan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "floor-plan", label: "Denah", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "marketing-schedule", label: "Jadwal Marketing", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "marketing-master", label: "Master Marketing", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "site-plan", label: "Siteplan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "floor-plan", label: "Denah", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "marketing-schedule", label: "Jadwal Marketing", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "marketing-master", label: "Master Marketing", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 
   // TEKNIK
-  { key: "projects", label: "Proyek", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "units", label: "Unit Properti", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "projects", label: "Proyek", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "units", label: "Unit Properti", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "rab", label: "RAB Proyek", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
-  { key: "construction-progress", label: "Progress Bangun", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "materials", label: "Stok Material", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "purchase-requests", label: "Purchase Request", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "construction-progress", label: "Progress Bangun", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "materials", label: "Stok Material", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "purchase-requests", label: "Purchase Request", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "spk", label: "SPK Kontraktor", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
-  { key: "opname", label: "Opname/Upah", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "opname", label: "Opname/Upah", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "real-cost", label: "Real Cost", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
 
   // KEUANGAN
   { key: "payments", label: "Pembayaran Konsumen", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
-  { key: "kpr-disbursement", label: "Pencairan KPR", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "supplier-payments", label: "Pembayaran Supplier", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "kpr-disbursement", label: "Pencairan KPR", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "supplier-payments", label: "Pembayaran Supplier", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "cash-flow", label: "Cash Flow", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
-  { key: "petty-cash", label: "Petty Cash", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "petty-cash", label: "Petty Cash", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 
   // ACCOUNTING
-  { key: "general-journal", label: "Jurnal Umum", group: "Accounting", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "general-journal", label: "Jurnal Umum", group: "Accounting", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "ledger", label: "Buku Besar", group: "Accounting", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
-  { key: "financial-reports", label: "Laporan Keuangan", group: "Accounting", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
-  { key: "taxation", label: "Perpajakan", group: "Accounting", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "financial-reports", label: "Laporan Keuangan", group: "Accounting", capabilities: { view: true, create: false, edit: false, delete: false, print: true } },
+  { key: "taxation", label: "Perpajakan", group: "Accounting", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 
   // HRD
-  { key: "employees", label: "Data Karyawan", group: "HRD", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "attendance", label: "Absensi & Cuti", group: "HRD", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "employees", label: "Data Karyawan", group: "HRD", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "attendance", label: "Absensi & Cuti", group: "HRD", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "payroll", label: "Payroll", group: "HRD", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
-  { key: "recruitment", label: "Rekrutmen", group: "HRD", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "recruitment", label: "Rekrutmen", group: "HRD", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 
   // AUDIT
-  { key: "audit-transactions", label: "Audit Transaksi", group: "Audit", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "audit-stock", label: "Audit Stok", group: "Audit", capabilities: { view: true, create: true, edit: true, delete: true } },
-  { key: "audit-costs", label: "Audit Biaya", group: "Audit", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "audit-transactions", label: "Audit Transaksi", group: "Audit", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "audit-stock", label: "Audit Stok", group: "Audit", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "audit-costs", label: "Audit Biaya", group: "Audit", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 
   // SISTEM
-  { key: "user-management", label: "User & Role", group: "Sistem", capabilities: { view: true, create: true, edit: true, delete: true } },
+  { key: "user-management", label: "User & Role", group: "Sistem", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 ] as const;
 
 export const pelangganProgram = pgTable("pelanggan_program", {

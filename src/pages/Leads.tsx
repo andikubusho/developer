@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, UserPlus, Phone, MapPin, ArrowLeft, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -10,7 +11,8 @@ import { cn, formatDateTime } from '../lib/utils';
 import { api } from '../lib/api';
 
 const Leads: React.FC = () => {
-  const { division, setDivision } = useAuth();
+  const navigate = useNavigate();
+  const { division, setDivision, profile } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,15 +62,18 @@ const Leads: React.FC = () => {
         source: '',
         status: 'no respon',
         description: '',
-        marketing_id: ''
+        marketing_id: profile?.role === 'marketing' ? profile.id : ''
       });
     }
-  }, [selectedLead, isModalOpen]);
+  }, [selectedLead, isModalOpen, profile]);
 
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const data = await api.get('leads', 'select=*,marketing:marketing_staff(name)&order=created_at.desc&limit=50');
+      const isMarketingOnly = profile?.role === 'marketing';
+      const marketingFilter = isMarketingOnly ? `&marketing_id=eq.${profile.id}` : '';
+      
+      const data = await api.get('leads', `select=*,marketing:marketing_staff(name)&order=created_at.desc&limit=50${marketingFilter}`);
       setLeads(data || []);
       setError(null);
     } catch (err: any) {
@@ -143,7 +148,7 @@ const Leads: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => setDivision(null)}
+            onClick={() => navigate('/')}
             className="p-2 h-auto"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -275,19 +280,21 @@ const Leads: React.FC = () => {
             value={formData.source}
             onChange={(e) => setFormData({ ...formData, source: e.target.value })}
           />
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Marketing</label>
-            <select 
-              className="w-full h-10 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={formData.marketing_id}
-              onChange={(e) => setFormData({ ...formData, marketing_id: e.target.value })}
-            >
-              <option value="">-- Pilih Marketing --</option>
-              {staff.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
+          {profile?.role !== 'marketing' && (
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Marketing</label>
+              <select 
+                className="w-full h-10 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={formData.marketing_id}
+                onChange={(e) => setFormData({ ...formData, marketing_id: e.target.value })}
+              >
+                <option value="">-- Pilih Marketing --</option>
+                {staff.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="text-sm font-medium text-slate-700 mb-1.5 block">Status</label>
             <div className="flex flex-wrap gap-2">

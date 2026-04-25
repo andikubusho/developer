@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -11,7 +12,8 @@ import { cn, formatDate, formatCurrency } from '../lib/utils';
 import { api } from '../lib/api';
 
 const Deposits: React.FC = () => {
-  const { setDivision } = useAuth();
+  const navigate = useNavigate();
+  const { setDivision, profile } = useAuth();
   const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,14 +69,16 @@ const Deposits: React.FC = () => {
         payment_type: 'cash',
         submission: '',
         description: '',
-        marketing_id: ''
+        marketing_id: profile?.role === 'marketing' ? profile.id : ''
       });
     }
-  }, [selectedDeposit, isModalOpen]);
+  }, [selectedDeposit, isModalOpen, profile]);
 
   const fetchLeads = async () => {
     try {
-      const data = await api.get('leads', 'select=*&order=name.asc');
+      const isMarketingOnly = profile?.role === 'marketing';
+      const marketingFilter = isMarketingOnly ? `&marketing_id=eq.${profile.id}` : '';
+      const data = await api.get('leads', `select=*&order=name.asc${marketingFilter}`);
       setLeads(data || []);
     } catch (error) {
       console.error('Error fetching leads:', error);
@@ -84,7 +88,9 @@ const Deposits: React.FC = () => {
   const fetchDeposits = async () => {
     try {
       setLoading(true);
-      const data = await api.get('deposits', 'select=*,marketing:marketing_staff(name)&order=created_at.desc');
+      const isMarketingOnly = profile?.role === 'marketing';
+      const marketingFilter = isMarketingOnly ? `&marketing_id=eq.${profile.id}` : '';
+      const data = await api.get('deposits', `select=*,marketing:marketing_staff(name)&order=created_at.desc${marketingFilter}`);
       setDeposits(data || []);
     } catch (error) {
       console.error('Error fetching deposits:', error);
@@ -165,7 +171,7 @@ const Deposits: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setDivision(null)} className="p-2 h-auto">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
@@ -250,19 +256,21 @@ const Deposits: React.FC = () => {
               ))}
             </select>
           </div>
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Marketing</label>
-            <select 
-              className="w-full h-10 rounded-lg border border-slate-300 p-2 text-sm" 
-              value={formData.marketing_id}
-              onChange={(e) => setFormData({ ...formData, marketing_id: e.target.value })}
-            >
-              <option value="">-- Pilih Marketing --</option>
-              {staff.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
+          {profile?.role !== 'marketing' && (
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Marketing</label>
+              <select 
+                className="w-full h-10 rounded-lg border border-slate-300 p-2 text-sm" 
+                value={formData.marketing_id}
+                onChange={(e) => setFormData({ ...formData, marketing_id: e.target.value })}
+              >
+                <option value="">-- Pilih Marketing --</option>
+                {staff.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <Input label="Nama" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
           <Input label="No. Telp" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
           <CurrencyInput label="Nilai Titipan" value={formData.amount} onValueChange={(values) => setFormData({ ...formData, amount: values.floatValue || 0 })} required />
