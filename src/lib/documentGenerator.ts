@@ -84,6 +84,9 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
       pelunasan_terbilang: terbilang(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)) + " Rupiah",
       pelunasan_date: (sale as any).pelunasan_date ? new Date((sale as any).pelunasan_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-",
       
+      kpr_amount: formatCurrency(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)),
+      kpr_terbilang: terbilang(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)) + " Rupiah",
+      
       total_keseluruhan: formatCurrency(sale.final_price + ((sale as any).ukl_amount || 0)),
       total_keseluruhan_terbilang: terbilang(sale.final_price + ((sale as any).ukl_amount || 0)) + " Rupiah",
       
