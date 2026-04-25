@@ -348,7 +348,6 @@ const PriceList: React.FC = () => {
           <div className="flex-1 flex items-center justify-end gap-3">
             <div className="text-right">
               <h2 className="text-sm font-black text-black leading-none uppercase">ABADI LESTARI LAND</h2>
-              <p className="text-[7pt] font-bold text-slate-500">Premium Developer</p>
             </div>
             <img src={logoPerusahaan} alt="Logo Perusahaan" className="h-14 w-auto object-contain" />
           </div>
