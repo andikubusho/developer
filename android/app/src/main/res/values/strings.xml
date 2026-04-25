@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PropDev Abadi</string>
+    <string name="title_activity_main">PropDev Abadi</string>
+    <string name="package_name">com.abadilestari.propdev</string>
+    <string name="custom_url_scheme">com.abadilestari.propdev</string>
+</resources>
