@@ -337,19 +337,15 @@ const PriceList: React.FC = () => {
 
       <div className="hidden print-block">
         {/* Header Section */}
-        <div className="doc-header flex justify-between items-end mb-8 border-b-2 border-black pb-4">
+        <div className="doc-header flex justify-between items-center mb-8 border-b-2 border-black pb-4">
           <div className="flex-1">
-            {/* Kosong untuk keseimbangan atau bisa diisi info kontak kecil */}
+            {/* Kosong untuk keseimbangan */}
           </div>
           <div className="doc-title-block text-center flex-1 flex flex-col items-center">
-            <img src={logoProyek} alt="Logo Proyek" className="h-16 w-auto object-contain mb-2" />
-            <h1 className="text-3xl font-black text-black uppercase leading-tight tracking-tighter">GOLDEN CANYON</h1>
+            <img src={logoProyek} alt="Logo Proyek" className="h-20 w-auto object-contain" />
           </div>
-          <div className="flex-1 flex items-center justify-end gap-3">
-            <div className="text-right">
-              <h2 className="text-sm font-black text-black leading-none uppercase">ABADI LESTARI LAND</h2>
-            </div>
-            <img src={logoPerusahaan} alt="Logo Perusahaan" className="h-14 w-auto object-contain" />
+          <div className="flex-1 flex items-center justify-end">
+            <img src={logoPerusahaan} alt="Logo Perusahaan" className="h-16 w-auto object-contain" />
           </div>
         </div>
 
