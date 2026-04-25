@@ -19,7 +19,7 @@ const Layout: React.FC = () => {
 
       {/* Sidebar Container */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 lg:relative lg:block
+        fixed inset-y-0 left-0 z-50 lg:relative lg:block print:hidden
         transition-transform duration-300 ease-in-out
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
@@ -28,7 +28,7 @@ const Layout: React.FC = () => {
 
       <main className="flex-1 w-full flex flex-col min-w-0 overflow-hidden">
         {/* Mobile Header */}
-        <header className="lg:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 sticky top-0 z-30">
+        <header className="lg:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 sticky top-0 z-30 print:hidden">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-xs">PD</span>
