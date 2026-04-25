@@ -75,6 +75,15 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
       booking_fee_terbilang: terbilang(sale.booking_fee || 0) + " Rupiah",
       dp_amount: formatCurrency((sale as any).dp_amount || 0),
       dp_terbilang: terbilang((sale as any).dp_amount || 0) + " Rupiah",
+      dp_date: (sale as any).dp_date ? new Date((sale as any).dp_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-",
+      
+      ukl_amount: formatCurrency((sale as any).ukl_amount || 0),
+      ukl_terbilang: terbilang((sale as any).ukl_amount || 0) + " Rupiah",
+      
+      pelunasan_amount: formatCurrency(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)),
+      pelunasan_terbilang: terbilang(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)) + " Rupiah",
+      pelunasan_date: (sale as any).pelunasan_date ? new Date((sale as any).pelunasan_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-",
+      
       sisa_pelunasan: formatCurrency(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)),
       
       // Metode Bayar

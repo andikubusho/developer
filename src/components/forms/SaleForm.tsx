@@ -36,6 +36,8 @@ const saleSchema = z.object({
   cash_payment_type: z.enum(['cash', 'bank']).optional().nullable(),
   dp_amount: z.number().optional().nullable(),
   dp_date: z.string().optional().nullable(),
+  ukl_amount: z.number().min(0).optional().nullable(),
+  pelunasan_date: z.string().optional().nullable(),
   installments: z.array(z.object({
     date: z.string(),
     amount: z.number().min(0),
@@ -86,6 +88,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       booking_fee: 0,
       dp_amount: 0,
       dp_date: new Date().toISOString().split('T')[0],
+      ukl_amount: 0,
+      pelunasan_date: '',
       installments: [],
     }
   });
@@ -288,6 +292,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         payment_method: values.payment_method,
         dp_amount: values.dp_amount || 0,
         dp_date: values.dp_date || null,
+        ukl_amount: values.ukl_amount || 0,
+        pelunasan_date: values.pelunasan_date || null,
         status: initialData ? initialData.status : 'active'
       };
 
@@ -488,6 +494,17 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
               )}
             </div>
             <Input label="Tanggal DP" type="date" {...register('dp_date')} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-4">
+            <Controller
+              name="ukl_amount"
+              control={control}
+              render={({ field }) => (
+                <CurrencyInput label="Biaya UKL 1 Tahun" value={field.value || 0} onValueChange={(v) => field.onChange(v.floatValue || 0)} error={errors.ukl_amount?.message} />
+              )}
+            />
+            <Input label="Tanggal Rencana Pelunasan" type="date" {...register('pelunasan_date')} />
           </div>
 
           {watchPaymentMethod === 'installment' && (

@@ -169,6 +169,10 @@ export interface Sale {
   payment_method: 'cash' | 'kpr' | 'installment';
   status: 'pending' | 'active' | 'completed' | 'cancelled';
   sale_date: string;
+  dp_amount?: number;
+  dp_date?: string;
+  ukl_amount?: number;
+  pelunasan_date?: string;
   unit?: Unit;
   customer?: Customer;
   marketing?: Profile;
