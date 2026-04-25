@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { api } from './src/lib/api';
 
 async function check() {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { api } from '../lib/api';
@@ -304,13 +305,13 @@ const UserManagement: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">User Management</h1>
-            <p className="text-slate-500 font-medium">Kelola akses dan jabatan pengguna sistem</p>
+            <h1 className="text-3xl font-black text-text-primary tracking-tight">User Management</h1>
+            <p className="text-text-secondary font-medium">Kelola akses dan jabatan pengguna sistem</p>
           </div>
         </div>
         <Button 
           onClick={activeTab === 'users' ? handleAddUser : handleAddRole} 
-          className="gap-2 shadow-lg shadow-primary/20"
+          className="gap-2"
         >
           {activeTab === 'users' ? <UserPlus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           {activeTab === 'users' ? 'Tambah User' : 'Buat Jabatan'}
@@ -318,12 +319,12 @@ const UserManagement: React.FC = () => {
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex p-1.5 bg-slate-100 rounded-2xl w-full max-w-md relative overflow-hidden">
+      <div className="flex p-1.5 bg-glass-deep backdrop-blur-glass-sm rounded-pill w-full max-w-md relative overflow-hidden border border-white/40 shadow-inset">
         <button
           onClick={() => setActiveTab('users')}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold transition-all relative z-10",
-            activeTab === 'users' ? "text-primary" : "text-slate-500 hover:text-slate-700"
+            "flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black transition-all relative z-10 uppercase tracking-widest",
+            activeTab === 'users' ? "text-white" : "text-text-secondary hover:text-text-primary"
           )}
         >
           <UsersIcon className="w-4 h-4" />
@@ -332,15 +333,15 @@ const UserManagement: React.FC = () => {
         <button
           onClick={() => setActiveTab('roles')}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold transition-all relative z-10",
-            activeTab === 'roles' ? "text-primary" : "text-slate-500 hover:text-slate-700"
+            "flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black transition-all relative z-10 uppercase tracking-widest",
+            activeTab === 'roles' ? "text-white" : "text-text-secondary hover:text-text-primary"
           )}
         >
           <LayoutGrid className="w-4 h-4" />
-          Manajemen Jabatan/Role
+          Jabatan
         </button>
         <motion.div
-          className="absolute top-1.5 bottom-1.5 bg-white rounded-xl shadow-sm z-0"
+          className="absolute top-1.5 bottom-1.5 bg-accent-dark rounded-pill shadow-glass z-0"
           initial={false}
           animate={{
             x: activeTab === 'users' ? 0 : '100%',
@@ -361,65 +362,63 @@ const UserManagement: React.FC = () => {
             transition={{ duration: 0.3 }}
           >
             <Card className="p-0 overflow-hidden border-none shadow-premium">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[900px]">
-                  <thead>
-                    <tr className="bg-slate-50/50 text-slate-500 text-[10px] uppercase tracking-widest border-b">
-                      <th className="px-6 py-4 font-black">Staf</th>
-                      <th className="px-6 py-4 font-black">Username</th>
-                      <th className="px-6 py-4 font-black">Role Utama</th>
-                      <th className="px-6 py-4 font-black">Jabatan Detail</th>
-                      <th className="px-6 py-4 font-black text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
+              <Table>
+                  <THead>
+                    <TR className="bg-white/20 text-text-secondary text-[10px] uppercase tracking-widest border-b">
+                      <TH className="px-6 py-4 font-black">Staf</TH>
+                      <TH className="px-6 py-4 font-black">Username</TH>
+                      <TH className="px-6 py-4 font-black">Role Utama</TH>
+                      <TH className="px-6 py-4 font-black">Jabatan Detail</TH>
+                      <TH className="px-6 py-4 font-black text-right">Aksi</TH>
+                    </TR>
+                  </THead>
+                  <TBody>
                     {loading ? (
-                      <tr><td colSpan={5} className="px-6 py-20 text-center text-slate-400">Memuat data...</td></tr>
+                      <TR><TD colSpan={5} className="px-6 py-20 text-center text-text-muted">Memuat data...</TD></TR>
                     ) : profiles.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50/30 transition-colors">
-                        <td className="px-6 py-4">
+                      <TR key={p.id} className="hover:bg-white/40 transition-colors">
+                        <TD className="px-6 py-4">
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">
+                            <div className="w-10 h-10 rounded-xl bg-accent-mint/50 border border-white flex items-center justify-center text-accent-dark font-black shadow-glass">
                               {p.full_name?.charAt(0) || 'U'}
                             </div>
                             <div>
-                              <p className="text-sm font-bold text-slate-900">{p.full_name || 'Tanpa Nama'}</p>
-                              <p className="text-[10px] text-slate-400 uppercase tracking-tighter">ID: {p.id.substring(0, 8)}</p>
+                              <p className="text-sm font-black text-text-primary">{p.full_name || 'Tanpa Nama'}</p>
+                              <p className="text-[10px] text-text-secondary uppercase tracking-widest font-bold">ID: {p.id.substring(0, 8)}</p>
                             </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-slate-600">
+                        </TD>
+                        <TD className="px-6 py-4 text-sm font-bold text-text-secondary">
                           {p.username || p.email?.split('@')[0]}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                        </TD>
+                        <TD className="px-6 py-4">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-pill bg-white/40 text-text-secondary text-[10px] font-black uppercase tracking-widest border border-white/40">
                             {p.role}
                           </span>
-                        </td>
-                        <td className="px-6 py-4">
+                        </TD>
+                        <TD className="px-6 py-4">
                           <span className={cn(
-                            "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                            p.role_id ? "bg-indigo-50 text-indigo-600" : "text-slate-300"
+                            "inline-flex items-center gap-1.5 px-3 py-1 rounded-pill text-[10px] font-black uppercase tracking-widest border",
+                            p.role_id ? "bg-accent-lavender/30 text-accent-dark border-accent-lavender/40" : "text-text-muted border-white/40"
                           )}>
                             {availableRoles.find(r => r.id === p.role_id)?.name || '-'}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-right space-x-2">
+                        </TD>
+                        <TD className="px-6 py-4 text-right space-x-2">
                           <Button variant="ghost" size="sm" onClick={() => { setSelectedProfile(p); setIsPermissionsModalOpen(true); }} className="h-8 text-primary hover:bg-primary/5">
                             <Shield className="w-3.5 h-3.5 mr-2" /> Akses
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleEditUser(p)} className="h-8 text-slate-400 hover:text-slate-600">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditUser(p)} className="h-8 text-text-muted hover:text-text-secondary">
                             <Pencil className="w-3.5 h-3.5 mr-2" /> Edit
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleDeleteUser(p.id, p.full_name)} className="h-8 text-red-400 hover:text-red-600 hover:bg-red-50">
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
-                        </td>
-                      </tr>
+                        </TD>
+                      </TR>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </TBody>
+                </Table>
             </Card>
           </motion.div>
         ) : (
@@ -432,25 +431,25 @@ const UserManagement: React.FC = () => {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {availableRoles.map(role => (
-              <Card key={role.id} className="p-6 border-none shadow-premium hover:shadow-xl transition-all group">
+              <Card key={role.id} className="p-6 border-none shadow-glass hover:shadow-glass-2 transition-all group bg-white/40 backdrop-blur-glass">
                 <div className="flex justify-between items-start mb-6">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-accent-mint/50 text-accent-dark flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-glass">
                     <ShieldCheck className="w-6 h-6" />
                   </div>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="sm" onClick={() => handleEditRole(role)} className="h-8 w-8 p-0">
                       <Pencil className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeleteRole(role.id, role.name)} className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50">
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteRole(role.id, role.name)} className="h-8 w-8 p-0 text-red-500 hover:bg-red-400/20">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
-                <h3 className="text-lg font-black text-slate-900 mb-1">{role.name}</h3>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-6">Divisi: {role.division}</p>
+                <h3 className="text-lg font-black text-text-primary mb-1">{role.name}</h3>
+                <p className="text-[10px] text-text-muted font-black uppercase tracking-widest mb-6">Divisi: {role.division}</p>
                 <Button 
-                  variant="outline" 
-                  className="w-full justify-between group/btn border-slate-200 hover:border-indigo-600 hover:text-indigo-600"
+                  variant="secondary" 
+                  className="w-full justify-between group/btn"
                   onClick={() => handleEditRole(role)}
                 >
                   Edit Konfigurasi Izin
@@ -473,37 +472,37 @@ const UserManagement: React.FC = () => {
       >
         <form onSubmit={(e) => handleSaveUser(e, isEditUserModalOpen)} className="space-y-4">
           <div>
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1.5">Nama Lengkap</label>
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest block mb-1.5">Nama Lengkap</label>
             <Input value={userForm.full_name} onChange={e => setUserForm({...userForm, full_name: e.target.value})} required />
           </div>
           <div>
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1.5">Username</label>
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest block mb-1.5">Username</label>
             <Input 
               value={userForm.username} 
               onChange={e => setUserForm({...userForm, username: e.target.value})} 
               disabled={isEditUserModalOpen}
-              className={isEditUserModalOpen ? "bg-slate-50 cursor-not-allowed" : ""}
+              className={isEditUserModalOpen ? "bg-white/30 cursor-not-allowed" : ""}
               required 
             />
           </div>
           <div>
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1.5">Role Utama (Divisi)</label>
-            <select value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value as UserRole})} className="w-full rounded-xl border-slate-200 text-sm p-2.5">
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest block mb-1.5">Role Utama (Divisi)</label>
+            <select value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value as UserRole})} className="w-full rounded-xl border-white/40 text-sm p-2.5">
               {divisionOptions.map(d => <option key={d} value={d}>{d.toUpperCase()}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1.5">Jabatan / Role Detail</label>
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest block mb-1.5">Jabatan / Role Detail</label>
             <select 
               value={userForm.role_id || ''} 
               onChange={e => onRoleChange(e.target.value)}
-              className="w-full rounded-xl border-slate-200 text-sm p-2.5"
+              className="w-full rounded-xl border-white/40 text-sm p-2.5"
             >
               <option value="">- Tanpa Jabatan Khusus -</option>
               {availableRoles.map(r => <option key={r.id} value={r.id}>{r.name} ({r.division.toUpperCase()})</option>)}
             </select>
           </div>
-          <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+          <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
             <label className="text-xs font-black text-amber-600 uppercase tracking-widest block mb-1.5">Password</label>
             <Input type="password" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} placeholder={isEditUserModalOpen ? "Kosongkan jika tidak berubah" : "****"} required={!isEditUserModalOpen} />
           </div>
@@ -521,61 +520,61 @@ const UserManagement: React.FC = () => {
         <form onSubmit={handleSaveRole} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1.5">Nama Jabatan</label>
+              <label className="text-xs font-black text-text-muted uppercase tracking-widest block mb-1.5">Nama Jabatan</label>
               <Input value={roleForm.name} onChange={e => setRoleForm({...roleForm, name: e.target.value})} required />
             </div>
             <div>
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1.5">Divisi Utama</label>
-              <select value={roleForm.division} onChange={e => setRoleForm({...roleForm, division: e.target.value as UserRole})} className="w-full rounded-xl border-slate-200 text-sm p-2.5">
+              <label className="text-xs font-black text-text-muted uppercase tracking-widest block mb-1.5">Divisi Utama</label>
+              <select value={roleForm.division} onChange={e => setRoleForm({...roleForm, division: e.target.value as UserRole})} className="w-full rounded-xl border-white/40 text-sm p-2.5">
                 {divisionOptions.map(d => <option key={d} value={d}>{d.toUpperCase()}</option>)}
               </select>
             </div>
           </div>
           
-          <div className="border-t border-slate-100 pt-4">
-            <h4 className="text-sm font-black text-slate-900 mb-4">Konfigurasi Hak Akses Template</h4>
-            <div className="max-h-[50vh] overflow-y-auto border border-slate-100 rounded-xl overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 sticky top-0 z-10">
-                  <tr className="text-[10px] uppercase font-black text-slate-400 tracking-widest border-b">
-                    <th className="py-3 px-4">Menu</th>
-                    <th className="py-3 px-1 text-center w-[60px]">View</th>
-                    <th className="py-3 px-1 text-center w-[60px]">Create</th>
-                    <th className="py-3 px-1 text-center w-[60px]">Edit</th>
-                    <th className="py-3 px-1 text-center w-[60px]">Delete</th>
-                    <th className="py-3 px-1 text-center w-[60px]">Print</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
+          <div className="border-t border-white/40 pt-4">
+            <h4 className="text-sm font-black text-text-primary mb-4">Konfigurasi Hak Akses Template</h4>
+            <div className="max-h-[50vh] overflow-y-auto border border-white/40 rounded-xl overflow-hidden">
+              <Table className="w-full text-left border-collapse">
+                <THead>
+                  <TR className="text-[10px] uppercase font-black text-text-muted tracking-widest border-b">
+                    <TH className="py-3 px-4">Menu</TH>
+                    <TH className="py-3 px-1 text-center w-[60px]">View</TH>
+                    <TH className="py-3 px-1 text-center w-[60px]">Create</TH>
+                    <TH className="py-3 px-1 text-center w-[60px]">Edit</TH>
+                    <TH className="py-3 px-1 text-center w-[60px]">Delete</TH>
+                    <TH className="py-3 px-1 text-center w-[60px]">Print</TH>
+                  </TR>
+                </THead>
+                <TBody>
                   {MENU_KEYS.map(menu => (
-                    <tr key={menu.key} className="hover:bg-slate-50/50">
-                      <td className="py-3 px-4">
-                        <p className="text-sm font-bold text-slate-800">{menu.label}</p>
-                        <p className="text-[10px] text-slate-400 uppercase">{menu.group}</p>
-                      </td>
+                    <TR key={menu.key} className="hover:bg-white/20">
+                      <TD className="py-3 px-4">
+                        <p className="text-sm font-bold text-text-primary">{menu.label}</p>
+                        <p className="text-[10px] text-text-muted uppercase">{menu.group}</p>
+                      </TD>
                       {(['view', 'create', 'edit', 'delete', 'print'] as const).map(cap => {
                         const isAvail = (menu.capabilities as any)[cap];
                         return (
-                          <td key={cap} className="py-3 px-1 text-center">
+                          <TD key={cap} className="py-3 px-1 text-center">
                             {isAvail ? (
                               <button
                                 type="button"
                                 onClick={() => updateRolePermission(menu.key, cap, !roleForm.permissions[menu.key]?.[cap])}
                                 className={cn(
-                                  "w-6 h-6 rounded-lg border-2 transition-all flex items-center justify-center mx-auto",
-                                  roleForm.permissions[menu.key]?.[cap] ? "bg-primary border-primary text-white" : "border-slate-200 text-transparent"
+                                  "w-6 h-6 rounded-xl border-2 transition-all flex items-center justify-center mx-auto",
+                                  roleForm.permissions[menu.key]?.[cap] ? "bg-primary border-primary text-white" : "border-white/40 text-transparent"
                                 )}
                               >
                                 <Check className="w-3.5 h-3.5 stroke-[3]" />
                               </button>
                             ) : "-"}
-                          </td>
+                          </TD>
                         );
                       })}
-                    </tr>
+                    </TR>
                   ))}
-                </tbody>
-              </table>
+                </TBody>
+              </Table>
             </div>
           </div>
           <Button type="submit" className="w-full h-12" isLoading={loading}>Simpan Template Jabatan</Button>
@@ -590,46 +589,46 @@ const UserManagement: React.FC = () => {
         size="3xl"
       >
         <div className="max-h-[70vh] overflow-y-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-white sticky top-0 z-10 shadow-sm">
-              <tr className="text-[10px] uppercase font-black text-slate-400 tracking-widest border-b">
-                <th className="py-4 px-4 w-1/2">Modul</th>
-                <th className="py-4 px-1 text-center w-[60px]">View</th>
-                <th className="py-4 px-1 text-center w-[60px]">Input</th>
-                <th className="py-4 px-1 text-center w-[60px]">Edit</th>
-                <th className="py-4 px-1 text-center w-[60px]">Hapus</th>
-                <th className="py-4 px-1 text-center w-[60px]">Cetak</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
+          <Table className="w-full text-left border-collapse">
+            <THead>
+              <TR className="text-[10px] uppercase font-black text-text-muted tracking-widest">
+                <TH className="py-4 px-4 w-1/2">Modul</TH>
+                <TH className="py-4 px-1 text-center w-[60px]">View</TH>
+                <TH className="py-4 px-1 text-center w-[60px]">Input</TH>
+                <TH className="py-4 px-1 text-center w-[60px]">Edit</TH>
+                <TH className="py-4 px-1 text-center w-[60px]">Hapus</TH>
+                <TH className="py-4 px-1 text-center w-[60px]">Cetak</TH>
+              </TR>
+            </THead>
+            <TBody>
               {MENU_KEYS.map(menu => (
-                <tr key={menu.key} className="hover:bg-slate-50/50">
-                  <td className="py-4 px-4">
-                    <p className="text-sm font-bold text-slate-900">{menu.label}</p>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-widest">{menu.group}</p>
-                  </td>
+                <TR key={menu.key} className="hover:bg-white/20">
+                  <TD className="py-4 px-4">
+                    <p className="text-sm font-bold text-text-primary">{menu.label}</p>
+                    <p className="text-[10px] text-text-muted uppercase tracking-widest">{menu.group}</p>
+                  </TD>
                   {(['view', 'create', 'edit', 'delete', 'print'] as const).map(cap => {
                     const isAvail = (menu.capabilities as any)[cap];
                     return (
-                      <td key={cap} className="py-4 px-1 text-center">
+                      <TD key={cap} className="py-4 px-1 text-center">
                         {isAvail ? (
                           <button
                             onClick={() => handleUpdateUserPermissions(menu.key, cap, !selectedProfile?.permissions?.[menu.key]?.[cap])}
                             className={cn(
-                              "w-6 h-6 rounded-lg border-2 transition-all flex items-center justify-center mx-auto",
-                              selectedProfile?.permissions?.[menu.key]?.[cap] ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" : "border-slate-200 text-transparent"
+                              "w-6 h-6 rounded-xl border border-white/40 transition-all flex items-center justify-center mx-auto shadow-inset",
+                              selectedProfile?.permissions?.[menu.key]?.[cap] ? "bg-accent-mint text-accent-dark shadow-glass" : "bg-white/10 text-transparent"
                             )}
                           >
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                           </button>
                         ) : "-"}
-                      </td>
+                      </TD>
                     );
                   })}
-                </tr>
+                </TR>
               ))}
-            </tbody>
-          </table>
+            </TBody>
+          </Table>
         </div>
         <div className="mt-6 pt-6 border-t flex justify-end">
           <Button onClick={() => setIsPermissionsModalOpen(false)}>Selesai & Simpan</Button>

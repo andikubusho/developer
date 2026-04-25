@@ -162,10 +162,10 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700">Pilih Unit Properti *</label>
+        <label className="text-sm font-medium text-text-primary">Pilih Unit Properti *</label>
         <select 
           {...register('unit_id')}
-          className="w-full rounded-lg border-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full rounded-xl border-white/40 text-sm focus:ring-accent-lavender/50 focus:border-accent-lavender"
           disabled={fetchingUnits}
         >
           <option value="">-- Pilih Unit --</option>
@@ -174,15 +174,15 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
           ))}
         </select>
         {errors.unit_id && <p className="text-xs text-red-500">{errors.unit_id.message}</p>}
-        <p className="text-[10px] text-slate-400 italic">Pilih unit untuk otomatis mengisi data Blok, Unit, dan Tipe.</p>
+        <p className="text-[10px] text-text-muted italic">Pilih unit untuk otomatis mengisi data Blok, Unit, dan Tipe.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Kategori *</label>
+          <label className="text-sm font-medium text-text-primary">Kategori *</label>
           <select 
             {...register('category')}
-            className="w-full rounded-lg border-slate-200 text-sm focus:ring-primary focus:border-primary"
+            className="w-full rounded-xl border-white/40 text-sm focus:ring-primary focus:border-primary"
           >
             <option value="Rumah">Rumah</option>
             <option value="Ruko">Ruko</option>
@@ -191,7 +191,7 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Cluster</label>
+          <label className="text-sm font-medium text-text-primary">Cluster</label>
           <Input 
             {...register('cluster')} 
             placeholder="Contoh: East / South"
@@ -201,19 +201,19 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Blok *</label>
+          <label className="text-sm font-medium text-text-primary">Blok *</label>
           <Input {...register('blok')} placeholder="Contoh: GC" />
           {errors.blok && <p className="text-xs text-red-500">{errors.blok.message}</p>}
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Unit *</label>
+          <label className="text-sm font-medium text-text-primary">Unit *</label>
           <Input {...register('unit')} placeholder="Contoh: 01" />
           {errors.unit && <p className="text-xs text-red-500">{errors.unit.message}</p>}
         </div>
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700">Tipe *</label>
+        <label className="text-sm font-medium text-text-primary">Tipe *</label>
         <Input 
           {...register('tipe')} 
           list="project-types"
@@ -229,7 +229,7 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Luas Tanah (m2) *</label>
+          <label className="text-sm font-medium text-text-primary">Luas Tanah (m2) *</label>
           <Input 
             type="number" 
             {...register('luas_tanah', { valueAsNumber: true })} 
@@ -237,7 +237,7 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
           {errors.luas_tanah && <p className="text-xs text-red-500">{errors.luas_tanah.message}</p>}
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Luas Bangunan (m2) *</label>
+          <label className="text-sm font-medium text-text-primary">Luas Bangunan (m2) *</label>
           <Input 
             type="number" 
             {...register('luas_bangunan', { valueAsNumber: true })} 
@@ -247,7 +247,7 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700">Harga Jual (Rp) *</label>
+        <label className="text-sm font-medium text-text-primary">Harga Jual (Rp) *</label>
         <div className="relative">
           <Input 
             type="text" 
@@ -262,7 +262,7 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Booking Fee (Rp)</label>
+          <label className="text-sm font-medium text-text-primary">Booking Fee (Rp)</label>
           <Input 
             type="text" 
             value={formatCurrencyInput(bookingFee.toString())}
@@ -271,7 +271,7 @@ export const PriceItemForm: React.FC<PriceItemFormProps> = ({
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">DP (%)</label>
+          <label className="text-sm font-medium text-text-primary">DP (%)</label>
           <Input 
             type="number" 
             {...register('dp_percentage', { valueAsNumber: true })} 

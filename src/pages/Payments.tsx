@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, CheckCircle2, XCircle, Clock, FileText, Download, ArrowLeft } from 'lucide-react';
 import { Payment } from '../types';
@@ -108,8 +109,8 @@ const Payments: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Pembayaran</h1>
-            <p className="text-slate-500">Verifikasi dan kelola pembayaran pelanggan</p>
+            <h1 className="text-2xl font-bold text-text-primary">Pembayaran</h1>
+            <p className="text-text-secondary">Verifikasi dan kelola pembayaran pelanggan</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -123,67 +124,65 @@ const Payments: React.FC = () => {
       </Modal>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <input 
               placeholder="Cari pelanggan atau unit..." 
-              className="w-full h-10 rounded-lg border border-slate-200 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full h-10 rounded-xl border border-white/40 pl-10 pr-4 text-sm focus:outline-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Pelanggan & Unit</th>
-                <th className="px-6 py-3 font-semibold">Jumlah</th>
-                <th className="px-6 py-3 font-semibold">Tanggal</th>
-                <th className="px-6 py-3 font-semibold">Metode</th>
-                <th className="px-6 py-3 font-semibold">Status</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Pelanggan & Unit</TH>
+                <TH className="px-6 py-3 font-semibold">Jumlah</TH>
+                <TH className="px-6 py-3 font-semibold">Tanggal</TH>
+                <TH className="px-6 py-3 font-semibold">Metode</TH>
+                <TH className="px-6 py-3 font-semibold">Status</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">Memuat data...</td></tr>
+                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
               ) : filteredPayments.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-500">Tidak ada pembayaran ditemukan.</td></tr>
+                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">Tidak ada pembayaran ditemukan.</TD></TR>
               ) : (
                 filteredPayments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{payment.sale?.customer?.full_name}</div>
-                      <div className="text-xs text-slate-500">Unit: {payment.sale?.unit?.unit_number}</div>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900">{formatCurrency(payment.amount)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-500">{formatDate(payment.payment_date)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 capitalize">{payment.payment_method}</td>
-                    <td className="px-6 py-4">
+                  <TR key={payment.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4">
+                      <div className="font-medium text-text-primary">{payment.sale?.customer?.full_name}</div>
+                      <div className="text-xs text-text-secondary">Unit: {payment.sale?.unit?.unit_number}</div>
+                    </TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-text-primary">{formatCurrency(payment.amount)}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(payment.payment_date)}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary capitalize">{payment.payment_method}</TD>
+                    <TD className="px-6 py-4">
                       <div className="flex items-center gap-1.5">
                         {payment.status === 'verified' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Clock className="w-4 h-4 text-amber-500" />}
                         <span className={cn('text-xs font-medium capitalize', payment.status === 'verified' ? 'text-emerald-700' : 'text-amber-700')}>
                           {payment.status === 'verified' ? 'Terverifikasi' : 'Menunggu'}
                         </span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => generateReceipt(payment)}><FileText className="w-4 h-4" /></Button>
                         {payment.status === 'pending' && (
                           <Button variant="outline" size="sm" onClick={() => handleVerify(payment.id, payment.installment_id)}>Verifikasi</Button>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
     </div>
   );

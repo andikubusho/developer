@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Truck, ArrowLeft, Edit, Trash2, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -137,7 +138,7 @@ const SupplierPaymentsPage: React.FC = () => {
     switch (status) {
       case 'paid': return 'bg-green-100 text-green-700';
       case 'pending': return 'bg-amber-100 text-amber-700';
-      default: return 'bg-slate-100 text-slate-700';
+      default: return 'bg-white/40 text-text-primary';
     }
   };
 
@@ -153,8 +154,8 @@ const SupplierPaymentsPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Pembayaran Supplier</h1>
-            <p className="text-slate-500">Manajemen Hutang ke Supplier & Kontraktor</p>
+            <h1 className="text-2xl font-bold text-text-primary">Pembayaran Supplier</h1>
+            <p className="text-text-secondary">Manajemen Hutang ke Supplier & Kontraktor</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={() => setIsModalOpen(true)}>
@@ -164,46 +165,45 @@ const SupplierPaymentsPage: React.FC = () => {
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input placeholder="Cari nama supplier atau vendor..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <Button variant="outline"><Filter className="w-4 h-4 mr-2" /> Filter</Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Tanggal Bayar</th>
-                <th className="px-6 py-3 font-semibold">Supplier / Vendor</th>
-                <th className="px-6 py-3 font-semibold">Ref. PO/SPK</th>
-                <th className="px-6 py-3 font-semibold text-right">Nilai Bayar</th>
-                <th className="px-6 py-3 font-semibold">Metode</th>
-                <th className="px-6 py-3 font-semibold">Status</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Tanggal Bayar</TH>
+                <TH className="px-6 py-3 font-semibold">Supplier / Vendor</TH>
+                <TH className="px-6 py-3 font-semibold">Ref. PO/SPK</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Nilai Bayar</TH>
+                <TH className="px-6 py-3 font-semibold">Metode</TH>
+                <TH className="px-6 py-3 font-semibold">Status</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div></td></tr>
+                <TR><TD colSpan={7} className="px-6 py-10 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div></TD></TR>
               ) : filteredPayments.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500">Tidak ada data pembayaran supplier.</td></tr>
+                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">Tidak ada data pembayaran supplier.</TD></TR>
               ) : (
                 filteredPayments.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-600">{formatDate(item.payment_date)}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{item.supplier_name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
+                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(item.payment_date)}</TD>
+                    <TD className="px-6 py-4 text-sm font-medium text-text-primary">{item.supplier_name}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">
                       {item.po_id ? `PO #${item.po_id}` : `SPK #${item.spk_id}`}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right">{formatCurrency(item.amount)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{item.payment_method}</td>
-                    <td className="px-6 py-4">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">{formatCurrency(item.amount)}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{item.payment_method}</TD>
+                    <TD className="px-6 py-4">
                       <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize', getStatusColor(item.status))}>{item.status}</span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {item.status === 'pending' && (
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-600" onClick={() => handleStatusUpdate(item.id, 'paid')}><CheckCircle className="w-4 h-4" /></Button>
@@ -211,20 +211,19 @@ const SupplierPaymentsPage: React.FC = () => {
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(item)}><Edit className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(item.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); resetForm(); }} title={editingId ? "Edit Pembayaran Supplier" : "Input Pembayaran Supplier"}>
         <form className="space-y-4" onSubmit={handleSave}>
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Referensi Tagihan (PO/SPK)</label>
-            <select className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" value={formData.po_id ? `po_${formData.po_id}` : formData.spk_id ? `spk_${formData.spk_id}` : ''} onChange={(e) => {
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Referensi Tagihan (PO/SPK)</label>
+            <select className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none" value={formData.po_id ? `po_${formData.po_id}` : formData.spk_id ? `spk_${formData.spk_id}` : ''} onChange={(e) => {
               const val = e.target.value;
               if (val.startsWith('po_')) {
                 const id = val.replace('po_', '');
@@ -256,8 +255,8 @@ const SupplierPaymentsPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <Input label="Tanggal Pembayaran" type="date" value={formData.payment_date} onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })} required />
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Metode Pembayaran</label>
-              <select className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" value={formData.payment_method} onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })} required>
+              <label className="text-sm font-medium text-text-primary mb-1.5 block">Metode Pembayaran</label>
+              <select className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none" value={formData.payment_method} onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })} required>
                 <option value="Transfer Bank">Transfer Bank</option>
                 <option value="Cek / Giro">Cek / Giro</option>
                 <option value="Tunai">Tunai</option>

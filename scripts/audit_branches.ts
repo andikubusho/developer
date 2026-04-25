@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { db } from "../server/db";
 import { branches, transaksiPromo, pelangganProgram, paketMaster } from "../shared/schema";
 

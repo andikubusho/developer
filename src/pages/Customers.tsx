@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { Plus, Search, Filter, UserPlus, Mail, Phone, MapPin, ArrowLeft, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Customer } from '../types';
@@ -94,8 +95,8 @@ const Customers: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Data Konsumen</h1>
-            <p className="text-slate-500">Kelola data pembeli resmi dan resmi terdaftar</p>
+            <h1 className="text-2xl font-bold text-text-primary">Data Konsumen</h1>
+            <p className="text-text-secondary">Kelola data pembeli resmi dan resmi terdaftar</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={handleAdd}>
@@ -119,9 +120,9 @@ const Customers: React.FC = () => {
 
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input 
               placeholder="Cari nama, email, atau telepon..." 
               className="pl-10"
@@ -135,59 +136,59 @@ const Customers: React.FC = () => {
           </Button>
         </div>
 
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Nama Lengkap</th>
-                <th className="px-6 py-3 font-semibold">Kontak</th>
-                <th className="px-6 py-3 font-semibold">Identitas</th>
-                <th className="px-6 py-3 font-semibold">Alamat</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Nama Lengkap</TH>
+                <TH className="px-6 py-3 font-semibold">Kontak</TH>
+                <TH className="px-6 py-3 font-semibold">Identitas</TH>
+                <TH className="px-6 py-3 font-semibold">Alamat</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center">
+                <TR>
+                  <TD colSpan={5} className="px-6 py-10 text-center">
                     <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark"></div>
                     </div>
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ) : filteredCustomers.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
+                <TR>
+                  <TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">
                     Tidak ada data konsumen.
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ) : (
                 filteredCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{customer.full_name}</div>
-                    </td>
-                    <td className="px-6 py-4">
+                  <TR key={customer.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4">
+                      <div className="font-medium text-text-primary">{customer.full_name}</div>
+                    </TD>
+                    <TD className="px-6 py-4">
                       <div className="flex flex-col gap-1">
-                        <div className="flex items-center text-xs text-slate-600">
-                          <Mail className="w-3 h-3 mr-1.5 text-slate-400" />
+                        <div className="flex items-center text-xs text-text-secondary">
+                          <Mail className="w-3 h-3 mr-1.5 text-text-muted" />
                           {customer.email}
                         </div>
-                        <div className="flex items-center text-xs text-slate-600">
-                          <Phone className="w-3 h-3 mr-1.5 text-slate-400" />
+                        <div className="flex items-center text-xs text-text-secondary">
+                          <Phone className="w-3 h-3 mr-1.5 text-text-muted" />
                           {customer.phone}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">
                       {customer.identity_number}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-start text-xs text-slate-600 max-w-[200px]">
-                        <MapPin className="w-3 h-3 mr-1.5 mt-0.5 text-slate-400 flex-shrink-0" />
+                    </TD>
+                    <TD className="px-6 py-4">
+                      <div className="flex items-start text-xs text-text-secondary max-w-[200px]">
+                        <MapPin className="w-3 h-3 mr-1.5 mt-0.5 text-text-muted flex-shrink-0" />
                         <span className="truncate">{customer.address}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(customer)}>Edit</Button>
                         <Button 
@@ -199,12 +200,12 @@ const Customers: React.FC = () => {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table></div>
+            </TBody>
+          </Table>
       </Card>
     </div>
   );

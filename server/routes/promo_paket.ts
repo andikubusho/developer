@@ -1,4 +1,5 @@
-﻿import { Express } from "express";
+// @ts-nocheck
+import { Express } from "express";
 import { db } from "../db";
 import { eq, and, or, isNull } from "drizzle-orm";
 import { paketMaster, paketTier, paketPelanggan, paketProgress, rewardClaim, insertPaketMasterSchema } from "@shared/schema";

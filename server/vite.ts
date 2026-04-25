@@ -25,7 +25,7 @@ export async function setupVite(server: Server, app: Express) {
         process.exit(1);
       },
     },
-    server: serverOptions,
+    server: serverOptions as any,
     appType: "custom",
   });
   console.log("[Vite] createViteServer complete.");

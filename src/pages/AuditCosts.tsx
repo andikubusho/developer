@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, DollarSign, ArrowLeft, Eye, Download, AlertTriangle, CheckCircle, TrendingDown, TrendingUp, Plus } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -132,8 +133,8 @@ const AuditCostsPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Audit Biaya</h1>
-            <p className="text-slate-500">Analisis Varian Budget vs Realisasi Proyek</p>
+            <h1 className="text-2xl font-bold text-text-primary">Audit Biaya</h1>
+            <p className="text-text-secondary">Analisis Varian Budget vs Realisasi Proyek</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -153,14 +154,14 @@ const AuditCostsPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 border-l-4 border-indigo-600">
+        <Card className="p-6 border-l-4 border-accent-dark">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+            <div className="w-12 h-12 rounded-xl bg-accent-lavender/20 flex items-center justify-center text-accent-dark">
               <DollarSign className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Total Budget</p>
-              <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(2500000000)}</h3>
+              <p className="text-sm font-medium text-text-secondary">Total Budget</p>
+              <h3 className="text-2xl font-bold text-text-primary">{formatCurrency(2500000000)}</h3>
             </div>
           </div>
         </Card>
@@ -170,8 +171,8 @@ const AuditCostsPage: React.FC = () => {
               <TrendingDown className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Total Realisasi</p>
-              <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(2625000000)}</h3>
+              <p className="text-sm font-medium text-text-secondary">Total Realisasi</p>
+              <h3 className="text-2xl font-bold text-text-primary">{formatCurrency(2625000000)}</h3>
             </div>
           </div>
         </Card>
@@ -181,17 +182,17 @@ const AuditCostsPage: React.FC = () => {
               <TrendingUp className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Total Varian</p>
-              <h3 className="text-2xl font-bold text-slate-900 text-red-600">-{formatCurrency(125000000)}</h3>
+              <p className="text-sm font-medium text-text-secondary">Total Varian</p>
+              <h3 className="text-2xl font-bold text-text-primary text-red-600">-{formatCurrency(125000000)}</h3>
             </div>
           </div>
         </Card>
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input 
               placeholder="Cari proyek atau kategori..." 
               className="pl-10"
@@ -205,54 +206,54 @@ const AuditCostsPage: React.FC = () => {
           </Button>
         </div>
 
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Proyek / Kategori</th>
-                <th className="px-6 py-3 font-semibold text-right">Budget</th>
-                <th className="px-6 py-3 font-semibold text-right">Realisasi</th>
-                <th className="px-6 py-3 font-semibold text-right">Varian (Rp)</th>
-                <th className="px-6 py-3 font-semibold text-right">Varian (%)</th>
-                <th className="px-6 py-3 font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Proyek / Kategori</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Budget</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Realisasi</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Varian (Rp)</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Varian (%)</TH>
+                <TH className="px-6 py-3 font-semibold">Status</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                  </td>
-                </tr>
+                <TR>
+                  <TD colSpan={6} className="px-6 py-10 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
+                  </TD>
+                </TR>
               ) : filteredCosts.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
+                <TR>
+                  <TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">
                     Tidak ada data audit biaya.
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ) : (
                 filteredCosts.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
+                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-slate-900">{item.project_name}</span>
-                        <span className="text-xs text-slate-500">{item.category}</span>
+                        <span className="text-sm font-medium text-text-primary">{item.project_name}</span>
+                        <span className="text-xs text-text-secondary">{item.category}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 text-right font-medium">{formatCurrency(item.budget)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 text-right font-medium">{formatCurrency(item.actual)}</td>
-                    <td className={cn(
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary text-right font-medium">{formatCurrency(item.budget)}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary text-right font-medium">{formatCurrency(item.actual)}</TD>
+                    <TD className={cn(
                       "px-6 py-4 text-sm font-bold text-right",
                       item.variance < 0 ? "text-red-600" : "text-green-600"
                     )}>
                       {item.variance < 0 ? `-${formatCurrency(Math.abs(item.variance))}` : `+${formatCurrency(item.variance)}`}
-                    </td>
-                    <td className={cn(
+                    </TD>
+                    <TD className={cn(
                       "px-6 py-4 text-sm font-bold text-right",
                       item.variance_percent < 0 ? "text-red-600" : "text-green-600"
                     )}>
                       {item.variance_percent > 0 ? `+${item.variance_percent}%` : `${item.variance_percent}%`}
-                    </td>
-                    <td className="px-6 py-4">
+                    </TD>
+                    <TD className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                         item.status === 'safe' ? 'bg-green-100 text-green-700' : 
@@ -260,12 +261,12 @@ const AuditCostsPage: React.FC = () => {
                       )}>
                         {item.status}
                       </span>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table></div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal
@@ -275,9 +276,9 @@ const AuditCostsPage: React.FC = () => {
       >
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Proyek</label>
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Proyek</label>
             <select 
-              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none"
               value={formData.project_name}
               onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
               required

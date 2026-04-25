@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Package, ArrowLeft, Eye, Download, AlertTriangle, CheckCircle, RefreshCcw, Plus } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -128,8 +129,8 @@ const AuditStockPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Audit Stok</h1>
-            <p className="text-slate-500">Verifikasi Fisik Stok Material Proyek</p>
+            <h1 className="text-2xl font-bold text-text-primary">Audit Stok</h1>
+            <p className="text-text-secondary">Verifikasi Fisik Stok Material Proyek</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -145,14 +146,14 @@ const AuditStockPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 border-l-4 border-indigo-600">
+        <Card className="p-6 border-l-4 border-accent-dark">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+            <div className="w-12 h-12 rounded-xl bg-accent-lavender/20 flex items-center justify-center text-accent-dark">
               <Package className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Total Item Diaudit</p>
-              <h3 className="text-2xl font-bold text-slate-900">750 Item</h3>
+              <p className="text-sm font-medium text-text-secondary">Total Item Diaudit</p>
+              <h3 className="text-2xl font-bold text-text-primary">750 Item</h3>
             </div>
           </div>
         </Card>
@@ -162,8 +163,8 @@ const AuditStockPage: React.FC = () => {
               <CheckCircle className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Stok Sesuai</p>
-              <h3 className="text-2xl font-bold text-slate-900">712 Item</h3>
+              <p className="text-sm font-medium text-text-secondary">Stok Sesuai</p>
+              <h3 className="text-2xl font-bold text-text-primary">712 Item</h3>
             </div>
           </div>
         </Card>
@@ -173,17 +174,17 @@ const AuditStockPage: React.FC = () => {
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Stok Selisih</p>
-              <h3 className="text-2xl font-bold text-slate-900">38 Item</h3>
+              <p className="text-sm font-medium text-text-secondary">Stok Selisih</p>
+              <h3 className="text-2xl font-bold text-text-primary">38 Item</h3>
             </div>
           </div>
         </Card>
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input 
               placeholder="Cari nama material..." 
               className="pl-10"
@@ -197,58 +198,58 @@ const AuditStockPage: React.FC = () => {
           </Button>
         </div>
 
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Material</th>
-                <th className="px-6 py-3 font-semibold text-right">Stok Sistem</th>
-                <th className="px-6 py-3 font-semibold text-right">Stok Fisik</th>
-                <th className="px-6 py-3 font-semibold text-right">Selisih</th>
-                <th className="px-6 py-3 font-semibold">Satuan</th>
-                <th className="px-6 py-3 font-semibold">Tgl Audit</th>
-                <th className="px-6 py-3 font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Material</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Stok Sistem</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Stok Fisik</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Selisih</TH>
+                <TH className="px-6 py-3 font-semibold">Satuan</TH>
+                <TH className="px-6 py-3 font-semibold">Tgl Audit</TH>
+                <TH className="px-6 py-3 font-semibold">Status</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                  </td>
-                </tr>
+                <TR>
+                  <TD colSpan={7} className="px-6 py-10 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
+                  </TD>
+                </TR>
               ) : filteredStock.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
+                <TR>
+                  <TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">
                     Tidak ada data audit stok.
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ) : (
                 filteredStock.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{item.material_name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 text-right">{item.system_stock}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 text-right">{item.physical_stock}</td>
-                    <td className={cn(
+                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 text-sm font-medium text-text-primary">{item.material_name}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary text-right">{item.system_stock}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary text-right">{item.physical_stock}</TD>
+                    <TD className={cn(
                       "px-6 py-4 text-sm font-bold text-right",
-                      item.difference < 0 ? "text-red-600" : item.difference > 0 ? "text-green-600" : "text-slate-900"
+                      item.difference < 0 ? "text-red-600" : item.difference > 0 ? "text-green-600" : "text-text-primary"
                     )}>
                       {item.difference > 0 ? `+${item.difference}` : item.difference}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{item.unit}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{formatDate(item.last_audit)}</td>
-                    <td className="px-6 py-4">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{item.unit}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(item.last_audit)}</TD>
+                    <TD className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                         item.status === 'match' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       )}>
                         {item.status === 'match' ? 'Sesuai' : 'Selisih'}
                       </span>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table></div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal

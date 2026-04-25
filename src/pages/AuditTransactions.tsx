@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, ShieldCheck, ArrowLeft, Eye, Download, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -7,6 +8,7 @@ import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { AuditLog } from '../types';
 import { formatDate, cn } from '../lib/utils';
+import { api } from '../lib/api';
 
 const AuditTransactionsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -74,7 +76,7 @@ const AuditTransactionsPage: React.FC = () => {
       case 'create': return 'bg-green-100 text-green-700';
       case 'update': return 'bg-blue-100 text-blue-700';
       case 'delete': return 'bg-red-100 text-red-700';
-      default: return 'bg-slate-100 text-slate-700';
+      default: return 'bg-white/40 text-text-primary';
     }
   };
 
@@ -97,8 +99,8 @@ const AuditTransactionsPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Audit Transaksi</h1>
-            <p className="text-slate-500">Log Aktivitas dan Perubahan Data Sistem</p>
+            <h1 className="text-2xl font-bold text-text-primary">Audit Transaksi</h1>
+            <p className="text-text-secondary">Log Aktivitas dan Perubahan Data Sistem</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -114,9 +116,9 @@ const AuditTransactionsPage: React.FC = () => {
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input 
               placeholder="Cari aktivitas, modul, atau user..." 
               className="pl-10"
@@ -124,7 +126,7 @@ const AuditTransactionsPage: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select className="w-full sm:w-auto h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <select className="w-full sm:w-auto h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none">
             <option value="all">Semua Modul</option>
             <option value="Sales">Sales</option>
             <option value="Keuangan">Keuangan</option>
@@ -132,55 +134,55 @@ const AuditTransactionsPage: React.FC = () => {
           </select>
         </div>
 
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Waktu</th>
-                <th className="px-6 py-3 font-semibold">User</th>
-                <th className="px-6 py-3 font-semibold">Modul</th>
-                <th className="px-6 py-3 font-semibold">Aksi</th>
-                <th className="px-6 py-3 font-semibold">Deskripsi</th>
-                <th className="px-6 py-3 font-semibold text-right">Detail</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Waktu</TH>
+                <TH className="px-6 py-3 font-semibold">User</TH>
+                <TH className="px-6 py-3 font-semibold">Modul</TH>
+                <TH className="px-6 py-3 font-semibold">Aksi</TH>
+                <TH className="px-6 py-3 font-semibold">Deskripsi</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Detail</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                  </td>
-                </tr>
+                <TR>
+                  <TD colSpan={6} className="px-6 py-10 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
+                  </TD>
+                </TR>
               ) : filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
+                <TR>
+                  <TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">
                     Tidak ada log aktivitas.
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ) : (
                 filteredLogs.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-600">{new Date(item.timestamp).toLocaleString('id-ID')}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{item.user?.full_name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 font-medium">{item.module}</td>
-                    <td className="px-6 py-4">
+                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{new Date(item.timestamp).toLocaleString('id-ID')}</TD>
+                    <TD className="px-6 py-4 text-sm font-medium text-text-primary">{item.user?.full_name}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary font-medium">{item.module}</TD>
+                    <TD className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                         getActionColor(item.action)
                       )}>
                         {item.action}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{item.description}</td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary max-w-xs truncate">{item.description}</TD>
+                    <TD className="px-6 py-4 text-right">
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                         <Eye className="w-4 h-4" />
                       </Button>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table></div>
+            </TBody>
+          </Table>
       </Card>
     </div>
   );

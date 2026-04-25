@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { Plus, Search, Filter, ShoppingBag, FileText, ArrowLeft, TrendingUp, Users, CheckCircle2, MoreVertical, Download, X, Edit, Trash2, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Sale } from '../types';
@@ -187,78 +188,76 @@ const Sales: React.FC = () => {
     <div className="space-y-6 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto hover:bg-slate-100 rounded-xl"><ArrowLeft className="w-6 h-6 text-slate-600" /></Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto hover:bg-white/40 rounded-xl"><ArrowLeft className="w-6 h-6 text-text-secondary" /></Button>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Penjualan Properti</h1>
-            <p className="text-slate-500 font-medium text-sm flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />Monitoring Transaksi Real-time</p>
+            <h1 className="text-3xl font-black text-text-primary tracking-tight">Penjualan Properti</h1>
+            <p className="text-text-secondary font-medium text-sm flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />Monitoring Transaksi Real-time</p>
           </div>
         </div>
-        <Button className="bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-200 rounded-2xl h-12 px-6 font-bold transition-all hover:scale-[1.02]" onClick={() => setIsModalOpen(true)}><Plus className="w-5 h-5 mr-2" />Transaksi Baru</Button>
+        <Button className="bg-accent-dark hover:bg-accent-dark/80 text-white shadow-glass shadow-glass rounded-xl h-12 px-6 font-bold transition-all hover:scale-[1.02]" onClick={() => setIsModalOpen(true)}><Plus className="w-5 h-5 mr-2" />Transaksi Baru</Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-6 border-none shadow-premium rounded-3xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white">
-          <div className="flex justify-between items-start mb-4"><div className="p-2 bg-white/20 rounded-xl"><TrendingUp className="w-5 h-5" /></div><span className="text-[10px] font-bold uppercase tracking-widest bg-white/20 px-2 py-1 rounded-lg">Total Omzet</span></div>
+        <Card className="p-6 border-none shadow-premium rounded-xl bg-gradient-to-br from-accent-dark to-accent-dark/80 text-white">
+          <div className="flex justify-between items-start mb-4"><div className="p-2 bg-white/20 rounded-xl"><TrendingUp className="w-5 h-5" /></div><span className="text-[10px] font-bold uppercase tracking-widest bg-white/20 px-2 py-1 rounded-xl">Total Omzet</span></div>
           <div className="text-2xl font-black">{formatCurrency(stats.totalOmzet)}</div>
-          <div className="text-[10px] mt-1 text-indigo-100">Akumulasi seluruh unit terjual</div>
+          <div className="text-[10px] mt-1 text-white">Akumulasi seluruh unit terjual</div>
         </Card>
-        <Card className="p-6 border-none shadow-premium rounded-3xl bg-white group hover:bg-slate-50 transition-colors">
-          <div className="flex justify-between items-start mb-4"><div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors"><ShoppingBag className="w-5 h-5" /></div><span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Unit Terjual</span></div>
-          <div className="text-2xl font-black text-slate-900">{stats.totalUnits} <span className="text-sm font-medium text-slate-400">Unit</span></div>
+        <Card className="p-6 border-none shadow-premium rounded-xl bg-white group hover:bg-white/30 transition-colors">
+          <div className="flex justify-between items-start mb-4"><div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors"><ShoppingBag className="w-5 h-5" /></div><span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Unit Terjual</span></div>
+          <div className="text-2xl font-black text-text-primary">{stats.totalUnits} <span className="text-sm font-medium text-text-muted">Unit</span></div>
         </Card>
-        <Card className="p-6 border-none shadow-premium rounded-3xl bg-white group hover:bg-slate-50 transition-colors">
-          <div className="flex justify-between items-start mb-4"><div className="p-2 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-600 group-hover:text-white transition-colors"><Users className="w-5 h-5" /></div><span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Proses Aktif</span></div>
-          <div className="text-2xl font-black text-slate-900">{stats.activeLeads} <span className="text-sm font-medium text-slate-400">Konsumen</span></div>
+        <Card className="p-6 border-none shadow-premium rounded-xl bg-white group hover:bg-white/30 transition-colors">
+          <div className="flex justify-between items-start mb-4"><div className="p-2 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-600 group-hover:text-white transition-colors"><Users className="w-5 h-5" /></div><span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Proses Aktif</span></div>
+          <div className="text-2xl font-black text-text-primary">{stats.activeLeads} <span className="text-sm font-medium text-text-muted">Konsumen</span></div>
         </Card>
       </div>
 
       <div className="bg-white p-2 rounded-[2rem] shadow-premium flex flex-col md:flex-row gap-2 items-center">
-        <div className="flex p-1 bg-slate-100 rounded-2xl w-full md:w-auto">
+        <div className="flex p-1 bg-white/40 rounded-xl w-full md:w-auto">
           {['all', 'active', 'completed', 'cancelled'].map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("flex-1 px-6 py-2 rounded-xl text-xs font-bold transition-all", activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700")}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
+            <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("flex-1 px-6 py-2 rounded-xl text-xs font-bold transition-all", activeTab === tab ? "bg-white text-text-primary shadow-glass" : "text-text-secondary hover:text-text-primary")}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
           ))}
         </div>
         <div className="relative flex-1 w-full group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-          <input placeholder="Cari transaksi, unit, atau pelanggan..." className="w-full bg-slate-50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm font-medium outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted group-focus-within:text-accent-dark transition-colors" />
+          <input placeholder="Cari transaksi, unit, atau pelanggan..." className="w-full glass-input border-none rounded-xl py-3 pl-12 pr-4 text-sm font-medium outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
       </div>
 
       <Card className="p-0 border-none shadow-premium rounded-[2.5rem] overflow-hidden bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50 text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black"><th className="px-8 py-6">Konsumen & Unit</th><th className="px-6 py-6">Status</th><th className="px-6 py-6">Total Transaksi</th><th className="px-6 py-6">Marketing</th><th className="px-8 py-6 text-right">Aksi</th></tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
+        <Table>
+            <THead>
+              <TR className="bg-white/20 text-[10px] text-text-muted uppercase tracking-[0.2em] font-black"><TH className="px-8 py-6">Konsumen & Unit</TH><TH className="px-6 py-6">Status</TH><TH className="px-6 py-6">Total Transaksi</TH><TH className="px-6 py-6">Marketing</TH><TH className="px-8 py-6 text-right">Aksi</TH></TR>
+            </THead>
+            <TBody>
               {loading ? (
-                Array.from({ length: 3 }).map((_, i) => (<tr key={i} className="animate-pulse"><td colSpan={5} className="px-8 py-10 text-center text-slate-300 font-bold uppercase tracking-widest">Sinkronisasi...</td></tr>))
+                Array.from({ length: 3 }).map((_, i) => (<TR key={i} className="animate-pulse"><TD colSpan={5} className="px-8 py-10 text-center text-text-muted font-bold uppercase tracking-widest">Sinkronisasi...</TD></TR>))
               ) : sales.map((sale) => (
-                <tr key={sale.id} className="hover:bg-slate-50/50 transition-all group">
-                  <td className="px-8 py-6">
+                <TR key={sale.id} className="hover:bg-white/20 transition-all group">
+                  <TD className="px-8 py-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-xs shadow-sm">{sale.customer?.full_name?.substring(0, 2).toUpperCase()}</div>
-                      <div><div className="font-black text-slate-900 text-sm">{sale.customer?.full_name}</div><div className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{sale.unit?.unit_number} • {sale.unit?.project?.name}</div></div>
+                      <div className="w-10 h-10 rounded-xl bg-accent-lavender/20 flex items-center justify-center text-accent-dark font-black text-xs shadow-glass">{sale.customer?.full_name?.substring(0, 2).toUpperCase()}</div>
+                      <div><div className="font-black text-text-primary text-sm">{sale.customer?.full_name}</div><div className="text-[10px] font-bold text-accent-dark uppercase tracking-wider">{sale.unit?.unit_number} • {sale.unit?.project?.name}</div></div>
                     </div>
-                  </td>
-                  <td className="px-6 py-6">
-                    <span className={cn("inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider", sale.status === 'active' ? "bg-amber-50 text-amber-600 border border-amber-100" : sale.status === 'completed' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-slate-100 text-slate-400 border border-slate-200")}>{sale.status}</span>
-                  </td>
-                  <td className="px-6 py-6"><div className="font-black text-slate-900 text-sm">{formatCurrency(sale.final_price)}</div></td>
-                  <td className="px-6 py-6"><div className="text-xs font-bold text-slate-600">{sale.marketing?.name || 'Internal'}</div></td>
-                  <td className="px-8 py-6 text-right">
+                  </TD>
+                  <TD className="px-6 py-6">
+                    <span className={cn("inline-flex items-center px-2 py-0.5 rounded-xl text-[9px] font-black uppercase tracking-wider", sale.status === 'active' ? "bg-amber-50 text-amber-600 border border-amber-100" : sale.status === 'completed' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-white/40 text-text-muted border border-white/40")}>{sale.status}</span>
+                  </TD>
+                  <TD className="px-6 py-6"><div className="font-black text-text-primary text-sm">{formatCurrency(sale.final_price)}</div></TD>
+                  <TD className="px-6 py-6"><div className="text-xs font-bold text-text-secondary">{sale.marketing?.name || 'Internal'}</div></TD>
+                  <TD className="px-8 py-6 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-indigo-600" title="Lihat Detail"><Eye className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => handlePrintClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-indigo-600" title="Cetak Dokumen Word"><Download className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-emerald-600" title="Edit Transaksi"><Edit className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteSale(sale.id, sale.unit_id)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all text-slate-400 hover:text-red-600" title="Hapus Transaksi"><Trash2 className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-glass border border-transparent hover:border-white/40 transition-all text-text-muted hover:text-accent-dark" title="Lihat Detail"><Eye className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => handlePrintClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-glass border border-transparent hover:border-white/40 transition-all text-text-muted hover:text-accent-dark" title="Cetak Dokumen Word"><Download className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-glass border border-transparent hover:border-white/40 transition-all text-text-muted hover:text-emerald-600" title="Edit Transaksi"><Edit className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteSale(sale.id, sale.unit_id)} className="h-10 w-10 p-0 rounded-xl hover:bg-white hover:shadow-glass border border-transparent hover:border-white/40 transition-all text-text-muted hover:text-red-600" title="Hapus Transaksi"><Trash2 className="w-4 h-4" /></Button>
                     </div>
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal 
@@ -289,19 +288,19 @@ const Sales: React.FC = () => {
       {/* PRINT MODAL (Template Selection) */}
       <Modal isOpen={isPrintModalOpen} onClose={() => setIsPrintModalOpen(false)} title="Cetak Dokumen Otomatis">
         <div className="space-y-4 p-2">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Pilih Template Dokumen untuk {selectedSale?.customer?.full_name}</p>
+          <p className="text-xs font-bold text-text-muted uppercase tracking-widest mb-4">Pilih Template Dokumen untuk {selectedSale?.customer?.full_name}</p>
           <div className="grid grid-cols-1 gap-3">
             {fetchingTemplates ? (
-              <div className="py-10 text-center animate-pulse text-slate-300 font-bold">Mencari Template...</div>
+              <div className="py-10 text-center animate-pulse text-text-muted font-bold">Mencari Template...</div>
             ) : templates.length === 0 ? (
-              <div className="py-10 text-center text-slate-400 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">Belum ada template. Silakan unggah di menu Template Dokumen.</div>
+              <div className="py-10 text-center text-text-muted bg-white/30 rounded-xl border-2 border-dashed border-white/40">Belum ada template. Silakan unggah di menu Template Dokumen.</div>
             ) : templates.map(template => (
-              <button key={template.id} onClick={() => handleDownloadTemplate(template)} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-indigo-600 hover:shadow-lg transition-all text-left group">
+              <button key={template.id} onClick={() => handleDownloadTemplate(template)} className="flex items-center justify-between p-4 glass-card border border-white/40 rounded-xl hover:border-accent-dark hover:shadow-glass transition-all text-left group">
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors"><FileText className="w-5 h-5" /></div>
-                  <div className="font-bold text-slate-900">{template.name}</div>
+                  <div className="p-2 bg-accent-lavender/20 text-accent-dark rounded-xl group-hover:bg-accent-dark group-hover:text-white transition-colors"><FileText className="w-5 h-5" /></div>
+                  <div className="font-bold text-text-primary">{template.name}</div>
                 </div>
-                <Download className="w-4 h-4 text-slate-300 group-hover:text-indigo-600" />
+                <Download className="w-4 h-4 text-text-muted group-hover:text-accent-dark" />
               </button>
             ))}
           </div>

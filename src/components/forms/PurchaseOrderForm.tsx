@@ -125,10 +125,10 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ materials, onSuccess,
         error={errors.order_date?.message} 
       />
 
-      <div className="p-4 bg-slate-50 rounded-lg">
+      <div className="p-4 bg-white/30 rounded-xl">
         <div className="flex justify-between items-center">
-          <span className="text-sm font-medium text-slate-600">Estimasi Total:</span>
-          <span className="text-lg font-bold text-slate-900">
+          <span className="text-sm font-medium text-text-secondary">Estimasi Total:</span>
+          <span className="text-lg font-bold text-text-primary">
             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(watch('quantity') * watch('unit_price') || 0)}
           </span>
         </div>

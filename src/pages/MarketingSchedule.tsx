@@ -250,7 +250,7 @@ const MarketingSchedulePage: React.FC = () => {
 
   const getStaffColor = (name: string) => {
     const colors = [
-      'bg-indigo-100 text-indigo-700 border-indigo-200',
+      'bg-accent-lavender/30 text-accent-dark border-accent-lavender/40',
       'bg-emerald-100 text-emerald-700 border-emerald-200',
       'bg-amber-100 text-amber-700 border-amber-200',
       'bg-rose-100 text-rose-700 border-rose-200',
@@ -287,7 +287,7 @@ const MarketingSchedulePage: React.FC = () => {
       `}} />
       
       <div className="hidden print:block text-center mb-4">
-        <h1 className="text-xl font-bold text-slate-900 uppercase">Jadwal marketing abadi lestari mandiri</h1>
+        <h1 className="text-xl font-bold text-text-primary uppercase">Jadwal marketing abadi lestari mandiri</h1>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
@@ -301,8 +301,8 @@ const MarketingSchedulePage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Jadwal Marketing</h1>
-            <p className="text-slate-500">Atur jadwal piket dan kunjungan marketing</p>
+            <h1 className="text-2xl font-bold text-text-primary">Jadwal Marketing</h1>
+            <p className="text-text-secondary">Atur jadwal piket dan kunjungan marketing</p>
           </div>
         </div>
 
@@ -331,7 +331,7 @@ const MarketingSchedulePage: React.FC = () => {
 
       <Card id="calendar-content" className="p-6 border-none shadow-none sm:border sm:shadow-premium print:p-0 print:border-none print:shadow-none">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 print:mb-4">
-          <h2 className="text-xl font-bold text-slate-900">
+          <h2 className="text-xl font-bold text-text-primary">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
           <div className="flex gap-2 print:hidden">
@@ -344,9 +344,9 @@ const MarketingSchedulePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-px bg-slate-200 border border-slate-200 rounded-xl overflow-hidden">
+        <div className="grid grid-cols-7 gap-px bg-white/50 border border-white/40 rounded-xl overflow-hidden">
           {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map(day => (
-            <div key={day} className="bg-slate-50 p-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <div key={day} className="bg-white/30 p-3 text-center text-xs font-bold text-text-secondary uppercase tracking-wider">
               {day}
             </div>
           ))}
@@ -360,10 +360,10 @@ const MarketingSchedulePage: React.FC = () => {
             return (
               <div 
                 key={day} 
-                className="bg-white p-2 min-h-[120px] border-t border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors print-compact-row"
+                className="bg-white p-2 min-h-[120px] border-t border-white/40 cursor-pointer hover:bg-white/30 transition-colors print-compact-row"
                 onClick={() => openAddModal(dateStr)}
               >
-                <span className="text-sm font-medium text-slate-400">{day}</span>
+                <span className="text-sm font-medium text-text-muted">{day}</span>
                 <div className="mt-2 space-y-1 min-h-[90px] print:min-h-0">
                   {daySchedules.map(s => (
                     <div 
@@ -393,9 +393,9 @@ const MarketingSchedulePage: React.FC = () => {
         title={editingSchedule ? "Edit Jadwal Marketing" : "Input Jadwal Marketing"}
       >
         <div className="space-y-6">
-          <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-            <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">Tanggal Terpilih</p>
-            <p className="text-lg font-bold text-slate-900">
+          <div className="p-4 bg-accent-lavender/20 rounded-xl border border-accent-lavender/30">
+            <p className="text-xs font-semibold text-accent-dark uppercase tracking-wider mb-1">Tanggal Terpilih</p>
+            <p className="text-lg font-bold text-text-primary">
               {new Date(formData.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
@@ -403,10 +403,10 @@ const MarketingSchedulePage: React.FC = () => {
           <form className="space-y-4" onSubmit={handleSave}>
             {!editingSchedule && (
               <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Marketing (Bisa banyak)</label>
-                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-slate-300 rounded-lg bg-white">
+                <label className="text-sm font-medium text-text-primary mb-1.5 block">Pilih Marketing (Bisa banyak)</label>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-white/60 rounded-xl bg-white">
                   {staff.map(s => (
-                    <label key={s.id} className="flex items-center gap-2 text-sm p-1 hover:bg-slate-50 rounded cursor-pointer">
+                    <label key={s.id} className="flex items-center gap-2 text-sm p-1 hover:bg-white/30 rounded cursor-pointer">
                       <input 
                         type="checkbox"
                         checked={formData.staff_entries.some(entry => entry.staff_id === s.id)}
@@ -423,7 +423,7 @@ const MarketingSchedulePage: React.FC = () => {
                             });
                           }
                         }}
-                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        className="rounded border-white/60 text-accent-dark focus:ring-accent-lavender/50"
                       />
                       {s.name}
                     </label>
@@ -434,8 +434,8 @@ const MarketingSchedulePage: React.FC = () => {
 
             {editingSchedule && (
                <div>
-                <label className="text-sm font-medium text-slate-700 mb-1.5 block">Marketing</label>
-                <p className="text-sm font-bold text-slate-900 border border-slate-200 p-2.5 rounded-lg bg-slate-50">
+                <label className="text-sm font-medium text-text-primary mb-1.5 block">Marketing</label>
+                <p className="text-sm font-bold text-text-primary border border-white/40 p-2.5 rounded-xl bg-white/30">
                   {editingSchedule.staff?.name}
                 </p>
               </div>
@@ -443,14 +443,14 @@ const MarketingSchedulePage: React.FC = () => {
 
             {formData.staff_entries.length > 0 && (
               <div className="space-y-3 pt-2">
-                <label className="text-sm font-medium text-slate-700 block">
+                <label className="text-sm font-medium text-text-primary block">
                   {editingSchedule ? "Edit Posisi / Tugas:" : "Posisi / Tugas per Marketing:"}
                 </label>
                 {formData.staff_entries.map(entry => {
                   const s = staff.find(staffItem => staffItem.id === entry.staff_id);
                   return (
                     <div key={entry.staff_id} className="flex flex-col gap-1">
-                      {!editingSchedule && <span className="text-xs font-semibold text-slate-500">{s?.name}</span>}
+                      {!editingSchedule && <span className="text-xs font-semibold text-text-secondary">{s?.name}</span>}
                       <input 
                         type="text"
                         placeholder="Contoh: Kanvas, Stay DV Village..."
@@ -462,7 +462,7 @@ const MarketingSchedulePage: React.FC = () => {
                           );
                           setFormData({ ...formData, staff_entries: updatedEntries });
                         }}
-                        className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none"
                         required
                       />
                     </div>

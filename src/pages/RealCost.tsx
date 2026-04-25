@@ -45,8 +45,8 @@ const RealCostPage: React.FC = () => {
   const fetchProjects = async () => {
     if (isMockMode) {
       const mockProjects: Project[] = [
-        { id: '1', name: 'Golden Canyon', location: 'Bogor', description: '', total_units: 50, status: 'ongoing', created_at: '' },
-        { id: '2', name: 'DV Village', location: 'Depok', description: '', total_units: 30, status: 'ongoing', created_at: '' }
+        { id: '1', name: 'Golden Canyon', location: 'Bogor', description: '', total_units: 50, status: 'ongoing', created_at: '', developer: '', settings: { bunga_flat: 0, dp_percentage: 0, booking_fee: 0 }, active: true },
+        { id: '2', name: 'DV Village', location: 'Depok', description: '', total_units: 30, status: 'ongoing', created_at: '', developer: '', settings: { bunga_flat: 0, dp_percentage: 0, booking_fee: 0 }, active: true }
       ];
       setProjects(mockProjects);
       setSelectedProjectId('1');
@@ -144,12 +144,12 @@ const RealCostPage: React.FC = () => {
     <div className="space-y-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto text-slate-400 hover:text-primary transition-colors">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto text-text-muted hover:text-primary transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight italic uppercase">Real Cost <span className="text-primary tracking-tighter not-italic">Analysis</span></h1>
-            <p className="text-slate-500 font-bold text-sm">Budget vs Actual Comparison & Variance Report</p>
+            <h1 className="text-3xl font-black text-text-primary tracking-tight italic uppercase">Real Cost <span className="text-primary tracking-tighter not-italic">Analysis</span></h1>
+            <p className="text-text-secondary font-bold text-sm">Budget vs Actual Comparison & Variance Report</p>
           </div>
         </div>
         
@@ -157,14 +157,14 @@ const RealCostPage: React.FC = () => {
           <div className="relative">
             <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
             <select 
-              className="pl-11 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-primary appearance-none cursor-pointer shadow-sm hover:border-primary transition-all uppercase tracking-tight"
+              className="pl-11 pr-10 py-3 glass-input rounded-xl text-sm font-black text-text-primary focus:ring-2 focus:ring-primary appearance-none cursor-pointer shadow-glass hover:border-primary transition-all uppercase tracking-tight"
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
             >
               {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
-          <Button variant="primary" className="rounded-2xl h-12 px-6 shadow-premium">
+          <Button variant="primary" className="rounded-xl h-12 px-6 shadow-premium">
             Ekspor Laporan
           </Button>
         </div>
@@ -173,12 +173,12 @@ const RealCostPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <Card className="p-6 border-none bg-white shadow-premium relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
-            <Wallet className="w-20 h-20 text-indigo-600" />
+            <Wallet className="w-20 h-20 text-accent-dark" />
           </div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total RAB (Plan)</p>
-          <p className="text-2xl font-black text-slate-900 tracking-tighter">{formatCurrency(data.rabTotal)}</p>
+          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Total RAB (Plan)</p>
+          <p className="text-2xl font-black text-text-primary tracking-tighter">{formatCurrency(data.rabTotal)}</p>
           <div className="mt-4 flex items-center gap-2">
-            <div className="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black">BUDGETED</div>
+            <div className="px-2 py-1 rounded-xl bg-accent-lavender/20 text-accent-dark text-[10px] font-black">BUDGETED</div>
           </div>
         </Card>
 
@@ -186,10 +186,10 @@ const RealCostPage: React.FC = () => {
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
             <TrendingUp className="w-20 h-20 text-emerald-600" />
           </div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Real Cost (Actual)</p>
-          <p className="text-2xl font-black text-slate-900 tracking-tighter">{formatCurrency(data.totalActual)}</p>
+          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Total Real Cost (Actual)</p>
+          <p className="text-2xl font-black text-text-primary tracking-tighter">{formatCurrency(data.totalActual)}</p>
           <div className="mt-4 flex items-center gap-2">
-            <div className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-[10px] font-black">SPENT</div>
+            <div className="px-2 py-1 rounded-xl bg-emerald-50 text-emerald-600 text-[10px] font-black">SPENT</div>
           </div>
         </Card>
 
@@ -197,7 +197,7 @@ const RealCostPage: React.FC = () => {
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
             {data.variance >= 0 ? <TrendingDown className="w-20 h-20 text-emerald-600" /> : <TrendingUp className="w-20 h-20 text-rose-600" />}
           </div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Variance (Savings/Loss)</p>
+          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Variance (Savings/Loss)</p>
           <p className={cn(
             "text-2xl font-black tracking-tighter",
             data.variance >= 0 ? "text-emerald-600" : "text-rose-600"
@@ -206,7 +206,7 @@ const RealCostPage: React.FC = () => {
           </p>
           <div className="mt-4 flex items-center gap-2">
             <div className={cn(
-              "px-2 py-1 rounded-lg text-[10px] font-black",
+              "px-2 py-1 rounded-xl text-[10px] font-black",
               data.variance >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
             )}>
               {data.variance >= 0 ? 'UNDER BUDGET' : 'OVER BUDGET'}
@@ -218,11 +218,11 @@ const RealCostPage: React.FC = () => {
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
             <BarChart3 className="w-20 h-20 text-amber-600" />
           </div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">% Budget Utilization</p>
-          <p className="text-2xl font-black text-slate-900 tracking-tighter">
+          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">% Budget Utilization</p>
+          <p className="text-2xl font-black text-text-primary tracking-tighter">
             {data.rabTotal > 0 ? ((data.totalActual / data.rabTotal) * 100).toFixed(1) : 0}%
           </p>
-          <div className="mt-4 w-full bg-slate-100 rounded-full h-2">
+          <div className="mt-4 w-full bg-white/40 rounded-full h-2">
             <div 
               className={cn(
                 "h-2 rounded-full transition-all duration-1000",
@@ -301,8 +301,8 @@ const RealCostPage: React.FC = () => {
                 <div key={index} className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }}></div>
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{entry.name}</p>
-                    <p className="text-xs font-black text-slate-900 mt-1">{formatCurrency(entry.value)}</p>
+                    <p className="text-[10px] font-black text-text-muted uppercase tracking-widest leading-none">{entry.name}</p>
+                    <p className="text-xs font-black text-text-primary mt-1">{formatCurrency(entry.value)}</p>
                   </div>
                 </div>
               ))}
@@ -313,39 +313,39 @@ const RealCostPage: React.FC = () => {
 
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Detail <span className="text-primary tracking-tighter not-italic">Pengeluaran</span></h2>
-          <div className="flex items-center gap-4 bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200">
-            <Button variant="ghost" size="sm" className="rounded-xl px-4 font-black text-[10px] h-9 bg-white shadow-sm text-primary uppercase tracking-widest">Wages/Opname</Button>
-            <Button variant="ghost" size="sm" className="rounded-xl px-4 font-black text-[10px] h-9 text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest">Material Orders</Button>
+          <h2 className="text-xl font-black text-text-primary uppercase tracking-tight italic">Detail <span className="text-primary tracking-tighter not-italic">Pengeluaran</span></h2>
+          <div className="flex items-center gap-4 bg-white/40/50 p-1.5 rounded-xl border border-white/40">
+            <Button variant="ghost" size="sm" className="rounded-xl px-4 font-black text-[10px] h-9 bg-white shadow-glass text-primary uppercase tracking-widest">Wages/Opname</Button>
+            <Button variant="ghost" size="sm" className="rounded-xl px-4 font-black text-[10px] h-9 text-text-muted hover:text-text-secondary transition-colors uppercase tracking-widest">Material Orders</Button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="p-0 border-none shadow-premium overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
+            <div className="p-6 border-b border-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-50 rounded-xl text-primary">
+                <div className="p-2.5 bg-accent-lavender/20 rounded-xl text-primary">
                   <HardHat className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-900 uppercase tracking-tight text-sm">Update Pembayaran Upah</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total: {data.wageOpnames.length} Records</p>
+                  <h3 className="font-black text-text-primary uppercase tracking-tight text-sm">Update Pembayaran Upah</h3>
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Total: {data.wageOpnames.length} Records</p>
                 </div>
               </div>
-              <Button variant="ghost" size="sm" className="text-primary font-black text-[10px] uppercase tracking-widest bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 hover:bg-white transition-all">View All</Button>
+              <Button variant="ghost" size="sm" className="text-primary font-black text-[10px] uppercase tracking-widest bg-white/30 border border-white/40 rounded-xl px-4 py-2 hover:bg-white transition-all">View All</Button>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-white/20">
               {data.wageOpnames.map((op) => (
-                <div key={op.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors group">
+                <div key={op.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/20 transition-colors group">
                   <div className="flex items-center gap-4">
                     <div className="w-1.5 h-10 rounded-full bg-primary/20 group-hover:bg-primary transition-colors"></div>
                     <div>
-                      <p className="text-[13px] font-black text-slate-900 uppercase tracking-tight">{op.worker_name}</p>
-                      <p className="text-[10px] font-medium text-slate-400 mt-0.5">{op.work_description}</p>
+                      <p className="text-[13px] font-black text-text-primary uppercase tracking-tight">{op.worker_name}</p>
+                      <p className="text-[10px] font-medium text-text-muted mt-0.5">{op.work_description}</p>
                     </div>
                   </div>
                   <div className="text-right pl-4">
-                    <p className="text-[13px] font-black text-slate-900 tracking-tight">{formatCurrency(op.amount)}</p>
+                    <p className="text-[13px] font-black text-text-primary tracking-tight">{formatCurrency(op.amount)}</p>
                     <div className="flex items-center justify-end gap-1.5 mt-1">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                       <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Approved</p>
@@ -357,30 +357,30 @@ const RealCostPage: React.FC = () => {
           </Card>
 
           <Card className="p-0 border-none shadow-premium overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
+            <div className="p-6 border-b border-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
                   <Package className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-900 uppercase tracking-tight text-sm">Material Terkirim</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total: {data.materialOrders.length} Received</p>
+                  <h3 className="font-black text-text-primary uppercase tracking-tight text-sm">Material Terkirim</h3>
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Total: {data.materialOrders.length} Received</p>
                 </div>
               </div>
               <Button variant="ghost" size="sm" className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50/50 border border-emerald-100 rounded-xl px-4 py-2 hover:bg-white transition-all">View Orders</Button>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-white/20">
               {data.materialOrders.map((order) => (
-                <div key={order.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors group">
+                <div key={order.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/20 transition-colors group">
                   <div className="flex items-center gap-4">
                     <div className="w-1.5 h-10 rounded-full bg-emerald-200 group-hover:bg-emerald-500 transition-colors"></div>
                     <div>
-                      <p className="text-[13px] font-black text-slate-900 uppercase tracking-tight">PO: {order.po_number}</p>
-                      <p className="text-[10px] font-medium text-slate-400 mt-0.5">Supplier: {order.supplier}</p>
+                      <p className="text-[13px] font-black text-text-primary uppercase tracking-tight">PO: {order.po_number}</p>
+                      <p className="text-[10px] font-medium text-text-muted mt-0.5">Supplier: {order.supplier}</p>
                     </div>
                   </div>
                   <div className="text-right pl-4">
-                    <p className="text-[13px] font-black text-slate-900 tracking-tight">{formatCurrency(order.total_price)}</p>
+                    <p className="text-[13px] font-black text-text-primary tracking-tight">{formatCurrency(order.total_price)}</p>
                     <div className="flex items-center justify-end gap-1.5 mt-1">
                       <Package className="w-3 h-3 text-emerald-500" />
                       <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Received</p>

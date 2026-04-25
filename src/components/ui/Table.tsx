@@ -8,7 +8,7 @@ interface TableProps {
 
 export const Table: React.FC<TableProps> = ({ children, className }) => {
   return (
-    <div className={cn('w-full overflow-x-auto scrollbar-hide rounded-2xl border border-slate-100', className)}>
+    <div className={cn('w-full overflow-x-auto scrollbar-hide glass-card', className)}>
       <table className="w-full text-left border-collapse">
         {children}
       </table>
@@ -18,7 +18,7 @@ export const Table: React.FC<TableProps> = ({ children, className }) => {
 
 export const THead: React.FC<TableProps> = ({ children, className }) => {
   return (
-    <thead className={cn('bg-slate-50/50 border-b border-slate-100', className)}>
+    <thead className={cn('bg-white/30 border-b border-white/40 backdrop-blur-glass-sm', className)}>
       {children}
     </thead>
   );
@@ -26,7 +26,7 @@ export const THead: React.FC<TableProps> = ({ children, className }) => {
 
 export const TBody: React.FC<TableProps> = ({ children, className }) => {
   return (
-    <tbody className={cn('divide-y divide-slate-50', className)}>
+    <tbody className={cn('divide-y divide-white/20', className)}>
       {children}
     </tbody>
   );
@@ -36,7 +36,7 @@ export const TR: React.FC<TableProps & { isHoverable?: boolean }> = ({ children,
   return (
     <tr className={cn(
       'transition-all duration-200',
-      isHoverable && 'hover:bg-indigo-50/30',
+      isHoverable && 'hover:bg-white/40',
       className
     )}>
       {children}
@@ -47,7 +47,7 @@ export const TR: React.FC<TableProps & { isHoverable?: boolean }> = ({ children,
 export const TH: React.FC<TableProps> = ({ children, className }) => {
   return (
     <th className={cn(
-      'px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest',
+      'px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest',
       className
     )}>
       {children}
@@ -58,7 +58,7 @@ export const TH: React.FC<TableProps> = ({ children, className }) => {
 export const TD: React.FC<TableProps> = ({ children, className }) => {
   return (
     <td className={cn(
-      'px-6 py-4 text-sm font-medium text-slate-600',
+      'px-6 py-4 text-sm font-bold text-text-primary',
       className
     )}>
       {children}

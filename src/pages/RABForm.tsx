@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -331,23 +332,23 @@ const RABForm: React.FC = () => {
       const isLevel2 = node.level === 2;
       const isLevel3 = node.level === 3;
 
-      const bgClass = isLevel0 ? 'bg-slate-800 text-white' :
-                      isLevel1 ? 'bg-slate-100 text-slate-900 font-semibold' :
-                      isLevel2 ? 'bg-white text-slate-900' : 'bg-slate-50 text-slate-600 italic';
+      const bgClass = isLevel0 ? 'bg-accent-dark/80 text-white' :
+                      isLevel1 ? 'bg-white/40 text-text-primary font-semibold' :
+                      isLevel2 ? 'bg-white text-text-primary' : 'bg-white/30 text-text-secondary italic';
 
       return (
         <React.Fragment key={node.id}>
-          <tr className={cn("group transition-colors border-b border-slate-200", bgClass, "hover:bg-indigo-50/30")}>
+          <TR className={cn("group transition-colors border-b border-white/40", bgClass, "hover:bg-accent-lavender/20/30")}>
             {/* NO */}
-            <td className="px-4 py-3 border-r border-slate-200 font-bold text-center w-16">
+            <TD className="px-4 py-3 border-r border-white/40 font-bold text-center w-16">
               {label || (isLevel3 ? '-' : '')}
-            </td>
+            </TD>
             
             {/* URAIAN */}
-            <td className="px-4 py-3 border-r border-slate-200 min-w-[300px]">
+            <TD className="px-4 py-3 border-r border-white/40 min-w-[300px]">
               <div className="flex items-center gap-2" style={{ paddingLeft: `${node.level * 24}px` }}>
                 {!isLevel3 && (
-                  <button onClick={() => toggleExpand(node.id)} className="p-1 hover:bg-slate-200/20 rounded">
+                  <button onClick={() => toggleExpand(node.id)} className="p-1 hover:bg-white/50/20 rounded">
                     {node.isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </button>
                 )}
@@ -358,14 +359,14 @@ const RABForm: React.FC = () => {
                   placeholder={isLevel0 ? "Nama Lantai / Bagian..." : isLevel1 ? "Kelompok Pekerjaan..." : "Deskripsi..."}
                   className={cn(
                     "bg-transparent border-none focus:ring-0 w-full p-0 font-inherit",
-                    isLevel0 ? "placeholder-slate-400" : "placeholder-slate-300"
+                    isLevel0 ? "placeholder-text-muted" : "placeholder-text-muted"
                   )}
                 />
               </div>
-            </td>
+            </TD>
 
             {/* VOLUME / JUMLAH */}
-            <td className="px-4 py-3 border-r border-slate-200 w-32">
+            <TD className="px-4 py-3 border-r border-white/40 w-32">
               {(isLevel2 || isLevel3) && (
                 <input 
                   type="number"
@@ -374,14 +375,14 @@ const RABForm: React.FC = () => {
                   onChange={(e) => updateNode(node.id, { volume: Number(e.target.value) })}
                   className={cn(
                     "bg-transparent border-none focus:ring-0 w-full text-right p-0",
-                    isLevel3 && "text-slate-400"
+                    isLevel3 && "text-text-muted"
                   )}
                 />
               )}
-            </td>
+            </TD>
 
             {/* SATUAN */}
-            <td className="px-4 py-3 border-r border-slate-200 w-24 text-center">
+            <TD className="px-4 py-3 border-r border-white/40 w-24 text-center">
               {(isLevel2 || isLevel3) && (
                 <input 
                   type="text"
@@ -391,10 +392,10 @@ const RABForm: React.FC = () => {
                   className="bg-transparent border-none focus:ring-0 w-full text-center p-0"
                 />
               )}
-            </td>
+            </TD>
 
             {/* KOEFF */}
-            <td className="px-4 py-3 border-r border-slate-200 w-24">
+            <TD className="px-4 py-3 border-r border-white/40 w-24">
               {isLevel3 && (
                 <input 
                   type="number"
@@ -404,10 +405,10 @@ const RABForm: React.FC = () => {
                   className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
                 />
               )}
-            </td>
+            </TD>
 
             {/* HARGA RAB */}
-            <td className="px-4 py-3 border-r border-slate-200 w-40">
+            <TD className="px-4 py-3 border-r border-white/40 w-40">
               {isLevel3 && (
                 <input 
                   type="number"
@@ -416,22 +417,22 @@ const RABForm: React.FC = () => {
                   className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
                 />
               )}
-            </td>
+            </TD>
 
             {/* SUBTOTAL / TOTAL */}
-            <td className="px-4 py-3 font-bold text-right w-44">
+            <TD className="px-4 py-3 font-bold text-right w-44">
               {formatCurrency(node.subtotal)}
-            </td>
+            </TD>
 
             {/* ACTION */}
-            <td className="px-4 py-3 w-40">
+            <TD className="px-4 py-3 w-40">
                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   {node.level < 3 && (
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => addNode(node.id, (node.level + 1) as any)}
-                      className={cn("h-8 px-2 text-[10px] uppercase font-black tracking-tighter", isLevel0 ? "text-white hover:bg-slate-700" : "text-indigo-600")}
+                      className={cn("h-8 px-2 text-[10px] uppercase font-black tracking-tighter", isLevel0 ? "text-white hover:bg-accent-dark/60" : "text-accent-dark")}
                     >
                       <Plus className="w-3 h-3 mr-1" /> {node.level === 0 ? "Pekerjaan" : node.level === 1 ? "Item" : "Material"}
                     </Button>
@@ -445,8 +446,8 @@ const RABForm: React.FC = () => {
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                </div>
-            </td>
-          </tr>
+            </TD>
+          </TR>
           {node.isExpanded && node.children.length > 0 && renderRows(node.children, depth + 1)}
         </React.Fragment>
       );
@@ -458,19 +459,19 @@ const RABForm: React.FC = () => {
       {/* Header Info */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/rab')} className="p-3 h-auto rounded-2xl bg-white shadow-sm border border-slate-100">
-            <ArrowLeft className="w-5 h-5 text-slate-600" />
+          <Button variant="ghost" size="sm" onClick={() => navigate('/rab')} className="p-3 h-auto rounded-xl bg-white shadow-glass border border-white/40">
+            <ArrowLeft className="w-5 h-5 text-text-secondary" />
           </Button>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Form RAB Proyek</h1>
-            <p className="text-slate-500 font-medium">Buat rincian anggaran biaya konstruksi baru</p>
+            <h1 className="text-3xl font-black text-text-primary tracking-tight">Form RAB Proyek</h1>
+            <p className="text-text-secondary font-medium">Buat rincian anggaran biaya konstruksi baru</p>
           </div>
         </div>
         <div className="flex gap-3">
-          <Button variant="ghost" onClick={handleReset} className="rounded-2xl h-12 px-6 bg-white border border-slate-200">
+          <Button variant="ghost" onClick={handleReset} className="rounded-xl h-12 px-6 glass-input">
             <RotateCcw className="w-5 h-5 mr-2" /> Reset
           </Button>
-          <Button onClick={handleSave} isLoading={submitting} className="rounded-2xl h-12 px-8 shadow-lg shadow-primary/20">
+          <Button onClick={handleSave} isLoading={submitting} className="rounded-xl h-12 px-8 shadow-glass shadow-glass">
             <Save className="w-5 h-5 mr-2" /> Simpan RAB
           </Button>
         </div>
@@ -480,46 +481,46 @@ const RABForm: React.FC = () => {
       <Card className="p-8 border-none shadow-premium bg-white rounded-[2rem]">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center gap-2 ml-1">
-              <Building2 className="w-3 h-3 text-indigo-500" /> Nama Proyek
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest block flex items-center gap-2 ml-1">
+              <Building2 className="w-3 h-3 text-accent-dark" /> Nama Proyek
             </label>
             <Input 
               value={projectHeader.nama_proyek}
               onChange={(e) => setProjectHeader({ ...projectHeader, nama_proyek: e.target.value })}
               placeholder="Contoh: Perumahan Golden Canyon"
-              className="h-14 text-base font-bold rounded-2xl"
+              className="h-14 text-base font-bold rounded-xl"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center gap-2 ml-1">
-              <MapPin className="w-3 h-3 text-indigo-500" /> Lokasi
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest block flex items-center gap-2 ml-1">
+              <MapPin className="w-3 h-3 text-accent-dark" /> Lokasi
             </label>
             <Input 
               value={projectHeader.lokasi}
               onChange={(e) => setProjectHeader({ ...projectHeader, lokasi: e.target.value })}
               placeholder="Kota / Wilayah..."
-              className="h-14 text-base font-bold rounded-2xl"
+              className="h-14 text-base font-bold rounded-xl"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center gap-2 ml-1">
-              <Calendar className="w-3 h-3 text-indigo-500" /> Tanggal
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest block flex items-center gap-2 ml-1">
+              <Calendar className="w-3 h-3 text-accent-dark" /> Tanggal
             </label>
             <Input 
               type="date"
               value={projectHeader.tanggal}
               onChange={(e) => setProjectHeader({ ...projectHeader, tanggal: e.target.value })}
-              className="h-14 text-base font-bold rounded-2xl"
+              className="h-14 text-base font-bold rounded-xl"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center gap-2 ml-1">
-              <Layers className="w-3 h-3 text-indigo-500" /> Kategori
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest block flex items-center gap-2 ml-1">
+              <Layers className="w-3 h-3 text-accent-dark" /> Kategori
             </label>
             <select 
               value={projectHeader.kategori}
               onChange={(e) => setProjectHeader({ ...projectHeader, kategori: e.target.value })}
-              className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 text-base font-bold text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none"
+              className="w-full h-14 glass-input border-none rounded-xl px-6 text-base font-bold text-text-primary glass-input focus:outline-none"
             >
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -529,36 +530,34 @@ const RABForm: React.FC = () => {
 
       {/* Main Table */}
       <Card className="p-0 border-none shadow-premium bg-white overflow-hidden rounded-[2rem]">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] sticky top-0 z-10">
-                <th className="px-4 py-5 border-r border-slate-800 w-16">No</th>
-                <th className="px-4 py-5 border-r border-slate-800">Uraian Pekerjaan</th>
-                <th className="px-4 py-5 border-r border-slate-800 w-32">Volume</th>
-                <th className="px-4 py-5 border-r border-slate-800 w-24">Satuan</th>
-                <th className="px-4 py-5 border-r border-slate-800 w-24">Koeff</th>
-                <th className="px-4 py-5 border-r border-slate-800 w-40">Harga Satuan</th>
-                <th className="px-4 py-5 w-44 text-right">Total Biaya</th>
-                <th className="px-4 py-5 w-40">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Table>
+            <THead>
+              <TR className="bg-accent-dark text-white text-[10px] font-black uppercase tracking-[0.2em] sticky top-0 z-10">
+                <TH className="px-4 py-5 border-r border-white/40 w-16">No</TH>
+                <TH className="px-4 py-5 border-r border-white/40">Uraian Pekerjaan</TH>
+                <TH className="px-4 py-5 border-r border-white/40 w-32">Volume</TH>
+                <TH className="px-4 py-5 border-r border-white/40 w-24">Satuan</TH>
+                <TH className="px-4 py-5 border-r border-white/40 w-24">Koeff</TH>
+                <TH className="px-4 py-5 border-r border-white/40 w-40">Harga Satuan</TH>
+                <TH className="px-4 py-5 w-44 text-right">Total Biaya</TH>
+                <TH className="px-4 py-5 w-40">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {renderRows(computedTree)}
               {tree.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="py-20 text-center text-slate-400 italic">
+                <TR>
+                  <TD colSpan={8} className="py-20 text-center text-text-muted italic">
                     Belum ada item. Klik tombol di bawah untuk menambah Lantai.
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
         
         {/* Table Footer Controls */}
-        <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-start gap-4">
-           <Button variant="ghost" onClick={() => addNode(null, 0)} className="text-indigo-600 font-black text-xs uppercase tracking-widest hover:bg-white shadow-sm border border-slate-200 rounded-xl">
+        <div className="p-6 bg-white/30 border-t border-white/40 flex justify-start gap-4">
+           <Button variant="ghost" onClick={() => addNode(null, 0)} className="text-accent-dark font-black text-xs uppercase tracking-widest hover:bg-white shadow-glass border border-white/40 rounded-xl">
               <Plus className="w-4 h-4 mr-2" /> Tambah Lantai / Bagian Baru
            </Button>
         </div>
@@ -568,17 +567,17 @@ const RABForm: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         <div>
            <Card className="p-8 border-none shadow-premium bg-white rounded-[2rem]">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2">
-                 <Calculator className="w-4 h-4 text-indigo-600" /> Ringkasan Biaya per Bagian
+              <h3 className="text-sm font-black text-text-primary uppercase tracking-widest mb-6 flex items-center gap-2">
+                 <Calculator className="w-4 h-4 text-accent-dark" /> Ringkasan Biaya per Bagian
               </h3>
               <div className="space-y-4">
                  {computedTree.map((node, idx) => (
-                   <div key={node.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <span className="text-sm font-bold text-slate-700">{getIndexLabel(0, idx)} - {node.uraian || "Tanpa Judul"}</span>
-                      <span className="text-sm font-black text-slate-900">{formatCurrency(node.subtotal)}</span>
+                   <div key={node.id} className="flex items-center justify-between p-4 bg-white/30 rounded-xl border border-white/40">
+                      <span className="text-sm font-bold text-text-primary">{getIndexLabel(0, idx)} - {node.uraian || "Tanpa Judul"}</span>
+                      <span className="text-sm font-black text-text-primary">{formatCurrency(node.subtotal)}</span>
                    </div>
                  ))}
-                 <div className="flex items-center justify-between p-6 bg-slate-900 rounded-3xl text-white shadow-xl mt-8">
+                 <div className="flex items-center justify-between p-6 bg-accent-dark rounded-xl text-white shadow-glass mt-8">
                     <span className="text-xs font-black uppercase tracking-[0.2em]">Total Seluruh Anggaran</span>
                     <span className="text-2xl font-black text-emerald-400">{formatCurrency(grandTotal)}</span>
                  </div>
@@ -587,17 +586,17 @@ const RABForm: React.FC = () => {
         </div>
 
         <div className="flex flex-col justify-end gap-6 pb-4">
-           <div className="p-8 bg-indigo-50 rounded-[2rem] border border-indigo-100">
-              <h4 className="font-black text-indigo-900 uppercase text-xs tracking-widest mb-2">Penting</h4>
-              <p className="text-sm text-indigo-700 leading-relaxed">
+           <div className="p-8 bg-accent-lavender/20 rounded-[2rem] border border-accent-lavender/30">
+              <h4 className="font-black text-accent-dark uppercase text-xs tracking-widest mb-2">Penting</h4>
+              <p className="text-sm text-accent-dark leading-relaxed">
                  Kalkulasi dilakukan secara otomatis dan real-time. Pastikan <strong>Volume Item (Level 2)</strong>, <strong>Koefisien (Level 3)</strong>, dan <strong>Harga RAB (Level 3)</strong> terisi dengan benar untuk mendapatkan hasil yang akurat.
               </p>
            </div>
            <div className="flex gap-4">
-              <Button variant="ghost" onClick={() => navigate('/rab')} className="flex-1 h-16 rounded-2xl text-base font-bold">
+              <Button variant="ghost" onClick={() => navigate('/rab')} className="flex-1 h-16 rounded-xl text-base font-bold">
                  Batal & Kembali
               </Button>
-              <Button onClick={handleSave} isLoading={submitting} className="flex-1 h-16 rounded-2xl text-base font-black shadow-xl shadow-primary/20">
+              <Button onClick={handleSave} isLoading={submitting} className="flex-1 h-16 rounded-xl text-base font-black shadow-glass shadow-glass">
                  Simpan Seluruh RAB
               </Button>
            </div>

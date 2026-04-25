@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Calculator, Plus, Search, Building2, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -37,44 +38,42 @@ const RAB: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">RAB Proyek</h1>
-            <p className="text-slate-500">Rencana Anggaran Biaya pembangunan</p>
+            <h1 className="text-2xl font-bold text-text-primary">RAB Proyek</h1>
+            <p className="text-text-secondary">Rencana Anggaran Biaya pembangunan</p>
           </div>
         </div>
         <Button><Plus className="w-4 h-4 mr-2" /> Buat RAB Baru</Button>
       </div>
 
       <Card className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Proyek</th>
-                <th className="px-6 py-3 font-semibold">Kategori</th>
-                <th className="px-6 py-3 font-semibold text-right">Total Anggaran</th>
-                <th className="px-6 py-3 font-semibold text-right">Terpakai</th>
-                <th className="px-6 py-3 font-semibold">Tanggal</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Proyek</TH>
+                <TH className="px-6 py-3 font-semibold">Kategori</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Total Anggaran</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Terpakai</TH>
+                <TH className="px-6 py-3 font-semibold">Tanggal</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400">Memuat data...</td></tr>
+                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
               ) : rabs.length === 0 ? (
-                <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-500">Belum ada data RAB.</td></tr>
+                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">Belum ada data RAB.</TD></TR>
               ) : (
                 rabs.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900">{r.project?.name || 'Proyek Umum'}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 capitalize">{r.category}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right">{formatCurrency(r.total_budget)}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-emerald-600 text-right">{formatCurrency(r.spent_amount || 0)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-500">{formatDate(r.created_at)}</td>
-                  </tr>
+                  <TR key={r.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 font-medium text-text-primary">{r.project?.name || 'Proyek Umum'}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary capitalize">{r.category}</TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">{formatCurrency(r.total_budget)}</TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-emerald-600 text-right">{formatCurrency(r.spent_amount || 0)}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(r.created_at)}</TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
     </div>
   );

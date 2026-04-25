@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, ArrowLeft, Edit, Trash2, Phone, MapPin, Briefcase } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -111,8 +112,8 @@ const MarketingMaster: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Master Marketing</h1>
-            <p className="text-slate-500">Kelola data staf marketing</p>
+            <h1 className="text-2xl font-bold text-text-primary">Master Marketing</h1>
+            <p className="text-text-secondary">Kelola data staf marketing</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={handleAdd}>
@@ -121,55 +122,53 @@ const MarketingMaster: React.FC = () => {
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <input 
               placeholder="Cari nama atau telepon..." 
-              className="w-full h-10 rounded-lg border border-slate-200 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full h-10 rounded-xl border border-white/40 pl-10 pr-4 text-sm focus:outline-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Nama</th>
-                <th className="px-6 py-3 font-semibold">No. Telp</th>
-                <th className="px-6 py-3 font-semibold">Alamat</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Nama</TH>
+                <TH className="px-6 py-3 font-semibold">No. Telp</TH>
+                <TH className="px-6 py-3 font-semibold">Alamat</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400">Memuat data...</td></tr>
+                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
               ) : filteredStaff.length === 0 ? (
-                <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-500">Tidak ada data staf marketing.</td></tr>
+                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">Tidak ada data staf marketing.</TD></TR>
               ) : (
                 filteredStaff.map((s) => (
-                  <tr key={s.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900">{s.name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      <div className="flex items-center gap-2"><Phone className="w-3 h-3 text-slate-400" />{s.phone}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm text-slate-600"><MapPin className="w-3 h-3 text-slate-400" />{s.address}</div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                  <TR key={s.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 font-medium text-text-primary">{s.name}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">
+                      <div className="flex items-center gap-2"><Phone className="w-3 h-3 text-text-muted" />{s.phone}</div>
+                    </TD>
+                    <TD className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-text-secondary"><MapPin className="w-3 h-3 text-text-muted" />{s.address}</div>
+                    </TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(s)}><Edit className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(s.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedStaff ? "Edit Data Marketing" : "Input Data Marketing"}>
@@ -177,8 +176,8 @@ const MarketingMaster: React.FC = () => {
           <Input label="Nama" placeholder="Nama lengkap" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
           <Input label="No. Telp" placeholder="0812..." value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Alamat</label>
-            <textarea className="w-full rounded-lg border border-slate-300 p-2 text-sm" rows={3} placeholder="Alamat lengkap..." value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} required />
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Alamat</label>
+            <textarea className="w-full rounded-xl border border-white/60 p-2 text-sm" rows={3} placeholder="Alamat lengkap..." value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} required />
           </div>
           <div className="flex justify-end gap-3 mt-6">
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>

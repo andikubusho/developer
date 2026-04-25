@@ -111,14 +111,14 @@ export const ProgressForm: React.FC<ProgressFormProps> = ({ projectId, onSuccess
         error={errors.description?.message} 
       />
       <div>
-        <label className="text-sm font-medium text-slate-700 mb-1.5 block">Foto Progress</label>
+        <label className="text-sm font-medium text-text-primary mb-1.5 block">Foto Progress</label>
         <Input 
           type="file" 
           accept="image/*" 
           onChange={handleFileUpload}
           disabled={uploading}
         />
-        {uploading && <p className="text-xs text-indigo-600 mt-1">Mengupload foto...</p>}
+        {uploading && <p className="text-xs text-accent-dark mt-1">Mengupload foto...</p>}
       </div>
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>Batal</Button>

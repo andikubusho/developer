@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Users, ArrowLeft, Edit, Trash2, Mail, Phone, Briefcase } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -121,8 +122,8 @@ const EmployeesPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Data Karyawan</h1>
-            <p className="text-slate-500">Manajemen Database Karyawan Perusahaan</p>
+            <h1 className="text-2xl font-bold text-text-primary">Data Karyawan</h1>
+            <p className="text-text-secondary">Manajemen Database Karyawan Perusahaan</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={() => setIsModalOpen(true)}>
@@ -132,66 +133,64 @@ const EmployeesPage: React.FC = () => {
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input placeholder="Cari nama, ID, atau divisi..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <Button variant="outline"><Filter className="w-4 h-4 mr-2" /> Filter</Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">ID Karyawan</th>
-                <th className="px-6 py-3 font-semibold">Nama Lengkap</th>
-                <th className="px-6 py-3 font-semibold">Divisi / Jabatan</th>
-                <th className="px-6 py-3 font-semibold">Kontak</th>
-                <th className="px-6 py-3 font-semibold">Tgl Bergabung</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">ID Karyawan</TH>
+                <TH className="px-6 py-3 font-semibold">Nama Lengkap</TH>
+                <TH className="px-6 py-3 font-semibold">Divisi / Jabatan</TH>
+                <TH className="px-6 py-3 font-semibold">Kontak</TH>
+                <TH className="px-6 py-3 font-semibold">Tgl Bergabung</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div></td></tr>
+                <TR><TD colSpan={7} className="px-6 py-10 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div></TD></TR>
               ) : filteredEmployees.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500">Tidak ada data karyawan.</td></tr>
+                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">Tidak ada data karyawan.</TD></TR>
               ) : (
                 filteredEmployees.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-bold text-indigo-600">{item.employee_id}</td>
-                    <td className="px-6 py-4">
+                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 text-sm font-bold text-accent-dark">{item.employee_id}</TD>
+                    <TD className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs">{item.full_name.charAt(0)}</div>
-                        <span className="text-sm font-medium text-slate-900">{item.full_name}</span>
+                        <div className="w-8 h-8 rounded-full bg-white/50 flex items-center justify-center text-text-secondary font-bold text-xs">{item.full_name.charAt(0)}</div>
+                        <span className="text-sm font-medium text-text-primary">{item.full_name}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
+                    </TD>
+                    <TD className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="text-sm text-slate-900 font-medium">{item.division}</span>
-                        <span className="text-xs text-slate-500">{item.position}</span>
+                        <span className="text-sm text-text-primary font-medium">{item.division}</span>
+                        <span className="text-xs text-text-secondary">{item.position}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
+                    </TD>
+                    <TD className="px-6 py-4">
                       <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1 text-xs text-slate-500"><Mail className="w-3 h-3" /> {item.email}</div>
-                        <div className="flex items-center gap-1 text-xs text-slate-500"><Phone className="w-3 h-3" /> {item.phone}</div>
+                        <div className="flex items-center gap-1 text-xs text-text-secondary"><Mail className="w-3 h-3" /> {item.email}</div>
+                        <div className="flex items-center gap-1 text-xs text-text-secondary"><Phone className="w-3 h-3" /> {item.phone}</div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{formatDate(item.join_date)}</td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(item.join_date)}</TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(item)}><Edit className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(item.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); resetForm(); }} title={editingId ? "Edit Data Karyawan" : "Tambah Karyawan Baru"} size="lg">
@@ -202,8 +201,8 @@ const EmployeesPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Divisi</label>
-              <select className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" value={formData.division} onChange={(e) => setFormData({ ...formData, division: e.target.value })} required>
+              <label className="text-sm font-medium text-text-primary mb-1.5 block">Divisi</label>
+              <select className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none" value={formData.division} onChange={(e) => setFormData({ ...formData, division: e.target.value })} required>
                 <option value="Marketing">Marketing</option>
                 <option value="Teknik">Teknik</option>
                 <option value="Keuangan">Keuangan</option>

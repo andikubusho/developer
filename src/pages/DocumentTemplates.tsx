@@ -120,12 +120,12 @@ const DocumentTemplates: React.FC = () => {
   return (
     <div className="space-y-10 pb-20 pt-6">
       <div className="flex items-center gap-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-3 h-auto rounded-2xl bg-white shadow-sm border border-slate-100">
-          <ArrowLeft className="w-5 h-5 text-slate-600" />
+        <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-3 h-auto rounded-xl bg-white shadow-glass border border-white/40">
+          <ArrowLeft className="w-5 h-5 text-text-secondary" />
         </Button>
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Manajemen Template Form</h1>
-          <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] mt-1">Standar Administrasi Perusahaan</p>
+          <h1 className="text-4xl font-black text-text-primary tracking-tight">Manajemen Template Form</h1>
+          <p className="text-text-secondary font-bold uppercase tracking-[0.2em] text-[10px] mt-1">Standar Administrasi Perusahaan</p>
         </div>
       </div>
 
@@ -137,19 +137,19 @@ const DocumentTemplates: React.FC = () => {
           return (
             <Card key={form.id} className={cn(
               "p-10 border-none shadow-premium rounded-[3rem] transition-all flex flex-col items-center text-center group",
-              isUploaded ? "bg-white" : "bg-slate-50/50 border-2 border-dashed border-slate-200"
+              isUploaded ? "bg-white" : "bg-white/20 border-2 border-dashed border-white/40"
             )}>
               <div className={cn(
-                "p-6 rounded-[1.5rem] mb-8 transition-all shadow-sm",
-                isUploaded ? "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white" : "bg-slate-100 text-slate-300"
+                "p-6 rounded-[1.5rem] mb-8 transition-all shadow-glass",
+                isUploaded ? "bg-accent-lavender/20 text-accent-dark group-hover:bg-accent-dark group-hover:text-white" : "bg-white/40 text-text-muted"
               )}>
                 {form.type === 'xlsx' ? <FileSpreadsheet className="w-10 h-10" /> : <FileText className="w-10 h-10" />}
               </div>
               
-              <h3 className="font-black text-slate-900 mb-2 leading-tight text-lg px-2 min-h-[3.5rem] flex items-center justify-center">
+              <h3 className="font-black text-text-primary mb-2 leading-tight text-lg px-2 min-h-[3.5rem] flex items-center justify-center">
                 {form.name}
               </h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-10">Format: .{form.type}</p>
+              <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] mb-10">Format: .{form.type}</p>
               
               <div className="mt-auto w-full">
                 <input 
@@ -163,7 +163,7 @@ const DocumentTemplates: React.FC = () => {
                   <Button 
                     as="span" 
                     variant={isUploaded ? "outline" : "primary"} 
-                    className="w-full rounded-[1.2rem] font-black h-16 shadow-lg tracking-widest text-xs cursor-pointer"
+                    className="w-full rounded-[1.2rem] font-black h-16 shadow-glass tracking-widest text-xs cursor-pointer"
                     isLoading={isUploading}
                   >
                     {isUploaded ? (
@@ -182,7 +182,7 @@ const DocumentTemplates: React.FC = () => {
                   <Button 
                     variant="ghost"
                     onClick={() => handleDownload(form.id)}
-                    className="w-full mt-3 rounded-[1.2rem] font-black h-12 text-indigo-600 hover:bg-indigo-50 tracking-widest text-[10px] border border-indigo-100"
+                    className="w-full mt-3 rounded-[1.2rem] font-black h-12 text-accent-dark hover:bg-accent-lavender/20 tracking-widest text-[10px] border border-accent-lavender/30"
                   >
                     <Download className="w-4 h-4 mr-2" /> UNDUH MASTER FILE
                   </Button>

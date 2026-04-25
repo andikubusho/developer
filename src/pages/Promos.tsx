@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, ArrowLeft, Edit, Trash2, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -113,8 +114,8 @@ const Promos: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Master Promo</h1>
-            <p className="text-slate-500">Kelola daftar promo penjualan</p>
+            <h1 className="text-2xl font-bold text-text-primary">Master Promo</h1>
+            <p className="text-text-secondary">Kelola daftar promo penjualan</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={handleAdd}>
@@ -123,55 +124,53 @@ const Promos: React.FC = () => {
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input placeholder="Cari nama promo..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Nama Promo</th>
-                <th className="px-6 py-3 font-semibold">Masa Berlaku</th>
-                <th className="px-6 py-3 font-semibold">Nilai Promo</th>
-                <th className="px-6 py-3 font-semibold">Keterangan</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Nama Promo</TH>
+                <TH className="px-6 py-3 font-semibold">Masa Berlaku</TH>
+                <TH className="px-6 py-3 font-semibold">Nilai Promo</TH>
+                <TH className="px-6 py-3 font-semibold">Keterangan</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400">Memuat data...</td></tr>
+                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
               ) : filteredPromos.length === 0 ? (
-                <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-500">Tidak ada data promo.</td></tr>
+                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">Tidak ada data promo.</TD></TR>
               ) : (
                 filteredPromos.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900">{p.name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
+                  <TR key={p.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 font-medium text-text-primary">{p.name}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-3 h-3 text-slate-400" />
+                        <Calendar className="w-3 h-3 text-text-muted" />
                         {formatDate(p.valid_until)}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-indigo-600">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-accent-dark">
                       {p.value > 0 ? formatCurrency(p.value) : 'Non-Moneter'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{p.description}</td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{p.description}</TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(p)}><Edit className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(p.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); resetForm(); }} title={selectedPromo ? "Edit Promo" : "Input Promo"}>
@@ -179,7 +178,7 @@ const Promos: React.FC = () => {
           <Input label="Nama Promo" placeholder="Contoh: Promo Akhir Tahun" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
           <Input label="Masa Berlaku" type="date" value={formData.valid_until} onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })} required />
           <CurrencyInput label="Nilai Promo" placeholder="Rp 0 (Isi 0 jika non-moneter)" value={formData.value} onValueChange={(values) => setFormData({ ...formData, value: values.floatValue || 0 })} />
-          <textarea className="w-full rounded-lg border border-slate-300 p-2 text-sm" rows={3} placeholder="Detail promo..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+          <textarea className="w-full rounded-xl border border-white/60 p-2 text-sm" rows={3} placeholder="Detail promo..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
           <div className="flex justify-end gap-3 mt-6">
             <Button variant="outline" type="button" onClick={() => { setIsModalOpen(false); resetForm(); }}>Batal</Button>
             <Button type="submit" isLoading={loading}>Simpan Promo</Button>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Edit, Trash2, MapPin, ArrowLeft } from 'lucide-react';
 import { Project } from '../types';
@@ -83,8 +84,8 @@ const Projects: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Daftar Proyek</h1>
-            <p className="text-slate-500">Kelola semua proyek pengembangan properti</p>
+            <h1 className="text-2xl font-bold text-text-primary">Daftar Proyek</h1>
+            <p className="text-text-secondary">Kelola semua proyek pengembangan properti</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={handleAdd}>
@@ -107,9 +108,9 @@ const Projects: React.FC = () => {
       </Modal>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input 
               placeholder="Cari proyek..." 
               className="pl-10"
@@ -123,61 +124,61 @@ const Projects: React.FC = () => {
           </Button>
         </div>
 
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Nama Proyek</th>
-                <th className="px-6 py-3 font-semibold">Lokasi</th>
-                <th className="px-6 py-3 font-semibold">Unit</th>
-                <th className="px-6 py-3 font-semibold">Status</th>
-                <th className="px-6 py-3 font-semibold">Dibuat</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Nama Proyek</TH>
+                <TH className="px-6 py-3 font-semibold">Lokasi</TH>
+                <TH className="px-6 py-3 font-semibold">Unit</TH>
+                <TH className="px-6 py-3 font-semibold">Status</TH>
+                <TH className="px-6 py-3 font-semibold">Dibuat</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-400">Memuat proyek...</td>
-                </tr>
+                <TR>
+                  <TD colSpan={6} className="px-6 py-10 text-center text-text-muted">Memuat proyek...</TD>
+                </TR>
               ) : filteredProjects.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
+                <TR>
+                  <TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">
                     Tidak ada proyek ditemukan.
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ) : (
                 filteredProjects.map((project) => (
-                  <tr key={project.id} className="hover:bg-slate-50 transition-colors group">
-                    <td className="px-6 py-4">
-                      <Link to={`/projects/${project.id}`} className="font-medium text-slate-900 hover:text-indigo-600 transition-colors">
+                  <TR key={project.id} className="hover:bg-white/30 transition-colors group">
+                    <TD className="px-6 py-4">
+                      <Link to={`/projects/${project.id}`} className="font-medium text-text-primary hover:text-accent-dark transition-colors">
                         {project.name}
                       </Link>
-                      <div className="text-xs text-slate-500 truncate max-w-[200px]">{project.description}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center text-sm text-slate-600">
-                        <MapPin className="w-3 h-3 mr-1 text-slate-400" />
+                      <div className="text-xs text-text-secondary truncate max-w-[200px]">{project.description}</div>
+                    </TD>
+                    <TD className="px-6 py-4">
+                      <div className="flex items-center text-sm text-text-secondary">
+                        <MapPin className="w-3 h-3 mr-1 text-text-muted" />
                         {project.location}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-slate-900 font-medium">{project.total_units} Unit</div>
-                    </td>
-                    <td className="px-6 py-4">
+                    </TD>
+                    <TD className="px-6 py-4">
+                      <div className="text-sm text-text-primary font-medium">{project.total_units} Unit</div>
+                    </TD>
+                    <TD className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                        project.status === 'ongoing' ? 'bg-indigo-50 text-indigo-700' :
+                        project.status === 'ongoing' ? 'bg-accent-lavender/20 text-accent-dark' :
                         project.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
-                        'bg-slate-50 text-slate-700'
+                        'bg-white/30 text-text-primary'
                       )}>
                         {project.status === 'ongoing' ? 'Berjalan' :
                          project.status === 'completed' ? 'Selesai' : 'Direncanakan'}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-500">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">
                       {formatDate(project.created_at)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(project)}>
                           <Edit className="w-4 h-4" />
@@ -191,12 +192,12 @@ const Projects: React.FC = () => {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table></div>
+            </TBody>
+          </Table>
       </Card>
     </div>
   );

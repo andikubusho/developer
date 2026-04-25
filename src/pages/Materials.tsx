@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Package, AlertTriangle, ArrowRightLeft, ArrowLeft } from 'lucide-react';
 import { Material } from '../types';
@@ -64,8 +65,8 @@ const Materials: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Stok Material</h1>
-            <p className="text-slate-500">Pantau ketersediaan bahan bangunan proyek</p>
+            <h1 className="text-2xl font-bold text-text-primary">Stok Material</h1>
+            <p className="text-text-secondary">Pantau ketersediaan bahan bangunan proyek</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -80,59 +81,57 @@ const Materials: React.FC = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-indigo-50 rounded-lg"><Package className="w-5 h-5 text-indigo-600" /></div>
+          <div className="p-2 bg-accent-lavender/20 rounded-xl"><Package className="w-5 h-5 text-accent-dark" /></div>
           <div>
-            <p className="text-xs text-slate-500 font-medium">Total Jenis</p>
-            <p className="text-lg font-bold text-slate-900">{materials.length}</p>
+            <p className="text-xs text-text-secondary font-medium">Total Jenis</p>
+            <p className="text-lg font-bold text-text-primary">{materials.length}</p>
           </div>
         </Card>
         <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-red-50 rounded-lg"><AlertTriangle className="w-5 h-5 text-red-600" /></div>
+          <div className="p-2 bg-red-50 rounded-xl"><AlertTriangle className="w-5 h-5 text-red-600" /></div>
           <div>
-            <p className="text-xs text-slate-500 font-medium">Stok Menipis</p>
+            <p className="text-xs text-text-secondary font-medium">Stok Menipis</p>
             <p className="text-lg font-bold text-red-600">{materials.filter(m => m.stock <= m.min_stock).length}</p>
           </div>
         </Card>
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100">
+        <div className="p-4 border-b border-white/40">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input placeholder="Cari material..." className="w-full h-10 rounded-lg border border-slate-200 pl-10 pr-4 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+            <input placeholder="Cari material..." className="w-full h-10 rounded-xl border border-white/40 pl-10 pr-4 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Nama Material</th>
-                <th className="px-6 py-3 font-semibold">Satuan</th>
-                <th className="px-6 py-3 font-semibold">Stok Saat Ini</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Nama Material</TH>
+                <TH className="px-6 py-3 font-semibold">Satuan</TH>
+                <TH className="px-6 py-3 font-semibold">Stok Saat Ini</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr><td colSpan={4} className="px-6 py-10 text-center text-slate-400">Memuat data...</td></tr>
+                <TR><TD colSpan={4} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
               ) : filteredMaterials.length === 0 ? (
-                <tr><td colSpan={4} className="px-6 py-10 text-center text-slate-500">Tidak ada material ditemukan.</td></tr>
+                <TR><TD colSpan={4} className="px-6 py-10 text-center text-text-secondary">Tidak ada material ditemukan.</TD></TR>
               ) : (
                 filteredMaterials.map((material) => (
-                  <tr key={material.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900">{material.name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 uppercase">{material.unit}</td>
-                    <td className="px-6 py-4 font-bold">{material.stock}</td>
-                    <td className="px-6 py-4 text-right">
+                  <TR key={material.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 font-medium text-text-primary">{material.name}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary uppercase">{material.unit}</TD>
+                    <TD className="px-6 py-4 font-bold">{material.stock}</TD>
+                    <TD className="px-6 py-4 text-right">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(material)}>Update Stok</Button>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
     </div>
   );

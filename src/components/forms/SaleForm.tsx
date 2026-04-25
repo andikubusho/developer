@@ -384,14 +384,14 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         <Input label="Freelance" {...register('freelance')} />
       </div>
 
-      <div className="border-t border-slate-100 pt-4">
-        <h3 className="text-sm font-bold text-slate-900 mb-4">Rincian Harga</h3>
+      <div className="border-t border-white/40 pt-4">
+        <h3 className="text-sm font-bold text-text-primary mb-4">Rincian Harga</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Controller
             name="price"
             control={control}
             render={({ field }) => (
-              <CurrencyInput label="Harga Rumah" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} readOnly className="bg-slate-50" error={errors.price?.message} />
+              <CurrencyInput label="Harga Rumah" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} readOnly className="bg-white/30" error={errors.price?.message} />
             )}
           />
           <Controller
@@ -405,7 +405,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
             name="total_price"
             control={control}
             render={({ field }) => (
-              <CurrencyInput label="Total Harga" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} readOnly className="bg-slate-50" error={errors.total_price?.message} />
+              <CurrencyInput label="Total Harga" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} readOnly className="bg-white/30" error={errors.total_price?.message} />
             )}
           />
           <Select label="Promo" options={promos.map(p => ({ label: p.name, value: p.id }))} {...register('promo_id')} />
@@ -414,32 +414,32 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
               name="final_price"
               control={control}
               render={({ field }) => (
-                <CurrencyInput label="Total Akhir" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} readOnly className="bg-indigo-50 font-bold text-indigo-700" error={errors.final_price?.message} />
+                <CurrencyInput label="Total Akhir" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} readOnly className="bg-accent-lavender/20 font-bold text-accent-dark" error={errors.final_price?.message} />
               )}
             />
           </div>
         </div>
       </div>
 
-      <div className="border-t border-slate-100 pt-4">
-        <h3 className="text-sm font-bold text-slate-900 mb-4">Metode Pembayaran</h3>
+      <div className="border-t border-white/40 pt-4">
+        <h3 className="text-sm font-bold text-text-primary mb-4">Metode Pembayaran</h3>
         <div className="space-y-4">
           <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" value="cash" {...register('payment_method')} className="w-4 h-4 text-indigo-600" />
-              <span className="text-sm text-slate-600">Cash Keras</span>
+              <input type="radio" value="cash" {...register('payment_method')} className="w-4 h-4 text-accent-dark" />
+              <span className="text-sm text-text-secondary">Cash Keras</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" value="installment" {...register('payment_method')} className="w-4 h-4 text-indigo-600" />
-              <span className="text-sm text-slate-600">Bertahap</span>
+              <input type="radio" value="installment" {...register('payment_method')} className="w-4 h-4 text-accent-dark" />
+              <span className="text-sm text-text-secondary">Bertahap</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" value="kpr" {...register('payment_method')} className="w-4 h-4 text-indigo-600" />
-              <span className="text-sm text-slate-600">KPR</span>
+              <input type="radio" value="kpr" {...register('payment_method')} className="w-4 h-4 text-accent-dark" />
+              <span className="text-sm text-text-secondary">KPR</span>
             </label>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-white/20 pt-4">
             <Controller
               name="booking_fee"
               control={control}
@@ -450,7 +450,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
             <Input label="Tanggal Booking Fee" type="date" {...register('booking_fee_date')} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-white/20 pt-4">
             <div className="space-y-2">
               <Controller
                 name="dp_amount"
@@ -466,8 +466,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
                 )}
               />
               {(watch('booking_fee') > 0 || watch('dp_amount') > 0) && (
-                <div className="p-4 bg-indigo-50 border-2 border-indigo-200 rounded-xl shadow-sm">
-                  <p className="text-xs font-bold text-indigo-600 uppercase mb-2 flex items-center gap-2"><Calendar className="w-3 h-3" /> Panduan Sisa Pembayaran</p>
+                <div className="p-4 bg-accent-lavender/20 border-2 border-accent-lavender/40 rounded-xl shadow-glass">
+                  <p className="text-xs font-bold text-accent-dark uppercase mb-2 flex items-center gap-2"><Calendar className="w-3 h-3" /> Panduan Sisa Pembayaran</p>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between"><span>Total Harga Akhir:</span><span>{formatCurrency(watch('final_price'))}</span></div>
                     {watch('booking_fee') > 0 && (
@@ -476,7 +476,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
                     {watch('dp_amount') > 0 && (
                       <div className="flex justify-between text-red-600"><span>DP (Down Payment):</span><span>-{formatCurrency(watch('dp_amount'))}</span></div>
                     )}
-                    <div className="pt-2 border-t border-indigo-200 flex justify-between font-bold text-indigo-700">
+                    <div className="pt-2 border-t border-accent-lavender/40 flex justify-between font-bold text-accent-dark">
                       <span>Sisa Piutang:</span>
                       <span>{formatCurrency(Math.max(0, watch('final_price') - (watch('booking_fee') || 0) - (watch('dp_amount') || 0)))}</span>
                     </div>
@@ -487,7 +487,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
             <Input label="Tanggal DP" type="date" {...register('dp_date')} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-white/20 pt-4">
             <Controller
               name="ukl_amount"
               control={control}
@@ -499,15 +499,15 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           </div>
 
           {watchPaymentMethod === 'installment' && (
-            <div className="bg-slate-50 p-4 rounded-xl space-y-4">
+            <div className="bg-white/30 p-4 rounded-xl space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 uppercase">Jadwal Cicilan</span>
+                <span className="text-xs font-bold text-text-secondary uppercase">Jadwal Cicilan</span>
                 <Button type="button" variant="outline" size="sm" onClick={() => append({ date: '', amount: 0 })}>
                   <Plus className="w-3 h-3 mr-1" /> Tambah
                 </Button>
               </div>
               {fields.map((field, index) => (
-                <div key={field.id} className="flex items-end gap-2 bg-white p-2 rounded-lg border border-slate-200">
+                <div key={field.id} className="flex items-end gap-2 bg-white p-2 rounded-xl border border-white/40">
                   <div className="flex-1"><Input label="Tanggal" type="date" {...register(`installments.${index}.date` as const)} /></div>
                   <div className="flex-1"><Controller name={`installments.${index}.amount` as const} control={control} render={({ field }) => (
                     <CurrencyInput label="Nilai" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} />
@@ -520,7 +520,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
+      <div className="flex justify-end gap-3 pt-6 border-t border-white/40">
         <Button type="button" variant="outline" onClick={onCancel}>Batal</Button>
         <Button type="submit" isLoading={loading || isSubmitting} disabled={loading || isSubmitting}>
           {loading || isSubmitting ? 'Menyimpan...' : 'Simpan Transaksi'}

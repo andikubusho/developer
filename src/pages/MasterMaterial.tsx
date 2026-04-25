@@ -181,13 +181,13 @@ const MasterMaterial: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Master Material</h1>
-            <p className="text-slate-500 font-medium">Manajemen data stok dan harga satuan material konstruksi</p>
+            <h1 className="text-3xl font-black text-text-primary tracking-tight">Master Material</h1>
+            <p className="text-text-secondary font-medium">Manajemen data stok dan harga satuan material konstruksi</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Button variant="ghost" onClick={handleDownloadTemplate} className="rounded-2xl h-12 px-6 bg-white border border-slate-100 hover:bg-slate-50">
-            <Download className="w-5 h-5 mr-2 text-indigo-600" /> Template Excel
+          <Button variant="ghost" onClick={handleDownloadTemplate} className="rounded-xl h-12 px-6 bg-white border border-white/40 hover:bg-white/30">
+            <Download className="w-5 h-5 mr-2 text-accent-dark" /> Template Excel
           </Button>
           <label className="relative cursor-pointer">
             <input 
@@ -196,11 +196,11 @@ const MasterMaterial: React.FC = () => {
               className="hidden" 
               onChange={handleImportExcel}
             />
-            <div className="flex items-center justify-center rounded-2xl h-12 px-6 bg-white border border-slate-100 hover:bg-slate-50 font-bold text-slate-700 transition-all">
+            <div className="flex items-center justify-center rounded-xl h-12 px-6 bg-white border border-white/40 hover:bg-white/30 font-bold text-text-primary transition-all">
               <Upload className="w-5 h-5 mr-2 text-emerald-600" /> Upload Excel
             </div>
           </label>
-          <Button onClick={() => { setEditingMaterial(null); setForm({ name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' }); setIsModalOpen(true); }} className="rounded-2xl h-12 px-8 shadow-lg shadow-primary/20">
+          <Button onClick={() => { setEditingMaterial(null); setForm({ name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' }); setIsModalOpen(true); }} className="rounded-xl h-12 px-8 shadow-glass shadow-glass">
             <Plus className="w-5 h-5 mr-2" /> Tambah Manual
           </Button>
         </div>
@@ -208,42 +208,42 @@ const MasterMaterial: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6 bg-white border-none shadow-premium flex items-center gap-6">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-primary">
+          <div className="w-14 h-14 rounded-xl bg-accent-lavender/20 flex items-center justify-center text-primary">
             <Package className="w-7 h-7" />
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Jenis</p>
-            <p className="text-2xl font-black text-slate-900 tracking-tight">{stats.totalTypes} Material</p>
+            <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Total Jenis</p>
+            <p className="text-2xl font-black text-text-primary tracking-tight">{stats.totalTypes} Material</p>
           </div>
         </Card>
         <Card className="p-6 bg-white border-none shadow-premium flex items-center gap-6">
-          <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center", stats.lowStock > 0 ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600")}>
+          <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center", stats.lowStock > 0 ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600")}>
             <AlertTriangle className="w-7 h-7" />
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Stok Kritis/Habis</p>
-            <p className="text-2xl font-black text-slate-900 tracking-tight">{stats.lowStock} Item</p>
+            <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Stok Kritis/Habis</p>
+            <p className="text-2xl font-black text-text-primary tracking-tight">{stats.lowStock} Item</p>
           </div>
         </Card>
         <Card className="p-6 bg-white border-none shadow-premium flex items-center gap-6">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+          <div className="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
             <DollarSign className="w-7 h-7" />
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nilai Inventori</p>
-            <p className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(stats.totalValue)}</p>
+            <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Nilai Inventori</p>
+            <p className="text-2xl font-black text-text-primary tracking-tight">{formatCurrency(stats.totalValue)}</p>
           </div>
         </Card>
       </div>
 
       {/* Search & Table */}
       <Card className="p-0 border-none shadow-premium overflow-hidden bg-white">
-        <div className="p-6 border-b border-slate-50 flex items-center gap-4">
+        <div className="p-6 border-b border-white/20 flex items-center gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input 
               placeholder="Cari material..." 
-              className="pl-12 h-12 bg-slate-50 border-none rounded-xl"
+              className="pl-12 h-12 glass-input border-none rounded-xl"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -269,8 +269,8 @@ const MasterMaterial: React.FC = () => {
               {loading && materials.length === 0 ? (
                 <TR isHoverable={false}>
                   <TD colSpan={8} className="text-center py-20">
-                    <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin mx-auto mb-4" />
-                    <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Memuat Data Material...</p>
+                    <RefreshCw className="w-8 h-8 text-accent-dark animate-spin mx-auto mb-4" />
+                    <p className="text-text-muted font-bold uppercase text-[10px] tracking-widest">Memuat Data Material...</p>
                   </TD>
                 </TR>
               ) : filteredMaterials.map((m) => {
@@ -278,22 +278,22 @@ const MasterMaterial: React.FC = () => {
                 const totalValue = m.stock * ((m as any).unit_price || 0);
                 return (
                   <TR key={m.id}>
-                    <TD className="font-black text-slate-900">{m.name}</TD>
-                    <TD className="text-[10px] text-slate-500 font-medium max-w-[200px] truncate">{m.specification || '-'}</TD>
-                    <TD><span className="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest">{m.unit}</span></TD>
-                    <TD className="font-bold text-slate-600">{formatCurrency((m as any).unit_price || 0)}</TD>
-                    <TD className="font-black text-slate-900">{formatNumber(m.stock)}</TD>
-                    <TD className="text-slate-400 font-bold">{formatNumber(m.min_stock)}</TD>
+                    <TD className="font-black text-text-primary">{m.name}</TD>
+                    <TD className="text-[10px] text-text-secondary font-medium max-w-[200px] truncate">{m.specification || '-'}</TD>
+                    <TD><span className="px-3 py-1 rounded-xl bg-white/40 text-text-secondary text-[10px] font-black uppercase tracking-widest">{m.unit}</span></TD>
+                    <TD className="font-bold text-text-secondary">{formatCurrency((m as any).unit_price || 0)}</TD>
+                    <TD className="font-black text-text-primary">{formatNumber(m.stock)}</TD>
+                    <TD className="text-text-muted font-bold">{formatNumber(m.min_stock)}</TD>
                     <TD>
                       <span className={cn("px-3 py-1 rounded-full text-[9px] font-black border tracking-widest", status.color)}>
                         {status.label}
                       </span>
                     </TD>
-                    <TD className="text-right font-black text-slate-900">{formatCurrency(totalValue)}</TD>
+                    <TD className="text-right font-black text-text-primary">{formatCurrency(totalValue)}</TD>
                     <TD className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => { setEditingMaterial(m); setForm({ name: m.name, unit: m.unit, stock: m.stock, min_stock: m.min_stock, unit_price: (m as any).unit_price || 0, specification: m.specification || '' }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-slate-100">
-                          <Pencil className="w-4 h-4 text-indigo-600" />
+                        <Button variant="ghost" size="sm" onClick={() => { setEditingMaterial(m); setForm({ name: m.name, unit: m.unit, stock: m.stock, min_stock: m.min_stock, unit_price: (m as any).unit_price || 0, specification: m.specification || '' }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-white/40">
+                          <Pencil className="w-4 h-4 text-accent-dark" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(m.id)} className="h-9 w-9 p-0 rounded-xl hover:bg-rose-50">
                           <Trash2 className="w-4 h-4 text-rose-600" />
@@ -318,30 +318,30 @@ const MasterMaterial: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">Nama Material</label>
+              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Nama Material</label>
               <Input 
                 placeholder="Contoh: Semen Gresik, Besi 10mm"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="h-14 text-base font-bold rounded-2xl border-slate-200 focus:border-primary shadow-sm"
+                className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
                 required
               />
             </div>
             
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">Spesifikasi Detail</label>
+              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Spesifikasi Detail</label>
               <Input 
                 placeholder="Contoh: Ukuran, Merk, Standar SNI, dll."
                 value={form.specification}
                 onChange={(e) => setForm({ ...form, specification: e.target.value })}
-                className="h-14 text-base font-bold rounded-2xl border-slate-200 focus:border-primary shadow-sm"
+                className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">Jenis Satuan</label>
+              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Jenis Satuan</label>
               <select 
-                className="w-full h-14 bg-white border border-slate-200 rounded-2xl px-6 text-base font-bold text-slate-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-sm"
+                className="w-full h-14 glass-input rounded-xl px-6 text-base font-bold text-text-primary glass-input focus:outline-none transition-all shadow-glass"
                 value={form.unit}
                 onChange={(e) => setForm({ ...form, unit: e.target.value })}
                 required
@@ -359,19 +359,19 @@ const MasterMaterial: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">Harga Satuan (Rp)</label>
+              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Harga Satuan (Rp)</label>
               <Input 
                 type="number"
                 placeholder="0"
                 value={form.unit_price}
                 onChange={(e) => setForm({ ...form, unit_price: Number(e.target.value) })}
-                className="h-14 text-base font-bold rounded-2xl border-slate-200 focus:border-primary shadow-sm"
+                className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">
+              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">
                 {editingMaterial ? "Total Stok Saat Ini" : "Stok Awal (Volume)"}
               </label>
               <Input 
@@ -379,27 +379,27 @@ const MasterMaterial: React.FC = () => {
                 placeholder="0"
                 value={form.stock}
                 onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
-                className="h-14 text-base font-bold rounded-2xl border-slate-200 focus:border-primary shadow-sm"
+                className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">Batas Minimal Stok</label>
+              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Batas Minimal Stok</label>
               <Input 
                 type="number"
                 placeholder="10"
                 value={form.min_stock}
                 onChange={(e) => setForm({ ...form, min_stock: Number(e.target.value) })}
-                className="h-14 text-base font-bold rounded-2xl border-slate-200 focus:border-primary shadow-sm"
+                className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
                 required
               />
             </div>
           </div>
           
           <div className="pt-6 flex gap-4">
-            <Button type="button" variant="ghost" className="flex-1 h-14 rounded-2xl text-base font-bold" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button type="submit" className="flex-1 h-14 rounded-2xl text-base font-extrabold shadow-xl shadow-primary/20" isLoading={loading}>
+            <Button type="button" variant="ghost" className="flex-1 h-14 rounded-xl text-base font-bold" onClick={() => setIsModalOpen(false)}>Batal</Button>
+            <Button type="submit" className="flex-1 h-14 rounded-xl text-base font-extrabold shadow-glass shadow-glass" isLoading={loading}>
               {editingMaterial ? "Simpan Perubahan" : "Tambahkan Material"}
             </Button>
           </div>

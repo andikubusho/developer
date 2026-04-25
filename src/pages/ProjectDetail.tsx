@@ -105,7 +105,7 @@ const ProjectDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-dark"></div>
       </div>
     );
   }
@@ -113,7 +113,7 @@ const ProjectDetail: React.FC = () => {
   if (!project) {
     return (
       <div className="text-center py-20">
-        <h2 className="text-2xl font-bold text-slate-900">Proyek tidak ditemukan</h2>
+        <h2 className="text-2xl font-bold text-text-primary">Proyek tidak ditemukan</h2>
         <Button className="mt-4" onClick={() => navigate('/projects')}>Kembali ke Daftar</Button>
       </div>
     );
@@ -129,8 +129,8 @@ const ProjectDetail: React.FC = () => {
           Kembali
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{project.name}</h1>
-          <p className="text-slate-500">{project.location}</p>
+          <h1 className="text-2xl font-bold text-text-primary">{project.name}</h1>
+          <p className="text-text-secondary">{project.location}</p>
         </div>
       </div>
 
@@ -140,18 +140,18 @@ const ProjectDetail: React.FC = () => {
           <Card title="Progress Pembangunan">
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <span className="text-sm font-medium text-slate-700">Total Progress</span>
-                <span className="text-2xl font-bold text-indigo-600">{latestProgress}%</span>
+                <span className="text-sm font-medium text-text-primary">Total Progress</span>
+                <span className="text-2xl font-bold text-accent-dark">{latestProgress}%</span>
               </div>
-              <div className="w-full bg-slate-100 rounded-full h-4 overflow-hidden">
+              <div className="w-full bg-white/40 rounded-full h-4 overflow-hidden">
                 <div 
-                  className="bg-indigo-600 h-full transition-all duration-500" 
+                  className="bg-accent-dark h-full transition-all duration-500" 
                   style={{ width: `${latestProgress}%` }}
                 />
               </div>
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4">
-                <h4 className="font-semibold text-slate-900 flex items-center gap-2">
+                <h4 className="font-semibold text-text-primary flex items-center gap-2">
                   <History className="w-4 h-4" />
                   Riwayat Progress
                 </h4>
@@ -163,28 +163,28 @@ const ProjectDetail: React.FC = () => {
 
               <div className="space-y-4">
                 {progress.length === 0 ? (
-                  <p className="text-sm text-slate-500 text-center py-4">Belum ada laporan progress.</p>
+                  <p className="text-sm text-text-secondary text-center py-4">Belum ada laporan progress.</p>
                 ) : (
                   progress.map((item) => (
-                    <div key={item.id} className="flex gap-4 p-4 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
-                      <div className="w-24 h-24 rounded-lg bg-slate-200 flex-shrink-0 overflow-hidden">
+                    <div key={item.id} className="flex gap-4 p-4 rounded-xl border border-white/40 hover:bg-white/30 transition-colors">
+                      <div className="w-24 h-24 rounded-xl bg-white/50 flex-shrink-0 overflow-hidden">
                         {item.photo_url ? (
                           <img src={item.photo_url} alt="Progress" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Camera className="w-8 h-8 text-slate-400" />
+                            <Camera className="w-8 h-8 text-text-muted" />
                           </div>
                         )}
                       </div>
                       <div className="flex-1">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-1">
-                          <span className="font-bold text-slate-900">{item.percentage}% Selesai</span>
-                          <span className="text-xs text-slate-500 flex items-center">
+                          <span className="font-bold text-text-primary">{item.percentage}% Selesai</span>
+                          <span className="text-xs text-text-secondary flex items-center">
                             <Calendar className="w-3 h-3 mr-1" />
                             {formatDate(item.report_date)}
                           </span>
                         </div>
-                        <p className="text-sm text-slate-600 line-clamp-2">{item.description}</p>
+                        <p className="text-sm text-text-secondary line-clamp-2">{item.description}</p>
                       </div>
                     </div>
                   ))
@@ -200,18 +200,18 @@ const ProjectDetail: React.FC = () => {
                 <div 
                   key={unit.id} 
                   className={cn(
-                    'p-3 rounded-lg border text-center transition-all cursor-pointer hover:shadow-md',
+                    'p-3 rounded-xl border text-center transition-all cursor-pointer hover:shadow-glass',
                     unit.status === 'available' ? 'border-emerald-100 bg-emerald-50/30' :
                     unit.status === 'booked' ? 'border-amber-100 bg-amber-50/30' :
-                    'border-slate-100 bg-slate-50/30'
+                    'border-white/40 bg-white/30/30'
                   )}
                 >
-                  <div className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">{unit.type}</div>
-                  <div className="text-lg font-bold text-slate-900">{unit.unit_number}</div>
+                  <div className="text-xs font-bold text-text-muted mb-1 uppercase tracking-wider">{unit.type}</div>
+                  <div className="text-lg font-bold text-text-primary">{unit.unit_number}</div>
                   <div className={cn(
                     'text-[10px] font-bold uppercase mt-2',
                     unit.status === 'available' ? 'text-emerald-600' :
-                    unit.status === 'booked' ? 'text-amber-600' : 'text-slate-500'
+                    unit.status === 'booked' ? 'text-amber-600' : 'text-text-secondary'
                   )}>
                     {unit.status === 'available' ? 'Tersedia' :
                      unit.status === 'booked' ? 'Booked' : 'Terjual'}
@@ -226,23 +226,23 @@ const ProjectDetail: React.FC = () => {
           <Card title="Detail Proyek">
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase">Status Proyek</label>
+                <label className="text-xs font-bold text-text-muted uppercase">Status Proyek</label>
                 <div className="flex items-center gap-2 mt-1">
                   {project.status === 'completed' ? (
                     <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                   ) : (
-                    <Clock className="w-5 h-5 text-indigo-500" />
+                    <Clock className="w-5 h-5 text-accent-dark" />
                   )}
-                  <span className="font-medium text-slate-900 capitalize">{project.status}</span>
+                  <span className="font-medium text-text-primary capitalize">{project.status}</span>
                 </div>
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase">Total Unit</label>
-                <p className="font-medium text-slate-900 mt-1">{project.total_units} Unit</p>
+                <label className="text-xs font-bold text-text-muted uppercase">Total Unit</label>
+                <p className="font-medium text-text-primary mt-1">{project.total_units} Unit</p>
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase">Deskripsi</label>
-                <p className="text-sm text-slate-600 mt-1 leading-relaxed">{project.description || 'Tidak ada deskripsi.'}</p>
+                <label className="text-xs font-bold text-text-muted uppercase">Deskripsi</label>
+                <p className="text-sm text-text-secondary mt-1 leading-relaxed">{project.description || 'Tidak ada deskripsi.'}</p>
               </div>
             </div>
           </Card>
@@ -250,18 +250,18 @@ const ProjectDetail: React.FC = () => {
           <Card title="Ringkasan Unit">
             <div className="space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm">
-                <span className="text-slate-500">Tersedia</span>
+                <span className="text-text-secondary">Tersedia</span>
                 <span className="font-bold text-emerald-600">{units.filter(u => u.status === 'available').length}</span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm">
-                <span className="text-slate-500">Booked</span>
+                <span className="text-text-secondary">Booked</span>
                 <span className="font-bold text-amber-600">{units.filter(u => u.status === 'booked').length}</span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm">
-                <span className="text-slate-500">Terjual</span>
-                <span className="font-bold text-slate-900">{units.filter(u => u.status === 'sold').length}</span>
+                <span className="text-text-secondary">Terjual</span>
+                <span className="font-bold text-text-primary">{units.filter(u => u.status === 'sold').length}</span>
               </div>
-              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-bold">
+              <div className="pt-3 border-t border-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-bold">
                 <span>Total</span>
                 <span>{units.length}</span>
               </div>

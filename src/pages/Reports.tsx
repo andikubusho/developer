@@ -29,11 +29,11 @@ const Reports: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Laporan & Analitik</h1>
-            <p className="text-slate-500">Generate laporan operasional dan keuangan</p>
+            <h1 className="text-2xl font-bold text-text-primary">Laporan & Analitik</h1>
+            <p className="text-text-secondary">Generate laporan operasional dan keuangan</p>
           </div>
         </div>
-        <Card className="p-12 text-center text-slate-500">
+        <Card className="p-12 text-center text-text-secondary">
           <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-20" />
           <p>Data laporan belum tersedia untuk divisi ini.</p>
         </Card>
@@ -80,8 +80,8 @@ const Reports: React.FC = () => {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Laporan & Analitik</h1>
-          <p className="text-slate-500">Generate laporan operasional dan keuangan</p>
+          <h1 className="text-2xl font-bold text-text-primary">Laporan & Analitik</h1>
+          <p className="text-text-secondary">Generate laporan operasional dan keuangan</p>
         </div>
       </div>
 
@@ -89,9 +89,9 @@ const Reports: React.FC = () => {
         <Card className="md:col-span-1" title="Filter Laporan">
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Jenis Laporan</label>
+              <label className="text-sm font-medium text-text-primary mb-1.5 block">Jenis Laporan</label>
               <select 
-                className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none"
                 value={reportType}
                 onChange={(e) => setReportType(e.target.value)}
               >
@@ -124,11 +124,11 @@ const Reports: React.FC = () => {
 
         <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
           <Card className="flex flex-col items-center justify-center text-center p-8">
-            <div className="p-4 bg-indigo-50 rounded-full mb-4">
-              <FileText className="w-8 h-8 text-indigo-600" />
+            <div className="p-4 bg-accent-lavender/20 rounded-full mb-4">
+              <FileText className="w-8 h-8 text-accent-dark" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">Laporan Penjualan</h3>
-            <p className="text-sm text-slate-500 mt-2">Rekapitulasi unit terjual, marketing performance, dan total omzet.</p>
+            <h3 className="text-lg font-bold text-text-primary">Laporan Penjualan</h3>
+            <p className="text-sm text-text-secondary mt-2">Rekapitulasi unit terjual, marketing performance, dan total omzet.</p>
             <Button variant="outline" className="mt-6 w-full">Lihat Preview</Button>
           </Card>
 
@@ -136,8 +136,8 @@ const Reports: React.FC = () => {
             <div className="p-4 bg-emerald-50 rounded-full mb-4">
               <BarChart3 className="w-8 h-8 text-emerald-600" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">Laporan Keuangan</h3>
-            <p className="text-sm text-slate-500 mt-2">Arus kas masuk dari booking fee, DP, dan cicilan pelanggan.</p>
+            <h3 className="text-lg font-bold text-text-primary">Laporan Keuangan</h3>
+            <p className="text-sm text-text-secondary mt-2">Arus kas masuk dari booking fee, DP, dan cicilan pelanggan.</p>
             <Button variant="outline" className="mt-6 w-full">Lihat Preview</Button>
           </Card>
         </div>

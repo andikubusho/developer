@@ -30,8 +30,8 @@ const FinancialReportsPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Laporan Keuangan</h1>
-            <p className="text-slate-500">Analisis Performa Keuangan Perusahaan</p>
+            <h1 className="text-2xl font-bold text-text-primary">Laporan Keuangan</h1>
+            <p className="text-text-secondary">Analisis Performa Keuangan Perusahaan</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -51,26 +51,26 @@ const FinancialReportsPage: React.FC = () => {
           <Card 
             key={report.id} 
             className={cn(
-              "p-6 cursor-pointer transition-all hover:shadow-md border-2",
-              selectedReport === report.id ? "border-indigo-600 bg-indigo-50/30" : "border-transparent"
+              "p-6 cursor-pointer transition-all hover:shadow-glass border-2",
+              selectedReport === report.id ? "border-accent-dark bg-accent-lavender/20/30" : "border-transparent"
             )}
             onClick={() => setSelectedReport(report.id as any)}
           >
             <div className={cn(
               "w-12 h-12 rounded-xl flex items-center justify-center mb-4",
-              selectedReport === report.id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600"
+              selectedReport === report.id ? "bg-accent-dark text-white" : "bg-white/40 text-text-secondary"
             )}>
               <report.icon className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1">{report.name}</h3>
-            <p className="text-sm text-slate-500">{report.description}</p>
+            <h3 className="text-lg font-bold text-text-primary mb-1">{report.name}</h3>
+            <p className="text-sm text-text-secondary">{report.description}</p>
           </Card>
         ))}
       </div>
 
       <Card className="p-4 sm:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <h2 className="text-xl font-bold text-slate-900">
+          <h2 className="text-xl font-bold text-text-primary">
             {reports.find(r => r.id === selectedReport)?.name}
           </h2>
           <Button variant="outline" size="sm">
@@ -81,8 +81,8 @@ const FinancialReportsPage: React.FC = () => {
 
         {/* Mock Report Content */}
         <div className="space-y-6">
-          <div className="border-b border-slate-200 pb-4">
-            <div className="flex justify-between text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">
+          <div className="border-b border-white/40 pb-4">
+            <div className="flex justify-between text-sm font-bold text-text-primary uppercase tracking-wider mb-4">
               <span>Keterangan</span>
               <span>Jumlah (IDR)</span>
             </div>
@@ -90,65 +90,65 @@ const FinancialReportsPage: React.FC = () => {
             {selectedReport === 'pnl' && (
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Pendapatan Penjualan Unit</span>
-                  <span className="font-bold text-slate-900">{formatCurrency(1500000000)}</span>
+                  <span className="text-text-secondary">Pendapatan Penjualan Unit</span>
+                  <span className="font-bold text-text-primary">{formatCurrency(1500000000)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Pendapatan Lain-lain</span>
-                  <span className="font-bold text-slate-900">{formatCurrency(25000000)}</span>
+                  <span className="text-text-secondary">Pendapatan Lain-lain</span>
+                  <span className="font-bold text-text-primary">{formatCurrency(25000000)}</span>
                 </div>
-                <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-100">
-                  <span className="text-slate-900 uppercase">Total Pendapatan</span>
-                  <span className="text-indigo-600">{formatCurrency(1525000000)}</span>
+                <div className="flex justify-between text-sm font-bold pt-2 border-t border-white/40">
+                  <span className="text-text-primary uppercase">Total Pendapatan</span>
+                  <span className="text-accent-dark">{formatCurrency(1525000000)}</span>
                 </div>
                 <div className="h-4"></div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Beban Pokok Penjualan (HPP)</span>
+                  <span className="text-text-secondary">Beban Pokok Penjualan (HPP)</span>
                   <span className="font-bold text-red-600">({formatCurrency(850000000)})</span>
                 </div>
-                <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-100">
-                  <span className="text-slate-900 uppercase">Laba Kotor</span>
-                  <span className="text-indigo-600">{formatCurrency(675000000)}</span>
+                <div className="flex justify-between text-sm font-bold pt-2 border-t border-white/40">
+                  <span className="text-text-primary uppercase">Laba Kotor</span>
+                  <span className="text-accent-dark">{formatCurrency(675000000)}</span>
                 </div>
               </div>
             )}
 
             {selectedReport === 'balance' && (
               <div className="space-y-3">
-                <div className="text-xs font-bold text-slate-400 uppercase mb-2">Aset Lancar</div>
+                <div className="text-xs font-bold text-text-muted uppercase mb-2">Aset Lancar</div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Kas dan Setara Kas</span>
-                  <span className="font-bold text-slate-900">{formatCurrency(2500000000)}</span>
+                  <span className="text-text-secondary">Kas dan Setara Kas</span>
+                  <span className="font-bold text-text-primary">{formatCurrency(2500000000)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Piutang Usaha</span>
-                  <span className="font-bold text-slate-900">{formatCurrency(750000000)}</span>
+                  <span className="text-text-secondary">Piutang Usaha</span>
+                  <span className="font-bold text-text-primary">{formatCurrency(750000000)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Persediaan Proyek</span>
-                  <span className="font-bold text-slate-900">{formatCurrency(5400000000)}</span>
+                  <span className="text-text-secondary">Persediaan Proyek</span>
+                  <span className="font-bold text-text-primary">{formatCurrency(5400000000)}</span>
                 </div>
-                <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-100">
-                  <span className="text-slate-900 uppercase">Total Aset</span>
-                  <span className="text-indigo-600">{formatCurrency(8650000000)}</span>
+                <div className="flex justify-between text-sm font-bold pt-2 border-t border-white/40">
+                  <span className="text-text-primary uppercase">Total Aset</span>
+                  <span className="text-accent-dark">{formatCurrency(8650000000)}</span>
                 </div>
               </div>
             )}
 
             {selectedReport === 'cashflow' && (
               <div className="space-y-3">
-                <div className="text-xs font-bold text-slate-400 uppercase mb-2">Aktivitas Operasi</div>
+                <div className="text-xs font-bold text-text-muted uppercase mb-2">Aktivitas Operasi</div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Penerimaan dari Pelanggan</span>
-                  <span className="font-bold text-slate-900">{formatCurrency(1200000000)}</span>
+                  <span className="text-text-secondary">Penerimaan dari Pelanggan</span>
+                  <span className="font-bold text-text-primary">{formatCurrency(1200000000)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Pembayaran ke Supplier</span>
+                  <span className="text-text-secondary">Pembayaran ke Supplier</span>
                   <span className="font-bold text-red-600">({formatCurrency(450000000)})</span>
                 </div>
-                <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-100">
-                  <span className="text-slate-900 uppercase">Kas Bersih dari Operasi</span>
-                  <span className="text-indigo-600">{formatCurrency(750000000)}</span>
+                <div className="flex justify-between text-sm font-bold pt-2 border-t border-white/40">
+                  <span className="text-text-primary uppercase">Kas Bersih dari Operasi</span>
+                  <span className="text-accent-dark">{formatCurrency(750000000)}</span>
                 </div>
               </div>
             )}
@@ -160,9 +160,4 @@ const FinancialReportsPage: React.FC = () => {
 };
 
 export default FinancialReportsPage;
-
-// Helper for conditional classes
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
-}
 

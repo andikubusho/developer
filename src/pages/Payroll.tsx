@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Banknote, ArrowLeft, Edit, Trash2, Printer, Download, FileText } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -141,8 +142,8 @@ const PayrollPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Payroll</h1>
-            <p className="text-slate-500">Manajemen Penggajian Karyawan</p>
+            <h1 className="text-2xl font-bold text-text-primary">Payroll</h1>
+            <p className="text-text-secondary">Manajemen Penggajian Karyawan</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -158,9 +159,9 @@ const PayrollPage: React.FC = () => {
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input 
               placeholder="Cari nama karyawan atau ID..." 
               className="pl-10"
@@ -168,62 +169,62 @@ const PayrollPage: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select className="w-full sm:w-auto h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <select className="w-full sm:w-auto h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none">
             <option value="Maret 2026">Maret 2026</option>
             <option value="Februari 2026">Februari 2026</option>
             <option value="Januari 2026">Januari 2026</option>
           </select>
         </div>
 
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Periode</th>
-                <th className="px-6 py-3 font-semibold">Karyawan</th>
-                <th className="px-6 py-3 font-semibold text-right">Gaji Pokok</th>
-                <th className="px-6 py-3 font-semibold text-right">Tunjangan</th>
-                <th className="px-6 py-3 font-semibold text-right">Potongan</th>
-                <th className="px-6 py-3 font-semibold text-right">Gaji Bersih</th>
-                <th className="px-6 py-3 font-semibold">Status</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Periode</TH>
+                <TH className="px-6 py-3 font-semibold">Karyawan</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Gaji Pokok</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Tunjangan</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Potongan</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Gaji Bersih</TH>
+                <TH className="px-6 py-3 font-semibold">Status</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-10 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                  </td>
-                </tr>
+                <TR>
+                  <TD colSpan={8} className="px-6 py-10 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
+                  </TD>
+                </TR>
               ) : filteredPayroll.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-10 text-center text-slate-500">
+                <TR>
+                  <TD colSpan={8} className="px-6 py-10 text-center text-text-secondary">
                     Tidak ada data payroll.
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ) : (
                 filteredPayroll.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-600">{item.period}</td>
-                    <td className="px-6 py-4">
+                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{item.period}</TD>
+                    <TD className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-slate-900">{item.employee?.full_name}</span>
-                        <span className="text-xs text-slate-500">{item.employee?.employee_id}</span>
+                        <span className="text-sm font-medium text-text-primary">{item.employee?.full_name}</span>
+                        <span className="text-xs text-text-secondary">{item.employee?.employee_id}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 text-right">{formatCurrency(item.basic_salary)}</td>
-                    <td className="px-6 py-4 text-sm text-green-600 text-right">+{formatCurrency(item.allowances)}</td>
-                    <td className="px-6 py-4 text-sm text-red-600 text-right">-{formatCurrency(item.deductions)}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right">{formatCurrency(item.net_salary)}</td>
-                    <td className="px-6 py-4">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary text-right">{formatCurrency(item.basic_salary)}</TD>
+                    <TD className="px-6 py-4 text-sm text-green-600 text-right">+{formatCurrency(item.allowances)}</TD>
+                    <TD className="px-6 py-4 text-sm text-red-600 text-right">-{formatCurrency(item.deductions)}</TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">{formatCurrency(item.net_salary)}</TD>
+                    <TD className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                         item.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                       )}>
                         {item.status}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <FileText className="w-4 h-4" />
@@ -245,12 +246,12 @@ const PayrollPage: React.FC = () => {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table></div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal
@@ -263,9 +264,9 @@ const PayrollPage: React.FC = () => {
       >
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Periode</label>
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Periode</label>
             <select 
-              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none"
               value={formData.period}
               onChange={(e) => setFormData({ ...formData, period: e.target.value })}
               required
@@ -275,9 +276,9 @@ const PayrollPage: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Karyawan</label>
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Pilih Karyawan</label>
             <select 
-              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none"
               value={formData.employee_id}
               onChange={(e) => {
                 const emp = employees.find(emp => emp.id === e.target.value);
@@ -323,9 +324,9 @@ const PayrollPage: React.FC = () => {
               required
             />
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Status</label>
+              <label className="text-sm font-medium text-text-primary mb-1.5 block">Status</label>
               <select 
-                className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none"
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                 required

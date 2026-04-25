@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Wallet, ArrowLeft, Edit, Trash2, Download } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -7,6 +8,7 @@ import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
+import { api } from '../lib/api';
 
 interface PettyCashItem {
   id: string;
@@ -108,8 +110,8 @@ const PettyCashPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Petty Cash</h1>
-            <p className="text-slate-500">Manajemen Kas Kecil Operasional</p>
+            <h1 className="text-2xl font-bold text-text-primary">Petty Cash</h1>
+            <p className="text-text-secondary">Manajemen Kas Kecil Operasional</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -124,22 +126,22 @@ const PettyCashPage: React.FC = () => {
         </div>
       </div>
 
-      <Card className="p-6 bg-indigo-600 text-white">
+      <Card className="p-6 bg-accent-dark text-white">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
             <Wallet className="w-7 h-7 text-white" />
           </div>
           <div>
-            <p className="text-indigo-100 text-sm font-medium">Saldo Kas Kecil Saat Ini</p>
+            <p className="text-white text-sm font-medium">Saldo Kas Kecil Saat Ini</p>
             <h3 className="text-3xl font-bold">{formatCurrency(currentBalance)}</h3>
           </div>
         </div>
       </Card>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input 
               placeholder="Cari deskripsi atau pemohon..." 
               className="pl-10"
@@ -153,47 +155,47 @@ const PettyCashPage: React.FC = () => {
           </Button>
         </div>
 
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Tanggal</th>
-                <th className="px-6 py-3 font-semibold">Pemohon</th>
-                <th className="px-6 py-3 font-semibold">Deskripsi</th>
-                <th className="px-6 py-3 font-semibold text-right">Jumlah</th>
-                <th className="px-6 py-3 font-semibold">Tipe</th>
-                <th className="px-6 py-3 font-semibold">Status</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Tanggal</TH>
+                <TH className="px-6 py-3 font-semibold">Pemohon</TH>
+                <TH className="px-6 py-3 font-semibold">Deskripsi</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Jumlah</TH>
+                <TH className="px-6 py-3 font-semibold">Tipe</TH>
+                <TH className="px-6 py-3 font-semibold">Status</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                  </td>
-                </tr>
+                <TR>
+                  <TD colSpan={7} className="px-6 py-10 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
+                  </TD>
+                </TR>
               ) : filteredPetty.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
+                <TR>
+                  <TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">
                     Tidak ada data kas kecil.
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ) : (
                 filteredPetty.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-600">{formatDate(item.date)}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{item.requested_by}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{item.description}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right">{formatCurrency(item.amount)}</td>
-                    <td className="px-6 py-4">
+                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(item.date)}</TD>
+                    <TD className="px-6 py-4 text-sm font-medium text-text-primary">{item.requested_by}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary max-w-xs truncate">{item.description}</TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">{formatCurrency(item.amount)}</TD>
+                    <TD className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                         item.type === 'in' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       )}>
                         {item.type === 'in' ? 'Masuk' : 'Keluar'}
                       </span>
-                    </td>
-                    <td className="px-6 py-4">
+                    </TD>
+                    <TD className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                         item.status === 'approved' ? 'bg-green-100 text-green-700' : 
@@ -201,8 +203,8 @@ const PettyCashPage: React.FC = () => {
                       )}>
                         {item.status}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <Edit className="w-4 h-4" />
@@ -211,12 +213,12 @@ const PettyCashPage: React.FC = () => {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table></div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal
@@ -228,9 +230,9 @@ const PettyCashPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <Input label="Tanggal" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Tipe</label>
+              <label className="text-sm font-medium text-text-primary mb-1.5 block">Tipe</label>
               <select 
-                className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none"
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
               >

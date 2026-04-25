@@ -1,7 +1,8 @@
 import React from 'react';
 import { useAuth, Division } from '../contexts/AuthContext';
-import { ShoppingCart, HardHat, Landmark, Building2, ShieldCheck, UserCheck, Calculator } from 'lucide-react';
+import { ShoppingCart, HardHat, Landmark, Building2, ShieldCheck, UserCheck, Calculator, ChevronRight } from 'lucide-react';
 import { Card } from '../components/ui/Card';
+import { cn } from '../lib/utils';
 
 const DivisionSelection: React.FC = () => {
   const { setDivision, profile } = useAuth();
@@ -52,38 +53,54 @@ const DivisionSelection: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="max-w-4xl w-full">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-6 shadow-lg shadow-indigo-200">
-            <Building2 className="text-white w-10 h-10" />
+    <div className="min-h-screen bg-page flex items-center justify-center p-6 selection:bg-accent-lavender/30 relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent-mint/20 blur-[120px] rounded-full animate-pulse" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-accent-lavender/20 blur-[120px] rounded-full animate-pulse" />
+
+      <div className="max-w-5xl w-full relative z-10">
+        <div className="text-center mb-16 space-y-4">
+          <div className="inline-flex items-center justify-center w-auto h-32 mb-10 animate-bounce-subtle">
+            <img 
+              src="/src/assets/logo-perusahaan.png" 
+              alt="Company Logo" 
+              className="h-full w-auto object-contain mix-blend-multiply scale-[1.3]"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Selamat Datang, {profile?.full_name}</h1>
-          <p className="text-slate-500 text-lg">Silakan pilih divisi Anda untuk melanjutkan</p>
+          <h1 className="text-4xl font-black text-accent-dark tracking-tight">Selamat Datang, {profile?.full_name}</h1>
+          <p className="text-text-secondary text-lg font-bold uppercase tracking-[0.3em] opacity-70">Silakan pilih divisi Anda untuk melanjutkan</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {divisions.map((div) => (
             <button
               key={div.id}
               onClick={() => setDivision(div.id)}
-              className="group text-left transition-transform hover:-translate-y-1 focus:outline-none"
+              className="group text-left focus:outline-none transition-all duration-500 hover:-translate-y-2"
             >
-              <Card className="h-full p-8 border-2 border-transparent group-hover:border-indigo-500 transition-all">
-                <div className={`w-14 h-14 ${div.color} rounded-xl flex items-center justify-center mb-6 text-white shadow-lg`}>
+              <Card className="h-full p-8 bg-white/40 border-white/70 shadow-glass group-hover:bg-white/60 group-hover:shadow-glass-2 transition-all">
+                <div className={cn(
+                  "w-16 h-16 rounded-xl flex items-center justify-center mb-8 text-accent-dark shadow-glass transition-all duration-500 group-hover:scale-110 group-hover:rotate-6",
+                  div.id === 'marketing' ? 'bg-accent-mint/50' :
+                  div.id === 'teknik' ? 'bg-accent-lavender/50' :
+                  'bg-accent-peach/50'
+                )}>
                   <div.icon className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">{div.name}</h3>
-                <p className="text-slate-500 leading-relaxed">{div.description}</p>
-                <div className="mt-6 flex items-center text-indigo-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                <h3 className="text-2xl font-black text-accent-dark mb-3 tracking-tight">{div.name}</h3>
+                <p className="text-text-secondary text-sm font-medium leading-relaxed mb-8">{div.description}</p>
+                
+                <div className="mt-auto flex items-center text-accent-dark text-xs font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-[-10px] group-hover:translate-x-0">
                   Pilih Divisi
-                  <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <ChevronRight className="w-4 h-4 ml-2" />
                 </div>
               </Card>
             </button>
           ))}
+        </div>
+
+        <div className="mt-20 text-center">
+          <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.4em]">PropDev ERP Pro v2.6.0 &bull; Precision Access</p>
         </div>
       </div>
     </div>

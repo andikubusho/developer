@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, FileSpreadsheet, ArrowLeft, Download, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -6,6 +7,7 @@ import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
+import { api } from '../lib/api';
 
 interface LedgerEntry {
   id: string;
@@ -94,8 +96,8 @@ const LedgerPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Buku Besar</h1>
-            <p className="text-slate-500">Rincian Transaksi per Akun / COA</p>
+            <h1 className="text-2xl font-bold text-text-primary">Buku Besar</h1>
+            <p className="text-text-secondary">Rincian Transaksi per Akun / COA</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -110,9 +112,9 @@ const LedgerPage: React.FC = () => {
       <Card className="p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Akun</label>
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Pilih Akun</label>
             <select 
-              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none"
               value={selectedAccount}
               onChange={(e) => setSelectedAccount(e.target.value)}
             >
@@ -124,7 +126,7 @@ const LedgerPage: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Periode</label>
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Periode</label>
             <div className="flex gap-2">
               <Input type="date" className="h-10" />
               <Input type="date" className="h-10" />
@@ -140,9 +142,9 @@ const LedgerPage: React.FC = () => {
       </Card>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input 
               placeholder="Cari deskripsi atau referensi..." 
               className="pl-10"
@@ -152,48 +154,48 @@ const LedgerPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Tanggal</th>
-                <th className="px-6 py-3 font-semibold">Referensi</th>
-                <th className="px-6 py-3 font-semibold">Deskripsi</th>
-                <th className="px-6 py-3 font-semibold text-right">Debit</th>
-                <th className="px-6 py-3 font-semibold text-right">Kredit</th>
-                <th className="px-6 py-3 font-semibold text-right">Saldo</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Tanggal</TH>
+                <TH className="px-6 py-3 font-semibold">Referensi</TH>
+                <TH className="px-6 py-3 font-semibold">Deskripsi</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Debit</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Kredit</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Saldo</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                  </td>
-                </tr>
+                <TR>
+                  <TD colSpan={6} className="px-6 py-10 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
+                  </TD>
+                </TR>
               ) : filteredLedger.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
+                <TR>
+                  <TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">
                     Tidak ada data buku besar untuk akun ini.
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ) : (
                 filteredLedger.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-600">{formatDate(item.date)}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-indigo-600">{item.reference_no}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{item.description}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right">
+                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(item.date)}</TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-accent-dark">{item.reference_no}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary max-w-xs truncate">{item.description}</TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">
                       {item.debit > 0 ? formatCurrency(item.debit) : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">
                       {item.credit > 0 ? formatCurrency(item.credit) : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right">{formatCurrency(item.balance)}</td>
-                  </tr>
+                    </TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">{formatCurrency(item.balance)}</TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table></div>
+            </TBody>
+          </Table>
       </Card>
     </div>
   );

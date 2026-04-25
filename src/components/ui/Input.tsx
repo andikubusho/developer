@@ -11,7 +11,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full space-y-2">
         {label && (
-          <label className="text-sm font-bold text-slate-700 tracking-tight">
+          <label className="text-xs font-black text-text-secondary uppercase tracking-widest ml-4">
             {label}
           </label>
         )
@@ -19,8 +19,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           className={cn(
-            'flex h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium transition-all placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm',
-            error && 'border-danger focus:border-danger focus:ring-danger/10',
+            'flex h-11 w-full rounded-pill glass-input px-6 py-2 text-sm font-medium text-text-primary placeholder:text-text-muted focus:outline-none',
+            error && 'border-red-400 focus:border-red-400 focus:ring-red-400/20',
             className
           )}
           {...props}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, History, ArrowLeft, Edit, Trash2, Download } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -159,8 +160,8 @@ const GeneralJournalPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Jurnal Umum</h1>
-            <p className="text-slate-500">Pencatatan Transaksi Akuntansi Harian</p>
+            <h1 className="text-2xl font-bold text-text-primary">Jurnal Umum</h1>
+            <p className="text-text-secondary">Pencatatan Transaksi Akuntansi Harian</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -176,9 +177,9 @@ const GeneralJournalPage: React.FC = () => {
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input 
               placeholder="Cari deskripsi atau nomor referensi..." 
               className="pl-10"
@@ -192,61 +193,61 @@ const GeneralJournalPage: React.FC = () => {
           </Button>
         </div>
 
-        <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Tanggal</th>
-                <th className="px-6 py-3 font-semibold">Ref / Deskripsi</th>
-                <th className="px-6 py-3 font-semibold">Kode Akun</th>
-                <th className="px-6 py-3 font-semibold">Nama Akun</th>
-                <th className="px-6 py-3 font-semibold text-right">Debit</th>
-                <th className="px-6 py-3 font-semibold text-right">Kredit</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Tanggal</TH>
+                <TH className="px-6 py-3 font-semibold">Ref / Deskripsi</TH>
+                <TH className="px-6 py-3 font-semibold">Kode Akun</TH>
+                <TH className="px-6 py-3 font-semibold">Nama Akun</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Debit</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Kredit</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                  </td>
-                </tr>
+                <TR>
+                  <TD colSpan={7} className="px-6 py-10 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
+                  </TD>
+                </TR>
               ) : filteredJournal.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
+                <TR>
+                  <TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">
                     Tidak ada data jurnal.
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ) : (
                 filteredJournal.map((entry) => (
                   <React.Fragment key={entry.id}>
                     {entry.items.map((item, idx) => (
-                      <tr key={`${entry.id}-${idx}`} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4 text-sm text-slate-600">
+                      <TR key={`${entry.id}-${idx}`} className="hover:bg-white/30 transition-colors">
+                        <TD className="px-6 py-4 text-sm text-text-secondary">
                           {idx === 0 ? formatDate(entry.date) : ''}
-                        </td>
-                        <td className="px-6 py-4 text-sm">
+                        </TD>
+                        <TD className="px-6 py-4 text-sm">
                           {idx === 0 ? (
                             <div>
-                              <p className="font-bold text-slate-900">{entry.reference_no}</p>
-                              <p className="text-slate-500 text-xs">{entry.description}</p>
+                              <p className="font-bold text-text-primary">{entry.reference_no}</p>
+                              <p className="text-text-secondary text-xs">{entry.description}</p>
                             </div>
                           ) : ''}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-600">{item.account_code}</td>
-                        <td className={cn(
-                          "px-6 py-4 text-sm text-slate-900",
+                        </TD>
+                        <TD className="px-6 py-4 text-sm text-text-secondary">{item.account_code}</TD>
+                        <TD className={cn(
+                          "px-6 py-4 text-sm text-text-primary",
                           item.credit > 0 ? "pl-12" : ""
                         )}>
                           {item.account_name}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right">
+                        </TD>
+                        <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">
                           {item.debit > 0 ? formatCurrency(item.debit) : '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right">
+                        </TD>
+                        <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">
                           {item.credit > 0 ? formatCurrency(item.credit) : '-'}
-                        </td>
-                        <td className="px-6 py-4 text-right">
+                        </TD>
+                        <TD className="px-6 py-4 text-right">
                           {idx === 0 ? (
                             <div className="flex items-center justify-end gap-2">
                               <Button 
@@ -267,14 +268,14 @@ const GeneralJournalPage: React.FC = () => {
                               </Button>
                             </div>
                           ) : ''}
-                        </td>
-                      </tr>
+                        </TD>
+                      </TR>
                     ))}
                   </React.Fragment>
                 ))
               )}
-            </tbody>
-          </table></div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal
@@ -311,8 +312,8 @@ const GeneralJournalPage: React.FC = () => {
           />
           
           <div className="space-y-2 mt-4">
-            <p className="text-sm font-bold text-slate-900">Rincian Akun</p>
-            <div className="grid grid-cols-12 gap-2 text-xs font-bold text-slate-500 uppercase px-2">
+            <p className="text-sm font-bold text-text-primary">Rincian Akun</p>
+            <div className="grid grid-cols-12 gap-2 text-xs font-bold text-text-secondary uppercase px-2">
               <div className="col-span-4">Akun</div>
               <div className="col-span-3 text-right">Debit</div>
               <div className="col-span-3 text-right">Kredit</div>
@@ -323,7 +324,7 @@ const GeneralJournalPage: React.FC = () => {
               <div key={index} className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-4">
                   <select 
-                    className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                    className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm"
                     value={item.account_code}
                     onChange={(e) => handleItemChange(index, 'account_code', e.target.value)}
                     required

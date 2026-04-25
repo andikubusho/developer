@@ -140,36 +140,36 @@ const SitePlan = () => {
   if (loading && projects.length === 0) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#f8fafc]">
-        <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+        <RefreshCw className="w-8 h-8 text-accent-dark animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-full flex flex-col bg-slate-900 overflow-hidden font-sans">
+    <div className="h-screen w-full flex flex-col bg-accent-dark overflow-hidden font-sans">
       {/* Cinematic Minimalist Header */}
-      <div className="h-20 w-full bg-slate-900/50 backdrop-blur-xl border-b border-white/5 px-8 flex items-center justify-between z-50">
+      <div className="h-20 w-full bg-accent-dark/50 backdrop-blur-xl border-b border-white/5 px-8 flex items-center justify-between z-50">
         <div className="flex items-center gap-10">
            <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="text-white hover:bg-white/10 rounded-xl p-2 h-auto">
               <ArrowLeft className="w-6 h-6" />
            </Button>
            <div className="flex flex-col">
-              <span className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-1">Project View</span>
+              <span className="text-[9px] font-black text-accent-lavender uppercase tracking-[0.3em] mb-1">Project View</span>
               <div className="flex items-center gap-4">
                 <select 
                   value={selectedProjectId}
                   onChange={(e) => handleProjectChange(e.target.value)}
                   className="bg-transparent text-white font-black text-xl focus:outline-none cursor-pointer appearance-none min-w-[200px]"
                 >
-                  {projects.map(p => <option key={p.id} value={p.id} className="bg-slate-900 text-white">{p.name}</option>)}
+                  {projects.map(p => <option key={p.id} value={p.id} className="bg-accent-dark text-white">{p.name}</option>)}
                 </select>
-                <ImageIcon className="text-indigo-400 w-5 h-5 opacity-50" />
+                <ImageIcon className="text-accent-lavender w-5 h-5 opacity-50" />
               </div>
            </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/5 rounded-2xl p-1 border border-white/10 mr-4">
+          <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/10 mr-4">
              <button onClick={() => setScale(s => Math.max(s - 0.1, 0.1))} className="p-3 text-white/40 hover:text-white transition-colors"><ZoomOut className="w-5 h-5" /></button>
              <span className="px-4 text-white font-black text-xs min-w-[60px] text-center">{Math.round(scale * 100)}%</span>
              <button onClick={() => setScale(s => Math.min(s + 0.5, 5))} className="p-3 text-white/40 hover:text-white transition-colors"><ZoomIn className="w-5 h-5" /></button>
@@ -178,10 +178,10 @@ const SitePlan = () => {
           <Button 
             onClick={() => setIsLocked(!isLocked)}
             className={cn(
-              "font-black uppercase text-[10px] tracking-[0.2em] px-6 h-12 rounded-2xl transition-all",
+              "font-black uppercase text-[10px] tracking-[0.2em] px-6 h-12 rounded-xl transition-all",
               isLocked 
                 ? "bg-white/5 text-white/50 border border-white/10" 
-                : "bg-amber-500 text-white shadow-lg shadow-amber-500/20"
+                : "bg-amber-500 text-white shadow-glass shadow-glass"
             )}
           >
             {isLocked ? <Lock className="w-4 h-4 mr-2" /> : <Unlock className="w-4 h-4 mr-2" />}
@@ -191,7 +191,7 @@ const SitePlan = () => {
           {!isLocked && (
             <Button 
               onClick={handleSaveConfig}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-[10px] tracking-[0.2em] h-12 px-6 rounded-2xl shadow-xl shadow-emerald-600/20"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-[10px] tracking-[0.2em] h-12 px-6 rounded-xl shadow-glass shadow-glass"
             >
               <Save className="w-4 h-4 mr-2" />
               Simpan Posisi
@@ -200,7 +200,7 @@ const SitePlan = () => {
 
           <Button 
             onClick={() => setIsUploadModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase text-[10px] tracking-[0.2em] h-12 px-6 rounded-2xl shadow-xl shadow-indigo-600/20"
+            className="bg-accent-dark hover:bg-accent-lavender/50 text-white font-black uppercase text-[10px] tracking-[0.2em] h-12 px-6 rounded-xl shadow-glass shadow-glass"
           >
             <Upload className="w-4 h-4 mr-2" />
             Upload Baru
@@ -232,7 +232,7 @@ const SitePlan = () => {
             <img 
               src={selectedProject.site_plan_image_url} 
               alt="Site Plan"
-              className="max-w-[90vw] max-h-[80vh] object-contain shadow-[0_0_80px_-15px_rgba(0,0,0,0.5)] rounded-2xl border border-white/10 bg-slate-800"
+              className="max-w-[90vw] max-h-[80vh] object-contain shadow-[0_0_80px_-15px_rgba(0,0,0,0.5)] rounded-xl border border-white/10 bg-accent-dark/80"
               draggable={false}
             />
           </div>
@@ -249,9 +249,9 @@ const SitePlan = () => {
         )}
 
         {/* Cinematic Overlays */}
-        <div className="absolute bottom-10 left-10 p-6 rounded-3xl bg-slate-900/40 backdrop-blur-md border border-white/5 flex items-center gap-6 pointer-events-none">
+        <div className="absolute bottom-10 left-10 p-6 rounded-xl bg-accent-dark/40 backdrop-blur-md border border-white/5 flex items-center gap-6 pointer-events-none">
            <div className="flex flex-col">
-              <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Status View</span>
+              <span className="text-[8px] font-black text-accent-lavender uppercase tracking-widest">Status View</span>
               <span className="text-[10px] font-bold text-white/60 mt-1 flex items-center gap-2">
                  {isLocked ? (
                    <><Lock className="w-3 h-3" /> Tampilan Terkunci</>
@@ -265,13 +265,13 @@ const SitePlan = () => {
 
       {/* Upload Modal */}
       <Modal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} title="Update Site Plan">
-        <div className="p-16 text-center border-2 border-dashed border-slate-200 rounded-[3rem] hover:border-indigo-500/50 transition-all cursor-pointer bg-slate-50 relative group overflow-hidden">
+        <div className="p-16 text-center border-2 border-dashed border-white/40 rounded-[3rem] hover:border-accent-lavender/50 transition-all cursor-pointer bg-white/30 relative group overflow-hidden">
           <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-          <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-premium mx-auto mb-6 group-hover:scale-110 transition-transform relative z-0">
-             <Upload className="w-10 h-10 text-indigo-500" />
+          <div className="w-20 h-20 bg-white rounded-xl flex items-center justify-center shadow-premium mx-auto mb-6 group-hover:scale-110 transition-transform relative z-0">
+             <Upload className="w-10 h-10 text-accent-dark" />
           </div>
-          <h3 className="text-xl font-black text-slate-900 tracking-tight">Pilih Gambar Site Plan</h3>
-          <p className="text-sm text-slate-400 mt-2 font-medium">Klik atau tarik file gambar ke area ini</p>
+          <h3 className="text-xl font-black text-text-primary tracking-tight">Pilih Gambar Site Plan</h3>
+          <p className="text-sm text-text-muted mt-2 font-medium">Klik atau tarik file gambar ke area ini</p>
         </div>
       </Modal>
     </div>

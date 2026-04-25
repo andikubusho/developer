@@ -33,19 +33,21 @@ export const Pagination: React.FC<PaginationProps> = ({
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 sm:px-6 border-t border-slate-100">
+    <div className="flex items-center justify-between px-4 py-3 sm:px-6 border-t border-white/40 bg-white/10 backdrop-blur-glass-sm rounded-b-xl">
       <div className="flex flex-1 justify-between sm:hidden">
         <Button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1 || isLoading}
-          variant="outline"
+          variant="secondary"
+          size="sm"
         >
           Previous
         </Button>
         <Button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages || isLoading}
-          variant="outline"
+          variant="secondary"
+          size="sm"
           className="ml-3"
         >
           Next
@@ -53,18 +55,18 @@ export const Pagination: React.FC<PaginationProps> = ({
       </div>
       <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-slate-700">
-            Halaman <span className="font-medium">{currentPage}</span> dari{' '}
-            <span className="font-medium">{totalPages}</span>
+          <p className="text-sm text-text-secondary">
+            Halaman <span className="font-bold text-text-primary">{currentPage}</span> dari{' '}
+            <span className="font-bold text-text-primary">{totalPages}</span>
           </p>
         </div>
         <div>
-          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+          <nav className="isolate inline-flex items-center gap-1" aria-label="Pagination">
             <Button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1 || isLoading}
-              variant="outline"
-              className="rounded-l-md rounded-r-none px-2 py-2 h-auto"
+              variant="secondary"
+              className="w-10 h-10 p-0"
             >
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
@@ -73,15 +75,12 @@ export const Pagination: React.FC<PaginationProps> = ({
               <>
                 <Button
                   onClick={() => onPageChange(1)}
-                  variant={currentPage === 1 ? 'default' : 'outline'}
-                  className={cn(
-                    "rounded-none h-auto px-4 py-2 text-sm font-semibold",
-                    currentPage === 1 ? "z-10 bg-indigo-600 text-white" : "text-slate-900"
-                  )}
+                  variant={currentPage === 1 ? 'primary' : 'secondary'}
+                  className={cn("w-10 h-10 p-0 font-black", currentPage === 1 && "shadow-glass")}
                 >
                   1
                 </Button>
-                {startPage > 2 && <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 focus:outline-offset-0">...</span>}
+                {startPage > 2 && <span className="text-text-muted px-1">...</span>}
               </>
             )}
 
@@ -89,11 +88,8 @@ export const Pagination: React.FC<PaginationProps> = ({
               <Button
                 key={page}
                 onClick={() => onPageChange(page)}
-                variant={currentPage === page ? 'default' : 'outline'}
-                className={cn(
-                  "rounded-none h-auto px-4 py-2 text-sm font-semibold",
-                  currentPage === page ? "z-10 bg-indigo-600 text-white" : "text-slate-900"
-                )}
+                variant={currentPage === page ? 'primary' : 'secondary'}
+                className={cn("w-10 h-10 p-0 font-black", currentPage === page && "shadow-glass")}
               >
                 {page}
               </Button>
@@ -101,14 +97,11 @@ export const Pagination: React.FC<PaginationProps> = ({
 
             {endPage < totalPages && (
               <>
-                {endPage < totalPages - 1 && <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 focus:outline-offset-0">...</span>}
+                {endPage < totalPages - 1 && <span className="text-text-muted px-1">...</span>}
                 <Button
                   onClick={() => onPageChange(totalPages)}
-                  variant={currentPage === totalPages ? 'default' : 'outline'}
-                  className={cn(
-                    "rounded-none h-auto px-4 py-2 text-sm font-semibold",
-                    currentPage === totalPages ? "z-10 bg-indigo-600 text-white" : "text-slate-900"
-                  )}
+                  variant={currentPage === totalPages ? 'primary' : 'secondary'}
+                  className={cn("w-10 h-10 p-0 font-black", currentPage === totalPages && "shadow-glass")}
                 >
                   {totalPages}
                 </Button>
@@ -118,8 +111,8 @@ export const Pagination: React.FC<PaginationProps> = ({
             <Button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages || isLoading}
-              variant="outline"
-              className="rounded-r-md rounded-l-none px-2 py-2 h-auto"
+              variant="secondary"
+              className="w-10 h-10 p-0"
             >
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Button>

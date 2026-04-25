@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, ArrowLeft, ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -19,6 +20,7 @@ interface CashFlowItem {
 }
 
 const CashFlowPage: React.FC = () => {
+  const navigate = useNavigate();
   const { setDivision } = useAuth();
   const [cashFlow, setCashFlow] = useState<CashFlowItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,8 +59,8 @@ const CashFlowPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Cash Flow</h1>
-            <p className="text-slate-500">Arus Kas Masuk dan Keluar Real-time</p>
+            <h1 className="text-2xl font-bold text-text-primary">Cash Flow</h1>
+            <p className="text-text-secondary">Arus Kas Masuk dan Keluar Real-time</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -70,7 +72,7 @@ const CashFlowPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6 bg-green-50 border-green-100">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
+            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
               <ArrowUpCircle className="w-6 h-6" />
             </div>
             <TrendingUp className="w-4 h-4 text-green-600" />
@@ -81,7 +83,7 @@ const CashFlowPage: React.FC = () => {
 
         <Card className="p-6 bg-red-50 border-red-100">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-red-600">
+            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-red-600">
               <ArrowDownCircle className="w-6 h-6" />
             </div>
             <TrendingDown className="w-4 h-4 text-red-600" />
@@ -90,58 +92,56 @@ const CashFlowPage: React.FC = () => {
           <h3 className="text-2xl font-bold text-red-900">{formatCurrency(totalOut)}</h3>
         </Card>
 
-        <Card className="p-6 bg-indigo-50 border-indigo-100">
+        <Card className="p-6 bg-accent-lavender/20 border-accent-lavender/30">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+            <div className="w-10 h-10 bg-accent-lavender/30 rounded-xl flex items-center justify-center text-accent-dark">
               <TrendingUp className="w-6 h-6" />
             </div>
           </div>
-          <p className="text-sm font-medium text-indigo-600 mb-1">Net Cash Flow</p>
-          <h3 className="text-2xl font-bold text-indigo-900">{formatCurrency(netFlow)}</h3>
+          <p className="text-sm font-medium text-accent-dark mb-1">Net Cash Flow</p>
+          <h3 className="text-2xl font-bold text-accent-dark">{formatCurrency(netFlow)}</h3>
         </Card>
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input placeholder="Cari deskripsi atau kategori..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <Button variant="outline"><Filter className="w-4 h-4 mr-2" /> Filter</Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Tanggal</th>
-                <th className="px-6 py-3 font-semibold">Kategori</th>
-                <th className="px-6 py-3 font-semibold">Deskripsi</th>
-                <th className="px-6 py-3 font-semibold text-right">Masuk (In)</th>
-                <th className="px-6 py-3 font-semibold text-right">Keluar (Out)</th>
-                <th className="px-6 py-3 font-semibold text-right">Saldo</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Tanggal</TH>
+                <TH className="px-6 py-3 font-semibold">Kategori</TH>
+                <TH className="px-6 py-3 font-semibold">Deskripsi</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Masuk (In)</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Keluar (Out)</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Saldo</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">Memuat data...</td></tr>
+                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
               ) : filteredFlow.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-500">Tidak ada data arus kas.</td></tr>
+                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">Tidak ada data arus kas.</TD></TR>
               ) : (
                 filteredFlow.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-600">{formatDate(item.date)}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{item.category}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{item.description}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-green-600 text-right">{item.type === 'in' ? formatCurrency(item.amount) : '-'}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-red-600 text-right">{item.type === 'out' ? formatCurrency(item.amount) : '-'}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right">{formatCurrency(item.balance)}</td>
-                  </tr>
+                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(item.date)}</TD>
+                    <TD className="px-6 py-4 text-sm font-medium text-text-primary">{item.category}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary max-w-xs truncate">{item.description}</TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-green-600 text-right">{item.type === 'in' ? formatCurrency(item.amount) : '-'}</TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-red-600 text-right">{item.type === 'out' ? formatCurrency(item.amount) : '-'}</TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">{formatCurrency(item.balance)}</TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
     </div>
   );

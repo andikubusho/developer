@@ -377,8 +377,8 @@ const Dashboard: React.FC = () => {
       title: 'Calon Konsumen', 
       value: formatNumber(stats.totalLeads), 
       icon: UserPlus, 
-      color: 'text-indigo-600', 
-      bg: 'bg-indigo-50/50',
+      color: 'text-accent-dark', 
+      bg: 'bg-accent-lavender/20/50',
       trend: '+15',
       isUp: true,
       path: '/leads'
@@ -420,8 +420,8 @@ const Dashboard: React.FC = () => {
       title: 'Proyek Aktif', 
       value: formatNumber(stats.activeProjects), 
       icon: Building2, 
-      color: 'text-indigo-600', 
-      bg: 'bg-indigo-50/50',
+      color: 'text-accent-dark', 
+      bg: 'bg-accent-lavender/20/50',
       trend: 'Stabil',
       isUp: true,
       path: '/projects'
@@ -473,8 +473,8 @@ const Dashboard: React.FC = () => {
     <div className="space-y-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Ringkasan Bisnis</h1>
-          <p className="text-slate-500 font-medium">Informasi terkini performa perusahaan Anda.</p>
+          <h1 className="text-3xl font-black text-text-primary tracking-tight">Ringkasan Bisnis</h1>
+          <p className="text-text-secondary font-medium">Informasi terkini performa perusahaan Anda.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button 
@@ -483,12 +483,12 @@ const Dashboard: React.FC = () => {
             onClick={() => {
               setDivision(null);
             }}
-            className="rounded-2xl border-slate-200/60"
+            className="rounded-xl border-white/40/60"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Ganti Divisi
           </Button>
-          <Button variant="primary" size="md" className="rounded-2xl">
+          <Button variant="primary" size="md" className="rounded-xl">
             Laporan Detail
             <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
@@ -497,22 +497,22 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {statCards.map((card, idx) => (
-          <Card key={idx} className="group p-1 bg-gradient-to-br from-white to-slate-50 border-none shadow-premium hover:shadow-2xl hover:shadow-indigo-200/20 transition-all duration-500">
+          <Card key={idx} className="group p-1 transition-all duration-500 hover:-translate-y-1">
             <div className="p-4 sm:p-8 cursor-pointer" onClick={() => card.path && navigate(card.path)}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div className={cn('p-4 rounded-2xl shadow-sm transition-transform group-hover:scale-110 duration-300', card.bg)}>
+                <div className={cn('p-4 rounded-pill glass-convex transition-transform group-hover:scale-110 duration-300')}>
                   <card.icon className={cn('w-7 h-7', card.color)} />
                 </div>
                 <div className={cn(
-                  'flex items-center text-xs font-black px-3 py-1.5 rounded-xl',
-                  card.isUp ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                  'flex items-center text-[10px] font-black px-3 py-1.5 rounded-pill uppercase tracking-widest glass-input border-none',
+                  card.isUp ? 'text-emerald-600' : 'text-rose-600'
                 )}>
                   {card.isUp ? <ArrowUpRight className="w-3.5 h-3.5 mr-1" /> : <ArrowDownRight className="w-3.5 h-3.5 mr-1" />}
                   {card.trend}
                 </div>
               </div>
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">{card.title}</h3>
-              <p className="text-3xl font-black text-slate-900 mt-2 tracking-tight">{card.value}</p>
+              <h3 className="text-sm font-bold text-text-secondary uppercase tracking-widest">{card.title}</h3>
+              <p className="text-3xl font-black text-text-primary mt-2 tracking-tight">{card.value}</p>
             </div>
           </Card>
         ))}
@@ -522,7 +522,7 @@ const Dashboard: React.FC = () => {
         <div className="lg:col-span-2 space-y-8">
           {division === 'marketing' ? (
             <Card title="Calon Konsumen Terbaru" subtitle="Peluang penjualan yang masuk hari ini">
-              <div className="overflow-x-auto"><table>
+              <Table>
                 <THead>
                   <TR isHoverable={false}>
                     <TH>Nama Konsumen</TH>
@@ -535,34 +535,33 @@ const Dashboard: React.FC = () => {
                   {recentLeads.map((lead) => (
                     <TR key={lead.id}>
                       <TD>
-                        <p className="font-black text-slate-900">{lead.name}</p>
-                        <p className="text-xs text-slate-400 font-bold">{lead.phone}</p>
+                        <p className="font-black text-text-primary">{lead.name}</p>
+                        <p className="text-xs text-text-secondary font-bold">{lead.phone}</p>
                       </TD>
                       <TD>
                         <span className={cn(
                           'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest',
                           lead.status === 'hot' ? 'bg-rose-100/50 text-rose-600' :
                           lead.status === 'medium' ? 'bg-amber-100/50 text-amber-600' :
-                          'bg-indigo-100/50 text-indigo-600'
+                          'bg-accent-lavender/30/50 text-accent-dark'
                         )}>
                           {lead.status}
                         </span>
                       </TD>
-                      <TD className="text-slate-400 font-bold">{formatDate(lead.date)}</TD>
+                      <TD className="text-text-muted font-bold">{formatDate(lead.date)}</TD>
                       <TD className="text-right">
-                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-slate-100">
+                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-white/40">
                           <MessageSquare className="w-4 h-4 text-primary" />
                         </Button>
                       </TD>
                     </TR>
                   ))}
                 </TBody>
-              </table>
-            </div>
+              </Table>
             </Card>
           ) : (
             <Card title="Progress Pembangunan" subtitle="Update terbaru lapangan">
-              <div className="overflow-x-auto"><table>
+              <Table>
                 <THead>
                   <TR isHoverable={false}>
                     <TH>Unit / Proyek</TH>
@@ -575,30 +574,29 @@ const Dashboard: React.FC = () => {
                   {constructionProgress.map((cp) => (
                     <TR key={cp.id}>
                       <TD>
-                        <p className="font-black text-slate-900">{cp.unit}</p>
-                        <p className="text-xs text-slate-400 font-bold">{cp.project}</p>
+                        <p className="font-black text-text-primary">{cp.unit}</p>
+                        <p className="text-xs text-text-muted font-bold">{cp.project}</p>
                       </TD>
                       <TD>
-                        <div className="w-full bg-slate-100 rounded-full h-2 mt-2 max-w-[100px]">
+                        <div className="w-full bg-white/40 rounded-full h-2 mt-2 max-w-[100px]">
                           <div className="bg-primary h-2 rounded-full" style={{ width: `${cp.percentage}%` }}></div>
                         </div>
-                        <span className="text-[10px] font-black text-slate-600">{cp.percentage}%</span>
+                        <span className="text-[10px] font-black text-text-secondary">{cp.percentage}%</span>
                       </TD>
                       <TD>
-                        <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-indigo-100/50 text-indigo-600">
+                        <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-accent-lavender/30/50 text-accent-dark">
                           {cp.status}
                         </span>
                       </TD>
                       <TD className="text-right">
-                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-slate-100">
+                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-white/40">
                           <ChevronRight className="w-4 h-4 text-primary" />
                         </Button>
                       </TD>
                     </TR>
                   ))}
                 </TBody>
-              </table>
-            </div>
+              </Table>
             </Card>
           )}
 
@@ -608,21 +606,21 @@ const Dashboard: React.FC = () => {
                 <Card title="Dokumen Proyek" subtitle="Akses cepat materi pemasaran">
                   <div className="grid grid-cols-2 gap-4">
                     {[
-                      { label: 'Price List', path: '/price-list', icon: FileText, color: 'text-primary', bg: 'bg-indigo-50/50' },
+                      { label: 'Price List', path: '/price-list', icon: FileText, color: 'text-primary', bg: 'bg-accent-lavender/20/50' },
                       { label: 'Siteplan', path: '/site-plan', icon: Map, color: 'text-emerald-500', bg: 'bg-emerald-50/50' },
                       { label: 'Denah Unit', path: '/floor-plan', icon: Layout, color: 'text-amber-500', bg: 'bg-amber-50/50' },
                       { label: 'Promo Unit', path: '/promos', icon: Tag, color: 'text-rose-500', bg: 'bg-rose-50/50' },
-                      { label: 'Template Dokumen', path: '/document-templates', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50/50' },
+                      { label: 'Template Dokumen', path: '/document-templates', icon: FileText, color: 'text-accent-dark', bg: 'bg-accent-lavender/20/50' },
                     ].map((btn) => (
                       <button 
                         key={btn.label}
                         onClick={() => navigate(btn.path)}
-                        className="group p-6 flex flex-col items-center gap-3 rounded-2xl bg-white border border-slate-100 transition-all hover:bg-slate-50 hover:shadow-premium hover:-translate-y-1"
+                        className="group p-6 flex flex-col items-center gap-3 rounded-xl bg-white/30 border border-white/40 transition-all hover:bg-white/60 hover:shadow-glass hover:-translate-y-1"
                       >
-                        <div className={cn('p-3 rounded-xl transition-transform group-hover:scale-110', btn.bg)}>
+                        <div className={cn('p-3 rounded-pill transition-transform group-hover:scale-110 glass-convex')}>
                           <btn.icon className={cn('w-6 h-6', btn.color)} />
                         </div>
-                        <span className="text-xs font-black text-slate-700 uppercase tracking-widest">{btn.label}</span>
+                        <span className="text-[10px] font-black text-text-primary uppercase tracking-widest">{btn.label}</span>
                       </button>
                     ))}
                   </div>
@@ -631,17 +629,17 @@ const Dashboard: React.FC = () => {
                 <Card title="Jadwal Hari Ini" subtitle="Kegiatan tim di lapangan">
                   <div className="space-y-4">
                     {todaySchedules.map((schedule) => (
-                      <div key={schedule.id} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50/50 border border-slate-100/50 group hover:bg-indigo-50/30 transition-colors">
-                        <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-primary font-black text-[10px] shadow-sm tracking-tighter">
+                      <div key={schedule.id} className="flex items-center gap-4 p-4 rounded-xl bg-white/30 border border-white/40 group hover:bg-white/50 transition-colors shadow-glass">
+                        <div className="w-12 h-12 rounded-xl bg-white/60 border border-white/70 flex items-center justify-center text-accent-dark font-black text-[10px] shadow-glass tracking-tighter">
                           {schedule.time}
                         </div>
                         <div>
-                          <p className="text-sm font-black text-slate-900 group-hover:text-primary transition-colors">{schedule.activity}</p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">PIC: {schedule.staff}</p>
+                          <p className="text-sm font-black text-text-primary group-hover:text-accent-dark transition-colors">{schedule.activity}</p>
+                          <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mt-0.5">PIC: {schedule.staff}</p>
                         </div>
                       </div>
                     ))}
-                    <Button variant="ghost" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2">
+                    <Button variant="ghost" size="sm" className="w-full text-primary border-white/40 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2">
                       Lihat Kalender Kerja
                     </Button>
                   </div>
@@ -652,17 +650,17 @@ const Dashboard: React.FC = () => {
                 <Card title="Purchase Request" subtitle="Permintaan material pending">
                   <div className="space-y-4">
                     {pendingRequests.map((pr) => (
-                      <div key={pr.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/50 border border-slate-100/50 group hover:bg-indigo-50/30 transition-colors">
+                      <div key={pr.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/20 border border-white/40/50 group hover:bg-accent-lavender/20/30 transition-colors">
                         <div>
-                          <p className="text-sm font-black text-slate-900">{pr.item}</p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Qty: {pr.qty} • {formatDate(pr.date)}</p>
+                          <p className="text-sm font-black text-text-primary">{pr.item}</p>
+                          <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-0.5">Qty: {pr.qty} • {formatDate(pr.date)}</p>
                         </div>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-xl">
                           <ChevronRight className="w-4 h-4" />
                         </Button>
                       </div>
                     ))}
-                    <Button variant="outline" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2" onClick={() => navigate('/purchase-requests')}>
+                    <Button variant="outline" size="sm" className="w-full text-primary border-white/40 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2" onClick={() => navigate('/purchase-requests')}>
                       Lihat Semua Request
                     </Button>
                   </div>
@@ -671,18 +669,18 @@ const Dashboard: React.FC = () => {
                 <Card title="SPK Kontraktor" subtitle="Kontrak aktif saat ini">
                   <div className="space-y-4">
                     {activeSpks.map((spk) => (
-                      <div key={spk.id} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50/50 border border-slate-100/50">
+                      <div key={spk.id} className="flex items-center gap-4 p-4 rounded-xl bg-white/20 border border-white/40/50">
                         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                           <FileText className="w-5 h-5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-black text-slate-900 truncate">{spk.contractor}</p>
-                          <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{spk.work}</p>
+                          <p className="text-xs font-black text-text-primary truncate">{spk.contractor}</p>
+                          <p className="text-[10px] font-bold text-text-muted truncate mt-0.5">{spk.work}</p>
                         </div>
-                        <p className="text-xs font-black text-slate-900">{formatCurrency(spk.value)}</p>
+                        <p className="text-xs font-black text-text-primary">{formatCurrency(spk.value)}</p>
                       </div>
                     ))}
-                    <Button variant="outline" size="sm" className="w-full text-primary border-slate-100 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2" onClick={() => navigate('/spk')}>
+                    <Button variant="outline" size="sm" className="w-full text-primary border-white/40 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 mt-2" onClick={() => navigate('/spk')}>
                       Kelola SPK
                     </Button>
                   </div>
@@ -720,8 +718,8 @@ const Dashboard: React.FC = () => {
                 {pieData.map((entry, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index] }}></div>
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{entry.name}</span>
-                    <span className="text-xs font-black text-slate-900">{formatNumber(entry.value)}</span>
+                    <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest">{entry.name}</span>
+                    <span className="text-xs font-black text-text-primary">{formatNumber(entry.value)}</span>
                   </div>
                 ))}
               </div>
@@ -732,22 +730,22 @@ const Dashboard: React.FC = () => {
             <Card title="Peringatan Tunggakan" subtitle="Tindakan segera diperlukan">
               <div className="space-y-4">
                 {overdueInstallments.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500 text-sm">
+                  <div className="text-center py-12 text-text-secondary text-sm">
                     <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
                       <CheckCircle2 className="w-8 h-8 text-emerald-500 opacity-40" />
                     </div>
-                    <p className="font-bold text-slate-400">Semua cicilan aman.</p>
+                    <p className="font-bold text-text-muted">Semua cicilan aman.</p>
                   </div>
                 ) : (
                   overdueInstallments.map((item) => (
-                    <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-rose-50/50 border border-rose-100/50 group hover:shadow-premium transition-all">
+                    <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-accent-peach/10 border border-accent-peach/20 group transition-all hover:bg-accent-peach/20 shadow-glass">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 shadow-sm transition-transform group-hover:rotate-12">
+                        <div className="w-10 h-10 rounded-xl bg-accent-peach/30 flex items-center justify-center text-accent-dark shadow-glass transition-transform group-hover:rotate-12">
                           <AlertTriangle className="w-5 h-5" />
                         </div>
                         <div className="overflow-hidden">
-                          <p className="text-sm font-black text-slate-900 truncate">{(item as any).sales?.customer?.full_name}</p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap mt-0.5">Jatuh tempo: {formatDate(item.due_date)}</p>
+                          <p className="text-sm font-black text-text-primary truncate">{(item as any).sales?.customer?.full_name}</p>
+                          <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest whitespace-nowrap mt-0.5">Jatuh tempo: {formatDate(item.due_date)}</p>
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0 flex items-center gap-4 pl-2">
@@ -778,21 +776,21 @@ const Dashboard: React.FC = () => {
             <Card title="Stok Material Kritis" subtitle="Segera lakukan pemesanan">
               <div className="space-y-4">
                 {materialStock.filter(m => m.stock < m.min).length === 0 ? (
-                  <div className="text-center py-12 text-slate-500 text-sm">
+                  <div className="text-center py-12 text-text-secondary text-sm">
                     <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
                       <CheckCircle2 className="w-8 h-8 text-emerald-500 opacity-40" />
                     </div>
-                    <p className="font-bold text-slate-400">Stok material aman.</p>
+                    <p className="font-bold text-text-muted">Stok material aman.</p>
                   </div>
                 ) : (
                   materialStock.filter(m => m.stock < m.min).map((m) => (
-                    <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-rose-50/50 border border-rose-100/50 group">
+                    <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-rose-50/50 border border-rose-100/50 group">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 shadow-sm">
+                        <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 shadow-glass">
                           <Package className="w-5 h-5" />
                         </div>
                         <div>
-                          <p className="text-sm font-black text-slate-900">{m.name}</p>
+                          <p className="text-sm font-black text-text-primary">{m.name}</p>
                           <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mt-0.5">Stok: {m.stock} {m.unit} (Min: {m.min})</p>
                         </div>
                       </div>

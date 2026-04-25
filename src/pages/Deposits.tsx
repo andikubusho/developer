@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -175,8 +176,8 @@ const Deposits: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Titipan</h1>
-            <p className="text-slate-500">Kelola dana titipan konsumen sebelum SPK</p>
+            <h1 className="text-2xl font-bold text-text-primary">Titipan</h1>
+            <p className="text-text-secondary">Kelola dana titipan konsumen sebelum SPK</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={handleAdd}>
@@ -185,71 +186,69 @@ const Deposits: React.FC = () => {
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input placeholder="Cari nama atau telepon..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Tanggal</th>
-                <th className="px-6 py-3 font-semibold">Nama</th>
-                <th className="px-6 py-3 font-semibold">No. Telp</th>
-                <th className="px-6 py-3 font-semibold">Marketing</th>
-                <th className="px-6 py-3 font-semibold">Nilai Titipan</th>
-                <th className="px-6 py-3 font-semibold">Metode</th>
-                <th className="px-6 py-3 font-semibold">Pengajuan</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Tanggal</TH>
+                <TH className="px-6 py-3 font-semibold">Nama</TH>
+                <TH className="px-6 py-3 font-semibold">No. Telp</TH>
+                <TH className="px-6 py-3 font-semibold">Marketing</TH>
+                <TH className="px-6 py-3 font-semibold">Nilai Titipan</TH>
+                <TH className="px-6 py-3 font-semibold">Metode</TH>
+                <TH className="px-6 py-3 font-semibold">Pengajuan</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-400">Memuat data...</td></tr>
+                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
               ) : filteredDeposits.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500">Tidak ada data titipan.</td></tr>
+                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">Tidak ada data titipan.</TD></TR>
               ) : (
                 filteredDeposits.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-600">{d.date ? formatDate(d.date) : '-'}</td>
-                    <td className="px-6 py-4 font-medium text-slate-900">{d.name || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{d.phone || '-'}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-indigo-600">
+                  <TR key={d.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{d.date ? formatDate(d.date) : '-'}</TD>
+                    <TD className="px-6 py-4 font-medium text-text-primary">{d.name || '-'}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{d.phone || '-'}</TD>
+                    <TD className="px-6 py-4 text-sm font-medium text-accent-dark">
                       {(d as any).marketing?.name || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-emerald-600">{formatCurrency(d.amount || 0)}</td>
-                    <td className="px-6 py-4">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm font-bold text-emerald-600">{formatCurrency(d.amount || 0)}</TD>
+                    <TD className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                         d.payment_type === 'cash' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'
                       )}>
                         {d.payment_type}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{d.submission}</td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{d.submission}</TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(d)}><Edit className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(d.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedDeposit ? 'Edit Titipan' : 'Input Titipan'}>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
           <Input label="Tanggal" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Calon Konsumen (Opsional)</label>
-            <select className="w-full h-10 rounded-lg border border-slate-300 p-2 text-sm" onChange={(e) => handleLeadSelect(e.target.value)} value="">
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Pilih Calon Konsumen (Opsional)</label>
+            <select className="w-full h-10 rounded-xl border border-white/60 p-2 text-sm" onChange={(e) => handleLeadSelect(e.target.value)} value="">
               <option value="">-- Pilih Konsumen --</option>
               {leads.map(l => (
                 <option key={l.id} value={l.id}>{l.name} ({l.phone})</option>
@@ -258,9 +257,9 @@ const Deposits: React.FC = () => {
           </div>
           {profile?.role !== 'marketing' && (
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-1.5 block">Pilih Marketing</label>
+              <label className="text-sm font-medium text-text-primary mb-1.5 block">Pilih Marketing</label>
               <select 
-                className="w-full h-10 rounded-lg border border-slate-300 p-2 text-sm" 
+                className="w-full h-10 rounded-xl border border-white/60 p-2 text-sm" 
                 value={formData.marketing_id}
                 onChange={(e) => setFormData({ ...formData, marketing_id: e.target.value })}
               >
@@ -275,7 +274,7 @@ const Deposits: React.FC = () => {
           <Input label="No. Telp" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
           <CurrencyInput label="Nilai Titipan" value={formData.amount} onValueChange={(values) => setFormData({ ...formData, amount: values.floatValue || 0 })} required />
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-1.5 block">Metode Pembayaran</label>
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Metode Pembayaran</label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" checked={formData.payment_type === 'cash'} onChange={() => setFormData({ ...formData, payment_type: 'cash' })} /> Cash
@@ -286,7 +285,7 @@ const Deposits: React.FC = () => {
             </div>
           </div>
           <Input label="Pengajuan" value={formData.submission} onChange={(e) => setFormData({ ...formData, submission: e.target.value })} required />
-          <textarea className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Catatan..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+          <textarea className="w-full rounded-xl border border-white/60 p-2 text-sm" placeholder="Catatan..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
           <div className="flex justify-end gap-3 mt-4">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>Batal</Button>
             <Button type="submit" isLoading={loading}>Simpan</Button>

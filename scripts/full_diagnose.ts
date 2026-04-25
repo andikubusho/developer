@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { db } from "../server/db";
 import { 
   transaksiPromo, pelangganProgram, paketProgress, 

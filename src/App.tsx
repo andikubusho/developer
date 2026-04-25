@@ -62,8 +62,8 @@ const AuditStock = lazy(() => import('./pages/AuditStock'));
 const AuditCosts = lazy(() => import('./pages/AuditCosts'));
 
 const LoadingFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+  <div className="min-h-screen flex items-center justify-center bg-white/30">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-dark"></div>
   </div>
 );
 

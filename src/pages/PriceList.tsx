@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Printer, ArrowLeft, Trash2, Plus, Percent, Edit2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -218,15 +219,15 @@ const PriceList: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Price List {projects.find(p => p.id === selectedProjectId)?.name}</h1>
-            <p className="text-slate-500 text-sm">Manajemen harga dan simulasi KPR</p>
+            <h1 className="text-2xl font-bold text-text-primary">Price List {projects.find(p => p.id === selectedProjectId)?.name}</h1>
+            <p className="text-text-secondary text-sm">Manajemen harga dan simulasi KPR</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select 
             value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="rounded-lg border-slate-200 text-sm bg-white px-4 py-2"
+            className="rounded-xl border-white/40 text-sm bg-white px-4 py-2"
           >
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
@@ -239,79 +240,77 @@ const PriceList: React.FC = () => {
         </div>
       </div>
 
-      <Card className="p-0 overflow-hidden border-none shadow-premium rounded-2xl no-print">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-wider font-black">
-                <th rowSpan={2} className="px-2 py-3 text-center border-r border-slate-800 w-8">
-                  <input type="checkbox" className="rounded bg-slate-800 border-slate-700 w-3 h-3" checked={selectedItems.length === priceItems.length && priceItems.length > 0} onChange={(e) => setSelectedItems(e.target.checked ? priceItems.map(i => i.id) : [])} />
-                </th>
-                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800">Blok</th>
-                <th rowSpan={2} className="px-2 py-3 border-r border-slate-800">Unit</th>
-                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800">Tipe</th>
-                <th colSpan={2} className="px-2 py-1.5 text-center border-b border-r border-slate-800">Luas</th>
-                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800">Booking</th>
-                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800 text-center">Uang Muka</th>
-                <th colSpan={3} className="px-2 py-1.5 text-center border-b border-r border-slate-800">Angsuran KPR</th>
-                <th rowSpan={2} className="px-3 py-3 border-r border-slate-800 text-right">Harga Jual</th>
-                <th rowSpan={2} className="px-2 py-3 text-center w-12">Aksi</th>
-              </tr>
-              <tr className="bg-slate-800 text-slate-300 text-[8px] uppercase tracking-tighter font-bold">
-                <th className="px-2 py-1.5 text-center border-r border-slate-700">Tnh</th>
-                <th className="px-2 py-1.5 text-center border-r border-slate-700">Bgn</th>
-                <th className="px-2 py-1.5 text-center border-r border-slate-700">5 Th</th>
-                <th className="px-2 py-1.5 text-center border-r border-slate-700">10 Th</th>
-                <th className="px-2 py-1.5 text-center border-r border-slate-700">15 Th</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+      <Card className="p-0 overflow-hidden border-none shadow-premium rounded-xl no-print">
+        <Table>
+            <THead>
+              <TR className="bg-accent-dark text-white text-[9px] uppercase tracking-wider font-black">
+                <TH rowSpan={2} className="px-2 py-3 text-center border-r border-white/40 w-8">
+                  <input type="checkbox" className="rounded bg-accent-dark/80 border-white/40 w-3 h-3" checked={selectedItems.length === priceItems.length && priceItems.length > 0} onChange={(e) => setSelectedItems(e.target.checked ? priceItems.map(i => i.id) : [])} />
+                </TH>
+                <TH rowSpan={2} className="px-3 py-3 border-r border-white/40">Blok</TH>
+                <TH rowSpan={2} className="px-2 py-3 border-r border-white/40">Unit</TH>
+                <TH rowSpan={2} className="px-3 py-3 border-r border-white/40">Tipe</TH>
+                <TH colSpan={2} className="px-2 py-1.5 text-center border-b border-r border-white/40">Luas</TH>
+                <TH rowSpan={2} className="px-3 py-3 border-r border-white/40">Booking</TH>
+                <TH rowSpan={2} className="px-3 py-3 border-r border-white/40 text-center">Uang Muka</TH>
+                <TH colSpan={3} className="px-2 py-1.5 text-center border-b border-r border-white/40">Angsuran KPR</TH>
+                <TH rowSpan={2} className="px-3 py-3 border-r border-white/40 text-right">Harga Jual</TH>
+                <TH rowSpan={2} className="px-2 py-3 text-center w-12">Aksi</TH>
+              </TR>
+              <TR className="bg-accent-dark/80 text-text-muted text-[8px] uppercase tracking-tighter font-bold">
+                <TH className="px-2 py-1.5 text-center border-r border-white/40">Tnh</TH>
+                <TH className="px-2 py-1.5 text-center border-r border-white/40">Bgn</TH>
+                <TH className="px-2 py-1.5 text-center border-r border-white/40">5 Th</TH>
+                <TH className="px-2 py-1.5 text-center border-r border-white/40">10 Th</TH>
+                <TH className="px-2 py-1.5 text-center border-r border-white/40">15 Th</TH>
+              </TR>
+            </THead>
+            <TBody>
               {['Ruko', 'Rumah'].map((cat) => {
                 const catItems = priceItems.filter(i => i.category === cat);
                 if (catItems.length === 0) return null;
                 return (
                   <React.Fragment key={cat}>
-                    <tr className="bg-slate-50">
-                      <td colSpan={13} className="px-4 py-2 text-[10px] font-black text-slate-900 uppercase tracking-widest border-y border-slate-200">{cat}</td>
-                    </tr>
+                    <TR className="bg-white/30">
+                      <TD colSpan={13} className="px-4 py-2 text-[10px] font-black text-text-primary uppercase tracking-widest border-y border-white/40">{cat}</TD>
+                    </TR>
                     {catItems.map((item) => {
                       const calc = calculateKPR(item);
                       const isSold = item.status === 'sold';
                       return (
-                        <tr key={item.id} className={cn("hover:bg-slate-50 transition-colors group text-[10px]", isSold && "bg-slate-50/50")}>
-                          <td className="px-2 py-2 text-center border-r border-slate-50"><input type="checkbox" className="rounded w-3 h-3" checked={selectedItems.includes(item.id)} onChange={(e) => setSelectedItems(e.target.checked ? [...selectedItems, item.id] : selectedItems.filter(id => id !== item.id))} /></td>
-                          <td className="px-3 py-2 font-black text-slate-900 border-r border-slate-50 uppercase">{item.blok}</td>
-                          <td className="px-2 py-2 font-bold text-slate-600 border-r border-slate-50">{item.unit}</td>
-                          <td className="px-3 py-2 font-medium text-slate-600 border-r border-slate-50 truncate max-w-[80px]">{item.tipe}</td>
-                          <td className="px-2 py-2 text-center text-slate-600 border-r border-slate-50">{item.luas_tanah}</td>
-                          <td className="px-2 py-2 text-center text-slate-600 border-r border-slate-50">{item.luas_bangunan}</td>
+                        <TR key={item.id} className={cn("hover:bg-white/30 transition-colors group text-[10px]", isSold && "bg-white/20")}>
+                          <TD className="px-2 py-2 text-center border-r border-white/20"><input type="checkbox" className="rounded w-3 h-3" checked={selectedItems.includes(item.id)} onChange={(e) => setSelectedItems(e.target.checked ? [...selectedItems, item.id] : selectedItems.filter(id => id !== item.id))} /></TD>
+                          <TD className="px-3 py-2 font-black text-text-primary border-r border-white/20 uppercase">{item.blok}</TD>
+                          <TD className="px-2 py-2 font-bold text-text-secondary border-r border-white/20">{item.unit}</TD>
+                          <TD className="px-3 py-2 font-medium text-text-secondary border-r border-white/20 truncate max-w-[80px]">{item.tipe}</TD>
+                          <TD className="px-2 py-2 text-center text-text-secondary border-r border-white/20">{item.luas_tanah}</TD>
+                          <TD className="px-2 py-2 text-center text-text-secondary border-r border-white/20">{item.luas_bangunan}</TD>
                           {isSold ? (
-                            <td colSpan={6} className="px-6 py-2 text-center bg-slate-100/50"><span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">S O L D</span></td>
+                            <TD colSpan={6} className="px-6 py-2 text-center bg-white/40/50"><span className="text-[9px] font-black uppercase tracking-[0.2em] text-text-muted">S O L D</span></TD>
                           ) : (
                             <>
-                              <td className="px-3 py-2 text-slate-600 border-r border-slate-50">{formatCurrency(item.booking_fee)}</td>
-                              <td className="px-3 py-2 text-center border-r border-slate-50"><p className="font-bold text-slate-900 leading-tight">{formatCurrency(calc.dp_amount)}</p></td>
-                              <td className="px-2 py-2 text-center border-r border-slate-50 font-bold text-indigo-600">{formatCurrency(calc.angsuran_5)}</td>
-                              <td className="px-2 py-2 text-center border-r border-slate-50 font-bold text-indigo-600">{formatCurrency(calc.angsuran_10)}</td>
-                              <td className="px-2 py-2 text-center border-r border-slate-50 font-bold text-indigo-600">{formatCurrency(calc.angsuran_15)}</td>
-                              <td className="px-3 py-2 font-black text-slate-900 text-right border-r border-slate-50">{formatCurrency(item.harga_jual)}</td>
+                              <TD className="px-3 py-2 text-text-secondary border-r border-white/20">{formatCurrency(item.booking_fee)}</TD>
+                              <TD className="px-3 py-2 text-center border-r border-white/20"><p className="font-bold text-text-primary leading-tight">{formatCurrency(calc.dp_amount)}</p></TD>
+                              <TD className="px-2 py-2 text-center border-r border-white/20 font-bold text-accent-dark">{formatCurrency(calc.angsuran_5)}</TD>
+                              <TD className="px-2 py-2 text-center border-r border-white/20 font-bold text-accent-dark">{formatCurrency(calc.angsuran_10)}</TD>
+                              <TD className="px-2 py-2 text-center border-r border-white/20 font-bold text-accent-dark">{formatCurrency(calc.angsuran_15)}</TD>
+                              <TD className="px-3 py-2 font-black text-text-primary text-right border-r border-white/20">{formatCurrency(item.harga_jual)}</TD>
                             </>
                           )}
-                          <td className="px-2 py-2">
+                          <TD className="px-2 py-2">
                             <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsItemModalOpen(true); }} className="p-1 h-auto hover:bg-white shadow-sm border border-slate-100"><Edit2 className="w-3 h-3 text-indigo-600" /></Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)} className="p-1 h-auto hover:bg-white shadow-sm border border-slate-100"><Trash2 className="w-3 h-3 text-red-500" /></Button>
+                              <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsItemModalOpen(true); }} className="p-1 h-auto hover:bg-white shadow-glass border border-white/40"><Edit2 className="w-3 h-3 text-accent-dark" /></Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)} className="p-1 h-auto hover:bg-white shadow-glass border border-white/40"><Trash2 className="w-3 h-3 text-red-500" /></Button>
                             </div>
-                          </td>
-                        </tr>
+                          </TD>
+                        </TR>
                       );
                     })}
                   </React.Fragment>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
 
       {/* ─── PRINT UI: Official Document Style (FROM IMAGE 2) ─── */}
@@ -353,20 +352,20 @@ const PriceList: React.FC = () => {
 
         {getGroupedItems().map((catGroup) => (
           <div key={catGroup.category} className="mb-8">
-            <h3 className="text-sm font-black mb-2 uppercase tracking-widest text-slate-800">{catGroup.category}</h3>
+            <h3 className="text-sm font-black mb-2 uppercase tracking-widest text-text-primary">{catGroup.category}</h3>
             <table className="price-table">
-              <thead>
-                <tr>
-                  <th rowSpan={2}>Blok</th><th rowSpan={2}>Unit</th><th rowSpan={2}>Tipe</th>
-                  <th colSpan={2}>Luas (m2)</th><th rowSpan={2}>Booking Fee</th>
-                  <th rowSpan={2}>Uang Muka {catGroup.category === 'Ruko' ? '20%' : '10%'}</th>
-                  <th colSpan={3}>Angsuran KPR</th><th rowSpan={2}>Harga Jual (Rp)</th>
-                </tr>
-                <tr className="sub-header">
-                  <th>Tanah</th><th>Bangunan</th><th>5 Tahun</th><th>10 Tahun</th><th>15 Tahun</th>
-                </tr>
-              </thead>
-              <tbody>
+              <THead>
+                <TR>
+                  <TH rowSpan={2}>Blok</TH><TH rowSpan={2}>Unit</TH><TH rowSpan={2}>Tipe</TH>
+                  <TH colSpan={2}>Luas (m2)</TH><TH rowSpan={2}>Booking Fee</TH>
+                  <TH rowSpan={2}>Uang Muka {catGroup.category === 'Ruko' ? '20%' : '10%'}</TH>
+                  <TH colSpan={3}>Angsuran KPR</TH><TH rowSpan={2}>Harga Jual (Rp)</TH>
+                </TR>
+                <TR className="sub-header">
+                  <TH>Tanah</TH><TH>Bangunan</TH><TH>5 Tahun</TH><TH>10 Tahun</TH><TH>15 Tahun</TH>
+                </TR>
+              </THead>
+              <TBody>
                 {catGroup.bloks.map((blokGroup: any) => {
                   const totalRows = blokGroup.groups.length;
                   return blokGroup.groups.map((group: any[], gIdx: number) => {
@@ -375,27 +374,27 @@ const PriceList: React.FC = () => {
                     const isSold = item.status === 'sold';
                     const unitRange = group.length > 1 ? `${group[0].unit}-${group[group.length - 1].unit}` : item.unit;
                     return (
-                      <tr key={`${catGroup.category}-${blokGroup.blok}-${gIdx}`}>
-                        {gIdx === 0 && <td rowSpan={totalRows} className="text-center font-black uppercase align-middle">{blokGroup.blok}</td>}
-                        <td className="text-center font-medium">{unitRange}</td>
-                        <td className="text-center">{item.tipe}</td>
-                        <td className="text-center">{item.luas_tanah}</td>
-                        <td className="text-center">{item.luas_bangunan}</td>
-                        {isSold ? <td colSpan={5} className="sold-cell">S O L D</td> : (
+                      <TR key={`${catGroup.category}-${blokGroup.blok}-${gIdx}`}>
+                        {gIdx === 0 && <TD rowSpan={totalRows} className="text-center font-black uppercase align-middle">{blokGroup.blok}</TD>}
+                        <TD className="text-center font-medium">{unitRange}</TD>
+                        <TD className="text-center">{item.tipe}</TD>
+                        <TD className="text-center">{item.luas_tanah}</TD>
+                        <TD className="text-center">{item.luas_bangunan}</TD>
+                        {isSold ? <TD colSpan={5} className="sold-cell">S O L D</TD> : (
                           <>
-                            <td className="text-center">{item.booking_fee.toLocaleString('id-ID')}</td>
-                            <td className="text-center font-bold">{calc.dp_amount.toLocaleString('id-ID')}</td>
-                            <td className="text-center">{calc.angsuran_5.toLocaleString('id-ID')}</td>
-                            <td className="text-center">{calc.angsuran_10.toLocaleString('id-ID')}</td>
-                            <td className="text-center">{calc.angsuran_15.toLocaleString('id-ID')}</td>
+                            <TD className="text-center">{item.booking_fee.toLocaleString('id-ID')}</TD>
+                            <TD className="text-center font-bold">{calc.dp_amount.toLocaleString('id-ID')}</TD>
+                            <TD className="text-center">{calc.angsuran_5.toLocaleString('id-ID')}</TD>
+                            <TD className="text-center">{calc.angsuran_10.toLocaleString('id-ID')}</TD>
+                            <TD className="text-center">{calc.angsuran_15.toLocaleString('id-ID')}</TD>
                           </>
                         )}
-                        <td className="text-right font-black whitespace-nowrap">{item.harga_jual.toLocaleString('id-ID')}</td>
-                      </tr>
+                        <TD className="text-right font-black whitespace-nowrap">{item.harga_jual.toLocaleString('id-ID')}</TD>
+                      </TR>
                     );
                   });
                 })}
-              </tbody>
+              </TBody>
             </table>
           </div>
         ))}
@@ -427,7 +426,7 @@ const PriceList: React.FC = () => {
       <Modal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} title="Update Harga Massal">
         <div className="p-6 space-y-4">
           <Input type="number" label="Persentase Kenaikan (%)" value={updatePercent} onChange={(e) => setUpdatePercent(parseFloat(e.target.value) || 0)} />
-          <Button onClick={handleMassUpdate} className="w-full bg-indigo-600 mt-4">Apply Update</Button>
+          <Button onClick={handleMassUpdate} className="w-full bg-accent-dark mt-4">Apply Update</Button>
         </div>
       </Modal>
     </div>

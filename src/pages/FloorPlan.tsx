@@ -100,8 +100,8 @@ const FloorPlan: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Denah Rumah</h1>
-            <p className="text-slate-500">Detail tata ruang unit properti</p>
+            <h1 className="text-2xl font-bold text-text-primary">Denah Rumah</h1>
+            <p className="text-text-secondary">Detail tata ruang unit properti</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={() => setIsModalOpen(true)}>
@@ -111,17 +111,17 @@ const FloorPlan: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
-          <div className="col-span-full py-20 text-center text-slate-400">Memuat data...</div>
+          <div className="col-span-full py-20 text-center text-text-muted">Memuat data...</div>
         ) : docs.length === 0 ? (
-          <div className="col-span-full py-20 text-center text-slate-500">Belum ada dokumen denah.</div>
+          <div className="col-span-full py-20 text-center text-text-secondary">Belum ada dokumen denah.</div>
         ) : (
           docs.map((doc) => (
             <Card key={doc.id} className="p-4">
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-emerald-50 rounded-lg"><Layout className="w-6 h-6 text-emerald-600" /></div>
+                <div className="p-3 bg-emerald-50 rounded-xl"><Layout className="w-6 h-6 text-emerald-600" /></div>
                 <div className="flex-1 overflow-hidden">
-                  <h3 className="font-bold text-slate-900 truncate">{doc.name}</h3>
-                  <p className="text-xs text-slate-500 mt-1">Diunggah pada {formatDate(doc.created_at)}</p>
+                  <h3 className="font-bold text-text-primary truncate">{doc.name}</h3>
+                  <p className="text-xs text-text-secondary mt-1">Diunggah pada {formatDate(doc.created_at)}</p>
                   <div className="flex items-center gap-2 mt-4">
                     <Button variant="outline" size="sm" className="flex-1" onClick={() => handlePrint(doc.file_url)}><Printer className="w-3 h-3 mr-2" />Lihat</Button>
                     <Button variant="outline" size="sm" className="flex-1" onClick={() => handleDownload(doc.file_url, doc.name)}><Download className="w-3 h-3 mr-2" />Download</Button>
@@ -136,11 +136,11 @@ const FloorPlan: React.FC = () => {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Upload Denah">
         <div className="space-y-4">
-          <label className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-indigo-500 cursor-pointer block">
+          <label className="border-2 border-dashed border-white/40 rounded-xl p-8 text-center hover:border-accent-lavender cursor-pointer block">
             <input type="file" className="hidden" accept=".pdf" onChange={handleFileChange} />
-            <Upload className="w-10 h-10 text-slate-400 mx-auto mb-4" />
+            <Upload className="w-10 h-10 text-text-muted mx-auto mb-4" />
             <p className="text-sm font-medium">Klik untuk memilih file PDF denah</p>
-            <p className="text-xs text-slate-400 mt-2">Maksimal file 5MB</p>
+            <p className="text-xs text-text-muted mt-2">Maksimal file 5MB</p>
           </label>
           <div className="flex justify-end pt-4"><Button variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button></div>
         </div>

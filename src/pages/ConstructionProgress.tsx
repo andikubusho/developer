@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, ArrowLeft, Edit, Trash2, Camera, Clock } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -119,8 +120,8 @@ const ConstructionProgressPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Progress Bangun</h1>
-            <p className="text-slate-500">Laporan Progress Pembangunan Unit & Proyek</p>
+            <h1 className="text-2xl font-bold text-text-primary">Progress Bangun</h1>
+            <p className="text-text-secondary">Laporan Progress Pembangunan Unit & Proyek</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={() => { setSelectedProgress(null); setIsModalOpen(true); }}>
@@ -129,54 +130,52 @@ const ConstructionProgressPage: React.FC = () => {
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input placeholder="Cari deskripsi..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">Tanggal</th>
-                <th className="px-6 py-3 font-semibold">Unit</th>
-                <th className="px-6 py-3 font-semibold">Progress (%)</th>
-                <th className="px-6 py-3 font-semibold">Keterangan</th>
-                <th className="px-6 py-3 font-semibold">Foto</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table className="min-w-[800px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">Tanggal</TH>
+                <TH className="px-6 py-3 font-semibold">Unit</TH>
+                <TH className="px-6 py-3 font-semibold">Progress (%)</TH>
+                <TH className="px-6 py-3 font-semibold">Keterangan</TH>
+                <TH className="px-6 py-3 font-semibold">Foto</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">Memuat data...</td></tr>
+                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
               ) : filteredProgress.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-500">Tidak ada laporan ditemukan.</td></tr>
+                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">Tidak ada laporan ditemukan.</TD></TR>
               ) : (
                 filteredProgress.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-600"><Clock className="w-3 h-3 inline mr-1" />{formatDate(item.report_date)}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{item.unit_id}</td>
-                    <td className="px-6 py-4">
-                      <div className="w-full bg-slate-100 rounded-full h-2 max-w-[100px] inline-block mr-2"><div className="bg-indigo-600 h-2 rounded-full" style={{ width: `${item.percentage}%` }}></div></div>
+                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4 text-sm text-text-secondary"><Clock className="w-3 h-3 inline mr-1" />{formatDate(item.report_date)}</TD>
+                    <TD className="px-6 py-4 text-sm font-medium text-text-primary">{item.unit_id}</TD>
+                    <TD className="px-6 py-4">
+                      <div className="w-full bg-white/40 rounded-full h-2 max-w-[100px] inline-block mr-2"><div className="bg-accent-dark h-2 rounded-full" style={{ width: `${item.percentage}%` }}></div></div>
                       <span className="text-xs font-bold">{item.percentage}%</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{item.description}</td>
-                    <td className="px-6 py-4">
-                      {item.photo_url ? <img src={item.photo_url} alt="Progress" className="w-10 h-10 rounded object-cover" /> : <Camera className="w-4 h-4 text-slate-300" />}
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary max-w-xs truncate">{item.description}</TD>
+                    <TD className="px-6 py-4">
+                      {item.photo_url ? <img src={item.photo_url} alt="Progress" className="w-10 h-10 rounded object-cover" /> : <Camera className="w-4 h-4 text-text-muted" />}
+                    </TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}><Edit className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(item.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedProgress ? 'Edit Laporan' : 'Input Laporan'}>
@@ -186,7 +185,7 @@ const ConstructionProgressPage: React.FC = () => {
             <Input label="Unit ID" value={formData.unit_id} onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })} required />
             <Input label="Progress (%)" type="number" value={formData.percentage} onChange={(e) => setFormData({ ...formData, percentage: parseInt(e.target.value) || 0 })} required />
           </div>
-          <textarea className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Keterangan..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
+          <textarea className="w-full rounded-xl border border-white/60 p-2 text-sm" placeholder="Keterangan..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
           <Input label="Foto URL" value={formData.photo_url} onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })} />
           <div className="flex justify-end gap-3 mt-4">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>Batal</Button>

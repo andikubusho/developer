@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Home, Tag, CheckCircle2, Clock, ArrowLeft, Printer, FileDown, Trash2 } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -181,9 +182,9 @@ const Units: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Unit Properti</h1>
+            <h1 className="text-2xl font-bold text-text-primary">Unit Properti</h1>
             {error && <p className="text-red-500 text-xs font-mono">Error: {error}</p>}
-            <p className="text-slate-500">Manajemen stok unit dan sinkronisasi Price List</p>
+            <p className="text-text-secondary">Manajemen stok unit dan sinkronisasi Price List</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -204,89 +205,87 @@ const Units: React.FC = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-indigo-50 rounded-lg"><Home className="w-5 h-5 text-indigo-600" /></div>
-          <div><p className="text-xs text-slate-500 font-medium">Total Unit</p><p className="text-lg font-bold text-slate-900">{units.length}</p></div>
+          <div className="p-2 bg-accent-lavender/20 rounded-xl"><Home className="w-5 h-5 text-accent-dark" /></div>
+          <div><p className="text-xs text-text-secondary font-medium">Total Unit</p><p className="text-lg font-bold text-text-primary">{units.length}</p></div>
         </Card>
         <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-emerald-50 rounded-lg"><CheckCircle2 className="w-5 h-5 text-emerald-600" /></div>
-          <div><p className="text-xs text-slate-500 font-medium">Tersedia</p><p className="text-lg font-bold text-slate-900">{units.filter(u => u.status === 'available').length}</p></div>
+          <div className="p-2 bg-emerald-50 rounded-xl"><CheckCircle2 className="w-5 h-5 text-emerald-600" /></div>
+          <div><p className="text-xs text-text-secondary font-medium">Tersedia</p><p className="text-lg font-bold text-text-primary">{units.filter(u => u.status === 'available').length}</p></div>
         </Card>
         <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-amber-50 rounded-lg"><Clock className="w-5 h-5 text-amber-600" /></div>
-          <div><p className="text-xs text-slate-500 font-medium">Booked</p><p className="text-lg font-bold text-slate-900">{units.filter(u => u.status === 'booked').length}</p></div>
+          <div className="p-2 bg-amber-50 rounded-xl"><Clock className="w-5 h-5 text-amber-600" /></div>
+          <div><p className="text-xs text-text-secondary font-medium">Booked</p><p className="text-lg font-bold text-text-primary">{units.filter(u => u.status === 'booked').length}</p></div>
         </Card>
         <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-slate-50 rounded-lg"><Tag className="w-5 h-5 text-slate-600" /></div>
-          <div><p className="text-xs text-slate-500 font-medium">Terjual</p><p className="text-lg font-bold text-slate-900">{units.filter(u => u.status === 'sold').length}</p></div>
+          <div className="p-2 bg-white/30 rounded-xl"><Tag className="w-5 h-5 text-text-secondary" /></div>
+          <div><p className="text-xs text-text-secondary font-medium">Terjual</p><p className="text-lg font-bold text-text-primary">{units.filter(u => u.status === 'sold').length}</p></div>
         </Card>
       </div>
 
       <Card className="p-0">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input placeholder="Cari nomor unit..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <Button variant="outline"><Filter className="w-4 h-4 mr-2" />Filter</Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1000px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">No. Unit</th>
-                <th className="px-6 py-3 font-semibold">Proyek</th>
-                <th className="px-6 py-3 font-semibold">Tipe / Kategori</th>
-                <th className="px-6 py-3 font-semibold">LT / LB</th>
-                <th className="px-6 py-3 font-semibold">Harga</th>
-                <th className="px-6 py-3 font-semibold">Status</th>
-                <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Table>
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-6 py-3 font-semibold">No. Unit</TH>
+                <TH className="px-6 py-3 font-semibold">Proyek</TH>
+                <TH className="px-6 py-3 font-semibold">Tipe / Kategori</TH>
+                <TH className="px-6 py-3 font-semibold">LT / LB</TH>
+                <TH className="px-6 py-3 font-semibold">Harga</TH>
+                <TH className="px-6 py-3 font-semibold">Status</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
               {loading ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-400 animate-pulse">Memuat data unit...</td></tr>
+                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-muted animate-pulse">Memuat data unit...</TD></TR>
               ) : filteredUnits.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500">Belum ada unit properti.</td></tr>
+                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">Belum ada unit properti.</TD></TR>
               ) : (
                 filteredUnits.map((unit) => (
-                  <tr key={unit.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900">{unit.unit_number}</div>
-                      {unit.cluster && <div className="text-[10px] text-indigo-600 font-bold uppercase">{unit.cluster}</div>}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{getProjectName(unit.project_id)}</td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-slate-900">{unit.type}</div>
-                      {unit.category && <div className="text-[10px] text-slate-400 uppercase">{unit.category}</div>}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
+                  <TR key={unit.id} className="hover:bg-white/30 transition-colors">
+                    <TD className="px-6 py-4">
+                      <div className="font-bold text-text-primary">{unit.unit_number}</div>
+                      {unit.cluster && <div className="text-[10px] text-accent-dark font-bold uppercase">{unit.cluster}</div>}
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{getProjectName(unit.project_id)}</TD>
+                    <TD className="px-6 py-4">
+                      <div className="text-sm font-medium text-text-primary">{unit.type}</div>
+                      {unit.category && <div className="text-[10px] text-text-muted uppercase">{unit.category}</div>}
+                    </TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">
                       {unit.luas_tanah ? `${unit.luas_tanah} / ${unit.luas_bangunan}` : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-black text-slate-900">{formatCurrency(unit.price)}</td>
-                    <td className="px-6 py-4">
+                    </TD>
+                    <TD className="px-6 py-4 text-sm font-black text-text-primary">{formatCurrency(unit.price)}</TD>
+                    <TD className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                         unit.status === 'available' ? 'bg-emerald-50 text-emerald-700' :
-                        unit.status === 'booked' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-700'
+                        unit.status === 'booked' ? 'bg-amber-50 text-amber-700' : 'bg-white/40 text-text-primary'
                       )}>
                         {unit.status === 'available' ? 'Tersedia' : unit.status === 'booked' ? 'Booked' : 'Terjual'}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    </TD>
+                    <TD className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(unit)}>Edit</Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(unit)} className="text-rose-500 hover:bg-rose-50">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedUnit ? 'Edit Unit' : 'Tambah Unit'} size="lg">

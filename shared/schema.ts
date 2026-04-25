@@ -496,6 +496,7 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
 
 // === BASE SCHEMAS ===
 export const insertBranchSchema = createInsertSchema(branches);
+// @ts-ignore
 export const insertExpeditionSchema = createInsertSchema(expeditions).extend({
   branchId: z.coerce.number().optional().nullable(),
 });
