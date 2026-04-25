@@ -28,7 +28,7 @@ const DocumentTemplates: React.FC = () => {
     { id: 'kpr', name: 'Perjanjian KPR', type: 'docx' },
     { id: 'lingkungan', name: 'Perjanjian Lingkungan', type: 'docx' },
     { id: 'denah', name: 'Pernyataan Denah', type: 'docx' },
-    { id: 'rincian_harga', name: 'SURAT PERSETUJUAN RINCIAN HARGA JUAL', type: 'xlsx' },
+    { id: 'rincian_harga', name: 'SURAT PERSETUJUAN RINCIAN HARGA JUAL', type: 'docx' },
   ];
 
   const fetchTemplates = async () => {
