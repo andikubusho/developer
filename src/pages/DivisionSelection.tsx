@@ -62,7 +62,7 @@ const DivisionSelection: React.FC = () => {
         <div className="text-center mb-16 space-y-4">
           <div className="inline-flex items-center justify-center w-auto h-32 mb-10 animate-bounce-subtle">
             <img 
-              src="/src/assets/logo-perusahaan.png" 
+              src="/logo-perusahaan.png" 
               alt="Company Logo" 
               className="h-full w-auto object-contain mix-blend-multiply scale-[1.3]"
             />

@@ -30,7 +30,7 @@ const Layout: React.FC = () => {
         {/* Mobile Header */}
         <header className="lg:hidden flex items-center justify-between p-4 bg-glass backdrop-blur-glass border-b border-white/40 sticky top-0 z-30 print:hidden shadow-glass">
             <img 
-              src="/src/assets/logo-perusahaan.png" 
+              src="/logo-perusahaan.png" 
               alt="Company Logo" 
               className="h-24 w-auto max-w-[300px] object-contain object-left mix-blend-multiply scale-[1.3] origin-left"
             />

@@ -111,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     <aside className="w-72 bg-glass/40 backdrop-blur-glass border-r border-white/40 flex flex-col h-screen sticky top-0 z-40 print:hidden shadow-glass">
       <div className="px-6 pt-8 pb-4">
         <img 
-          src="/src/assets/logo-perusahaan.png" 
+          src="/logo-perusahaan.png" 
           alt="Company Logo" 
           className="w-[120%] -ml-4 h-32 object-contain object-left mix-blend-multiply scale-[1.3] origin-left transition-transform duration-300"
         />

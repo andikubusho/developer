@@ -56,7 +56,7 @@ const Login: React.FC = () => {
         
         <div className="relative z-10">
           <img 
-            src="/src/assets/logo-perusahaan.png" 
+            src="/logo-perusahaan.png" 
             alt="Company Logo" 
             className="h-40 w-auto max-w-full object-contain object-left mb-10 mix-blend-multiply scale-[1.3] origin-left"
           />
