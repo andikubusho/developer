@@ -48,5 +48,22 @@ export const api = {
   delete: (table: string, id: string | number) => 
     apiRequest(`${table}?id=eq.${id}`, { method: 'DELETE' }),
     
+  storage: {
+    upload: async (bucket: string, path: string, file: File) => {
+      const url = `${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'apikey': ANON_KEY,
+          'Authorization': `Bearer ${ANON_KEY}`,
+          'x-upsert': 'true'
+        },
+        body: file
+      });
+      if (!response.ok) throw new Error(`Upload failed: ${await response.text()}`);
+      return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+    }
+  },
+  
   apiRequest: apiRequest
 };

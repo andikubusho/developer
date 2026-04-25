@@ -44,23 +44,50 @@ const FloorPlan: React.FC = () => {
     }
   };
 
-  const handleUploadSim = async () => {
-    const name = prompt('Masukkan nama file:', `Denah Tipe ${new Date().toLocaleDateString('id-ID')}.pdf`);
-    if (!name) return;
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      alert('Hanya file PDF yang diperbolehkan.');
+      return;
+    }
+
     try {
       setLoading(true);
+      const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+      const fileUrl = await api.storage.upload('marketing-docs', `denah/${fileName}`, file);
+
       await api.insert('marketing_documents', {
         type: 'denah',
-        name: name,
-        file_url: '#',
+        name: file.name.replace('.pdf', '').replace('.PDF', ''),
+        file_url: fileUrl,
       });
+
       await fetchDocs();
       setIsModalOpen(false);
+      alert('Berhasil mengunggah denah!');
     } catch (error: any) {
+      console.error('Upload error:', error);
       alert(`Gagal upload: ${error.message}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePrint = (url: string) => {
+    if (!url || url === '#') return;
+    window.open(url, '_blank');
+  };
+
+  const handleDownload = (url: string, name: string) => {
+    if (!url || url === '#') return;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -94,8 +121,8 @@ const FloorPlan: React.FC = () => {
                   <h3 className="font-bold text-slate-900 truncate">{doc.name}</h3>
                   <p className="text-xs text-slate-500 mt-1">Diunggah pada {formatDate(doc.created_at)}</p>
                   <div className="flex items-center gap-2 mt-4">
-                    <Button variant="outline" size="sm" className="flex-1"><Printer className="w-3 h-3 mr-2" />Print</Button>
-                    <Button variant="outline" size="sm" className="flex-1"><Download className="w-3 h-3 mr-2" />Download</Button>
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handlePrint(doc.file_url)}><Printer className="w-3 h-3 mr-2" />Lihat</Button>
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleDownload(doc.file_url, doc.name)}><Download className="w-3 h-3 mr-2" />Download</Button>
                     <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(doc.id)}><Trash2 className="w-3 h-3" /></Button>
                   </div>
                 </div>
@@ -107,10 +134,12 @@ const FloorPlan: React.FC = () => {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Upload Denah">
         <div className="space-y-4">
-          <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-indigo-500 cursor-pointer" onClick={handleUploadSim}>
+          <label className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-indigo-500 cursor-pointer block">
+            <input type="file" className="hidden" accept=".pdf" onChange={handleFileChange} />
             <Upload className="w-10 h-10 text-slate-400 mx-auto mb-4" />
-            <p className="text-sm font-medium">Klik untuk simulasi upload PDF</p>
-          </div>
+            <p className="text-sm font-medium">Klik untuk memilih file PDF denah</p>
+            <p className="text-xs text-slate-400 mt-2">Maksimal file 5MB</p>
+          </label>
           <div className="flex justify-end pt-4"><Button variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button></div>
         </div>
       </Modal>
