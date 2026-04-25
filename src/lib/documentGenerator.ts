@@ -92,6 +92,14 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
       
       sisa_pelunasan: formatCurrency(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)),
       
+      // Excel Specific Tags
+      price_original: formatCurrency(sale.total_price + sale.discount),
+      price_original_terbilang: terbilang(sale.total_price + sale.discount) + " Rupiah",
+      total_cicilan: formatCurrency((sale as any).installments?.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0) || 0),
+      booking_fee_date: sale.booking_fee_date ? new Date(sale.booking_fee_date).toLocaleDateString('id-ID') : "-",
+      final_price: formatCurrency(sale.final_price),
+      discount: formatCurrency(sale.discount),
+      
       // Metode Bayar
       metode_bayar: sale.payment_method === 'cash' ? 'CASH KERAS' : sale.payment_method === 'installment' ? 'CASH BERTAHAP' : 'KPR',
       
