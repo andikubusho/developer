@@ -25,7 +25,7 @@ const ConsultantSchedulePage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    staff_entries: [] as { staff_id: string, position: string }[]
+    staff_entries: [] as { consultant_id: string, position: string }[]
   });
 
   useEffect(() => {
@@ -90,10 +90,10 @@ const ConsultantSchedulePage: React.FC = () => {
           setSchedules(updatedSchedules);
         } else {
           const newSchedules = formData.staff_entries.map(entry => {
-            const selectedStaff = staff.find(s => s.id === entry.staff_id);
+            const selectedStaff = staff.find(s => s.id === entry.consultant_id);
             return {
               id: Math.random().toString(36).substr(2, 9),
-              staff_id: entry.staff_id,
+              consultant_id: entry.consultant_id,
               date: formData.date,
               position: entry.position,
               consultant: selectedStaff
@@ -115,7 +115,7 @@ const ConsultantSchedulePage: React.FC = () => {
         // We must loop and insert sequentially.
         for (const entry of formData.staff_entries) {
           await api.insert('consultant_schedules', {
-            staff_id: entry.staff_id,
+            consultant_id: entry.consultant_id,
             date: formData.date,
             position: entry.position
           });
@@ -178,7 +178,7 @@ const ConsultantSchedulePage: React.FC = () => {
     setEditingSchedule(schedule);
     setFormData({
       date: schedule.date.split('T')[0],
-      staff_entries: [{ staff_id: schedule.consultant_id, position: schedule.position || '' }]
+      staff_entries: [{ consultant_id: schedule.consultant_id, position: schedule.position || '' }]
     });
     setIsFormEnabled(true);
     setIsModalOpen(true);
@@ -409,17 +409,17 @@ const ConsultantSchedulePage: React.FC = () => {
                     <label key={s.id} className="flex items-center gap-2 text-sm p-1 hover:bg-white/30 rounded cursor-pointer">
                       <input 
                         type="checkbox"
-                        checked={formData.staff_entries.some(entry => entry.staff_id === s.id)}
+                        checked={formData.staff_entries.some(entry => entry.consultant_id === s.id)}
                         onChange={(e) => {
                           if (e.target.checked) {
                             setFormData({
                               ...formData,
-                              staff_entries: [...formData.staff_entries, { staff_id: s.id, position: '' }]
+                              staff_entries: [...formData.staff_entries, { consultant_id: s.id, position: '' }]
                             });
                           } else {
                             setFormData({
                               ...formData,
-                              staff_entries: formData.staff_entries.filter(entry => entry.staff_id !== s.id)
+                              staff_entries: formData.staff_entries.filter(entry => entry.consultant_id !== s.id)
                             });
                           }
                         }}
@@ -447,9 +447,9 @@ const ConsultantSchedulePage: React.FC = () => {
                   {editingSchedule ? "Edit Posisi / Tugas:" : "Posisi / Tugas per Konsultan:"}
                 </label>
                 {formData.staff_entries.map(entry => {
-                  const s = staff.find(staffItem => staffItem.id === entry.staff_id);
+                  const s = staff.find(staffItem => staffItem.id === entry.consultant_id);
                   return (
-                    <div key={entry.staff_id} className="flex flex-col gap-1">
+                    <div key={entry.consultant_id} className="flex flex-col gap-1">
                       {!editingSchedule && <span className="text-xs font-semibold text-text-secondary">{s?.name}</span>}
                       <input 
                         type="text"
@@ -458,7 +458,7 @@ const ConsultantSchedulePage: React.FC = () => {
                         value={entry.position}
                         onChange={(e) => {
                           const updatedEntries = formData.staff_entries.map(item => 
-                            item.staff_id === entry.staff_id ? { ...item, position: e.target.value } : item
+                            item.consultant_id === entry.consultant_id ? { ...item, position: e.target.value } : item
                           );
                           setFormData({ ...formData, staff_entries: updatedEntries });
                         }}

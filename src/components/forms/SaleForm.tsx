@@ -32,7 +32,7 @@ const saleSchema = z.object({
   deposit_id: z.string().optional().nullable(),
   deposit_amount: z.number().min(0).optional().nullable(),
   initial_payments: z.array(z.object({
-    type: z.enum(['cash', 'transfer']),
+    type: z.string(),
     amount: z.number().min(0),
     date: z.string(),
     bank_id: z.string().optional().nullable(),
@@ -75,7 +75,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       booking_fee: 0,
       dp_amount: 0,
       initial_payments: [
-        { type: 'transfer', amount: 0, date: new Date().toISOString().split('T')[0], bank_id: null }
+        { type: 'Transfer Bank', amount: 0, date: new Date().toISOString().split('T')[0], bank_id: null }
       ],
       deposit_amount: 0,
       installments: [],
@@ -204,8 +204,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
               sale_id: newSaleId, 
               amount: pay.amount, 
               payment_date: pay.date, 
-              payment_method: pay.type === 'cash' ? 'cash' : 'bank_transfer', 
-              bank_account_id: pay.type === 'transfer' ? pay.bank_id : null, 
+              payment_method: pay.type, 
+              bank_account_id: pay.type === 'Transfer Bank' ? pay.bank_id : null, 
               status: 'pending' 
             });
           }
@@ -309,7 +309,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
             type="button" 
             variant="outline" 
             size="sm" 
-            onClick={() => append({ type: 'transfer', amount: 0, date: new Date().toISOString().split('T')[0], bank_id: null })}
+            onClick={() => append({ type: 'Transfer Bank', amount: 0, date: new Date().toISOString().split('T')[0], bank_id: null })}
             className="rounded-xl border-amber-300 text-amber-900 hover:bg-amber-100 font-bold gap-2"
           >
             <Plus className="w-4 h-4" /> Tambah Pembayaran
@@ -324,8 +324,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
                   <Select 
                     label={`Tipe #${index + 1}`}
                     options={[
-                      { label: 'Transfer', value: 'transfer' },
-                      { label: 'Tunai', value: 'cash' }
+                      { label: 'Transfer Bank', value: 'Transfer Bank' },
+                      { label: 'Tunai / Cash', value: 'Tunai' }
                     ]}
                     {...register(`initial_payments.${index}.type`)}
                   />
@@ -341,7 +341,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
                   <Input label="Tanggal" type="date" {...register(`initial_payments.${index}.date`)} />
                 </div>
                 <div className="md:col-span-3">
-                  {watch(`initial_payments.${index}.type`) === 'transfer' ? (
+                  {watch(`initial_payments.${index}.type`) === 'Transfer Bank' ? (
                     <Select 
                       label="Ke Rekening" 
                       options={bankAccounts.map(b => ({ 

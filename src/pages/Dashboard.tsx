@@ -269,7 +269,7 @@ const Dashboard: React.FC = () => {
         id: s.id,
         staff: s.consultant?.name || 'Staff',
         time: s.position || '08:00',
-        activity: s.activity || 'Kegiatan Lapangan'
+        activity: s.position || 'Kegiatan Lapangan'
       })) || []);
     } catch (e) {
       console.error('Marketing Specifics Error:', e);
