@@ -313,107 +313,138 @@ const PriceList: React.FC = () => {
           </Table>
       </Card>
 
-      {/* ─── PRINT UI: Official Document Style (FROM IMAGE 2) ─── */}
+      {/* ─── PRINT UI: Official Document Style (PORTRAIT, WITH HEADER) ─── */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page { size: A4 portrait; margin: 0; }
-          body { margin: 1cm 1.5cm; -webkit-print-color-adjust: exact; font-family: 'Inter', sans-serif; background: white !important; }
+          body { margin: 1cm; padding: 0; -webkit-print-color-adjust: exact; font-family: 'Inter', sans-serif; background: white !important; }
           .no-print { display: none !important; }
           
-          .doc-header { display: flex !important; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-          .doc-title-block { text-align: center; flex: 1; }
+          .doc-header { display: flex !important; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1.5px solid black; }
+          .doc-title-block { text-align: center; }
           
-          .price-table { width: 100% !important; border: 1.5px solid black !important; border-collapse: collapse !important; margin-bottom: 15px; }
-          .price-table th, .price-table td { border: 1px solid black !important; padding: 3px 4px !important; color: black !important; font-size: 7pt !important; line-height: 1.1; }
-          .price-table th { font-weight: 900 !important; text-transform: uppercase; background: #fff !important; }
-          .price-table .sub-header th { font-size: 6pt !important; }
+          .price-table { width: 100% !important; border: 1.5px solid black !important; border-collapse: collapse !important; margin-bottom: 15px; table-layout: auto; }
+          .price-table th, .price-table td { border: 1px solid black !important; padding: 3px 5px !important; color: black !important; font-size: 7pt !important; line-height: 1.1; }
+          .price-table th { font-weight: 900 !important; text-transform: uppercase; background: #f8fafc !important; text-align: center !important; font-size: 7.5pt !important; }
+          .price-table .sub-header th { font-size: 6.5pt !important; }
           
-          .sold-cell { background-color: #f3f4f6 !important; color: #000 !important; font-weight: 900 !important; letter-spacing: 0.8em !important; text-align: center !important; text-transform: uppercase !important; font-size: 6.5pt !important; }
+          .sold-cell { background-color: #e2e8f0 !important; color: #475569 !important; font-weight: 900 !important; letter-spacing: 1em !important; text-align: center !important; text-transform: uppercase !important; font-size: 7.5pt !important; padding-left: 1em !important; }
           
-          .doc-footer { margin-top: 20px; font-size: 7.5pt !important; line-height: 1.3; }
-          .bank-info-grid { display: grid; grid-template-cols: 50px 100px 1fr; gap: 2px; margin-top: 5px; font-weight: bold; }
+          .doc-footer { margin-top: 12px; font-size: 7pt !important; line-height: 1.2; display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; border-top: 1.5px solid black; padding-top: 8px; page-break-inside: avoid; }
+          .bank-info-grid { display: grid; grid-template-columns: 50px 100px 1fr; gap: 2px; margin-top: 5px; font-weight: bold; }
           .print-block { display: block !important; }
         }
       `}} />
 
       <div className="hidden print-block">
-        {/* Header Section */}
-        <div className="doc-header flex justify-between items-center mb-8 border-b-2 border-black pb-4">
+        {/* Header Section (Restored) */}
+        <div className="doc-header">
           <div className="flex-1">
-            {/* Kosong untuk keseimbangan */}
+             <img src={logoPerusahaan} alt="Logo Perusahaan" className="h-10 w-auto object-contain" />
           </div>
-          <div className="doc-title-block text-center flex-1 flex flex-col items-center">
-            <img src={logoProyek} alt="Logo Proyek" className="h-20 w-auto object-contain" />
+          <div className="doc-title-block flex flex-col items-center">
+            <img src={logoProyek} alt="Logo Proyek" className="h-14 w-auto object-contain" />
           </div>
-          <div className="flex-1 flex items-center justify-end">
-            <img src={logoPerusahaan} alt="Logo Perusahaan" className="h-16 w-auto object-contain" />
+          <div className="flex-1 flex justify-end">
+            <div className="text-[6.5pt] text-right font-bold">
+              <p>DAFTAR HARGA JUAL UNIT</p>
+              <p>{projects.find(p => p.id === selectedProjectId)?.name.toUpperCase()}</p>
+              <p>Per Tanggal: {new Date().toLocaleDateString('id-ID')}</p>
+            </div>
           </div>
         </div>
 
         {getGroupedItems().map((catGroup) => (
-          <div key={catGroup.category} className="mb-8">
-            <h3 className="text-sm font-black mb-2 uppercase tracking-widest text-text-primary">{catGroup.category}</h3>
+          <div key={catGroup.category} className="mb-6">
+            <h3 className="text-[10pt] font-black mb-2 uppercase tracking-widest text-black">{catGroup.category}</h3>
             <table className="price-table">
-              <THead>
-                <TR>
-                  <TH rowSpan={2}>Blok</TH><TH rowSpan={2}>Unit</TH><TH rowSpan={2}>Tipe</TH>
-                  <TH colSpan={2}>Luas (m2)</TH><TH rowSpan={2}>Booking Fee</TH>
-                  <TH rowSpan={2}>Uang Muka {catGroup.category === 'Ruko' ? '20%' : '10%'}</TH>
-                  <TH colSpan={3}>Angsuran KPR</TH><TH rowSpan={2}>Harga Jual (Rp)</TH>
-                </TR>
-                <TR className="sub-header">
-                  <TH>Tanah</TH><TH>Bangunan</TH><TH>5 Tahun</TH><TH>10 Tahun</TH><TH>15 Tahun</TH>
-                </TR>
-              </THead>
-              <TBody>
+              <thead>
+                <tr>
+                  <th rowSpan={2}>Blok</th>
+                  <th rowSpan={2}>Unit</th>
+                  <th rowSpan={2}>Tipe</th>
+                  <th colSpan={2}>Luas (m2)</th>
+                  <th rowSpan={2}>Booking Fee</th>
+                  <th rowSpan={2}>Uang Muka</th>
+                  <th colSpan={3}>Angsuran KPR</th>
+                  <th rowSpan={2}>Harga Jual (Rp)</th>
+                </tr>
+                <tr className="sub-header">
+                  <th>Tanah</th>
+                  <th>Bgn</th>
+                  <th>5 Thn</th>
+                  <th>10 Thn</th>
+                  <th>15 Thn</th>
+                </tr>
+              </thead>
+              <tbody>
                 {catGroup.bloks.map((blokGroup: any) => {
-                  const totalRows = blokGroup.groups.length;
+                  const totalRowsInBlok = blokGroup.groups.length;
                   return blokGroup.groups.map((group: any[], gIdx: number) => {
                     const item = group[0];
                     const calc = calculateKPR(item);
                     const isSold = item.status === 'sold';
                     const unitRange = group.length > 1 ? `${group[0].unit}-${group[group.length - 1].unit}` : item.unit;
                     return (
-                      <TR key={`${catGroup.category}-${blokGroup.blok}-${gIdx}`}>
-                        {gIdx === 0 && <TD rowSpan={totalRows} className="text-center font-black uppercase align-middle">{blokGroup.blok}</TD>}
-                        <TD className="text-center font-medium">{unitRange}</TD>
-                        <TD className="text-center">{item.tipe}</TD>
-                        <TD className="text-center">{item.luas_tanah}</TD>
-                        <TD className="text-center">{item.luas_bangunan}</TD>
-                        {isSold ? <TD colSpan={5} className="sold-cell">S O L D</TD> : (
+                      <tr key={`${catGroup.category}-${blokGroup.blok}-${gIdx}`}>
+                        {gIdx === 0 && <td rowSpan={totalRowsInBlok} className="text-center font-black uppercase align-middle bg-gray-50/50">{blokGroup.blok}</td>}
+                        <td className="text-center font-bold">{unitRange}</td>
+                        <td className="text-center font-medium">{item.tipe}</td>
+                        <td className="text-center">{item.luas_tanah}</td>
+                        <td className="text-center">{item.luas_bangunan}</td>
+                        {isSold ? (
+                          <td colSpan={6} className="sold-cell">S O L D</td>
+                        ) : (
                           <>
-                            <TD className="text-center">{item.booking_fee.toLocaleString('id-ID')}</TD>
-                            <TD className="text-center font-bold">{calc.dp_amount.toLocaleString('id-ID')}</TD>
-                            <TD className="text-center">{calc.angsuran_5.toLocaleString('id-ID')}</TD>
-                            <TD className="text-center">{calc.angsuran_10.toLocaleString('id-ID')}</TD>
-                            <TD className="text-center">{calc.angsuran_15.toLocaleString('id-ID')}</TD>
+                            <td className="text-right">{item.booking_fee.toLocaleString('id-ID')}</td>
+                            <td className="text-right font-black">{calc.dp_amount.toLocaleString('id-ID')}</td>
+                            <td className="text-right">{calc.angsuran_5.toLocaleString('id-ID')}</td>
+                            <td className="text-right">{calc.angsuran_10.toLocaleString('id-ID')}</td>
+                            <td className="text-right">{calc.angsuran_15.toLocaleString('id-ID')}</td>
+                            <td className="text-right font-black whitespace-nowrap">{item.harga_jual.toLocaleString('id-ID')}</td>
                           </>
                         )}
-                        <TD className="text-right font-black whitespace-nowrap">{item.harga_jual.toLocaleString('id-ID')}</TD>
-                      </TR>
+                      </tr>
                     );
                   });
                 })}
-              </TBody>
+              </tbody>
             </table>
           </div>
         ))}
 
-        <div className="doc-footer grid grid-cols-2 gap-12 text-[8pt] border-t-2 border-black pt-4">
-          <div className="space-y-4">
-            <div><h4 className="font-black uppercase mb-1">Harga Sudah Termasuk :</h4><ol className="list-decimal list-inside font-medium"><li>IMB</li><li>Listrik & Air</li><li>AJB & BBN</li><li>Lingkungan</li></ol></div>
-            <div className="pt-2"><p className="italic font-bold mb-1 leading-tight text-[7pt]">1. Pembayaran sah melalui kasir atau Bank :</p>
-              <div className="bank-info-grid">
+        <div className="doc-footer">
+          <div className="space-y-2">
+            <div>
+              <h4 className="font-black uppercase mb-0.5 text-[6.5pt]">Harga Sudah Termasuk :</h4>
+              <ol className="list-decimal list-inside font-bold text-[6pt] grid grid-cols-2 gap-x-4">
+                <li>Ijin Mendirikan Bangunan (IMB)</li>
+                <li>Penyambungan Listrik & Air</li>
+                <li>Akta Jual Beli & Balik Nama</li>
+                <li>Biaya Keamanan & Lingkungan</li>
+              </ol>
+            </div>
+            <div className="pt-1">
+              <p className="italic font-bold mb-0.5 leading-tight text-[5.5pt]">Pembayaran sah bila melalui kasir pusat atau No. Rekening Bank :</p>
+              <div className="bank-info-grid text-[6pt]">
                 <span>BCA</span><span>045-068-1008</span><span>PT. Abadi Lestari Mandiri</span>
                 <span>Mandiri</span><span>112-000-748-1042</span><span>PT. Abadi Lestari Mandiri</span>
                 <span>BNI</span><span>020-568-0823</span><span>PT. Abadi Lestari Mandiri</span>
               </div>
             </div>
           </div>
-          <div className="space-y-4">
-            <div><h4 className="font-black uppercase mb-1">Harga Belum Termasuk :</h4><ol className="list-decimal list-inside font-medium"><li>PBB</li><li>Biaya KPR</li></ol></div>
-            <div className="pt-8 space-y-1 font-bold">
-              <p>2. Harga dapat berubah sewaktu-waktu</p><p>3. Harga Berlaku per 1 Maret 2026</p>
+          <div className="space-y-2">
+            <div>
+              <h4 className="font-black uppercase mb-0.5 text-[6.5pt]">Harga Belum Termasuk :</h4>
+              <ul className="list-disc list-inside font-bold text-[6pt]">
+                <li>PBB</li>
+                <li>Biaya KPR & Provisi Bank</li>
+              </ul>
+            </div>
+            <div className="pt-2 space-y-0.5 font-black text-[6pt]">
+              <p>2. Harga sewaktu-waktu dapat berubah tanpa pemberitahuan</p>
+              <p>3. Harga Berlaku per 1 Maret 2026</p>
+              <p className="pt-2 text-right italic font-normal text-[5.5pt]">Dicetak pada: {new Date().toLocaleString('id-ID')}</p>
             </div>
           </div>
         </div>
