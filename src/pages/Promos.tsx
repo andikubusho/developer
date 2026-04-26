@@ -109,17 +109,17 @@ const Promos: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
-            <ArrowLeft className="w-5 h-5" />
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-1 sm:p-2 h-auto">
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Master Promo</h1>
-            <p className="text-text-secondary">Kelola daftar promo penjualan</p>
+            <h1 className="text-lg sm:text-2xl font-black text-text-primary tracking-tight">Master Promo</h1>
+            <p className="text-[10px] sm:text-sm text-text-secondary font-medium uppercase tracking-widest">Manajemen Penawaran</p>
           </div>
         </div>
-        <Button className="w-full sm:w-auto" onClick={handleAdd}>
-          <Plus className="w-4 h-4 mr-2" /> Tambah Promo
+        <Button size="sm" className="w-full sm:w-auto rounded-xl text-[10px] sm:text-sm py-3" onClick={handleAdd}>
+          <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Tambah Promo
         </Button>
       </div>
 
@@ -131,46 +131,49 @@ const Promos: React.FC = () => {
           </div>
         </div>
 
-        <Table className="min-w-[800px]">
-            <THead>
-              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
-                <TH className="px-6 py-3 font-semibold">Nama Promo</TH>
-                <TH className="px-6 py-3 font-semibold">Masa Berlaku</TH>
-                <TH className="px-6 py-3 font-semibold">Nilai Promo</TH>
-                <TH className="px-6 py-3 font-semibold">Keterangan</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {loading ? (
-                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
-              ) : filteredPromos.length === 0 ? (
-                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">Tidak ada data promo.</TD></TR>
-              ) : (
-                filteredPromos.map((p) => (
-                  <TR key={p.id} className="hover:bg-white/30 transition-colors">
-                    <TD className="px-6 py-4 font-medium text-text-primary">{p.name}</TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3 h-3 text-text-muted" />
-                        {formatDate(p.valid_until)}
-                      </div>
-                    </TD>
-                    <TD className="px-6 py-4 text-sm font-bold text-accent-dark">
-                      {p.value > 0 ? formatCurrency(p.value) : 'Non-Moneter'}
-                    </TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary">{p.description}</TD>
-                    <TD className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(p)}><Edit className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(p.id)}><Trash2 className="w-4 h-4" /></Button>
-                      </div>
-                    </TD>
-                  </TR>
-                ))
-              )}
-            </TBody>
-          </Table>
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="min-w-full">
+              <THead>
+                <TR className="bg-white/30 text-text-secondary text-[10px] uppercase tracking-wider">
+                  <TH className="px-3 py-3 font-black">Promo</TH>
+                  <TH className="px-3 py-3 font-black hidden sm:table-cell">Masa Berlaku</TH>
+                  <TH className="px-3 py-3 font-black">Nilai</TH>
+                  <TH className="px-3 py-3 font-black text-right">Aksi</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {loading ? (
+                  <TR><TD colSpan={5} className="px-3 py-10 text-center text-text-muted">Memuat...</TD></TR>
+                ) : filteredPromos.length === 0 ? (
+                  <TR><TD colSpan={5} className="px-3 py-10 text-center text-text-secondary">Tidak ada data.</TD></TR>
+                ) : (
+                  filteredPromos.map((p) => (
+                    <TR key={p.id} className="hover:bg-white/30 transition-colors">
+                      <TD className="px-3 py-4">
+                        <div className="font-black text-text-primary text-xs whitespace-nowrap">{p.name}</div>
+                        <div className="text-[10px] text-text-secondary sm:hidden italic">{formatDate(p.valid_until)}</div>
+                      </TD>
+                      <TD className="px-3 py-4 text-[10px] text-text-secondary hidden sm:table-cell whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3 h-3 text-text-muted" />
+                          {formatDate(p.valid_until)}
+                        </div>
+                      </TD>
+                      <TD className="px-3 py-4 text-[10px] font-black text-accent-dark whitespace-nowrap">
+                        {p.value > 0 ? formatCurrency(p.value) : 'Non-Mon'}
+                      </TD>
+                      <TD className="px-3 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(p)}><Edit className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleDelete(p.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                        </div>
+                      </TD>
+                    </TR>
+                  ))
+                )}
+              </TBody>
+            </Table>
+        </div>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); resetForm(); }} title={selectedPromo ? "Edit Promo" : "Input Promo"}>

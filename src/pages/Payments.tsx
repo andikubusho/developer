@@ -224,66 +224,53 @@ const Payments: React.FC = () => {
           </div>
         </div>
 
-        <Table className="min-w-[800px]">
-            <THead>
-              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
-                <TH className="px-6 py-3 font-semibold">Pelanggan & Unit</TH>
-                <TH className="px-6 py-3 font-semibold">Jumlah</TH>
-                <TH className="px-6 py-3 font-semibold">Tanggal</TH>
-                <TH className="px-6 py-3 font-semibold">Metode</TH>
-                <TH className="px-6 py-3 font-semibold">Status</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {loading ? (
-                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
-              ) : filteredPayments.length === 0 ? (
-                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">Tidak ada pembayaran ditemukan.</TD></TR>
-              ) : (
-                filteredPayments.map((payment) => (
-                  <TR key={payment.id} className="hover:bg-white/30 transition-colors">
-                    <TD className="px-6 py-4">
-                      <div className="font-medium text-text-primary">{payment.sale?.customer?.full_name}</div>
-                      <div className="text-xs text-text-secondary">Unit: {payment.sale?.unit?.unit_number}</div>
-                    </TD>
-                    <TD className="px-6 py-4 text-sm font-bold text-text-primary">{formatCurrency(payment.amount)}</TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(payment.payment_date)}</TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary capitalize">{payment.payment_method}</TD>
-                    <TD className="px-6 py-4">
-                      <div className="flex items-center gap-1.5">
-                        {payment.status === 'verified' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Clock className="w-4 h-4 text-amber-500" />}
-                        <span className={cn('text-xs font-medium capitalize', payment.status === 'verified' ? 'text-emerald-700' : 'text-amber-700')}>
-                          {payment.status === 'verified' ? 'Terverifikasi' : 'Menunggu'}
-                        </span>
-                      </div>
-                    </TD>
-                    <TD className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => generateReceipt(payment)}><FileText className="w-4 h-4" /></Button>
-                        {payment.status === 'verified' && (
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-amber-600" onClick={() => handleUnverify(payment)} title="Batal Verifikasi">
-                            <RotateCcw className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {payment.status === 'pending' && (
-                          <>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-amber-600" onClick={() => handleEdit(payment)} title="Edit">
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(payment.id)} title="Hapus">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleVerify(payment)}>Verifikasi</Button>
-                          </>
-                        )}
-                      </div>
-                    </TD>
-                  </TR>
-                ))
-              )}
-            </TBody>
-          </Table>
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="min-w-full">
+              <THead>
+                <TR className="bg-white/30 text-text-secondary text-[10px] uppercase tracking-wider">
+                  <TH className="px-3 py-3 font-semibold">Pelanggan & Unit</TH>
+                  <TH className="px-3 py-3 font-semibold text-right">Jumlah</TH>
+                  <TH className="px-3 py-3 font-semibold hidden sm:table-cell">Tanggal</TH>
+                  <TH className="px-3 py-3 font-semibold text-center">Status</TH>
+                  <TH className="px-3 py-3 font-semibold text-right">Aksi</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {loading ? (
+                  <TR><TD colSpan={6} className="px-3 py-10 text-center text-text-muted">Memuat...</TD></TR>
+                ) : filteredPayments.length === 0 ? (
+                  <TR><TD colSpan={6} className="px-3 py-10 text-center text-text-secondary">Tidak ada data.</TD></TR>
+                ) : (
+                  filteredPayments.map((payment) => (
+                    <TR key={payment.id} className="hover:bg-white/30 transition-colors">
+                      <TD className="px-3 py-4">
+                        <div className="font-bold text-text-primary text-[11px] truncate max-w-[120px]">{payment.sale?.customer?.full_name}</div>
+                        <div className="text-[10px] text-text-secondary">Unit: {payment.sale?.unit?.unit_number}</div>
+                        <div className="sm:hidden text-[9px] text-text-muted">{formatDate(payment.payment_date)}</div>
+                      </TD>
+                      <TD className="px-3 py-4 text-[11px] font-black text-text-primary text-right whitespace-nowrap">{formatCurrency(payment.amount)}</TD>
+                      <TD className="px-3 py-4 text-[10px] text-text-secondary hidden sm:table-cell whitespace-nowrap">{formatDate(payment.payment_date)}</TD>
+                      <TD className="px-3 py-4 text-center">
+                        <div className="flex items-center justify-center">
+                          {payment.status === 'verified' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Clock className="w-3.5 h-3.5 text-amber-500" />}
+                        </div>
+                      </TD>
+                      <TD className="px-3 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => generateReceipt(payment)}><FileText className="w-3.5 h-3.5" /></Button>
+                          {payment.status === 'pending' ? (
+                            <Button variant="outline" size="sm" className="h-7 text-[9px] px-1.5" onClick={() => handleVerify(payment)}>Verify</Button>
+                          ) : (
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-amber-600" onClick={() => handleUnverify(payment)}><RotateCcw className="w-3.5 h-3.5" /></Button>
+                          )}
+                        </div>
+                      </TD>
+                    </TR>
+                  ))
+                )}
+              </TBody>
+            </Table>
+        </div>
       </Card>
     </div>
   );

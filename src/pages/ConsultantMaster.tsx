@@ -107,17 +107,17 @@ const ConsultantMaster: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
-            <ArrowLeft className="w-5 h-5" />
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-1 sm:p-2 h-auto">
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Master Konsultan Property</h1>
-            <p className="text-text-secondary">Kelola data staf konsultan property</p>
+            <h1 className="text-lg sm:text-2xl font-black text-text-primary tracking-tight">Master Konsultan</h1>
+            <p className="text-[10px] sm:text-sm text-text-secondary font-medium uppercase tracking-widest">Staf Property</p>
           </div>
         </div>
-        <Button className="w-full sm:w-auto" onClick={handleAdd}>
-          <Plus className="w-4 h-4 mr-2" /> Tambah Konsultan
+        <Button size="sm" className="w-full sm:w-auto rounded-xl text-[10px] sm:text-sm py-3" onClick={handleAdd}>
+          <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Tambah Data
         </Button>
       </div>
 
@@ -134,41 +134,43 @@ const ConsultantMaster: React.FC = () => {
           </div>
         </div>
 
-        <Table className="min-w-[800px]">
-            <THead>
-              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
-                <TH className="px-6 py-3 font-semibold">Nama</TH>
-                <TH className="px-6 py-3 font-semibold">No. Telp</TH>
-                <TH className="px-6 py-3 font-semibold">Alamat</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {loading ? (
-                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
-              ) : filteredStaff.length === 0 ? (
-                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">Tidak ada data konsultan property.</TD></TR>
-              ) : (
-                filteredStaff.map((s) => (
-                  <TR key={s.id} className="hover:bg-white/30 transition-colors">
-                    <TD className="px-6 py-4 font-medium text-text-primary">{s.name}</TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary">
-                      <div className="flex items-center gap-2"><Phone className="w-3 h-3 text-text-muted" />{s.phone}</div>
-                    </TD>
-                    <TD className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm text-text-secondary"><MapPin className="w-3 h-3 text-text-muted" />{s.address}</div>
-                    </TD>
-                    <TD className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(s)}><Edit className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(s.id)}><Trash2 className="w-4 h-4" /></Button>
-                      </div>
-                    </TD>
-                  </TR>
-                ))
-              )}
-            </TBody>
-          </Table>
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="min-w-full">
+              <THead>
+                <TR className="bg-white/30 text-text-secondary text-[10px] uppercase tracking-wider">
+                  <TH className="px-3 py-3 font-black">Nama</TH>
+                  <TH className="px-3 py-3 font-black">Kontak</TH>
+                  <TH className="px-3 py-3 font-black hidden md:table-cell">Alamat</TH>
+                  <TH className="px-3 py-3 font-black text-right">Aksi</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {loading ? (
+                  <TR><TD colSpan={4} className="px-3 py-10 text-center text-text-muted">Memuat...</TD></TR>
+                ) : filteredStaff.length === 0 ? (
+                  <TR><TD colSpan={4} className="px-3 py-10 text-center text-text-secondary text-sm">Tidak ada data.</TD></TR>
+                ) : (
+                  filteredStaff.map((s) => (
+                    <TR key={s.id} className="hover:bg-white/30 transition-colors">
+                      <TD className="px-3 py-4 font-black text-text-primary text-[11px] whitespace-nowrap">{s.name}</TD>
+                      <TD className="px-3 py-4 text-[11px] text-text-secondary whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">{s.phone}</div>
+                      </TD>
+                      <TD className="px-3 py-4 hidden md:table-cell">
+                        <div className="flex items-center gap-2 text-[11px] text-text-secondary"><MapPin className="w-3 h-3 text-text-muted" />{s.address}</div>
+                      </TD>
+                      <TD className="px-3 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(s)}><Edit className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleDelete(s.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                        </div>
+                      </TD>
+                    </TR>
+                  ))
+                )}
+              </TBody>
+            </Table>
+        </div>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedStaff ? "Edit Data Konsultan Property" : "Input Data Konsultan Property"}>

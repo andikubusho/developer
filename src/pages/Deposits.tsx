@@ -237,17 +237,17 @@ const Deposits: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
-            <ArrowLeft className="w-5 h-5" />
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-1 sm:p-2 h-auto">
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Titipan</h1>
-            <p className="text-text-secondary">Kelola dana titipan konsumen sebelum SPK</p>
+            <h1 className="text-lg sm:text-2xl font-black text-text-primary tracking-tight">Titipan</h1>
+            <p className="text-[10px] sm:text-sm text-text-secondary font-medium uppercase tracking-widest">Dana Pra-SPK</p>
           </div>
         </div>
-        <Button className="w-full sm:w-auto" onClick={() => { setSelectedDeposit(null); setIsModalOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Input Titipan
+        <Button size="sm" className="w-full sm:w-auto rounded-xl text-[10px] sm:text-sm py-3" onClick={() => { setSelectedDeposit(null); setIsModalOpen(true); }}>
+          <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Input Titipan
         </Button>
       </div>
 
@@ -267,83 +267,78 @@ const Deposits: React.FC = () => {
           </div>
         </div>
 
-        <Table className="min-w-[1000px]">
-            <THead>
-              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
-                <TH className="px-6 py-3 font-semibold">Tanggal</TH>
-                <TH className="px-6 py-3 font-semibold">Pelanggan</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Nilai Titipan</TH>
-                <TH className="px-6 py-3 font-semibold">Akun / Rekening</TH>
-                <TH className="px-6 py-3 font-semibold text-center">Status</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {loading ? (
-                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
-              ) : filteredDeposits.length === 0 ? (
-                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">Tidak ada data titipan.</TD></TR>
-              ) : (
-                filteredDeposits.map((d) => (
-                  <TR key={d.id} className="hover:bg-white/30 transition-colors">
-                    <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(d.date)}</TD>
-                    <TD className="px-6 py-4">
-                      <div className="font-medium text-text-primary">{d.name}</div>
-                      <div className="text-xs text-text-secondary">{d.phone}</div>
-                    </TD>
-                    <TD className="px-6 py-4 text-sm font-bold text-emerald-600 text-right">{formatCurrency(d.amount)}</TD>
-                    <TD className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {d.payment_type === 'bank' ? (
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-100">
-                            <Landmark className="w-3 h-3" /> {(d as any).bank?.bank_name || 'BANK'}
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-100">
-                            <Wallet className="w-3 h-3" /> KAS BESAR
-                          </span>
-                        )}
-                      </div>
-                    </TD>
-                    <TD className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {(d as any).status === 'verified' ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        ) : (d as any).status === 'used' ? (
-                          <CheckCircle2 className="w-4 h-4 text-blue-500" />
-                        ) : (
-                          <Clock className="w-4 h-4 text-amber-500" />
-                        )}
-                        <span className={cn(
-                          'text-[10px] font-black uppercase tracking-wider',
-                          (d as any).status === 'verified' ? 'text-emerald-700' : 
-                          (d as any).status === 'used' ? 'text-blue-700' : 'text-amber-700'
-                        )}>
-                          {(d as any).status === 'verified' ? 'Terverifikasi' : 
-                           (d as any).status === 'used' ? 'Sudah Digunakan' : 'Menunggu'}
-                        </span>
-                      </div>
-                    </TD>
-                    <TD className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {(d as any).status === 'verified' ? (
-                          <Button variant="ghost" size="sm" className="text-amber-600" onClick={() => handleUnverify(d)} title="Batal Verifikasi">
-                            <RotateCcw className="w-4 h-4" />
-                          </Button>
-                        ) : (
-                          <>
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(d)}><Edit className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(d.id)}><Trash2 className="w-4 h-4" /></Button>
-                            <Button variant="outline" size="sm" onClick={() => handleVerify(d)}>Verifikasi</Button>
-                          </>
-                        )}
-                      </div>
-                    </TD>
-                  </TR>
-                ))
-              )}
-            </TBody>
-          </Table>
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="min-w-full">
+              <THead>
+                <TR className="bg-white/30 text-text-secondary text-[10px] uppercase tracking-wider">
+                  <TH className="px-3 py-3 font-black hidden sm:table-cell">Tanggal</TH>
+                  <TH className="px-3 py-3 font-black">Pelanggan</TH>
+                  <TH className="px-3 py-3 font-black text-right">Nilai</TH>
+                  <TH className="px-3 py-3 font-black hidden md:table-cell">Metode</TH>
+                  <TH className="px-3 py-3 font-black text-center">Status</TH>
+                  <TH className="px-3 py-3 font-black text-right">Aksi</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {loading ? (
+                  <TR><TD colSpan={6} className="px-3 py-10 text-center text-text-muted">Memuat...</TD></TR>
+                ) : filteredDeposits.length === 0 ? (
+                  <TR><TD colSpan={6} className="px-3 py-10 text-center text-text-secondary text-sm">Tidak ada data.</TD></TR>
+                ) : (
+                  filteredDeposits.map((d) => (
+                    <TR key={d.id} className="hover:bg-white/30 transition-colors">
+                      <TD className="px-3 py-4 text-[10px] text-text-secondary hidden sm:table-cell whitespace-nowrap">{formatDate(d.date)}</TD>
+                      <TD className="px-3 py-4">
+                        <div className="font-black text-text-primary text-xs whitespace-nowrap">{d.name}</div>
+                        <div className="text-[10px] text-text-secondary sm:hidden whitespace-nowrap">{formatDate(d.date)}</div>
+                        <div className="text-[9px] text-accent-dark font-bold md:hidden">{(d as any).consultant?.name || '-'}</div>
+                      </TD>
+                      <TD className="px-3 py-4 text-[10px] font-black text-emerald-600 text-right whitespace-nowrap">{formatCurrency(d.amount)}</TD>
+                      <TD className="px-3 py-4 hidden md:table-cell">
+                        <div className="flex items-center gap-1">
+                          {d.payment_type === 'bank' ? (
+                            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[8px] font-black uppercase">
+                              <Landmark className="w-2.5 h-2.5" /> {(d as any).bank?.bank_name || 'BANK'}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[8px] font-black uppercase">
+                              <Wallet className="w-2.5 h-2.5" /> KAS
+                            </span>
+                          )}
+                        </div>
+                      </TD>
+                      <TD className="px-3 py-4 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {(d as any).status === 'verified' ? (
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                          ) : (d as any).status === 'used' ? (
+                            <CheckCircle2 className="w-3 h-3 text-blue-500" />
+                          ) : (
+                            <Clock className="w-3 h-3 text-amber-500" />
+                          )}
+                        </div>
+                      </TD>
+                      <TD className="px-3 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {(d as any).status === 'verified' ? (
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-amber-600" onClick={() => handleUnverify(d)}>
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </Button>
+                          ) : (
+                            <>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(d)}><Edit className="w-3.5 h-3.5" /></Button>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                              <Button variant="outline" size="sm" className="h-7 text-[8px] px-1.5" onClick={() => handleVerify(d)}>Verify</Button>
+                            </>
+                          )}
+                        </div>
+                      </TD>
+                    </TR>
+                  ))
+                )}
+              </TBody>
+            </Table>
+        </div>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedDeposit ? 'Edit Titipan' : 'Input Titipan'}>

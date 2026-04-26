@@ -32,7 +32,7 @@ const Layout: React.FC = () => {
             <img 
               src="/logo-perusahaan.png" 
               alt="Company Logo" 
-              className="h-24 w-auto max-w-[300px] object-contain object-left mix-blend-multiply scale-[1.3] origin-left"
+              className="h-8 w-auto object-contain mix-blend-multiply"
             />
           <Button 
             variant="ghost" 

@@ -214,103 +214,107 @@ const PriceList: React.FC = () => {
       
       {/* ─── SCREEN UI: Modern App View (REVERTED TO ORIGINAL) ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print px-4 pt-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
-            <ArrowLeft className="w-5 h-5" />
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-1 sm:p-2 h-auto">
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Price List {projects.find(p => p.id === selectedProjectId)?.name}</h1>
-            <p className="text-text-secondary text-sm">Manajemen harga dan simulasi KPR</p>
+            <h1 className="text-lg sm:text-2xl font-black text-text-primary tracking-tight">Price List</h1>
+            <p className="text-[10px] sm:text-sm text-text-secondary font-medium uppercase tracking-widest">{projects.find(p => p.id === selectedProjectId)?.name}</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <select 
             value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="rounded-xl border-white/40 text-sm bg-white px-4 py-2"
+            className="rounded-xl border-white/40 text-[10px] sm:text-sm bg-white px-2 sm:px-4 py-1.5 sm:py-2 flex-1 sm:flex-none"
           >
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
-          <Button variant="outline" size="sm" onClick={() => setIsUpdateModalOpen(true)}><Percent className="w-4 h-4 mr-2" />Update Harga</Button>
-          <Button variant="outline" size="sm" onClick={() => { setEditingItem(null); setIsItemModalOpen(true); }}><Plus className="w-4 h-4 mr-2" />Tambah Unit</Button>
-          <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />Cetak Layar</Button>
-          <Button size="sm" onClick={generatePDF}><FileText className="w-4 h-4 mr-2" />Export PDF</Button>
+          <div className="flex items-center gap-1.5 w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-[9px] sm:text-xs h-9 px-2" onClick={() => setIsUpdateModalOpen(true)}><Percent className="w-3 h-3 mr-1" />Update</Button>
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-[9px] sm:text-xs h-9 px-2" onClick={() => { setEditingItem(null); setIsItemModalOpen(true); }}><Plus className="w-3 h-3 mr-1" />Unit</Button>
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-[9px] sm:text-xs h-9 px-2" onClick={() => window.print()}><Printer className="w-3 h-3 mr-1" />Cetak</Button>
+          </div>
         </div>
       </div>
 
-      <Card className="p-0 overflow-hidden border-none shadow-premium rounded-xl no-print">
-        <Table>
-            <THead>
-              <TR className="bg-accent-dark text-white text-[9px] uppercase tracking-wider font-black">
-                <TH rowSpan={2} className="px-2 py-3 text-center border-r border-white/40 w-8">
-                  <input type="checkbox" className="rounded bg-accent-dark/80 border-white/40 w-3 h-3" checked={selectedItems.length === priceItems.length && priceItems.length > 0} onChange={(e) => setSelectedItems(e.target.checked ? priceItems.map(i => i.id) : [])} />
-                </TH>
-                <TH rowSpan={2} className="px-3 py-3 border-r border-white/40">Blok</TH>
-                <TH rowSpan={2} className="px-2 py-3 border-r border-white/40">Unit</TH>
-                <TH rowSpan={2} className="px-3 py-3 border-r border-white/40">Tipe</TH>
-                <TH colSpan={2} className="px-2 py-1.5 text-center border-b border-r border-white/40">Luas</TH>
-                <TH rowSpan={2} className="px-3 py-3 border-r border-white/40">Booking</TH>
-                <TH rowSpan={2} className="px-3 py-3 border-r border-white/40 text-center">Uang Muka</TH>
-                <TH colSpan={3} className="px-2 py-1.5 text-center border-b border-r border-white/40">Angsuran KPR</TH>
-                <TH rowSpan={2} className="px-3 py-3 border-r border-white/40 text-right">Harga Jual</TH>
-                <TH rowSpan={2} className="px-2 py-3 text-center w-12">Aksi</TH>
-              </TR>
-              <TR className="bg-accent-dark/80 text-text-muted text-[8px] uppercase tracking-tighter font-bold">
-                <TH className="px-2 py-1.5 text-center border-r border-white/40">Tnh</TH>
-                <TH className="px-2 py-1.5 text-center border-r border-white/40">Bgn</TH>
-                <TH className="px-2 py-1.5 text-center border-r border-white/40">5 Th</TH>
-                <TH className="px-2 py-1.5 text-center border-r border-white/40">10 Th</TH>
-                <TH className="px-2 py-1.5 text-center border-r border-white/40">15 Th</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {['Ruko', 'Rumah'].map((cat) => {
-                const catItems = priceItems.filter(i => i.category === cat);
-                if (catItems.length === 0) return null;
-                return (
-                  <React.Fragment key={cat}>
-                    <TR className="bg-white/30">
-                      <TD colSpan={13} className="px-4 py-2 text-[10px] font-black text-text-primary uppercase tracking-widest border-y border-white/40">{cat}</TD>
-                    </TR>
-                    {catItems.map((item) => {
-                      const calc = calculateKPR(item);
-                      const isSold = item.status === 'sold';
-                      return (
-                        <TR key={item.id} className={cn("hover:bg-white/30 transition-colors group text-[10px]", isSold && "bg-white/20")}>
-                          <TD className="px-2 py-2 text-center border-r border-white/20"><input type="checkbox" className="rounded w-3 h-3" checked={selectedItems.includes(item.id)} onChange={(e) => setSelectedItems(e.target.checked ? [...selectedItems, item.id] : selectedItems.filter(id => id !== item.id))} /></TD>
-                          <TD className="px-3 py-2 font-black text-text-primary border-r border-white/20 uppercase">{item.blok}</TD>
-                          <TD className="px-2 py-2 font-bold text-text-secondary border-r border-white/20">{item.unit}</TD>
-                          <TD className="px-3 py-2 font-medium text-text-secondary border-r border-white/20 truncate max-w-[80px]">{item.tipe}</TD>
-                          <TD className="px-2 py-2 text-center text-text-secondary border-r border-white/20">{item.luas_tanah}</TD>
-                          <TD className="px-2 py-2 text-center text-text-secondary border-r border-white/20">{item.luas_bangunan}</TD>
-                          {isSold ? (
-                            <TD colSpan={6} className="px-6 py-2 text-center bg-white/40/50"><span className="text-[9px] font-black uppercase tracking-[0.2em] text-text-muted">S O L D</span></TD>
-                          ) : (
-                            <>
-                              <TD className="px-3 py-2 text-text-secondary border-r border-white/20">{formatCurrency(item.booking_fee)}</TD>
-                              <TD className="px-3 py-2 text-center border-r border-white/20"><p className="font-bold text-text-primary leading-tight">{formatCurrency(calc.dp_amount)}</p></TD>
-                              <TD className="px-2 py-2 text-center border-r border-white/20 font-bold text-accent-dark">{formatCurrency(calc.angsuran_5)}</TD>
-                              <TD className="px-2 py-2 text-center border-r border-white/20 font-bold text-accent-dark">{formatCurrency(calc.angsuran_10)}</TD>
-                              <TD className="px-2 py-2 text-center border-r border-white/20 font-bold text-accent-dark">{formatCurrency(calc.angsuran_15)}</TD>
-                              <TD className="px-3 py-2 font-black text-text-primary text-right border-r border-white/20">{formatCurrency(item.harga_jual)}</TD>
-                            </>
-                          )}
-                          <TD className="px-2 py-2">
-                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsItemModalOpen(true); }} className="p-1 h-auto hover:bg-white shadow-glass border border-white/40"><Edit2 className="w-3 h-3 text-accent-dark" /></Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)} className="p-1 h-auto hover:bg-white shadow-glass border border-white/40"><Trash2 className="w-3 h-3 text-red-500" /></Button>
-                            </div>
-                          </TD>
-                        </TR>
-                      );
-                    })}
-                  </React.Fragment>
-                );
-              })}
-            </TBody>
-          </Table>
+      <Card className="p-0 overflow-hidden border-none shadow-premium rounded-xl no-print mx-4">
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="min-w-full">
+              <THead>
+                <TR className="bg-accent-dark text-white text-[8px] uppercase tracking-wider font-black">
+                  <TH rowSpan={2} className="px-1 py-3 text-center border-r border-white/40 w-6">
+                    <input type="checkbox" className="rounded bg-accent-dark/80 border-white/40 w-3 h-3" checked={selectedItems.length === priceItems.length && priceItems.length > 0} onChange={(e) => setSelectedItems(e.target.checked ? priceItems.map(i => i.id) : [])} />
+                  </TH>
+                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/40">Unit</TH>
+                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/40 hidden sm:table-cell">Tipe</TH>
+                  <TH colSpan={2} className="px-1 py-1.5 text-center border-b border-r border-white/40 hidden md:table-cell">Luas</TH>
+                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/40 hidden lg:table-cell">Booking</TH>
+                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/40 text-center hidden md:table-cell">DP</TH>
+                  <TH colSpan={3} className="px-1 py-1.5 text-center border-b border-r border-white/40 hidden xl:table-cell">KPR</TH>
+                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/40 text-right">Harga Jual</TH>
+                  <TH rowSpan={2} className="px-1 py-3 text-center w-8">Aksi</TH>
+                </TR>
+                <TR className="bg-accent-dark/80 text-text-muted text-[7px] uppercase tracking-tighter font-bold">
+                  <TH className="px-1 py-1.5 text-center border-r border-white/40 hidden md:table-cell">Tnh</TH>
+                  <TH className="px-1 py-1.5 text-center border-r border-white/40 hidden md:table-cell">Bgn</TH>
+                  <TH className="px-1 py-1.5 text-center border-r border-white/40 hidden xl:table-cell">5 Th</TH>
+                  <TH className="px-1 py-1.5 text-center border-r border-white/40 hidden xl:table-cell">10 Th</TH>
+                  <TH className="px-1 py-1.5 text-center border-r border-white/40 hidden xl:table-cell">15 Th</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {['Ruko', 'Rumah'].map((cat) => {
+                  const catItems = priceItems.filter(i => i.category === cat);
+                  if (catItems.length === 0) return null;
+                  return (
+                    <React.Fragment key={cat}>
+                      <TR className="bg-white/30">
+                        <TD colSpan={13} className="px-3 py-1.5 text-[9px] font-black text-text-primary uppercase tracking-widest border-y border-white/40">{cat}</TD>
+                      </TR>
+                      {catItems.map((item) => {
+                        const calc = calculateKPR(item);
+                        const isSold = item.status === 'sold';
+                        return (
+                          <TR key={item.id} className={cn("hover:bg-white/30 transition-colors group text-[9px]", isSold && "bg-white/20")}>
+                            <TD className="px-1 py-2 text-center border-r border-white/20"><input type="checkbox" className="rounded w-3 h-3" checked={selectedItems.includes(item.id)} onChange={(e) => setSelectedItems(e.target.checked ? [...selectedItems, item.id] : selectedItems.filter(id => id !== item.id))} /></TD>
+                            <TD className="px-2 py-2 font-black text-text-primary border-r border-white/20 uppercase whitespace-nowrap">
+                              {item.blok}-{item.unit}
+                              <div className="sm:hidden text-[7px] font-medium text-text-secondary">{item.tipe}</div>
+                            </TD>
+                            <TD className="px-2 py-2 font-medium text-text-secondary border-r border-white/20 truncate max-w-[60px] hidden sm:table-cell">{item.tipe}</TD>
+                            <TD className="px-1 py-2 text-center text-text-secondary border-r border-white/20 hidden md:table-cell">{item.luas_tanah}</TD>
+                            <TD className="px-1 py-2 text-center text-text-secondary border-r border-white/20 hidden md:table-cell">{item.luas_bangunan}</TD>
+                            {isSold ? (
+                              <TD colSpan={13} className="px-4 py-2 text-center bg-white/40/50"><span className="text-[8px] font-black uppercase tracking-[0.2em] text-text-muted">S O L D</span></TD>
+                            ) : (
+                              <>
+                                <TD className="px-2 py-2 text-text-secondary border-r border-white/20 whitespace-nowrap hidden lg:table-cell">{formatCurrency(item.booking_fee)}</TD>
+                                <TD className="px-2 py-2 text-center border-r border-white/20 whitespace-nowrap hidden md:table-cell"><p className="font-bold text-text-primary leading-tight">{formatCurrency(calc.dp_amount)}</p></TD>
+                                <TD className="px-1 py-2 text-center border-r border-white/20 font-bold text-accent-dark whitespace-nowrap hidden xl:table-cell">{formatCurrency(calc.angsuran_5)}</TD>
+                                <TD className="px-1 py-2 text-center border-r border-white/20 font-bold text-accent-dark whitespace-nowrap hidden xl:table-cell">{formatCurrency(calc.angsuran_10)}</TD>
+                                <TD className="px-1 py-2 text-center border-r border-white/20 font-bold text-accent-dark whitespace-nowrap hidden xl:table-cell">{formatCurrency(calc.angsuran_15)}</TD>
+                                <TD className="px-2 py-2 font-black text-text-primary text-right border-r border-white/20 whitespace-nowrap">{formatCurrency(item.harga_jual)}</TD>
+                              </>
+                            )}
+                            <TD className="px-1 py-2">
+                              <div className="flex items-center justify-center gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsItemModalOpen(true); }} className="p-1 h-auto hover:bg-white shadow-glass border border-white/40"><Edit2 className="w-2.5 h-2.5 text-accent-dark" /></Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)} className="p-1 h-auto hover:bg-white shadow-glass border border-white/40"><Trash2 className="w-2.5 h-2.5 text-red-500" /></Button>
+                              </div>
+                            </TD>
+                          </TR>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+              </TBody>
+            </Table>
+        </div>
       </Card>
 
       {/* ─── PRINT UI: Official Document Style (PORTRAIT, WITH HEADER) ─── */}

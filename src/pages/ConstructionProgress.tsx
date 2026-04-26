@@ -115,17 +115,17 @@ const ConstructionProgressPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
-            <ArrowLeft className="w-5 h-5" />
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-1 sm:p-2 h-auto">
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Progress Bangun</h1>
-            <p className="text-text-secondary">Laporan Progress Pembangunan Unit & Proyek</p>
+            <h1 className="text-lg sm:text-2xl font-black text-text-primary tracking-tight">Progress Bangun</h1>
+            <p className="text-[10px] sm:text-sm text-text-secondary font-medium uppercase tracking-widest">Laporan Lapangan</p>
           </div>
         </div>
-        <Button className="w-full sm:w-auto" onClick={() => { setSelectedProgress(null); setIsModalOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Input Laporan Progress
+        <Button size="sm" className="w-full sm:w-auto rounded-xl text-[10px] sm:text-sm py-3" onClick={() => { setSelectedProgress(null); setIsModalOpen(true); }}>
+          <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Input Laporan
         </Button>
       </div>
 
@@ -136,46 +136,52 @@ const ConstructionProgressPage: React.FC = () => {
             <Input placeholder="Cari deskripsi..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </div>
-        <Table className="min-w-[800px]">
-            <THead>
-              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
-                <TH className="px-6 py-3 font-semibold">Tanggal</TH>
-                <TH className="px-6 py-3 font-semibold">Unit</TH>
-                <TH className="px-6 py-3 font-semibold">Progress (%)</TH>
-                <TH className="px-6 py-3 font-semibold">Keterangan</TH>
-                <TH className="px-6 py-3 font-semibold">Foto</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {loading ? (
-                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
-              ) : filteredProgress.length === 0 ? (
-                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">Tidak ada laporan ditemukan.</TD></TR>
-              ) : (
-                filteredProgress.map((item) => (
-                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
-                    <TD className="px-6 py-4 text-sm text-text-secondary"><Clock className="w-3 h-3 inline mr-1" />{formatDate(item.report_date)}</TD>
-                    <TD className="px-6 py-4 text-sm font-medium text-text-primary">{item.unit_id}</TD>
-                    <TD className="px-6 py-4">
-                      <div className="w-full bg-white/40 rounded-full h-2 max-w-[100px] inline-block mr-2"><div className="bg-accent-dark h-2 rounded-full" style={{ width: `${item.percentage}%` }}></div></div>
-                      <span className="text-xs font-bold">{item.percentage}%</span>
-                    </TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary max-w-xs truncate">{item.description}</TD>
-                    <TD className="px-6 py-4">
-                      {item.photo_url ? <img src={item.photo_url} alt="Progress" className="w-10 h-10 rounded object-cover" /> : <Camera className="w-4 h-4 text-text-muted" />}
-                    </TD>
-                    <TD className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}><Edit className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(item.id)}><Trash2 className="w-4 h-4" /></Button>
-                      </div>
-                    </TD>
-                  </TR>
-                ))
-              )}
-            </TBody>
-          </Table>
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="min-w-full">
+              <THead>
+                <TR className="bg-white/30 text-text-secondary text-[10px] uppercase tracking-wider">
+                  <TH className="px-3 py-3 font-black">Laporan</TH>
+                  <TH className="px-3 py-3 font-black">Progress</TH>
+                  <TH className="px-3 py-3 font-black hidden sm:table-cell">Foto</TH>
+                  <TH className="px-3 py-3 font-black text-right">Aksi</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {loading ? (
+                  <TR><TD colSpan={6} className="px-3 py-10 text-center text-text-muted">Memuat...</TD></TR>
+                ) : filteredProgress.length === 0 ? (
+                  <TR><TD colSpan={6} className="px-3 py-10 text-center text-text-secondary text-sm">Tidak ada laporan.</TD></TR>
+                ) : (
+                  filteredProgress.map((item) => (
+                    <TR key={item.id} className="hover:bg-white/30 transition-colors">
+                      <TD className="px-3 py-4">
+                        <div className="text-[10px] text-text-secondary whitespace-nowrap">{formatDate(item.report_date)}</div>
+                        <div className="text-[11px] font-black text-text-primary">Unit: {item.unit_id}</div>
+                      </TD>
+                      <TD className="px-3 py-4">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-10 bg-white/40 rounded-full h-1"><div className="bg-accent-dark h-1 rounded-full" style={{ width: `${item.percentage}%` }}></div></div>
+                          <span className="text-[10px] font-black">{item.percentage}%</span>
+                        </div>
+                        <div className="sm:hidden mt-1">
+                          {item.photo_url ? <img src={item.photo_url} alt="Progress" className="w-6 h-6 rounded-lg object-cover" /> : <Camera className="w-3 h-3 text-text-muted" />}
+                        </div>
+                      </TD>
+                      <TD className="px-3 py-4 hidden sm:table-cell">
+                        {item.photo_url ? <img src={item.photo_url} alt="Progress" className="w-8 h-8 rounded-lg object-cover" /> : <Camera className="w-3.5 h-3.5 text-text-muted" />}
+                      </TD>
+                      <TD className="px-3 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(item)}><Edit className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleDelete(item.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                        </div>
+                      </TD>
+                    </TR>
+                  ))
+                )}
+              </TBody>
+            </Table>
+        </div>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedProgress ? 'Edit Laporan' : 'Input Laporan'}>

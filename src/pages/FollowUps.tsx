@@ -173,23 +173,23 @@ const FollowUps: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => navigate('/')}
-            className="p-2 h-auto"
+            className="p-1 sm:p-2 h-auto"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Follow Up</h1>
-            <p className="text-text-secondary">Catat riwayat komunikasi dengan calon konsumen</p>
+            <h1 className="text-lg sm:text-2xl font-black text-text-primary tracking-tight">Follow Up</h1>
+            <p className="text-[10px] sm:text-sm text-text-secondary font-medium uppercase tracking-widest">Riwayat Komunikasi</p>
           </div>
         </div>
-        <Button className="w-full sm:w-auto" onClick={handleAdd}>
-          <Plus className="w-4 h-4 mr-2" />
-          Input Follow Up
+        <Button size="sm" className="w-full sm:w-auto rounded-xl text-[10px] sm:text-sm py-3" onClick={handleAdd}>
+          <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+          Input Data
         </Button>
       </div>
 
@@ -223,66 +223,67 @@ const FollowUps: React.FC = () => {
           </Button>
         </div>
 
-        <Table className="min-w-[800px]">
-            <THead>
-              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
-                <TH className="px-6 py-3 font-semibold">Tanggal & Jam</TH>
-                <TH className="px-6 py-3 font-semibold">Calon Konsumen</TH>
-                <TH className="px-6 py-3 font-semibold">Keterangan</TH>
-                <TH className="px-6 py-3 font-semibold">Status</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {loading ? (
-                <TR>
-                  <TD colSpan={5} className="px-6 py-10 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
-                  </TD>
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="min-w-full">
+              <THead>
+                <TR className="bg-white/30 text-text-secondary text-[10px] uppercase tracking-wider">
+                  <TH className="px-3 py-3 font-black hidden sm:table-cell">Waktu</TH>
+                  <TH className="px-3 py-3 font-black">Konsumen & Ket</TH>
+                  <TH className="px-3 py-3 font-black">Status</TH>
+                  <TH className="px-3 py-3 font-black text-right">Aksi</TH>
                 </TR>
-              ) : filteredFollowUps.length === 0 ? (
-                <TR>
-                  <TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">
-                    Tidak ada data follow up.
-                  </TD>
-                </TR>
-              ) : (
-                filteredFollowUps.map((f) => (
-                  <TR key={f.id} className="hover:bg-white/30 transition-colors">
-                    <TD className="px-6 py-4 text-sm text-text-secondary">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3 h-3 text-text-muted" />
-                        {formatDateTime(f.date_time)}
-                      </div>
-                    </TD>
-                    <TD className="px-6 py-4">
-                      <div className="font-medium text-text-primary">{f.lead?.name}</div>
-                      <div className="text-xs text-text-secondary">{f.lead?.phone}</div>
-                    </TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary max-w-xs truncate">{f.description}</TD>
-                    <TD className="px-6 py-4">
-                      <span className={cn(
-                        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
-                        getStatusColor(f.status)
-                      )}>
-                        {f.status}
-                      </span>
-                    </TD>
-                    <TD className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(f)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(f.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+              </THead>
+              <TBody>
+                {loading ? (
+                  <TR>
+                    <TD colSpan={5} className="px-3 py-10 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
                     </TD>
                   </TR>
-                ))
-              )}
-            </TBody>
-          </Table>
+                ) : filteredFollowUps.length === 0 ? (
+                  <TR>
+                    <TD colSpan={5} className="px-3 py-10 text-center text-text-secondary text-sm">
+                      Tidak ada data follow up.
+                    </TD>
+                  </TR>
+                ) : (
+                  filteredFollowUps.map((f) => (
+                    <TR key={f.id} className="hover:bg-white/30 transition-colors">
+                      <TD className="px-3 py-4 text-[10px] text-text-secondary hidden sm:table-cell whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3 h-3 text-text-muted" />
+                          {formatDateTime(f.date_time)}
+                        </div>
+                      </TD>
+                      <TD className="px-3 py-4">
+                        <div className="font-black text-text-primary text-xs whitespace-nowrap">{f.lead?.name}</div>
+                        <div className="text-[10px] text-text-secondary sm:hidden mb-1">{formatDateTime(f.date_time)}</div>
+                        <div className="text-[10px] text-text-secondary italic line-clamp-2 max-w-[150px] sm:max-w-xs">{f.description}</div>
+                      </TD>
+                      <TD className="px-3 py-4">
+                        <span className={cn(
+                          'inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider',
+                          getStatusColor(f.status)
+                        )}>
+                          {f.status}
+                        </span>
+                      </TD>
+                      <TD className="px-3 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(f)}>
+                            <Edit className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleDelete(f.id)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </TD>
+                    </TR>
+                  ))
+                )}
+              </TBody>
+            </Table>
+        </div>
       </Card>
 
       <Modal

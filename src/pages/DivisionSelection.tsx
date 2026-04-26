@@ -71,19 +71,19 @@ const DivisionSelection: React.FC = () => {
       <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-accent-lavender/20 blur-[120px] rounded-full animate-pulse" />
 
       <div className="max-w-5xl w-full relative z-10">
-        <div className="text-center mb-16 space-y-4">
-          <div className="inline-flex items-center justify-center w-auto h-32 mb-10 animate-bounce-subtle">
+        <div className="text-center mb-10 sm:mb-16 space-y-2 sm:space-y-4">
+          <div className="inline-flex items-center justify-center w-auto h-20 sm:h-32 mb-6 sm:mb-10 animate-bounce-subtle">
             <img 
               src="/logo-perusahaan.png" 
               alt="Company Logo" 
-              className="h-full w-auto object-contain mix-blend-multiply scale-[1.3]"
+              className="h-full w-auto object-contain mix-blend-multiply sm:scale-[1.3]"
             />
           </div>
-          <h1 className="text-4xl font-black text-accent-dark tracking-tight">Selamat Datang, {profile?.full_name}</h1>
-          <p className="text-text-secondary text-lg font-bold uppercase tracking-[0.3em] opacity-70">Silakan pilih divisi Anda untuk melanjutkan</p>
+          <h1 className="text-2xl sm:text-4xl font-black text-accent-dark tracking-tight">Selamat Datang, {profile?.full_name}</h1>
+          <p className="text-text-secondary text-[10px] sm:text-lg font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] opacity-70">Pilih Divisi Anda</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
           {divisions
             .filter(div => {
               if (profile?.role === 'admin') return true;
@@ -96,21 +96,21 @@ const DivisionSelection: React.FC = () => {
               onClick={() => setDivision(div.id)}
               className="group text-left focus:outline-none transition-all duration-500 hover:-translate-y-2"
             >
-              <Card className="h-full p-8 bg-white/40 border-white/70 shadow-glass group-hover:bg-white/60 group-hover:shadow-glass-2 transition-all">
+              <Card className="h-full p-4 sm:p-8 bg-white/40 border-white/70 shadow-glass group-hover:bg-white/60 group-hover:shadow-glass-2 transition-all">
                 <div className={cn(
-                  "w-16 h-16 rounded-xl flex items-center justify-center mb-8 text-accent-dark shadow-glass transition-all duration-500 group-hover:scale-110 group-hover:rotate-6",
+                  "w-12 h-12 sm:w-16 h-16 rounded-xl flex items-center justify-center mb-4 sm:mb-8 text-accent-dark shadow-glass transition-all duration-500 group-hover:scale-110 group-hover:rotate-6",
                   div.id === 'marketing' ? 'bg-accent-mint/50' :
                   div.id === 'teknik' ? 'bg-accent-lavender/50' :
                   'bg-accent-peach/50'
                 )}>
-                  <div.icon className="w-8 h-8" />
+                  <div.icon className="w-6 h-6 sm:w-8 h-8" />
                 </div>
-                <h3 className="text-2xl font-black text-accent-dark mb-3 tracking-tight">{div.name}</h3>
-                <p className="text-text-secondary text-sm font-medium leading-relaxed mb-8">{div.description}</p>
+                <h3 className="text-lg sm:text-2xl font-black text-accent-dark mb-1 sm:mb-3 tracking-tight">{div.name}</h3>
+                <p className="hidden sm:block text-text-secondary text-sm font-medium leading-relaxed mb-8">{div.description}</p>
                 
-                <div className="mt-auto flex items-center text-accent-dark text-xs font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-[-10px] group-hover:translate-x-0">
-                  Pilih Divisi
-                  <ChevronRight className="w-4 h-4 ml-2" />
+                <div className="mt-2 sm:mt-auto flex items-center text-accent-dark text-[10px] sm:text-xs font-black uppercase tracking-widest opacity-60 sm:opacity-0 group-hover:opacity-100 transition-all duration-500 sm:translate-x-[-10px] group-hover:translate-x-0">
+                  <span className="hidden sm:inline">Pilih Divisi</span>
+                  <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
                 </div>
               </Card>
             </button>

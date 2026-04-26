@@ -470,49 +470,48 @@ const Dashboard: React.FC = () => {
 
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+    <div className="space-y-6 sm:space-y-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
         <div>
-          <h1 className="text-3xl font-black text-text-primary tracking-tight">Ringkasan Bisnis</h1>
-          <p className="text-text-secondary font-medium">Informasi terkini performa perusahaan Anda.</p>
+          <h1 className="text-xl sm:text-3xl font-black text-text-primary tracking-tight">Ringkasan Bisnis</h1>
+          <p className="text-xs sm:text-base text-text-secondary font-medium">Performa perusahaan Anda.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button 
             variant="outline" 
-            size="md" 
+            size="sm" 
             onClick={() => {
               setDivision(null);
             }}
-            className="rounded-xl border-white/40/60"
+            className="rounded-xl border-white/40/60 text-[10px] sm:text-sm px-2 sm:px-4"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
             Ganti Divisi
           </Button>
-          <Button variant="primary" size="md" className="rounded-xl">
-            Laporan Detail
-            <ChevronRight className="w-4 h-4 ml-2" />
+          <Button variant="primary" size="sm" className="rounded-xl text-[10px] sm:text-sm px-2 sm:px-4">
+            Laporan
+            <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-8">
         {statCards.map((card, idx) => (
-          <Card key={idx} className="group p-1 transition-all duration-500 hover:-translate-y-1">
-            <div className="p-4 sm:p-8 cursor-pointer" onClick={() => card.path && navigate(card.path)}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div className={cn('p-4 rounded-pill glass-convex transition-transform group-hover:scale-110 duration-300')}>
-                  <card.icon className={cn('w-7 h-7', card.color)} />
+          <Card key={idx} className="group p-0.5 transition-all duration-500 hover:-translate-y-1">
+            <div className="p-3 sm:p-8 cursor-pointer" onClick={() => card.path && navigate(card.path)}>
+              <div className="flex items-center justify-between gap-2 mb-3 sm:mb-6">
+                <div className={cn('p-2 sm:p-4 rounded-pill glass-convex transition-transform group-hover:scale-110 duration-300')}>
+                  <card.icon className={cn('w-4 h-4 sm:w-7 sm:h-7', card.color)} />
                 </div>
                 <div className={cn(
-                  'flex items-center text-[10px] font-black px-3 py-1.5 rounded-pill uppercase tracking-widest glass-input border-none',
+                  'flex items-center text-[8px] sm:text-[10px] font-black px-2 py-1 rounded-pill uppercase tracking-widest glass-input border-none',
                   card.isUp ? 'text-emerald-600' : 'text-rose-600'
                 )}>
-                  {card.isUp ? <ArrowUpRight className="w-3.5 h-3.5 mr-1" /> : <ArrowDownRight className="w-3.5 h-3.5 mr-1" />}
                   {card.trend}
                 </div>
               </div>
-              <h3 className="text-sm font-bold text-text-secondary uppercase tracking-widest">{card.title}</h3>
-              <p className="text-3xl font-black text-text-primary mt-2 tracking-tight">{card.value}</p>
+              <h3 className="text-[9px] sm:text-sm font-bold text-text-secondary uppercase tracking-widest truncate">{card.title}</h3>
+              <p className="text-lg sm:text-3xl font-black text-text-primary mt-1 sm:mt-2 tracking-tight truncate">{card.value}</p>
             </div>
           </Card>
         ))}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, Home, Tag, CheckCircle2, Clock, ArrowLeft, Printer, FileDown, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Home, Tag, CheckCircle2, Clock, ArrowLeft, Printer, FileDown, Trash2, Edit } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Unit } from '../types';
@@ -177,48 +177,47 @@ const Units: React.FC = () => {
   return (
     <div id="units-report" className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
-            <ArrowLeft className="w-5 h-5" />
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-1 sm:p-2 h-auto">
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Unit Properti</h1>
-            {error && <p className="text-red-500 text-xs font-mono">Error: {error}</p>}
-            <p className="text-text-secondary">Manajemen stok unit dan sinkronisasi Price List</p>
+            <h1 className="text-lg sm:text-2xl font-black text-text-primary tracking-tight">Unit Properti</h1>
+            <p className="text-[10px] sm:text-sm text-text-secondary font-medium uppercase tracking-widest">Stok & Status</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrint} className="flex items-center gap-2">
-            <Printer className="w-4 h-4" />
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+          <Button variant="outline" size="sm" onClick={handlePrint} className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-sm h-9 px-2 sm:px-3">
+            <Printer className="w-3.5 h-3.5 sm:w-4 h-4" />
             <span>Cetak</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPDF} isLoading={isExporting} className="flex items-center gap-2">
-            <FileDown className="w-4 h-4" />
+          <Button variant="outline" size="sm" onClick={handleExportPDF} isLoading={isExporting} className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-sm h-9 px-2 sm:px-3">
+            <FileDown className="w-3.5 h-3.5 sm:w-4 h-4" />
             <span>PDF</span>
           </Button>
-          <Button className="w-full sm:w-auto" onClick={handleAdd}>
-            <Plus className="w-4 h-4 mr-2" />
-            Tambah Unit
+          <Button size="sm" className="w-full sm:w-auto rounded-xl text-[10px] sm:text-sm py-3 h-9" onClick={handleAdd}>
+            <Plus className="w-3.5 h-3.5 sm:w-4 h-4 mr-1 sm:mr-2" />
+            Tambah Data
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-accent-lavender/20 rounded-xl"><Home className="w-5 h-5 text-accent-dark" /></div>
-          <div><p className="text-xs text-text-secondary font-medium">Total Unit</p><p className="text-lg font-bold text-text-primary">{units.length}</p></div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+        <Card className="p-3 sm:p-4 flex items-center gap-2 sm:gap-4">
+          <div className="p-1.5 sm:p-2 bg-accent-lavender/20 rounded-lg sm:rounded-xl"><Home className="w-4 h-4 sm:w-5 sm:h-5 text-accent-dark" /></div>
+          <div><p className="text-[9px] sm:text-xs text-text-secondary font-black uppercase tracking-widest">Total</p><p className="text-sm sm:text-lg font-black text-text-primary">{units.length}</p></div>
         </Card>
-        <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-emerald-50 rounded-xl"><CheckCircle2 className="w-5 h-5 text-emerald-600" /></div>
-          <div><p className="text-xs text-text-secondary font-medium">Tersedia</p><p className="text-lg font-bold text-text-primary">{units.filter(u => u.status === 'available').length}</p></div>
+        <Card className="p-3 sm:p-4 flex items-center gap-2 sm:gap-4">
+          <div className="p-1.5 sm:p-2 bg-emerald-50 rounded-lg sm:rounded-xl"><CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" /></div>
+          <div><p className="text-[9px] sm:text-xs text-text-secondary font-black uppercase tracking-widest">Ready</p><p className="text-sm sm:text-lg font-black text-text-primary">{units.filter(u => u.status === 'available').length}</p></div>
         </Card>
-        <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-amber-50 rounded-xl"><Clock className="w-5 h-5 text-amber-600" /></div>
-          <div><p className="text-xs text-text-secondary font-medium">Booked</p><p className="text-lg font-bold text-text-primary">{units.filter(u => u.status === 'booked').length}</p></div>
+        <Card className="p-3 sm:p-4 flex items-center gap-2 sm:gap-4">
+          <div className="p-1.5 sm:p-2 bg-amber-50 rounded-lg sm:rounded-xl"><Clock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" /></div>
+          <div><p className="text-[9px] sm:text-xs text-text-secondary font-black uppercase tracking-widest">Booked</p><p className="text-sm sm:text-lg font-black text-text-primary">{units.filter(u => u.status === 'booked').length}</p></div>
         </Card>
-        <Card className="p-4 flex items-center gap-4">
-          <div className="p-2 bg-white/30 rounded-xl"><Tag className="w-5 h-5 text-text-secondary" /></div>
-          <div><p className="text-xs text-text-secondary font-medium">Terjual</p><p className="text-lg font-bold text-text-primary">{units.filter(u => u.status === 'sold').length}</p></div>
+        <Card className="p-3 sm:p-4 flex items-center gap-2 sm:gap-4">
+          <div className="p-1.5 sm:p-2 bg-white/30 rounded-lg sm:rounded-xl"><Tag className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" /></div>
+          <div><p className="text-[9px] sm:text-xs text-text-secondary font-black uppercase tracking-widest">Sold</p><p className="text-sm sm:text-lg font-black text-text-primary">{units.filter(u => u.status === 'sold').length}</p></div>
         </Card>
       </div>
 
@@ -231,61 +230,59 @@ const Units: React.FC = () => {
           <Button variant="outline"><Filter className="w-4 h-4 mr-2" />Filter</Button>
         </div>
 
-        <Table>
-            <THead>
-              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
-                <TH className="px-6 py-3 font-semibold">No. Unit</TH>
-                <TH className="px-6 py-3 font-semibold">Proyek</TH>
-                <TH className="px-6 py-3 font-semibold">Tipe / Kategori</TH>
-                <TH className="px-6 py-3 font-semibold">LT / LB</TH>
-                <TH className="px-6 py-3 font-semibold">Harga</TH>
-                <TH className="px-6 py-3 font-semibold">Status</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {loading ? (
-                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-muted animate-pulse">Memuat data unit...</TD></TR>
-              ) : filteredUnits.length === 0 ? (
-                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">Belum ada unit properti.</TD></TR>
-              ) : (
-                filteredUnits.map((unit) => (
-                  <TR key={unit.id} className="hover:bg-white/30 transition-colors">
-                    <TD className="px-6 py-4">
-                      <div className="font-bold text-text-primary">{unit.unit_number}</div>
-                      {unit.cluster && <div className="text-[10px] text-accent-dark font-bold uppercase">{unit.cluster}</div>}
-                    </TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary">{getProjectName(unit.project_id)}</TD>
-                    <TD className="px-6 py-4">
-                      <div className="text-sm font-medium text-text-primary">{unit.type}</div>
-                      {unit.category && <div className="text-[10px] text-text-muted uppercase">{unit.category}</div>}
-                    </TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary">
-                      {unit.luas_tanah ? `${unit.luas_tanah} / ${unit.luas_bangunan}` : '-'}
-                    </TD>
-                    <TD className="px-6 py-4 text-sm font-black text-text-primary">{formatCurrency(unit.price)}</TD>
-                    <TD className="px-6 py-4">
-                      <span className={cn(
-                        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                        unit.status === 'available' ? 'bg-emerald-50 text-emerald-700' :
-                        unit.status === 'booked' ? 'bg-amber-50 text-amber-700' : 'bg-white/40 text-text-primary'
-                      )}>
-                        {unit.status === 'available' ? 'Tersedia' : unit.status === 'booked' ? 'Booked' : 'Terjual'}
-                      </span>
-                    </TD>
-                    <TD className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(unit)}>Edit</Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(unit)} className="text-rose-500 hover:bg-rose-50">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TD>
-                  </TR>
-                ))
-              )}
-            </TBody>
-          </Table>
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="min-w-full">
+              <THead>
+                <TR className="bg-white/30 text-text-secondary text-[10px] uppercase tracking-wider">
+                  <TH className="px-3 py-3 font-black">Unit</TH>
+                  <TH className="px-3 py-3 font-black">Tipe</TH>
+                  <TH className="px-3 py-3 font-black hidden sm:table-cell">LT/LB</TH>
+                  <TH className="px-3 py-3 font-black">Status</TH>
+                  <TH className="px-3 py-3 font-black text-right">Aksi</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {loading ? (
+                  <TR><TD colSpan={7} className="px-3 py-10 text-center text-text-muted animate-pulse">Memuat...</TD></TR>
+                ) : filteredUnits.length === 0 ? (
+                  <TR><TD colSpan={7} className="px-3 py-10 text-center text-text-secondary text-sm">Tidak ada data.</TD></TR>
+                ) : (
+                  filteredUnits.map((unit) => (
+                    <TR key={unit.id} className="hover:bg-white/30 transition-colors">
+                      <TD className="px-3 py-4">
+                        <div className="font-black text-text-primary text-[11px] whitespace-nowrap">{unit.unit_number}</div>
+                        {unit.cluster && <div className="text-[9px] text-accent-dark font-black uppercase whitespace-nowrap">{unit.cluster}</div>}
+                      </TD>
+                      <TD className="px-3 py-4">
+                        <div className="text-[11px] font-black text-text-primary whitespace-nowrap">{unit.type}</div>
+                        <div className="md:hidden text-[9px] text-text-muted uppercase whitespace-nowrap truncate max-w-[80px]">{getProjectName(unit.project_id)}</div>
+                      </TD>
+                      <TD className="px-3 py-4 text-[10px] text-text-secondary hidden sm:table-cell whitespace-nowrap">
+                        {unit.luas_tanah ? `${unit.luas_tanah} / ${unit.luas_bangunan}` : '-'}
+                      </TD>
+                      <TD className="px-3 py-4">
+                        <span className={cn(
+                          'inline-flex items-center px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest',
+                          unit.status === 'available' ? 'bg-emerald-50 text-emerald-700' :
+                          unit.status === 'booked' ? 'bg-amber-50 text-amber-700' : 'bg-white/40 text-text-primary'
+                        )}>
+                          {unit.status === 'available' ? 'Ready' : unit.status === 'booked' ? 'Booked' : 'Sold'}
+                        </span>
+                      </TD>
+                      <TD className="px-3 py-4 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(unit)}><Edit className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-rose-500" onClick={() => handleDelete(unit)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </TD>
+                    </TR>
+                  ))
+                )}
+              </TBody>
+            </Table>
+        </div>
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedUnit ? 'Edit Unit' : 'Tambah Unit'} size="lg">

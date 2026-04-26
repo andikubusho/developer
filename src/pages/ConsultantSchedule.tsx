@@ -291,99 +291,101 @@ const ConsultantSchedulePage: React.FC = () => {
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => navigate('/')}
-            className="p-2 h-auto"
+            className="p-1 sm:p-2 h-auto"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Jadwal Konsultan Property</h1>
-            <p className="text-text-secondary">Atur jadwal piket dan kunjungan konsultan property</p>
+            <h1 className="text-lg sm:text-2xl font-black text-text-primary tracking-tight">Jadwal Konsultan</h1>
+            <p className="text-[10px] sm:text-sm text-text-secondary font-medium uppercase tracking-widest">Manajemen Piket</p>
           </div>
         </div>
 
-        <div className="flex gap-2 print:hidden">
+        <div className="flex items-center gap-1.5 print:hidden">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handlePrint}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-sm h-9 px-2 sm:px-3"
           >
-            <Printer className="w-4 h-4" />
-            <span className="hidden sm:inline">Cetak Layar</span>
+            <Printer className="w-3.5 h-3.5 sm:w-4 h-4" />
+            <span>Cetak</span>
           </Button>
           <Button 
             variant="primary" 
             size="sm" 
             onClick={handleExportPDF}
             isLoading={isExporting}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-sm h-9 px-2 sm:px-3"
           >
-            <FileDown className="w-4 h-4" />
-            <span className="hidden sm:inline">Export ke PDF</span>
+            <FileDown className="w-3.5 h-3.5 sm:w-4 h-4" />
+            <span>Export</span>
           </Button>
         </div>
       </div>
 
       <Card id="calendar-content" className="p-6 border-none shadow-none sm:border sm:shadow-premium print:p-0 print:border-none print:shadow-none">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 print:mb-4">
-          <h2 className="text-xl font-bold text-text-primary">
+        <div className="flex items-center justify-between gap-4 mb-4 sm:mb-8 print:mb-4 px-2 sm:px-0">
+          <h2 className="text-base sm:text-xl font-black text-text-primary uppercase tracking-wider">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
-          <div className="flex gap-2 print:hidden">
-            <Button variant="outline" size="sm" onClick={prevMonth}>
+          <div className="flex gap-1 sm:gap-2 print:hidden">
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={prevMonth}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={nextMonth}>
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={nextMonth}>
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-px bg-white/50 border border-white/40 rounded-xl overflow-hidden">
-          {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map(day => (
-            <div key={day} className="bg-white/30 p-3 text-center text-xs font-bold text-text-secondary uppercase tracking-wider">
-              {day}
-            </div>
-          ))}
-          {blanks.map(i => (
-            <div key={`blank-${i}`} className="bg-white p-4 min-h-[120px] print-compact-row"></div>
-          ))}
-          {days.map(day => {
-            const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0];
-            const daySchedules = schedules.filter(s => s.date.startsWith(dateStr));
-            
-            return (
-              <div 
-                key={day} 
-                className="bg-white p-2 min-h-[120px] border-t border-white/40 cursor-pointer hover:bg-white/30 transition-colors print-compact-row"
-                onClick={() => openAddModal(dateStr)}
-              >
-                <span className="text-sm font-medium text-text-muted">{day}</span>
-                <div className="mt-2 space-y-1 min-h-[90px] print:min-h-0">
-                  {daySchedules.map(s => (
-                    <div 
-                      key={s.id} 
-                      className={cn(
-                        "text-[10px] px-2 py-1 rounded border truncate font-medium flex justify-between items-center group cursor-pointer hover:brightness-95 print:py-0.5 print:text-[9px]",
-                        getStaffColor(s.consultant?.name || '')
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEditModal(s);
-                      }}
-                    >
-                      <span className="truncate">{s.consultant?.name} - {s.position}</span>
-                    </div>
-                  ))}
-                </div>
+        <div className="overflow-x-auto scrollbar-hide -mx-2 sm:mx-0">
+          <div className="grid grid-cols-7 gap-px bg-white/50 border border-white/40 rounded-xl overflow-hidden min-w-[350px]">
+            {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map(day => (
+              <div key={day} className="bg-white/30 p-2 sm:p-3 text-center text-[9px] sm:text-xs font-black text-text-secondary uppercase tracking-widest">
+                {day}
               </div>
-            );
-          })}
+            ))}
+            {blanks.map(i => (
+              <div key={`blank-${i}`} className="bg-white p-2 sm:p-4 min-h-[60px] sm:min-h-[120px] print-compact-row"></div>
+            ))}
+            {days.map(day => {
+              const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0];
+              const daySchedules = schedules.filter(s => s.date.startsWith(dateStr));
+              
+              return (
+                <div 
+                  key={day} 
+                  className="bg-white p-1 sm:p-2 min-h-[60px] sm:min-h-[120px] border-t border-white/40 cursor-pointer hover:bg-white/30 transition-colors print-compact-row"
+                  onClick={() => openAddModal(dateStr)}
+                >
+                  <span className="text-[10px] sm:text-sm font-black text-text-muted">{day}</span>
+                  <div className="mt-1 sm:mt-2 space-y-0.5 sm:space-y-1 min-h-[40px] sm:min-h-[90px] print:min-h-0">
+                    {daySchedules.map(s => (
+                      <div 
+                        key={s.id} 
+                        className={cn(
+                          "text-[8px] sm:text-[10px] px-1 sm:px-2 py-0.5 sm:py-1 rounded border truncate font-black flex justify-between items-center group cursor-pointer hover:brightness-95 print:py-0.5 print:text-[9px]",
+                          getStaffColor(s.consultant?.name || '')
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(s);
+                        }}
+                      >
+                        <span className="truncate">{s.consultant?.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </Card>
 

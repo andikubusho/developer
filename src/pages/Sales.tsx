@@ -227,52 +227,59 @@ const Sales: React.FC = () => {
       </div>
 
       <Card className="p-0 border-none shadow-premium rounded-[2.5rem] overflow-hidden bg-white">
-        <Table>
-            <THead>
-              <TR className="bg-white/20 text-[10px] text-text-muted uppercase tracking-[0.2em] font-black">
-                <TH className="px-8 py-6">Konsumen & Unit</TH>
-                <TH className="px-6 py-6 text-center">Status</TH>
-                <TH className="px-6 py-6 text-right">Potongan Titipan</TH>
-                <TH className="px-6 py-6 text-right">Total Akhir</TH>
-                <TH className="px-8 py-6 text-right">Aksi</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {loading ? (
-                <TR><TD colSpan={5} className="px-8 py-10 text-center text-text-muted font-bold uppercase tracking-widest">Sinkronisasi...</TD></TR>
-              ) : sales.map((sale) => (
-                <TR key={sale.id} className="hover:bg-white/20 transition-all group">
-                  <TD className="px-8 py-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-accent-lavender/20 flex items-center justify-center text-accent-dark font-black text-xs">{sale.customer?.full_name?.substring(0, 2).toUpperCase()}</div>
-                      <div><div className="font-black text-text-primary text-sm">{sale.customer?.full_name}</div><div className="text-[10px] font-bold text-accent-dark uppercase tracking-wider">{sale.unit?.unit_number} • {sale.unit?.project?.name}</div></div>
-                    </div>
-                  </TD>
-                  <TD className="px-6 py-6 text-center">
-                    <span className={cn("inline-flex items-center px-2 py-0.5 rounded-xl text-[9px] font-black uppercase tracking-wider", sale.status === 'active' ? "bg-amber-50 text-amber-600 border border-amber-100" : sale.status === 'completed' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-white/40 text-text-muted border border-white/40")}>{sale.status}</span>
-                  </TD>
-                  <TD className="px-6 py-6 text-right">
-                    {sale.deposit_amount ? (
-                      <div className="flex items-center justify-end gap-1 text-blue-600 font-bold text-sm">
-                        <Wallet className="w-3 h-3" /> {formatCurrency(sale.deposit_amount)}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-text-muted">-</span>
-                    )}
-                  </TD>
-                  <TD className="px-6 py-6 text-right"><div className="font-black text-text-primary text-sm">{formatCurrency(sale.final_price)}</div></TD>
-                  <TD className="px-8 py-6 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:text-accent-dark" title="Lihat Detail"><Eye className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => handlePrintClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:text-accent-dark" title="Cetak Dokumen Word"><Download className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(sale)} className="h-10 w-10 p-0 rounded-xl hover:text-emerald-600" title="Edit Transaksi"><Edit className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteSale(sale.id, sale.unit_id)} className="h-10 w-10 p-0 rounded-xl hover:text-red-600" title="Hapus Transaksi"><Trash2 className="w-4 h-4" /></Button>
-                    </div>
-                  </TD>
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="min-w-full">
+              <THead>
+                <TR className="bg-white/20 text-[9px] text-text-muted uppercase tracking-wider font-black">
+                  <TH className="px-3 py-4">Konsumen & Unit</TH>
+                  <TH className="px-3 py-4 text-center">Status</TH>
+                  <TH className="px-3 py-4 text-right hidden sm:table-cell">Titipan</TH>
+                  <TH className="px-3 py-4 text-right">Total Akhir</TH>
+                  <TH className="px-3 py-4 text-right">Aksi</TH>
                 </TR>
-              ))}
-            </TBody>
-          </Table>
+              </THead>
+              <TBody>
+                {loading ? (
+                  <TR><TD colSpan={5} className="px-3 py-10 text-center text-text-muted font-bold uppercase tracking-widest text-[10px]">Sinkronisasi...</TD></TR>
+                ) : sales.map((sale) => (
+                  <TR key={sale.id} className="hover:bg-white/20 transition-all group">
+                    <TD className="px-3 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-accent-lavender/20 flex items-center justify-center text-accent-dark font-black text-[10px] shrink-0">{sale.customer?.full_name?.substring(0, 2).toUpperCase()}</div>
+                        <div className="min-w-0">
+                          <div className="font-black text-text-primary text-[11px] truncate">{sale.customer?.full_name}</div>
+                          <div className="text-[9px] font-bold text-accent-dark uppercase tracking-wider truncate">{sale.unit?.unit_number} • {sale.unit?.project?.name}</div>
+                        </div>
+                      </div>
+                    </TD>
+                    <TD className="px-3 py-4 text-center">
+                      <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider", sale.status === 'active' ? "bg-amber-50 text-amber-600 border border-amber-100" : sale.status === 'completed' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-white/40 text-text-muted border border-white/40")}>{sale.status}</span>
+                    </TD>
+                    <TD className="px-3 py-4 text-right hidden sm:table-cell">
+                      {sale.deposit_amount ? (
+                        <div className="text-blue-600 font-bold text-[10px]">
+                          {formatCurrency(sale.deposit_amount)}
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-text-muted">-</span>
+                      )}
+                    </TD>
+                    <TD className="px-3 py-4 text-right">
+                      <div className="font-black text-text-primary text-[11px]">{formatCurrency(sale.final_price)}</div>
+                      {sale.deposit_amount ? <div className="text-[8px] text-blue-600 font-bold sm:hidden">-{formatCurrency(sale.deposit_amount)}</div> : null}
+                    </TD>
+                    <TD className="px-3 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleViewClick(sale)} className="h-7 w-7 p-0 rounded-lg hover:text-accent-dark"><Eye className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleEditClick(sale)} className="h-7 w-7 p-0 rounded-lg hover:text-emerald-600"><Edit className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteSale(sale.id, sale.unit_id)} className="h-7 w-7 p-0 rounded-lg hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </div>
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+        </div>
       </Card>
 
       <Pagination currentPage={currentPage} totalCount={totalCount} pageSize={pageSize} onPageChange={setCurrentPage} />

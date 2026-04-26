@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
-import { Plus, Search, Filter, UserPlus, Mail, Phone, MapPin, ArrowLeft, Trash2, Undo2 } from 'lucide-react';
+import { Plus, Search, Filter, UserPlus, Mail, Phone, MapPin, ArrowLeft, Trash2, Undo2, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Customer } from '../types';
 import { Button } from '../components/ui/Button';
@@ -224,89 +224,51 @@ const Customers: React.FC = () => {
           </Button>
         </div>
 
-        <Table className="min-w-[800px]">
-            <THead>
-              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
-                <TH className="px-6 py-3 font-semibold">Nama Lengkap</TH>
-                <TH className="px-6 py-3 font-semibold">Kontak</TH>
-                <TH className="px-6 py-3 font-semibold">Identitas</TH>
-                <TH className="px-6 py-3 font-semibold">Alamat</TH>
-                <TH className="px-6 py-3 font-semibold">Konsultan Property</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {loading ? (
-                <TR>
-                  <TD colSpan={6} className="px-6 py-10 text-center">
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark"></div>
-                    </div>
-                  </TD>
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table className="min-w-full">
+              <THead>
+                <TR className="bg-white/30 text-text-secondary text-[10px] uppercase tracking-wider">
+                  <TH className="px-3 py-3 font-semibold">Nama Lengkap</TH>
+                  <TH className="px-3 py-3 font-semibold hidden sm:table-cell">Kontak</TH>
+                  <TH className="px-3 py-3 font-semibold hidden md:table-cell">Identitas</TH>
+                  <TH className="px-3 py-3 font-semibold hidden lg:table-cell">Konsultan</TH>
+                  <TH className="px-3 py-3 font-semibold text-right">Aksi</TH>
                 </TR>
-              ) : filteredCustomers.length === 0 ? (
-                <TR>
-                   <TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">
-                    Tidak ada data konsumen.
-                  </TD>
-                </TR>
-              ) : (
-                filteredCustomers.map((customer) => (
-                  <TR key={customer.id} className="hover:bg-white/30 transition-colors">
-                    <TD className="px-6 py-4">
-                      <div className="font-medium text-text-primary">{customer.full_name}</div>
-                    </TD>
-                    <TD className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center text-xs text-text-secondary">
-                          <Mail className="w-3 h-3 mr-1.5 text-text-muted" />
-                          {customer.email}
+              </THead>
+              <TBody>
+                {loading ? (
+                  <TR><TD colSpan={6} className="px-3 py-10 text-center"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-dark mx-auto"></div></TD></TR>
+                ) : filteredCustomers.length === 0 ? (
+                  <TR><TD colSpan={6} className="px-3 py-10 text-center text-text-secondary">Tidak ada data.</TD></TR>
+                ) : (
+                  filteredCustomers.map((customer) => (
+                    <TR key={customer.id} className="hover:bg-white/30 transition-colors">
+                      <TD className="px-3 py-4">
+                        <div className="font-black text-text-primary text-[11px] truncate max-w-[150px]">{customer.full_name}</div>
+                        <div className="sm:hidden text-[10px] text-text-secondary">{customer.phone}</div>
+                        <div className="lg:hidden text-[9px] text-accent-dark font-bold">{(customer as any).consultant?.name || '-'}</div>
+                      </TD>
+                      <TD className="px-3 py-4 hidden sm:table-cell">
+                        <div className="text-[10px] text-text-secondary">{customer.email}</div>
+                        <div className="text-[10px] text-text-secondary font-bold">{customer.phone}</div>
+                      </TD>
+                      <TD className="px-3 py-4 text-[10px] text-text-secondary hidden md:table-cell">{customer.identity_number}</TD>
+                      <TD className="px-3 py-4 text-[10px] font-black text-accent-dark hidden lg:table-cell">
+                        {(customer as any).consultant?.name || '-'}
+                      </TD>
+                      <TD className="px-3 py-4 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-amber-600" onClick={() => handleReverseConvert(customer)}><Undo2 className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(customer)}><Pencil className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleDelete(customer.id, customer.full_name)}><Trash2 className="w-3.5 h-3.5" /></Button>
                         </div>
-                        <div className="flex items-center text-xs text-text-secondary">
-                          <Phone className="w-3 h-3 mr-1.5 text-text-muted" />
-                          {customer.phone}
-                        </div>
-                      </div>
-                    </TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary">
-                      {customer.identity_number}
-                    </TD>
-                    <TD className="px-6 py-4">
-                      <div className="flex items-start text-xs text-text-secondary max-w-[200px]">
-                        <MapPin className="w-3 h-3 mr-1.5 mt-0.5 text-text-muted flex-shrink-0" />
-                        <span className="truncate">{customer.address}</span>
-                      </div>
-                    </TD>
-                    <TD className="px-6 py-4 text-sm font-medium text-accent-dark">
-                      {(customer as any).consultant?.name || <span className="text-text-muted italic">Belum diisi</span>}
-                    </TD>
-                    <TD className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-amber-600 hover:text-amber-700"
-                          onClick={() => handleReverseConvert(customer)}
-                          title="Kembalikan ke Calon Konsumen"
-                        >
-                          <Undo2 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(customer)}>Edit</Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleDelete(customer.id, customer.full_name)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TD>
-                  </TR>
-                ))
-              )}
-            </TBody>
-          </Table>
+                      </TD>
+                    </TR>
+                  ))
+                )}
+              </TBody>
+            </Table>
+        </div>
       </Card>
     </div>
   );
