@@ -78,13 +78,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (savedUserId) {
           const { data: profileData } = await supabase
             .from('profiles')
-            .select('*')
+            .select('*, role_data:roles(*)')
             .eq('id', savedUserId)
             .single();
             
           if (profileData) {
             setProfile(profileData);
             setUser({ id: profileData.id, email: profileData.email } as User);
+            localStorage.setItem('propdev_profile', JSON.stringify(profileData));
           }
         }
       } catch (error) {
@@ -118,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Cari di kolom username ATAU email
       const { data: profilesData, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, role_data:roles(*)')
         .or(`username.eq.${cleanUsername},email.eq.${cleanUsername},email.eq.${cleanUsername}@internal.com`)
         .eq('password', hashedPassword)
         .limit(1);
@@ -149,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, role_data:roles(*)')
         .eq('id', userId)
         .single();
 

@@ -20,7 +20,7 @@ export const roles = pgTable("roles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   authorizedDashboards: json("authorized_dashboards").$type<string[]>().default(["gudang"]).notNull(),
-  permissions: json("permissions").$type<Record<string, { view: boolean, input: boolean, edit: boolean, delete: boolean, export?: boolean, print?: boolean }>>().notNull(),
+  permissions: json("permissions").$type<Record<string, { view: boolean, input: boolean, edit: boolean, delete: boolean, export?: boolean, print?: boolean, viewAll?: boolean }>>().notNull(),
   branchId: integer("branch_id").references(() => branches.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -685,16 +685,16 @@ export const MENU_KEYS = [
   { key: "dashboard", label: "Dashboard", group: "Utama", capabilities: { view: true, create: false, edit: false, delete: false, print: false } },
 
   // MARKETING
-  { key: "leads", label: "Calon Konsumen", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
-  { key: "follow-ups", label: "Follow Up", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
-  { key: "deposits", label: "Titipan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
-  { key: "sales", label: "Penjualan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "leads", label: "Calon Konsumen", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false, viewAll: true } },
+  { key: "follow-ups", label: "Follow Up", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false, viewAll: true } },
+  { key: "deposits", label: "Titipan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true, viewAll: true } },
+  { key: "sales", label: "Penjualan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true, viewAll: true } },
   { key: "promos", label: "Master Promo", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "price-list", label: "Price List", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
   { key: "site-plan", label: "Siteplan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "floor-plan", label: "Denah", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
-  { key: "marketing-schedule", label: "Jadwal Marketing", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
-  { key: "marketing-master", label: "Master Marketing", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "marketing-schedule", label: "Jadwal Konsultan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "marketing-master", label: "Master Konsultan Property", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 
   // TEKNIK
   { key: "projects", label: "Proyek", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },

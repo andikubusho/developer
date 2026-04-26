@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -6,6 +6,9 @@ import { api } from '../../lib/api';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
+import { Select } from '../ui/Select';
+import { useAuth } from '../../contexts/AuthContext';
+import { useCanViewAll } from '../../hooks/usePermissions';
 
 const customerSchema = z.object({
   full_name: z.string().min(3, 'Nama minimal 3 karakter'),
@@ -15,6 +18,7 @@ const customerSchema = z.object({
   identity_number: z.string().min(16, 'NIK minimal 16 digit'),
   job: z.string().optional().nullable(),
   birth_info: z.string().optional().nullable(),
+  consultant_id: z.string().optional().nullable(),
 });
 
 type CustomerFormValues = z.infer<typeof customerSchema>;
@@ -26,20 +30,62 @@ interface CustomerFormProps {
 }
 
 export const CustomerForm: React.FC<CustomerFormProps> = ({ onSuccess, onCancel, initialData }) => {
+  const { profile } = useAuth();
+  const canViewAll = useCanViewAll('leads'); // Using leads permission as proxy for marketing
   const [loading, setLoading] = useState(false);
+  const [consultants, setConsultants] = useState<{ id: string; name: string }[]>([]);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<CustomerFormValues>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
-    defaultValues: initialData,
+    defaultValues: initialData ? {
+      ...initialData,
+      consultant_id: initialData.consultant_id || '',
+    } : undefined,
   });
+
+  useEffect(() => {
+    if (initialData) {
+      reset({
+        ...initialData,
+        consultant_id: initialData.consultant_id || '',
+      });
+    } else {
+      reset({
+        full_name: '',
+        email: '',
+        phone: '',
+        address: '',
+        identity_number: '',
+        job: '',
+        birth_info: '',
+        consultant_id: '',
+      });
+    }
+  }, [initialData, reset]);
+
+  useEffect(() => {
+    const fetchConsultants = async () => {
+      try {
+        const data = await api.get('consultants', 'select=id,name&order=name.asc');
+        setConsultants(data || []);
+      } catch (err) {
+        console.error('Error fetching consultants:', err);
+      }
+    };
+    fetchConsultants();
+  }, []);
 
   const onSubmit = async (values: CustomerFormValues) => {
     setLoading(true);
     try {
+      const payload = {
+        ...values,
+        consultant_id: values.consultant_id || null,
+      };
       if (initialData?.id) {
-        await api.update('customers', initialData.id, values);
+        await api.update('customers', initialData.id, payload);
       } else {
-        await api.insert('customers', values);
+        await api.insert('customers', payload);
       }
       onSuccess();
     } catch (error: any) {
@@ -52,6 +98,13 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ onSuccess, onCancel,
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <Select
+        label="Konsultan Property"
+        options={consultants.map(c => ({ label: c.name, value: c.id }))}
+        {...register('consultant_id')}
+        error={errors.consultant_id?.message}
+        disabled={!canViewAll && !!profile?.consultant_id}
+      />
       <Input 
         label="Nama Lengkap" 
         {...register('full_name')} 

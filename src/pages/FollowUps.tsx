@@ -10,6 +10,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { FollowUp, Lead, LeadStatus } from '../types';
 import { cn, formatDateTime } from '../lib/utils';
 import { api } from '../lib/api';
+import ConsultantDataFilter from '../components/ConsultantDataFilter';
+import { useCanViewAll } from '../hooks/usePermissions';
 
 const FollowUps: React.FC = () => {
   const navigate = useNavigate();
@@ -20,19 +22,49 @@ const FollowUps: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUp | null>(null);
+  const canViewAll = useCanViewAll('follow-ups');
+  const [selectedConsultantId, setSelectedConsultantId] = useState<string | 'all'>(
+    canViewAll ? (localStorage.getItem('filter_consultant_id') || 'all') : (profile?.consultant_id || 'none')
+  );
 
   // Form State
   const [formData, setFormData] = useState({
     lead_id: '',
     description: '',
     status: 'no respon' as LeadStatus,
-    date_time: new Date().toISOString()
+    date_time: new Date().toISOString(),
+    consultant_id: ''
   });
+  const [staff, setStaff] = useState<any[]>([]);
 
   useEffect(() => {
     fetchFollowUps();
-    fetchLeads();
-  }, []);
+    fetchStaff();
+  }, [selectedConsultantId]);
+
+  const fetchStaff = async () => {
+    try {
+      const data = await api.get('consultants', 'select=id,name&order=name.asc');
+      setStaff(data || []);
+    } catch (err) {
+      console.error('Fetch Staff Failed:', err);
+    }
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    
+    if (isModalOpen && formData.consultant_id) {
+      setLeads([]); // Clear while loading
+      api.get('leads', `select=*&consultant_id=eq.${formData.consultant_id}&order=name.asc`, { signal: controller.signal })
+        .then(data => setLeads(data || []))
+        .catch(err => { if (err.name !== 'AbortError') console.error(err); });
+    } else {
+      setLeads([]);
+    }
+
+    return () => controller.abort();
+  }, [formData.consultant_id, isModalOpen]);
 
   useEffect(() => {
     if (selectedFollowUp) {
@@ -40,25 +72,26 @@ const FollowUps: React.FC = () => {
         lead_id: selectedFollowUp.lead_id,
         description: selectedFollowUp.description,
         status: selectedFollowUp.status,
-        date_time: selectedFollowUp.date_time
+        date_time: selectedFollowUp.date_time,
+        consultant_id: selectedFollowUp.lead?.consultant_id || ''
       });
     } else {
       setFormData({
         lead_id: '',
         description: '',
         status: 'no respon',
-        date_time: new Date().toISOString()
+        date_time: new Date().toISOString(),
+        consultant_id: profile?.consultant_id || ''
       });
     }
-  }, [selectedFollowUp, isModalOpen]);
+  }, [selectedFollowUp, isModalOpen, profile]);
 
   const fetchFollowUps = async () => {
     try {
       setLoading(true);
-      const isMarketingOnly = profile?.role === 'marketing';
-      // Use !inner to filter the parent follow_ups based on the joined lead's marketing_id
-      const query = isMarketingOnly 
-        ? `select=*,lead:leads!inner(name,phone,marketing_id)&lead.marketing_id=eq.${profile.id}&order=date_time.desc`
+      const filterParam = selectedConsultantId !== 'all' ? `&lead.consultant_id=eq.${selectedConsultantId}` : '';
+      const query = selectedConsultantId !== 'all'
+        ? `select=*,lead:leads!inner(name,phone,consultant_id)${filterParam}&order=date_time.desc`
         : `select=*,lead:leads(name,phone)&order=date_time.desc`;
       
       const data = await api.get('follow_ups', query);
@@ -72,9 +105,8 @@ const FollowUps: React.FC = () => {
 
   const fetchLeads = async () => {
     try {
-      const isMarketingOnly = profile?.role === 'marketing';
-      const marketingFilter = isMarketingOnly ? `&marketing_id=eq.${profile.id}` : '';
-      const data = await api.get('leads', `select=*&order=name.asc${marketingFilter}`);
+      const filterParam = selectedConsultantId !== 'all' ? `&consultant_id=eq.${selectedConsultantId}` : '';
+      const data = await api.get('leads', `select=*&order=name.asc${filterParam}`);
       setLeads(data || []);
     } catch (error) {
       console.error('Error fetching leads:', error);
@@ -159,6 +191,19 @@ const FollowUps: React.FC = () => {
           <Plus className="w-4 h-4 mr-2" />
           Input Follow Up
         </Button>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <ConsultantDataFilter 
+          value={selectedConsultantId}
+          menuKey="follow-ups"
+          onChange={(id) => {
+            setSelectedConsultantId(id);
+            if (canViewAll) {
+              localStorage.setItem('filter_consultant_id', id);
+            }
+          }}
+        />
       </div>
 
       <Card className="p-0">
@@ -253,14 +298,30 @@ const FollowUps: React.FC = () => {
             className="bg-white/30 cursor-not-allowed"
           />
           <div>
-            <label className="text-sm font-medium text-text-primary mb-1.5 block">Pilih Calon Konsumen</label>
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Konsultan Property <span className="text-red-500">*</span></label>
+            <select 
+              className="w-full h-10 rounded-xl border border-white/60 px-3 py-2 text-sm focus:outline-none bg-white/50"
+              value={formData.consultant_id}
+              onChange={(e) => setFormData({ ...formData, consultant_id: e.target.value, lead_id: '' })}
+              required
+              disabled={!canViewAll && !!profile?.consultant_id}
+            >
+              <option value="">-- Pilih Konsultan --</option>
+              {staff.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Pilih Calon Konsumen <span className="text-red-500">*</span></label>
             <select 
               className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none"
               value={formData.lead_id}
               onChange={(e) => setFormData({ ...formData, lead_id: e.target.value })}
               required
+              disabled={!formData.consultant_id}
             >
-              <option value="">-- Pilih Konsumen --</option>
+              <option value="">{formData.consultant_id ? '-- Pilih Konsumen --' : '-- Pilih konsultan terlebih dahulu --'}</option>
               {leads.map(l => (
                 <option key={l.id} value={l.id}>{l.name} ({l.phone})</option>
               ))}

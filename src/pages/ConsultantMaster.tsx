@@ -7,17 +7,17 @@ import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
-import { MarketingStaff } from '../types';
+import { PropertyConsultant } from '../types';
 import { api } from '../lib/api';
 
-const MarketingMaster: React.FC = () => {
+const ConsultantMaster: React.FC = () => {
   const navigate = useNavigate();
   const { setDivision } = useAuth();
-  const [staff, setStaff] = useState<MarketingStaff[]>([]);
+  const [staff, setStaff] = useState<PropertyConsultant[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedStaff, setSelectedStaff] = useState<MarketingStaff | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<PropertyConsultant | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -32,10 +32,10 @@ const MarketingMaster: React.FC = () => {
   const fetchStaff = async () => {
     try {
       setLoading(true);
-      const data = await api.get('marketing_staff', 'select=*&order=name.asc');
+      const data = await api.get('consultants', 'select=*&order=name.asc');
       setStaff(data || []);
     } catch (error) {
-      console.error('Error fetching marketing staff:', error);
+      console.error('Error fetching consultants:', error);
     } finally {
       setLoading(false);
     }
@@ -51,14 +51,14 @@ const MarketingMaster: React.FC = () => {
         address: formData.address
       };
       if (selectedStaff) {
-        await api.update('marketing_staff', selectedStaff.id, payload);
+        await api.update('consultants', selectedStaff.id, payload);
       } else {
-        await api.insert('marketing_staff', payload);
+        await api.insert('consultants', payload);
       }
       await fetchStaff();
       setIsModalOpen(false);
     } catch (error: any) {
-      console.error('Error saving marketing staff:', error);
+      console.error('Error saving consultant:', error);
       alert(`Gagal menyimpan: ${error.message}`);
     } finally {
       setLoading(false);
@@ -66,20 +66,20 @@ const MarketingMaster: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Hapus data marketing ini?')) return;
+    if (!confirm('Hapus data konsultan property ini?')) return;
     try {
       setLoading(true);
-      await api.delete('marketing_staff', id);
+      await api.delete('consultants', id);
       await fetchStaff();
     } catch (error: any) {
-      console.error('Error deleting marketing staff:', error);
+      console.error('Error deleting consultant:', error);
       alert(`Gagal menghapus: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEdit = (s: MarketingStaff) => {
+  const handleEdit = (s: PropertyConsultant) => {
     setSelectedStaff(s);
     setFormData({
       name: s.name,
@@ -112,12 +112,12 @@ const MarketingMaster: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Master Marketing</h1>
-            <p className="text-text-secondary">Kelola data staf marketing</p>
+            <h1 className="text-2xl font-bold text-text-primary">Master Konsultan Property</h1>
+            <p className="text-text-secondary">Kelola data staf konsultan property</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={handleAdd}>
-          <Plus className="w-4 h-4 mr-2" /> Tambah Marketing
+          <Plus className="w-4 h-4 mr-2" /> Tambah Konsultan
         </Button>
       </div>
 
@@ -147,7 +147,7 @@ const MarketingMaster: React.FC = () => {
               {loading ? (
                 <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
               ) : filteredStaff.length === 0 ? (
-                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">Tidak ada data staf marketing.</TD></TR>
+                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">Tidak ada data konsultan property.</TD></TR>
               ) : (
                 filteredStaff.map((s) => (
                   <TR key={s.id} className="hover:bg-white/30 transition-colors">
@@ -171,7 +171,7 @@ const MarketingMaster: React.FC = () => {
           </Table>
       </Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedStaff ? "Edit Data Marketing" : "Input Data Marketing"}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedStaff ? "Edit Data Konsultan Property" : "Input Data Konsultan Property"}>
         <form className="space-y-4" onSubmit={handleSave}>
           <Input label="Nama" placeholder="Nama lengkap" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
           <Input label="No. Telp" placeholder="0812..." value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
@@ -189,4 +189,4 @@ const MarketingMaster: React.FC = () => {
   );
 };
 
-export default MarketingMaster;
+export default ConsultantMaster;

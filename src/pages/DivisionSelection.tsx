@@ -3,9 +3,21 @@ import { useAuth, Division } from '../contexts/AuthContext';
 import { ShoppingCart, HardHat, Landmark, Building2, ShieldCheck, UserCheck, Calculator, ChevronRight } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { cn } from '../lib/utils';
+import { ALL_DIVISIONS } from '../types';
+
+import { useEffect } from 'react';
 
 const DivisionSelection: React.FC = () => {
   const { setDivision, profile } = useAuth();
+
+  useEffect(() => {
+    if (profile?.role === 'admin') return;
+    
+    const allowed = profile?.role_data?.authorized_divisions || [];
+    if (allowed.length === 1) {
+      setDivision(allowed[0] as Division);
+    }
+  }, [profile, setDivision]);
 
   const divisions: { id: Division; name: string; icon: any; description: string; color: string }[] = [
     {
@@ -72,7 +84,13 @@ const DivisionSelection: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {divisions.map((div) => (
+          {divisions
+            .filter(div => {
+              if (profile?.role === 'admin') return true;
+              const allowed = profile?.role_data?.authorized_divisions || [];
+              return allowed.includes(div.id);
+            })
+            .map((div) => (
             <button
               key={div.id}
               onClick={() => setDivision(div.id)}

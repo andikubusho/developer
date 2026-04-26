@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar, User, Home, MapPin, DollarSign, Tag, Clock, Briefcase } from 'lucide-react';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, cn } from '../../lib/utils';
 
 interface SaleDetailProps {
   sale: any;
@@ -61,8 +61,8 @@ export const SaleDetail: React.FC<SaleDetailProps> = ({ sale }) => {
         <DataField label="Blok / Unit" value={sale.unit?.unit_number} />
       </DetailSection>
 
-      <DetailSection title="Tim Marketing" icon={Briefcase}>
-        <DataField label="Marketing" value={sale.marketing?.name} />
+      <DetailSection title="Tim Konsultan" icon={Briefcase}>
+        <DataField label="Konsultan Property" value={sale.consultant?.name} />
         <DataField label="Supervisor" value={sale.supervisor} />
         <DataField label="Manager" value={sale.manager} />
         <DataField label="Makelar / Freelance" value={sale.makelar || sale.freelance} />
@@ -71,13 +71,75 @@ export const SaleDetail: React.FC<SaleDetailProps> = ({ sale }) => {
       <DetailSection title="Rincian Biaya" icon={DollarSign}>
         <DataField label="Harga Rumah" value={sale.price || sale.unit?.price} isCurrency />
         <DataField label="Potongan (Discount)" value={sale.discount} isCurrency />
-        <DataField label="Promo" value={sale.promo?.name || 'Tidak ada'} />
-        <DataField label="Total Harga" value={sale.total_price} isCurrency />
+        <DataField label="Harga Setelah Diskon" value={sale.total_price} isCurrency />
+        <div className="md:col-span-2 border-t border-white/20 pt-4 mt-2">
+          <div className="flex justify-between items-center bg-emerald-50/30 p-3 rounded-xl border border-emerald-100/50">
+            <div>
+              <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-0.5">Promo Terpilih</p>
+              <p className="font-black text-emerald-900 text-sm">{sale.promo?.name || 'Tidak ada'}</p>
+            </div>
+            {sale.promo?.value && (
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-0.5">Potongan Promo</p>
+                <p className="font-black text-emerald-600 text-sm">-{formatCurrency(sale.promo.value)}</p>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="md:col-span-2 bg-accent-dark/5 p-4 rounded-xl border border-accent-dark/10 mt-2">
+          <DataField label="Total Harga Akhir" value={sale.final_price} isCurrency />
+        </div>
         <DataField label="Booking Fee" value={sale.booking_fee} isCurrency />
         <DataField label="Tgl Booking Fee" value={sale.booking_fee_date} />
         <DataField label="Down Payment (DP)" value={sale.dp_amount} isCurrency />
         <DataField label="Tgl Down Payment" value={sale.dp_date} />
       </DetailSection>
+
+      {/* PAYMENT HISTORY (REAL MONEY IN) */}
+      <div className="glass-card rounded-xl p-6 border border-white/40 shadow-glass space-y-4">
+        <div className="flex items-center gap-3 border-b border-white/20 pb-4">
+          <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+            <DollarSign className="w-5 h-5" />
+          </div>
+          <h3 className="font-black text-text-primary uppercase tracking-widest text-xs">Riwayat Pembayaran (Uang Masuk)</h3>
+        </div>
+        <div className="space-y-3">
+          {sale.payments && sale.payments.length > 0 ? (
+            sale.payments.map((pay: any, idx: number) => (
+              <div key={idx} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-white/30 rounded-2xl border border-white/40 gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs",
+                    pay.payment_method === 'cash' ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"
+                  )}>
+                    {pay.payment_method === 'cash' ? 'CASH' : 'TRF'}
+                  </div>
+                  <div>
+                    <div className="text-sm font-black text-text-primary">{pay.payment_method === 'cash' ? 'Tunai' : 'Transfer Bank'}</div>
+                    <div className="text-[10px] font-bold text-text-muted uppercase tracking-widest flex items-center gap-2">
+                      {pay.payment_date} 
+                      {pay.bank?.bank_name && <span className="text-accent-dark">• {pay.bank.bank_name}</span>}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-black text-text-primary">{formatCurrency(pay.amount)}</div>
+                  <div className={cn(
+                    "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg inline-block mt-1",
+                    pay.status === 'verified' ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
+                  )}>
+                    {pay.status === 'verified' ? 'Terverifikasi' : 'Pending'}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="py-6 text-center text-text-muted text-xs font-bold uppercase tracking-widest bg-white/20 rounded-2xl border border-dashed border-white/60">
+              Belum ada riwayat pembayaran
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* INSTALLMENTS IF ANY */}
       {sale.payment_method === 'installment' && sale.installments && sale.installments.length > 0 && (
@@ -86,7 +148,7 @@ export const SaleDetail: React.FC<SaleDetailProps> = ({ sale }) => {
             <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
               <Clock className="w-5 h-5" />
             </div>
-            <h3 className="font-black text-text-primary uppercase tracking-widest text-xs">Jadwal Cicilan</h3>
+            <h3 className="font-black text-text-primary uppercase tracking-widest text-xs">Jadwal Cicilan (Rencana)</h3>
           </div>
           <div className="space-y-2">
             {sale.installments.map((inst: any, idx: number) => (

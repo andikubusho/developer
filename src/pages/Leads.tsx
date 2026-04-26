@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, UserPlus, Phone, MapPin, ArrowLeft, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, UserPlus, Phone, MapPin, ArrowLeft, MoreVertical, Edit, Trash2, UserCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
+import { CustomerForm } from '../components/forms/CustomerForm';
 import { useAuth } from '../contexts/AuthContext';
 import { Lead, LeadStatus } from '../types';
 import { cn, formatDateTime } from '../lib/utils';
 import { api } from '../lib/api';
+import ConsultantDataFilter from '../components/ConsultantDataFilter';
+import { useCanViewAll } from '../hooks/usePermissions';
 
 const Leads: React.FC = () => {
   const navigate = useNavigate();
@@ -19,7 +22,13 @@ const Leads: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [leadToConvert, setLeadToConvert] = useState<Lead | null>(null);
+  const canViewAll = useCanViewAll('leads');
+  const [selectedConsultantId, setSelectedConsultantId] = useState<string | 'all'>(
+    canViewAll ? (localStorage.getItem('filter_consultant_id') || 'all') : (profile?.consultant_id || 'none')
+  );
 
   // Form State
   const [formData, setFormData] = useState({
@@ -28,42 +37,88 @@ const Leads: React.FC = () => {
     source: '',
     status: 'no respon' as LeadStatus,
     description: '',
-    marketing_id: ''
+    consultant_id: ''
   });
   const [staff, setStaff] = useState<any[]>([]);
 
   useEffect(() => {
     fetchLeads();
     fetchStaff();
-  }, []);
+  }, [selectedConsultantId]);
 
   const fetchStaff = async () => {
     try {
-      const data = await api.get('marketing_staff', 'select=id,name&order=name.asc');
+      const data = await api.get('consultants', 'select=id,name&order=name.asc');
       setStaff(data || []);
     } catch (err) {
       console.error('Fetch Staff Failed:', err);
     }
   };
 
+  const handleEdit = (lead: Lead) => {
+    setSelectedLead(lead);
+    setFormData({
+      name: lead.name,
+      phone: lead.phone,
+      source: lead.source,
+      status: lead.status,
+      description: lead.description,
+      consultant_id: (lead as any).consultant_id || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleConvert = (lead: Lead) => {
+    if (!confirm(`Data Calon Konsumen "${lead.name}" akan dipindah dan dihapus permanen dari daftar ini. Lanjutkan?`)) {
+      return;
+    }
+    setLeadToConvert(lead);
+    setIsConvertModalOpen(true);
+  };
+
+  const handleConvertSuccess = async () => {
+    if (!leadToConvert) return;
+    
+    try {
+      setLoading(true);
+      // Hapus lead hanya SETELAH customer dipastikan tersimpan (onSuccess dipanggil dari CustomerForm)
+      await api.delete('leads', leadToConvert.id);
+      setIsConvertModalOpen(false);
+      setLeadToConvert(null);
+      fetchLeads();
+      alert('Berhasil: Data telah dipindahkan ke daftar Konsumen.');
+    } catch (error: any) {
+      console.error('Error deleting lead after conversion:', error);
+      alert('Customer tersimpan, tapi gagal menghapus data lead lama.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
+    try {
+      setLoading(true);
+      await api.delete('leads', id);
+      await fetchLeads();
+    } catch (error: any) {
+      console.error('Error deleting lead:', error);
+      alert(`Gagal menghapus: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (selectedLead) {
-      setFormData({
-        name: selectedLead.name,
-        phone: selectedLead.phone,
-        source: selectedLead.source,
-        status: selectedLead.status,
-        description: selectedLead.description,
-        marketing_id: (selectedLead as any).marketing_id || ''
-      });
-    } else {
+    if (!isModalOpen) {
+      setSelectedLead(null);
       setFormData({
         name: '',
         phone: '',
         source: '',
         status: 'no respon',
         description: '',
-        marketing_id: profile?.role === 'marketing' ? profile.id : ''
+        consultant_id: profile?.consultant_id || ''
       });
     }
   }, [selectedLead, isModalOpen, profile]);
@@ -71,10 +126,9 @@ const Leads: React.FC = () => {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const isMarketingOnly = profile?.role === 'marketing';
-      const marketingFilter = isMarketingOnly ? `&marketing_id=eq.${profile.id}` : '';
+      const filterParam = selectedConsultantId !== 'all' ? `&consultant_id=eq.${selectedConsultantId}` : '';
       
-      const data = await api.get('leads', `select=*,marketing:marketing_staff(name)&order=created_at.desc&limit=50${marketingFilter}`);
+      const data = await api.get('leads', `select=*,consultant:consultants(name)&order=created_at.desc&limit=50${filterParam}`);
       setLeads(data || []);
       setError(null);
     } catch (err: any) {
@@ -103,20 +157,6 @@ const Leads: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
-    try {
-      setLoading(true);
-      await api.delete('leads', id);
-      await fetchLeads();
-    } catch (error: any) {
-      console.error('Error deleting lead:', error);
-      alert(`Gagal menghapus: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const filteredLeads = leads.filter(l => 
     l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     l.phone.includes(searchTerm)
@@ -124,11 +164,6 @@ const Leads: React.FC = () => {
 
   const handleAdd = () => {
     setSelectedLead(null);
-    setIsModalOpen(true);
-  };
-
-  const handleEdit = (lead: Lead) => {
-    setSelectedLead(lead);
     setIsModalOpen(true);
   };
 
@@ -165,6 +200,19 @@ const Leads: React.FC = () => {
         </Button>
       </div>
 
+      <div className="flex items-center gap-4">
+        <ConsultantDataFilter 
+          value={selectedConsultantId}
+          menuKey="leads"
+          onChange={(id) => {
+            setSelectedConsultantId(id);
+            if (canViewAll) {
+              localStorage.setItem('filter_consultant_id', id);
+            }
+          }}
+        />
+      </div>
+
       <Card className="p-0">
         {error && (
           <div className="m-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl flex items-center gap-2 text-sm">
@@ -196,7 +244,7 @@ const Leads: React.FC = () => {
                 <TH className="px-6 py-3 font-semibold">Nama</TH>
                 <TH className="px-6 py-3 font-semibold">No. Telp</TH>
                 <TH className="px-6 py-3 font-semibold">Asal Data</TH>
-                <TH className="px-6 py-3 font-semibold">Marketing</TH>
+                <TH className="px-6 py-3 font-semibold">Konsultan Property</TH>
                 <TH className="px-6 py-3 font-semibold">Status</TH>
                 <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
               </TR>
@@ -204,13 +252,13 @@ const Leads: React.FC = () => {
             <TBody>
               {loading ? (
                 <TR>
-                  <TD colSpan={6} className="px-6 py-10 text-center">
+                  <TD colSpan={7} className="px-6 py-10 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
                   </TD>
                 </TR>
               ) : filteredLeads.length === 0 ? (
                 <TR>
-                  <TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">
+                  <TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">
                     Tidak ada data calon konsumen.
                   </TD>
                 </TR>
@@ -222,7 +270,7 @@ const Leads: React.FC = () => {
                     <TD className="px-6 py-4 text-sm text-text-secondary">{lead.phone}</TD>
                     <TD className="px-6 py-4 text-sm text-text-secondary">{lead.source}</TD>
                     <TD className="px-6 py-4 text-sm font-medium text-accent-dark">
-                      {(lead as any).marketing?.name || '-'}
+                      {(lead as any).consultant?.name || '-'}
                     </TD>
                     <TD className="px-6 py-4">
                       <span className={cn(
@@ -234,6 +282,15 @@ const Leads: React.FC = () => {
                     </TD>
                     <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" 
+                          onClick={() => handleConvert(lead)}
+                          title="Pindahkan ke Konsumen"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                        </Button>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(lead)}>
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -261,6 +318,21 @@ const Leads: React.FC = () => {
             readOnly 
             className="bg-white/30 cursor-not-allowed"
           />
+          <div>
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Konsultan Property <span className="text-red-500">*</span></label>
+            <select 
+              className="w-full h-10 rounded-xl border border-white/60 px-3 py-2 text-sm focus:outline-none bg-white/50"
+              value={formData.consultant_id}
+              onChange={(e) => setFormData({ ...formData, consultant_id: e.target.value })}
+              required
+              disabled={!canViewAll && !!profile?.consultant_id}
+            >
+              <option value="">-- Pilih Konsultan --</option>
+              {staff.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
           <Input 
             label="Nama" 
             placeholder="Nama lengkap" 
@@ -281,21 +353,6 @@ const Leads: React.FC = () => {
             value={formData.source}
             onChange={(e) => setFormData({ ...formData, source: e.target.value })}
           />
-          {profile?.role !== 'marketing' && (
-            <div>
-              <label className="text-sm font-medium text-text-primary mb-1.5 block">Pilih Marketing</label>
-              <select 
-                className="w-full h-10 rounded-xl border border-white/60 px-3 py-2 text-sm focus:outline-none"
-                value={formData.marketing_id}
-                onChange={(e) => setFormData({ ...formData, marketing_id: e.target.value })}
-              >
-                <option value="">-- Pilih Marketing --</option>
-                {staff.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
           <div>
             <label className="text-sm font-medium text-text-primary mb-1.5 block">Status</label>
             <div className="flex flex-wrap gap-2">
@@ -330,6 +387,23 @@ const Leads: React.FC = () => {
             <Button type="submit">Simpan</Button>
           </div>
         </form>
+      </Modal>
+      <Modal
+        isOpen={isConvertModalOpen}
+        onClose={() => setIsConvertModalOpen(false)}
+        title="Pindahkan ke Data Konsumen"
+      >
+        {leadToConvert && (
+          <CustomerForm 
+            onSuccess={handleConvertSuccess}
+            onCancel={() => setIsConvertModalOpen(false)}
+            initialData={{
+              full_name: leadToConvert.name,
+              phone: leadToConvert.phone,
+              consultant_id: leadToConvert.consultant_id
+            }}
+          />
+        )}
       </Modal>
     </div>
   );

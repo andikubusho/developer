@@ -77,9 +77,6 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
       dp_terbilang: terbilang((sale as any).dp_amount || 0) + " Rupiah",
       dp_date: (sale as any).dp_date ? new Date((sale as any).dp_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-",
       
-      ukl_amount: formatCurrency((sale as any).ukl_amount || 0),
-      ukl_terbilang: terbilang((sale as any).ukl_amount || 0) + " Rupiah",
-      
       pelunasan_amount: formatCurrency(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)),
       pelunasan_terbilang: terbilang(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)) + " Rupiah",
       pelunasan_date: (sale as any).pelunasan_date ? new Date((sale as any).pelunasan_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-",
@@ -87,8 +84,8 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
       kpr_amount: formatCurrency(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)),
       kpr_terbilang: terbilang(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)) + " Rupiah",
       
-      total_keseluruhan: formatCurrency(sale.final_price + ((sale as any).ukl_amount || 0)),
-      total_keseluruhan_terbilang: terbilang(sale.final_price + ((sale as any).ukl_amount || 0)) + " Rupiah",
+      total_keseluruhan: formatCurrency(sale.final_price),
+      total_keseluruhan_terbilang: terbilang(sale.final_price) + " Rupiah",
       
       sisa_pelunasan: formatCurrency(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)),
       
@@ -103,8 +100,8 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
       // Metode Bayar
       metode_bayar: sale.payment_method === 'cash' ? 'CASH KERAS' : sale.payment_method === 'installment' ? 'CASH BERTAHAP' : 'KPR',
       
-      // Marketing & Tanggal
-      nama_marketing: (sale.marketing as any)?.name || (sale.marketing as any)?.full_name || "Internal",
+      // Konsultan Property & Tanggal
+      nama_marketing: (sale.consultant as any)?.name || (sale.consultant as any)?.full_name || "Internal",
       tanggal_hari_ini: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
       tanggal_transaksi: sale.sale_date ? new Date(sale.sale_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-",
       

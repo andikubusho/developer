@@ -3,7 +3,7 @@ import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { api } from '../lib/api';
-import { Profile, UserRole, Capabilities, Role } from '../types';
+import { Profile, UserRole, Capabilities, Role, ALL_DIVISIONS } from '../types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -17,8 +17,15 @@ import { motion, AnimatePresence } from 'motion/react';
 const getDefaultPermissions = (role: UserRole): Record<string, any> => {
   const permissions: Record<string, any> = {};
   MENU_KEYS.forEach(menu => {
-    if (role === 'admin' || role === 'owner') {
-      permissions[menu.key] = { view: true, create: true, edit: true, delete: true, print: true };
+    if (role === 'admin') {
+      permissions[menu.key] = { 
+        view: true, 
+        create: true, 
+        edit: true, 
+        delete: true, 
+        print: true,
+        viewAll: 'viewAll' in menu.capabilities ? (menu.capabilities as any).viewAll : false 
+      };
       return;
     }
 
@@ -38,13 +45,108 @@ const getDefaultPermissions = (role: UserRole): Record<string, any> => {
         create: menu.capabilities.create, 
         edit: menu.capabilities.edit, 
         delete: menu.capabilities.delete, 
-        print: menu.capabilities.print 
+        print: menu.capabilities.print,
+        viewAll: false 
       };
     } else {
-      permissions[menu.key] = { view: false, create: false, edit: false, delete: false, print: false };
+      permissions[menu.key] = { 
+        view: false, 
+        create: false, 
+        edit: false, 
+        delete: false, 
+        print: false,
+        viewAll: false
+      };
     }
   });
   return permissions;
+};
+
+const PermissionToggle: React.FC<{
+  isAvail: boolean;
+  hasAccess: boolean;
+  onToggle: () => void;
+  label: string;
+}> = ({ isAvail, hasAccess, onToggle, label }) => {
+  return (
+    <button
+      type="button"
+      disabled={!isAvail}
+      onClick={onToggle}
+      className={cn(
+        "w-6 h-6 rounded-md transition-all flex items-center justify-center mx-auto border-2 shadow-sm flex-shrink-0",
+        !isAvail 
+          ? "bg-slate-100/50 border-slate-200 cursor-not-allowed opacity-40" 
+          : hasAccess 
+            ? "bg-white border-accent-dark text-accent-dark shadow-convex" 
+            : "bg-white border-slate-200 text-transparent hover:border-accent-dark/30 hover:shadow-sm"
+      )}
+      title={!isAvail ? "Fitur tidak tersedia" : hasAccess ? `Cabut Akses ${label}` : `Beri Akses ${label}`}
+    >
+      {isAvail && <Check className="w-3.5 h-3.5 stroke-[3.5]" />}
+    </button>
+  );
+};
+
+const DataScopeToggle: React.FC<{
+  userId: string;
+  currentPermissions: Record<string, Capabilities> | null;
+  onUpdate: () => void;
+}> = ({ userId, currentPermissions, onUpdate }) => {
+  const [loading, setLoading] = useState(false);
+  const marketingModules = ['leads', 'follow-ups', 'sales', 'deposits'];
+  
+  // Check if ALL relevant modules have viewAll: true
+  const isAll = marketingModules.every(key => !!currentPermissions?.[key]?.viewAll);
+
+  const handleToggle = async (targetValue: boolean) => {
+    if (loading) return;
+    try {
+      setLoading(true);
+      const updatedPerms = { ...(currentPermissions || {}) };
+      
+      marketingModules.forEach(key => {
+        if (updatedPerms[key]) {
+          updatedPerms[key].viewAll = targetValue;
+        } else {
+          // Initialize default if key doesn't exist
+          updatedPerms[key] = { view: false, create: false, edit: false, delete: false, print: false, viewAll: targetValue };
+        }
+      });
+      
+      await api.update('profiles', userId, { permissions: updatedPerms });
+      onUpdate();
+    } catch (error) {
+      alert('Gagal memperbarui jangkauan data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex p-0.5 bg-slate-100 rounded-lg w-fit border border-slate-200">
+      <button
+        onClick={() => handleToggle(false)}
+        disabled={loading}
+        className={cn(
+          "px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md transition-all",
+          !isAll ? "bg-white text-accent-dark shadow-sm" : "text-text-muted hover:text-text-secondary"
+        )}
+      >
+        Sendiri
+      </button>
+      <button
+        onClick={() => handleToggle(true)}
+        disabled={loading}
+        className={cn(
+          "px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md transition-all",
+          isAll ? "bg-accent-dark text-white shadow-sm" : "text-text-muted hover:text-text-secondary"
+        )}
+      >
+        Semua
+      </button>
+    </div>
+  );
 };
 
 const UserManagement: React.FC = () => {
@@ -53,6 +155,7 @@ const UserManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'users' | 'roles'>('users');
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [consultants, setConsultants] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Modals state
@@ -72,18 +175,20 @@ const UserManagement: React.FC = () => {
     username: '',
     password: '',
     role: 'marketing' as UserRole,
-    role_id: '' as string | null,
-    permissions: null as any
+    role_id: '',
+    consultant_id: '' as string | null,
+    permissions: null as Record<string, Capabilities> | null
   });
 
   const [roleForm, setRoleForm] = useState({
     id: '',
     name: '',
     division: 'marketing' as UserRole,
+    authorized_divisions: [] as UserRole[],
     permissions: {} as Record<string, Capabilities>
   });
 
-  const divisionOptions: UserRole[] = ['admin', 'marketing', 'owner', 'supervisor', 'manager', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'];
+  const divisionOptions: UserRole[] = ['admin', 'marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'];
 
   useEffect(() => {
     fetchData();
@@ -92,12 +197,14 @@ const UserManagement: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [profilesData, rolesData] = await Promise.all([
-        api.get('profiles', 'select=*&order=created_at.desc'),
-        api.get('roles', 'order=name.asc')
+      const [profilesData, rolesData, consultantsData] = await Promise.all([
+        api.get('profiles', 'select=*&order=full_name.asc'),
+        api.get('roles', 'select=*&order=name.asc'),
+        api.get('consultants', 'select=id,name&order=name.asc')
       ]);
       setProfiles(profilesData || []);
       setAvailableRoles(rolesData || []);
+      setConsultants(consultantsData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -116,9 +223,16 @@ const UserManagement: React.FC = () => {
   
   const handleAddRole = () => {
     const initialPerms: any = {};
-    MENU_KEYS.forEach(m => initialPerms[m.key] = { view: false, create: false, edit: false, delete: false, print: false });
+    MENU_KEYS.forEach(m => initialPerms[m.key] = { 
+      view: false, 
+      create: false, 
+      edit: false, 
+      delete: false, 
+      print: false,
+      viewAll: false
+    });
     
-    setRoleForm({ id: '', name: '', division: 'marketing', permissions: initialPerms });
+    setRoleForm({ id: '', name: '', division: 'marketing', authorized_divisions: [], permissions: initialPerms });
     setSelectedRole(null);
     setIsRoleModalOpen(true);
   };
@@ -128,6 +242,7 @@ const UserManagement: React.FC = () => {
       id: role.id,
       name: role.name,
       division: role.division,
+      authorized_divisions: role.authorized_divisions || [],
       permissions: role.permissions
     });
     setSelectedRole(role);
@@ -138,18 +253,17 @@ const UserManagement: React.FC = () => {
     e.preventDefault();
     try {
       setLoading(true);
+      const payload = { 
+        name: roleForm.name, 
+        division: roleForm.division, 
+        authorized_divisions: roleForm.authorized_divisions,
+        permissions: roleForm.permissions 
+      };
+
       if (roleForm.id) {
-        await api.update('roles', roleForm.id, { 
-          name: roleForm.name, 
-          division: roleForm.division, 
-          permissions: roleForm.permissions 
-        });
+        await api.update('roles', roleForm.id, payload);
       } else {
-        await api.insert('roles', { 
-          name: roleForm.name, 
-          division: roleForm.division, 
-          permissions: roleForm.permissions 
-        });
+        await api.insert('roles', payload);
       }
       setIsRoleModalOpen(false);
       fetchData();
@@ -187,7 +301,7 @@ const UserManagement: React.FC = () => {
   // --- USER ACTIONS ---
 
   const handleAddUser = () => {
-    setUserForm({ id: '', full_name: '', username: '', password: '', role: 'marketing', role_id: '', permissions: null });
+    setUserForm({ id: '', full_name: '', username: '', password: '', role: 'marketing', role_id: '', consultant_id: null, permissions: null });
     setIsUserModalOpen(true);
   };
 
@@ -199,6 +313,7 @@ const UserManagement: React.FC = () => {
       password: '',
       role: p.role,
       role_id: p.role_id || '',
+      consultant_id: p.consultant_id || null,
       permissions: p.permissions
     });
     setIsEditUserModalOpen(true);
@@ -236,6 +351,7 @@ const UserManagement: React.FC = () => {
         full_name: userForm.full_name,
         role: userForm.role,
         role_id: userForm.role_id || null,
+        consultant_id: userForm.consultant_id || null,
         permissions: userForm.permissions || getDefaultPermissions(userForm.role)
       };
 
@@ -271,7 +387,17 @@ const UserManagement: React.FC = () => {
     if (!selectedProfile) return;
     const newPerms = {
       ...selectedProfile.permissions,
-      [menuKey]: { ...(selectedProfile.permissions?.[menuKey] || { view: false, create: false, edit: false, delete: false, print: false }), [cap]: val }
+      [menuKey]: { 
+        ...(selectedProfile.permissions?.[menuKey] || { 
+          view: false, 
+          create: false, 
+          edit: false, 
+          delete: false, 
+          print: false,
+          viewAll: false 
+        }), 
+        [cap]: val 
+      }
     };
     try {
       await api.update('profiles', selectedProfile.id, { permissions: newPerms });
@@ -369,6 +495,7 @@ const UserManagement: React.FC = () => {
                       <TH className="px-6 py-4 font-black">Username</TH>
                       <TH className="px-6 py-4 font-black">Role Utama</TH>
                       <TH className="px-6 py-4 font-black">Jabatan Detail</TH>
+                      <TH className="px-6 py-4 font-black">Scope Data</TH>
                       <TH className="px-6 py-4 font-black text-right">Aksi</TH>
                     </TR>
                   </THead>
@@ -403,6 +530,17 @@ const UserManagement: React.FC = () => {
                           )}>
                             {availableRoles.find(r => r.id === p.role_id)?.name || '-'}
                           </span>
+                        </TD>
+                        <TD className="px-6 py-4">
+                          {p.role === 'marketing' ? (
+                            <DataScopeToggle 
+                              userId={p.id} 
+                              currentPermissions={p.permissions} 
+                              onUpdate={fetchData} 
+                            />
+                          ) : (
+                            <span className="text-text-muted font-bold">-</span>
+                          )}
                         </TD>
                         <TD className="px-6 py-4 text-right space-x-2">
                           <Button variant="ghost" size="sm" onClick={() => { setSelectedProfile(p); setIsPermissionsModalOpen(true); }} className="h-8 text-primary hover:bg-primary/5">
@@ -499,8 +637,22 @@ const UserManagement: React.FC = () => {
               className="w-full rounded-xl border-white/40 text-sm p-2.5"
             >
               <option value="">- Tanpa Jabatan Khusus -</option>
-              {availableRoles.map(r => <option key={r.id} value={r.id}>{r.name} ({r.division.toUpperCase()})</option>)}
+              {availableRoles
+                .filter(r => r.division === userForm.role)
+                .map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest block mb-1.5">Tautkan ke Konsultan Property (Untuk Isolasi Data)</label>
+            <select 
+              value={userForm.consultant_id || ''} 
+              onChange={e => setUserForm({...userForm, consultant_id: e.target.value || null})}
+              className="w-full rounded-xl border-white/40 text-sm p-2.5 bg-accent-mint/10 border-2"
+            >
+              <option value="">- Belum Ditautkan -</option>
+              {consultants.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <p className="text-[10px] text-text-muted mt-1 italic">*Wajib diisi untuk staf Marketing agar jangkauan data "SENDIRI" berfungsi.</p>
           </div>
           <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
             <label className="text-xs font-black text-amber-600 uppercase tracking-widest block mb-1.5">Password</label>
@@ -524,10 +676,31 @@ const UserManagement: React.FC = () => {
               <Input value={roleForm.name} onChange={e => setRoleForm({...roleForm, name: e.target.value})} required />
             </div>
             <div>
-              <label className="text-xs font-black text-text-muted uppercase tracking-widest block mb-1.5">Divisi Utama</label>
-              <select value={roleForm.division} onChange={e => setRoleForm({...roleForm, division: e.target.value as UserRole})} className="w-full rounded-xl border-white/40 text-sm p-2.5">
-                {divisionOptions.map(d => <option key={d} value={d}>{d.toUpperCase()}</option>)}
-              </select>
+              <label className="text-xs font-black text-text-muted uppercase tracking-widest block mb-1.5">Divisi yang Diizinkan</label>
+              <div className="flex flex-wrap gap-2 p-3 bg-white/30 rounded-xl border border-white/40">
+                {ALL_DIVISIONS.map(d => (
+                  <label key={d} className="flex items-center gap-2 cursor-pointer group">
+                    <input 
+                      type="checkbox"
+                      checked={roleForm.authorized_divisions.includes(d)}
+                      onChange={(e) => {
+                        const next = e.target.checked 
+                          ? [...roleForm.authorized_divisions, d]
+                          : roleForm.authorized_divisions.filter(x => x !== d);
+                        setRoleForm({...roleForm, authorized_divisions: next});
+                      }}
+                      className="w-4 h-4 rounded border-white/40 text-accent-dark focus:ring-accent-dark/20"
+                    />
+                    <span className={cn(
+                      "text-[10px] font-black uppercase tracking-widest transition-colors",
+                      roleForm.authorized_divisions.includes(d) ? "text-accent-dark" : "text-text-muted group-hover:text-text-secondary"
+                    )}>
+                      {d}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-[9px] text-text-muted mt-1 italic font-bold">*Tentukan divisi mana saja yang bisa diakses oleh jabatan ini.</p>
             </div>
           </div>
           
@@ -543,6 +716,7 @@ const UserManagement: React.FC = () => {
                     <TH className="py-3 px-1 text-center w-[60px]">Edit</TH>
                     <TH className="py-3 px-1 text-center w-[60px]">Delete</TH>
                     <TH className="py-3 px-1 text-center w-[60px]">Print</TH>
+                    <TH className="py-3 px-1 text-center w-[60px]">Semua</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -552,22 +726,16 @@ const UserManagement: React.FC = () => {
                         <p className="text-sm font-bold text-text-primary">{menu.label}</p>
                         <p className="text-[10px] text-text-muted uppercase">{menu.group}</p>
                       </TD>
-                      {(['view', 'create', 'edit', 'delete', 'print'] as const).map(cap => {
+                      {(['view', 'create', 'edit', 'delete', 'print', 'viewAll'] as const).map(cap => {
                         const isAvail = (menu.capabilities as any)[cap];
                         return (
                           <TD key={cap} className="py-3 px-1 text-center">
-                            {isAvail ? (
-                              <button
-                                type="button"
-                                onClick={() => updateRolePermission(menu.key, cap, !roleForm.permissions[menu.key]?.[cap])}
-                                className={cn(
-                                  "w-6 h-6 rounded-xl border-2 transition-all flex items-center justify-center mx-auto",
-                                  roleForm.permissions[menu.key]?.[cap] ? "bg-primary border-primary text-white" : "border-white/40 text-transparent"
-                                )}
-                              >
-                                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                              </button>
-                            ) : "-"}
+                            <PermissionToggle
+                              isAvail={isAvail}
+                              hasAccess={!!roleForm.permissions[menu.key]?.[cap]}
+                              onToggle={() => updateRolePermission(menu.key, cap, !roleForm.permissions[menu.key]?.[cap])}
+                              label={`${cap} ${menu.label}`}
+                            />
                           </TD>
                         );
                       })}
@@ -598,6 +766,7 @@ const UserManagement: React.FC = () => {
                 <TH className="py-4 px-1 text-center w-[60px]">Edit</TH>
                 <TH className="py-4 px-1 text-center w-[60px]">Hapus</TH>
                 <TH className="py-4 px-1 text-center w-[60px]">Cetak</TH>
+                <TH className="py-4 px-1 text-center w-[60px]">Semua</TH>
               </TR>
             </THead>
             <TBody>
@@ -607,21 +776,16 @@ const UserManagement: React.FC = () => {
                     <p className="text-sm font-bold text-text-primary">{menu.label}</p>
                     <p className="text-[10px] text-text-muted uppercase tracking-widest">{menu.group}</p>
                   </TD>
-                  {(['view', 'create', 'edit', 'delete', 'print'] as const).map(cap => {
+                  {(['view', 'create', 'edit', 'delete', 'print', 'viewAll'] as const).map(cap => {
                     const isAvail = (menu.capabilities as any)[cap];
                     return (
                       <TD key={cap} className="py-4 px-1 text-center">
-                        {isAvail ? (
-                          <button
-                            onClick={() => handleUpdateUserPermissions(menu.key, cap, !selectedProfile?.permissions?.[menu.key]?.[cap])}
-                            className={cn(
-                              "w-6 h-6 rounded-xl border border-white/40 transition-all flex items-center justify-center mx-auto shadow-inset",
-                              selectedProfile?.permissions?.[menu.key]?.[cap] ? "bg-accent-mint text-accent-dark shadow-glass" : "bg-white/10 text-transparent"
-                            )}
-                          >
-                            <Check className="w-3.5 h-3.5 stroke-[3]" />
-                          </button>
-                        ) : "-"}
+                        <PermissionToggle
+                          isAvail={isAvail}
+                          hasAccess={!!selectedProfile?.permissions?.[menu.key]?.[cap]}
+                          onToggle={() => handleUpdateUserPermissions(menu.key, cap, !selectedProfile?.permissions?.[menu.key]?.[cap])}
+                          label={`${cap} ${menu.label}`}
+                        />
                       </TD>
                     );
                   })}

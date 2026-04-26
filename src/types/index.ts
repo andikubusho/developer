@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'marketing' | 'owner' | 'supervisor' | 'manager' | 'teknik' | 'keuangan' | 'audit' | 'hrd' | 'accounting';
+export type UserRole = 'admin' | 'marketing' | 'teknik' | 'keuangan' | 'audit' | 'hrd' | 'accounting';
 
 export type LeadStatus = 'no respon' | 'low' | 'medium' | 'hot';
 
@@ -8,6 +8,7 @@ export interface Capabilities {
   edit: boolean;
   delete: boolean;
   print: boolean;
+  viewAll?: boolean;
 }
 
 export interface Profile {
@@ -18,16 +19,21 @@ export interface Profile {
   role_id?: string | null;
   email?: string;
   avatar_url?: string;
+  consultant_id?: string | null;
   permissions?: Record<string, Capabilities>;
+  role_data?: Role;
 }
 
 export interface Role {
   id: string;
   name: string;
   division: UserRole;
+  authorized_divisions: UserRole[];
   permissions: Record<string, Capabilities>;
   created_at: string;
 }
+
+export const ALL_DIVISIONS: UserRole[] = ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'];
 
 export interface Project {
   id: string;
@@ -81,6 +87,7 @@ export interface Customer {
   identity_number: string;
   job?: string;
   birth_info?: string;
+  consultant_id?: string;
 }
 
 export interface Lead {
@@ -91,6 +98,7 @@ export interface Lead {
   source: string;
   status: LeadStatus;
   description: string;
+  consultant_id: string;
 }
 
 export interface FollowUp {
@@ -109,8 +117,12 @@ export interface Deposit {
   phone: string;
   amount: number;
   payment_type: 'cash' | 'bank';
+  bank_account_id?: string | null;
+  status?: 'pending' | 'verified' | 'used';
+  sale_id?: string | null;
   submission: string;
   description: string;
+  consultant_id: string;
 }
 
 export interface Promo {
@@ -121,7 +133,7 @@ export interface Promo {
   description: string;
 }
 
-export interface MarketingStaff {
+export interface PropertyConsultant {
   id: string;
   name: string;
   address: string;
@@ -129,12 +141,12 @@ export interface MarketingStaff {
   position?: string;
 }
 
-export interface MarketingSchedule {
+export interface ConsultantSchedule {
   id: string;
-  staff_id: string;
+  consultant_id: string;
   date: string;
   position?: string;
-  staff?: MarketingStaff;
+  consultant?: PropertyConsultant;
 }
 
 export interface MarketingDocument {
@@ -168,7 +180,7 @@ export interface Sale {
   unit_id: string;
   project_id?: string;
   customer_id: string;
-  marketing_id: string;
+  consultant_id: string;
   supervisor?: string;
   manager?: string;
   makelar?: string;
@@ -184,11 +196,12 @@ export interface Sale {
   sale_date: string;
   dp_amount?: number;
   dp_date?: string;
-  ukl_amount?: number;
   pelunasan_date?: string;
+  deposit_id?: string | null;
+  deposit_amount?: number;
   unit?: Unit;
   customer?: Customer;
-  marketing?: Profile;
+  consultant?: Profile;
   promo?: Promo;
 }
 
@@ -201,16 +214,26 @@ export interface Installment {
   paid_at?: string;
 }
 
+export interface BankAccount {
+  id: string;
+  bank_name: string;
+  account_number: string;
+  account_holder: string;
+  created_at: string;
+}
+
 export interface Payment {
   id: string;
   sale_id: string;
   installment_id?: string;
+  bank_account_id?: string;
   amount: number;
   payment_date: string;
   payment_method: string;
   proof_url?: string;
   status: 'pending' | 'verified' | 'rejected';
   sale?: Sale;
+  bank_account?: BankAccount;
 }
 
 export interface RAB {

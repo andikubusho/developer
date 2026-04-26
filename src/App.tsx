@@ -24,8 +24,8 @@ const PriceList = lazy(() => import('./pages/PriceList'));
 const SitePlan = lazy(() => import('./pages/SitePlan'));
 const FloorPlan = lazy(() => import('./pages/FloorPlan'));
 const MasterMaterial = lazy(() => import('./pages/MasterMaterial'));
-const MarketingSchedule = lazy(() => import('./pages/MarketingSchedule'));
-const MarketingMaster = lazy(() => import('./pages/MarketingMaster'));
+const MarketingSchedule = lazy(() => import('./pages/ConsultantSchedule'));
+const MarketingMaster = lazy(() => import('./pages/ConsultantMaster'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const DocumentTemplates = lazy(() => import('./pages/DocumentTemplates'));
 
@@ -43,6 +43,7 @@ const KPRDisbursement = lazy(() => import('./pages/KPRDisbursement'));
 const SupplierPayments = lazy(() => import('./pages/SupplierPayments'));
 const CashFlow = lazy(() => import('./pages/CashFlow'));
 const PettyCash = lazy(() => import('./pages/PettyCash'));
+const BankMaster = lazy(() => import('./pages/BankMaster'));
 
 // Accounting
 const GeneralJournal = lazy(() => import('./pages/GeneralJournal'));
@@ -133,6 +134,7 @@ export default function App() {
               <Route path="supplier-payments" element={<SupplierPayments />} />
               <Route path="cash-flow" element={<CashFlow />} />
               <Route path="petty-cash" element={<PettyCash />} />
+              <Route path="bank-master" element={<BankMaster />} />
               
               {/* Accounting */}
               <Route path="general-journal" element={<GeneralJournal />} />

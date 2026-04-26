@@ -36,8 +36,8 @@ export async function apiRequest(path: string, options: RequestInit = {}) {
 }
 
 export const api = {
-  get: (table: string, query: string = 'select=*') => 
-    apiRequest(`${table}?${query}`, { method: 'GET' }),
+  get: (table: string, query: string = 'select=*', options: RequestInit = {}) => 
+    apiRequest(`${table}?${query}`, { method: 'GET', ...options }),
     
   insert: (table: string, data: any) => 
     apiRequest(table, { method: 'POST', body: JSON.stringify(data) }),

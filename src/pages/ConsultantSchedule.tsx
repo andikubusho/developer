@@ -8,20 +8,20 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
-import { MarketingSchedule, MarketingStaff } from '../types';
+import { ConsultantSchedule, PropertyConsultant } from '../types';
 import { cn } from '../lib/utils';
 import { getMockData, saveMockData } from '../lib/storage';
 
-const MarketingSchedulePage: React.FC = () => {
+const ConsultantSchedulePage: React.FC = () => {
   const navigate = useNavigate();
   const { isMockMode, division, setDivision } = useAuth();
-  const [schedules, setSchedules] = useState<MarketingSchedule[]>([]);
-  const [staff, setStaff] = useState<MarketingStaff[]>([]);
+  const [schedules, setSchedules] = useState<ConsultantSchedule[]>([]);
+  const [staff, setStaff] = useState<PropertyConsultant[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFormEnabled, setIsFormEnabled] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [editingSchedule, setEditingSchedule] = useState<MarketingSchedule | null>(null);
+  const [editingSchedule, setEditingSchedule] = useState<ConsultantSchedule | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -37,15 +37,15 @@ const MarketingSchedulePage: React.FC = () => {
     try {
       setLoading(true);
       if (isMockMode) {
-        const defaultSchedules: MarketingSchedule[] = [
-          { id: '1', staff_id: '1', date: new Date().toISOString(), position: 'Kanvas', staff: { id: '1', name: 'Rina', address: '', phone: '', position: 'Senior Marketing' } },
-          { id: '2', staff_id: '2', date: new Date().toISOString(), position: 'Stay DV Village', staff: { id: '2', name: 'Doni', address: '', phone: '', position: 'Junior Marketing' } }
+        const defaultSchedules: ConsultantSchedule[] = [
+          { id: '1', consultant_id: '1', date: new Date().toISOString(), position: 'Kanvas', consultant: { id: '1', name: 'Rina', address: '', phone: '', position: 'Senior Konsultan' } },
+          { id: '2', consultant_id: '2', date: new Date().toISOString(), position: 'Stay DV Village', consultant: { id: '2', name: 'Doni', address: '', phone: '', position: 'Junior Konsultan' } }
         ];
-        setSchedules(getMockData<MarketingSchedule>('marketing_schedules', defaultSchedules));
+        setSchedules(getMockData<ConsultantSchedule>('consultant_schedules', defaultSchedules));
         return;
       }
 
-      const data = await api.get('marketing_schedules', 'select=*,staff:marketing_staff(id,name)');
+      const data = await api.get('consultant_schedules', 'select=*,consultant:consultants(id,name)');
       setSchedules(data || []);
     } catch (error) {
       console.error('Error fetching schedules:', error);
@@ -57,15 +57,15 @@ const MarketingSchedulePage: React.FC = () => {
   const fetchStaff = async () => {
     try {
       if (isMockMode) {
-        const defaultStaff: MarketingStaff[] = [
-          { id: '1', name: 'Rina', address: '', phone: '', position: 'Senior Marketing' },
-          { id: '2', name: 'Doni', address: '', phone: '', position: 'Junior Marketing' }
+        const defaultStaff: PropertyConsultant[] = [
+          { id: '1', name: 'Rina', address: '', phone: '', position: 'Senior Konsultan' },
+          { id: '2', name: 'Doni', address: '', phone: '', position: 'Junior Konsultan' }
         ];
-        setStaff(getMockData<MarketingStaff>('marketing_staff', defaultStaff));
+        setStaff(getMockData<PropertyConsultant>('consultants', defaultStaff));
         return;
       }
 
-      const data = await api.get('marketing_staff', 'select=*&order=name.asc');
+      const data = await api.get('consultants', 'select=*&order=name.asc');
       setStaff(data || []);
     } catch (error) {
       console.error('Error fetching staff:', error);
@@ -79,14 +79,14 @@ const MarketingSchedulePage: React.FC = () => {
     setLoading(true);
     try {
       if (isMockMode) {
-        const currentSchedules = getMockData<MarketingSchedule>('marketing_schedules', []);
+        const currentSchedules = getMockData<ConsultantSchedule>('consultant_schedules', []);
         
         if (editingSchedule) {
           const entry = formData.staff_entries[0];
           const updatedSchedules = currentSchedules.map(s => 
             s.id === editingSchedule.id ? { ...s, position: entry.position } : s
           );
-          saveMockData('marketing_schedules', updatedSchedules);
+          saveMockData('consultant_schedules', updatedSchedules);
           setSchedules(updatedSchedules);
         } else {
           const newSchedules = formData.staff_entries.map(entry => {
@@ -96,11 +96,11 @@ const MarketingSchedulePage: React.FC = () => {
               staff_id: entry.staff_id,
               date: formData.date,
               position: entry.position,
-              staff: selectedStaff
+              consultant: selectedStaff
             };
           });
           const updatedSchedules = [...currentSchedules, ...newSchedules];
-          saveMockData('marketing_schedules', updatedSchedules);
+          saveMockData('consultant_schedules', updatedSchedules);
           setSchedules(updatedSchedules);
         }
         closeModal();
@@ -109,12 +109,12 @@ const MarketingSchedulePage: React.FC = () => {
 
       if (editingSchedule) {
         const entry = formData.staff_entries[0];
-        await api.update('marketing_schedules', editingSchedule.id, { position: entry.position });
+        await api.update('consultant_schedules', editingSchedule.id, { position: entry.position });
       } else {
         // We cannot batch insert directly via the api helper which uses insert single item. 
         // We must loop and insert sequentially.
         for (const entry of formData.staff_entries) {
-          await api.insert('marketing_schedules', {
+          await api.insert('consultant_schedules', {
             staff_id: entry.staff_id,
             date: formData.date,
             position: entry.position
@@ -136,15 +136,15 @@ const MarketingSchedulePage: React.FC = () => {
     
     try {
       if (isMockMode) {
-        const currentSchedules = getMockData<MarketingSchedule>('marketing_schedules', []);
+        const currentSchedules = getMockData<ConsultantSchedule>('consultant_schedules', []);
         const updatedSchedules = currentSchedules.filter(s => s.id !== id);
-        saveMockData('marketing_schedules', updatedSchedules);
+        saveMockData('consultant_schedules', updatedSchedules);
         setSchedules(updatedSchedules);
         closeModal();
         return;
       }
 
-      await api.delete('marketing_schedules', id);
+      await api.delete('consultant_schedules', id);
       fetchSchedules();
       closeModal();
     } catch (error) {
@@ -174,11 +174,11 @@ const MarketingSchedulePage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (schedule: MarketingSchedule) => {
+  const openEditModal = (schedule: ConsultantSchedule) => {
     setEditingSchedule(schedule);
     setFormData({
       date: schedule.date.split('T')[0],
-      staff_entries: [{ staff_id: schedule.staff_id, position: schedule.position || '' }]
+      staff_entries: [{ staff_id: schedule.consultant_id, position: schedule.position || '' }]
     });
     setIsFormEnabled(true);
     setIsModalOpen(true);
@@ -239,7 +239,7 @@ const MarketingSchedulePage: React.FC = () => {
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Jadwal-Marketing-${monthNames[currentDate.getMonth()]}-${currentDate.getFullYear()}.pdf`);
+      pdf.save(`Jadwal-Konsultan-${monthNames[currentDate.getMonth()]}-${currentDate.getFullYear()}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Gagal mengekspor PDF. Silakan coba lagi.');
@@ -287,7 +287,7 @@ const MarketingSchedulePage: React.FC = () => {
       `}} />
       
       <div className="hidden print:block text-center mb-4">
-        <h1 className="text-xl font-bold text-text-primary uppercase">Jadwal marketing abadi lestari mandiri</h1>
+        <h1 className="text-xl font-bold text-text-primary uppercase">Jadwal Konsultan Property Abadi Lestari Mandiri</h1>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
@@ -301,8 +301,8 @@ const MarketingSchedulePage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Jadwal Marketing</h1>
-            <p className="text-text-secondary">Atur jadwal piket dan kunjungan marketing</p>
+            <h1 className="text-2xl font-bold text-text-primary">Jadwal Konsultan Property</h1>
+            <p className="text-text-secondary">Atur jadwal piket dan kunjungan konsultan property</p>
           </div>
         </div>
 
@@ -370,14 +370,14 @@ const MarketingSchedulePage: React.FC = () => {
                       key={s.id} 
                       className={cn(
                         "text-[10px] px-2 py-1 rounded border truncate font-medium flex justify-between items-center group cursor-pointer hover:brightness-95 print:py-0.5 print:text-[9px]",
-                        getStaffColor(s.staff?.name || '')
+                        getStaffColor(s.consultant?.name || '')
                       )}
                       onClick={(e) => {
                         e.stopPropagation();
                         openEditModal(s);
                       }}
                     >
-                      <span className="truncate">{s.staff?.name} - {s.position}</span>
+                      <span className="truncate">{s.consultant?.name} - {s.position}</span>
                     </div>
                   ))}
                 </div>
@@ -390,7 +390,7 @@ const MarketingSchedulePage: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={closeModal}
-        title={editingSchedule ? "Edit Jadwal Marketing" : "Input Jadwal Marketing"}
+        title={editingSchedule ? "Edit Jadwal Konsultan" : "Input Jadwal Konsultan"}
       >
         <div className="space-y-6">
           <div className="p-4 bg-accent-lavender/20 rounded-xl border border-accent-lavender/30">
@@ -403,7 +403,7 @@ const MarketingSchedulePage: React.FC = () => {
           <form className="space-y-4" onSubmit={handleSave}>
             {!editingSchedule && (
               <div>
-                <label className="text-sm font-medium text-text-primary mb-1.5 block">Pilih Marketing (Bisa banyak)</label>
+                <label className="text-sm font-medium text-text-primary mb-1.5 block">Pilih Konsultan (Bisa banyak)</label>
                 <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-white/60 rounded-xl bg-white">
                   {staff.map(s => (
                     <label key={s.id} className="flex items-center gap-2 text-sm p-1 hover:bg-white/30 rounded cursor-pointer">
@@ -434,9 +434,9 @@ const MarketingSchedulePage: React.FC = () => {
 
             {editingSchedule && (
                <div>
-                <label className="text-sm font-medium text-text-primary mb-1.5 block">Marketing</label>
+                <label className="text-sm font-medium text-text-primary mb-1.5 block">Konsultan</label>
                 <p className="text-sm font-bold text-text-primary border border-white/40 p-2.5 rounded-xl bg-white/30">
-                  {editingSchedule.staff?.name}
+                  {editingSchedule.consultant?.name}
                 </p>
               </div>
             )}
@@ -444,7 +444,7 @@ const MarketingSchedulePage: React.FC = () => {
             {formData.staff_entries.length > 0 && (
               <div className="space-y-3 pt-2">
                 <label className="text-sm font-medium text-text-primary block">
-                  {editingSchedule ? "Edit Posisi / Tugas:" : "Posisi / Tugas per Marketing:"}
+                  {editingSchedule ? "Edit Posisi / Tugas:" : "Posisi / Tugas per Konsultan:"}
                 </label>
                 {formData.staff_entries.map(entry => {
                   const s = staff.find(staffItem => staffItem.id === entry.staff_id);
@@ -498,5 +498,5 @@ const MarketingSchedulePage: React.FC = () => {
   );
 };
 
-export default MarketingSchedulePage;
+export default ConsultantSchedulePage;
 

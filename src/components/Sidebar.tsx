@@ -32,7 +32,8 @@ import {
   ShieldCheck,
   UserCheck,
   Clock,
-  Briefcase
+  Briefcase,
+  Landmark
 } from 'lucide-react';
 import { useAuth, Division } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
@@ -55,8 +56,8 @@ const menuItems = [
   { name: 'Penjualan', icon: ShoppingCart, path: '/sales', divisions: ['marketing', 'audit'] },
   { name: 'Pembayaran Konsumen', icon: CreditCard, path: '/payments', divisions: ['marketing', 'keuangan', 'accounting', 'audit'] },
   { name: 'Laporan', icon: BarChart3, path: '/financial-reports', divisions: ['marketing', 'accounting', 'audit'] },
-  { name: 'Jadwal Marketing', icon: Calendar, path: '/marketing-schedule', divisions: ['marketing'] },
-  { name: 'Master Marketing', icon: UserCog, path: '/marketing-master', divisions: ['marketing'] },
+  { name: 'Jadwal Konsultan', icon: Calendar, path: '/marketing-schedule', divisions: ['marketing'] },
+  { name: 'Master Konsultan', icon: UserCog, path: '/marketing-master', divisions: ['marketing'] },
   { name: 'Template Dokumen', icon: FileText, path: '/document-templates', divisions: ['marketing', 'audit'] },
   { name: 'Unit Properti', icon: Home, path: '/units', divisions: ['marketing', 'teknik', 'audit'] },
   { name: 'Progress Bangun', icon: HardHat, path: '/construction-progress', divisions: ['marketing', 'teknik', 'audit'] },
@@ -78,6 +79,7 @@ const menuItems = [
   { name: 'Pembayaran Supplier', icon: Truck, path: '/supplier-payments', divisions: ['keuangan', 'audit'] },
   { name: 'Cash Flow', icon: ArrowLeftRight, path: '/cash-flow', divisions: ['keuangan', 'accounting', 'audit'] },
   { name: 'Petty Cash', icon: Wallet, path: '/petty-cash', divisions: ['keuangan', 'audit'] },
+  { name: 'Master Bank', icon: Landmark, path: '/bank-master', divisions: ['keuangan', 'audit'] },
 
   // Accounting Specific Menus
   { name: 'Jurnal Umum', icon: History, path: '/general-journal', divisions: ['accounting', 'audit'] },
@@ -102,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const filteredMenu = menuItems.filter(item => {
     const hasDivision = division && item.divisions.includes(division);
     if (item.path === '/user-management') {
-      return hasDivision && (profile?.role === 'admin' || profile?.role === 'owner');
+      return hasDivision && profile?.role === 'admin';
     }
     return hasDivision;
   });
@@ -158,17 +160,19 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         </div>
         
         <div className="space-y-1">
-          <button
-            onClick={() => {
-              localStorage.removeItem('propdev_division');
-              setDivision(null);
-              onClose?.();
-            }}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-pill hover:bg-white/40 text-text-secondary hover:text-text-primary transition-all duration-200 group"
-          >
-            <ArrowLeftRight className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
-            <span className="font-bold text-[11px] uppercase tracking-wider">Ganti Divisi</span>
-          </button>
+          {((profile?.role_data?.authorized_divisions?.length || 0) > 1 || profile?.role === 'admin') && (
+            <button
+              onClick={() => {
+                localStorage.removeItem('propdev_division');
+                setDivision(null);
+                onClose?.();
+              }}
+              className="flex items-center gap-3 w-full px-3 py-2 rounded-pill hover:bg-white/40 text-text-secondary hover:text-text-primary transition-all duration-200 group"
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
+              <span className="font-bold text-[11px] uppercase tracking-wider">Ganti Divisi</span>
+            </button>
+          )}
           
           <button
             onClick={() => {

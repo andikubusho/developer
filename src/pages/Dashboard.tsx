@@ -182,11 +182,11 @@ const Dashboard: React.FC = () => {
     
     try {
       const isMarketingOnly = profile?.role === 'marketing';
-      const marketingFilter = isMarketingOnly ? `&marketing_id=eq.${profile.id}` : '';
+      const marketingFilter = isMarketingOnly && profile?.consultant_id ? `&consultant_id=eq.${profile.consultant_id}` : '';
       
       const [leads, followUps, deposits, sales] = await Promise.all([
         api.get('leads', `select=id${marketingFilter}`),
-        api.get('follow_ups', `select=id,lead:leads!inner(marketing_id)&lead.marketing_id=eq.${profile?.id || ''}`),
+        api.get('follow_ups', `select=id,lead:leads!inner(consultant_id)&lead.consultant_id=eq.${profile?.consultant_id || ''}`),
         api.get('deposits', `select=amount${marketingFilter}`),
         api.get('sales', `select=id${marketingFilter}`)
       ]);
@@ -257,17 +257,17 @@ const Dashboard: React.FC = () => {
 
     try {
       const isMarketingOnly = profile?.role === 'marketing';
-      const marketingFilter = isMarketingOnly ? `&marketing_id=eq.${profile.id}` : '';
+      const marketingFilter = isMarketingOnly && profile?.consultant_id ? `&consultant_id=eq.${profile.consultant_id}` : '';
       
       const [recentLeads, schedules] = await Promise.all([
         api.get('leads', `select=*&order=created_at.desc&limit=5${marketingFilter}`),
-        api.get('marketing_schedules', 'select=*,staff:marketing_staff(name)&order=date.desc&limit=5')
+        api.get('consultant_schedules', `select=*,consultant:consultants(name)&order=date.desc&limit=5${marketingFilter}`)
       ]);
 
       setRecentLeads(recentLeads || []);
       setTodaySchedules(schedules?.map((s: any) => ({
         id: s.id,
-        staff: s.staff?.name || 'Staff',
+        staff: s.consultant?.name || 'Staff',
         time: s.position || '08:00',
         activity: s.activity || 'Kegiatan Lapangan'
       })) || []);
@@ -309,8 +309,8 @@ const Dashboard: React.FC = () => {
     }
 
     const isMarketingOnly = profile?.role === 'marketing';
-    const marketingFilter = isMarketingOnly ? `&sales.marketing_id=eq.${profile.id}` : '';
-    const query = `select=*,sales:sales!inner(marketing_id,customer:customers(full_name,phone))&status=eq.overdue&limit=5${marketingFilter}`;
+    const marketingFilter = isMarketingOnly ? `&sales.consultant_id=eq.${profile.id}` : '';
+    const query = `select=*,sales:sales!inner(consultant_id,customer:customers(full_name,phone))&status=eq.overdue&limit=5${marketingFilter}`;
     
     const data = await api.get('installments', query);
     setOverdueInstallments(data || []);
