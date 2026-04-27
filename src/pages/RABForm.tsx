@@ -123,7 +123,22 @@ const RABForm: React.FC = () => {
     fetchUnits();
   }, [projectHeader.project_id]);
 
-  // Initialize with one Level 0 and fetch projects
+  useEffect(() => {
+    const createInitialNode = (): RABNode => ({
+      id: generateId(),
+      parent_id: null,
+      level: 0,
+      uraian: 'PEKERJAAN LANTAI 1',
+      volume: null,
+      satuan: '',
+      koeff: null,
+      harga_rab: null,
+      harga_pasar: null,
+      urutan: 0,
+      isExpanded: true,
+      children: []
+    });
+
     const fetchAllData = async () => {
       try {
         const [projData, rabData] = await Promise.all([
@@ -141,11 +156,8 @@ const RABForm: React.FC = () => {
 
           if (rabProj && rabProj.length > 0) {
             const proj = rabProj[0];
-            // Resolve project_id from nama_proyek if project_id is missing in DB
             const matchedProject = (projData || []).find((p: any) => p.name === proj.nama_proyek);
             const resolvedProjectId = proj.project_id || (matchedProject ? matchedProject.id : '');
-            
-            // Resolve unit_id from kategori if unit_id is missing
             const resolvedUnitId = proj.unit_id || proj.kategori || '';
 
             setProjectHeader({
@@ -156,7 +168,6 @@ const RABForm: React.FC = () => {
               tanggal: proj.created_at ? proj.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
             });
 
-            // Fetch units immediately so the unit dropdown works
             if (resolvedProjectId) {
               const unitsData = await api.get('units', `project_id=eq.${resolvedProjectId}&order=unit_number.asc`);
               setUnits(unitsData || []);
