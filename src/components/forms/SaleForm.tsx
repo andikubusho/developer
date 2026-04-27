@@ -122,13 +122,15 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           return unit;
         });
         const existingIds = processedUnits.map((u: any) => u.id);
-        const orphans = pliData.filter((p: any) => !existingIds.includes(p.unit_id)).map((p: any) => ({
-          id: p.unit_id || p.id,
-          project_id: p.project_id,
-          unit_number: `${p.blok} - ${p.unit}`,
-          price: p.harga_jual,
-          status: p.status
-        }));
+        const orphans = pliData
+          .filter((p: any) => !existingIds.includes(p.unit_id) && isValidUuid(p.unit_id))
+          .map((p: any) => ({
+            id: p.unit_id,
+            project_id: p.project_id,
+            unit_number: `${p.blok} - ${p.unit}`,
+            price: p.harga_jual,
+            status: p.status
+          }));
         setProjects(p || []);
         setUnits([...processedUnits, ...orphans].filter(unit => unit.status === 'available' || (initialData && unit.id === initialData.unit_id)));
         setRawCustomers(c || []);
@@ -181,6 +183,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   }, [watchConsultantId, rawCustomers, rawLeads, verifiedDeposits, hasLoadedMasterData]);
 
   const toUuid = (val: string | null | undefined) => (val && val.trim() !== '') ? val : null;
+  const isValidUuid = (val: string | null | undefined) =>
+    !!val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
   const onSubmit = async (values: SaleFormValues) => {
     setLoading(true);
@@ -195,6 +199,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       const salePayload = {
         ...restValues,
         customer_id: finalCustomerId,
+        unit_id: isValidUuid(restValues.unit_id) ? restValues.unit_id : null,
         promo_id: toUuid(restValues.promo_id),
         deposit_id: toUuid(restValues.deposit_id),
         status: initialData ? initialData.status : 'active',
@@ -202,7 +207,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       const saleData = initialData ? await api.update('sales', initialData.id, salePayload) : await api.insert('sales', salePayload);
       if (!saleData?.[0]) throw new Error('Gagal simpan.');
       const newSaleId = saleData[0].id;
-      await api.update('units', values.unit_id, { status: 'sold' });
+      if (isValidUuid(values.unit_id)) {
+        await api.update('units', values.unit_id, { status: 'sold' });
+      }
       if (values.deposit_id) await api.update('deposits', values.deposit_id, { status: 'used', sale_id: newSaleId });
 
       if (!initialData && values.initial_payments && values.initial_payments.length > 0) {
