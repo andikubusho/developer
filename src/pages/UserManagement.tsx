@@ -255,9 +255,15 @@ const UserManagement: React.FC = () => {
     e.preventDefault();
     try {
       setLoading(true);
+      
+      // Auto-set primary division to the first authorized division if available
+      const primaryDivision = roleForm.authorized_divisions.length > 0 
+        ? roleForm.authorized_divisions[0] 
+        : roleForm.division;
+
       const payload = { 
         name: roleForm.name, 
-        division: roleForm.division, 
+        division: primaryDivision, 
         authorized_divisions: roleForm.authorized_divisions,
         permissions: roleForm.permissions,
         receive_notifications: roleForm.receive_notifications
