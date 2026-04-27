@@ -37,6 +37,11 @@ const saleSchema = z.object({
     date: z.string(),
     bank_id: z.string().optional().nullable(),
   })).optional().nullable(),
+  installments: z.array(z.object({
+    due_date: z.string(),
+    amount: z.number().min(0),
+    status: z.string().default('unpaid'),
+  })).optional().nullable(),
 });
 
 type SaleFormValues = z.infer<typeof saleSchema>;
@@ -85,6 +90,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const { fields, append, remove } = useFieldArray({
     control,
     name: "initial_payments"
+  });
+
+  const { fields: installmentFields, append: appendInstallment, remove: removeInstallment, replace: replaceInstallments } = useFieldArray({
+    control,
+    name: "installments"
   });
 
   const watchProjectId = watch('project_id');
@@ -182,6 +192,30 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
     } else { setCustomers([]); }
   }, [watchConsultantId, rawCustomers, rawLeads, verifiedDeposits, hasLoadedMasterData]);
 
+  const watchPaymentMethod = watch('payment_method');
+  const watchInstallments = watch('installments') || [];
+  const totalInstallmentPlanned = watchInstallments.reduce((sum, inst) => sum + (inst.amount || 0), 0);
+
+  const generateDefaultSchedule = (months: number) => {
+    const sisa = remainingAfterPayment;
+    if (sisa <= 0) return;
+    
+    const amountPerMonth = Math.floor(sisa / months);
+    const schedule = [];
+    const startDate = new Date();
+    
+    for (let i = 1; i <= months; i++) {
+      const dueDate = new Date(startDate);
+      dueDate.setMonth(startDate.getMonth() + i);
+      schedule.push({
+        due_date: dueDate.toISOString().split('T')[0],
+        amount: i === months ? sisa - (amountPerMonth * (months - 1)) : amountPerMonth,
+        status: 'unpaid'
+      });
+    }
+    replaceInstallments(schedule);
+  };
+
   const toUuid = (val: string | null | undefined) => (val && val.trim() !== '') ? val : null;
   const isValidUuid = (val: string | null | undefined) =>
     !!val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
@@ -246,6 +280,25 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           }
         }
       }
+
+      // Save Installments Schedule
+      if (values.payment_method === 'installment' && values.installments && values.installments.length > 0) {
+        // If edit, clear old schedule first
+        if (initialData) {
+          await api.apiRequest(`installments?sale_id=eq.${newSaleId}`, { method: 'DELETE' });
+        }
+        
+        const installmentPayload = values.installments.map((inst, idx) => ({
+          sale_id: newSaleId,
+          due_date: inst.due_date,
+          amount: inst.amount,
+          status: 'unpaid',
+          description: `Cicilan #${idx + 1}`
+        }));
+        
+        await api.insert('installments', installmentPayload);
+      }
+
       onSuccess();
     } catch (error: any) { alert(`Gagal: ${error.message}`); } finally { setLoading(false); }
   };
@@ -418,6 +471,92 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           </div>
         </div>
       </div>
+
+      {/* INSTALLMENT SCHEDULE SECTION (ONLY FOR BERTAHAP) */}
+      {watchPaymentMethod === 'installment' && (
+        <div className="bg-blue-50/50 p-6 rounded-[2.5rem] border-2 border-blue-200 shadow-sm space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="text-sm font-black text-blue-900 flex items-center gap-2 uppercase tracking-widest"><Calendar className="w-5 h-5" /> Rencana Jadwal Cicilan (Future Schedule)</h3>
+              <p className="text-[10px] text-blue-700 font-medium italic">* Tentukan jadwal penagihan piutang di masa mendatang.</p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={() => generateDefaultSchedule(3)}
+                className="rounded-xl border-blue-300 text-blue-900 hover:bg-blue-100 font-bold text-[10px]"
+              >
+                Auto 3 Bln
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={() => generateDefaultSchedule(6)}
+                className="rounded-xl border-blue-300 text-blue-900 hover:bg-blue-100 font-bold text-[10px]"
+              >
+                Auto 6 Bln
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={() => appendInstallment({ due_date: new Date().toISOString().split('T')[0], amount: 0, status: 'unpaid' })}
+                className="rounded-xl border-blue-300 text-blue-900 hover:bg-blue-100 font-bold gap-2"
+              >
+                <Plus className="w-4 h-4" /> Tambah Manual
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {installmentFields.map((field, index) => (
+              <div key={field.id} className="bg-white/60 p-4 rounded-2xl border border-blue-200/60 relative group flex items-end gap-4 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex-1">
+                  <Input label={`Jatuh Tempo #${index + 1}`} type="date" {...register(`installments.${index}.due_date`)} />
+                </div>
+                <div className="flex-[2]">
+                  <Controller 
+                    name={`installments.${index}.amount`} 
+                    control={control} 
+                    render={({ field }) => <CurrencyInput label="Nilai Tagihan" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} placeholder="Rp 0" />} 
+                  />
+                </div>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => removeInstallment(index)} 
+                  className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl mb-1"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-blue-300 flex justify-between items-center">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Total Jadwal Terencana:</span>
+              <span className="text-xl font-black text-blue-900">{formatCurrency(totalInstallmentPlanned)}</span>
+            </div>
+            {Math.abs(remainingAfterPayment - totalInstallmentPlanned) > 100 && (
+              <div className="text-right flex flex-col items-end">
+                <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Selisih Belum Terjadwal:</span>
+                <span className="text-lg font-black text-red-600">{formatCurrency(remainingAfterPayment - totalInstallmentPlanned)}</span>
+              </div>
+            )}
+            {Math.abs(remainingAfterPayment - totalInstallmentPlanned) <= 100 && (
+              <div className="text-right flex flex-col items-end">
+                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Status:</span>
+                <span className="text-sm font-black text-emerald-600 uppercase">Jadwal Sesuai Piutang ✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col items-end gap-2 pt-4 border-t border-white/40">
         {remainingAfterPayment > 0 && watch('payment_method') === 'cash' && (
