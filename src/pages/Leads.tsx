@@ -146,6 +146,19 @@ const Leads: React.FC = () => {
         await api.update('leads', selectedLead.id, formData);
       } else {
         await api.insert('leads', { ...formData, date: new Date().toISOString() });
+        
+        // Notify Manager/Supervisor
+        try {
+          await api.insert('notifications', {
+            target_divisions: [profile?.division || 'marketing'],
+            title: 'Lead Baru Masuk',
+            message: `${profile?.full_name} menambahkan lead baru: ${formData.name}`,
+            sender_name: profile?.full_name || 'Staff',
+            metadata: { type: 'leads' }
+          });
+        } catch (notifErr) {
+          console.error('Failed to send manager notification:', notifErr);
+        }
       }
       await fetchLeads();
       setIsModalOpen(false);

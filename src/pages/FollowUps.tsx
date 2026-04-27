@@ -159,6 +159,19 @@ const FollowUps: React.FC = () => {
         await api.update('follow_ups', selectedFollowUp.id, finalData);
       } else {
         await api.insert('follow_ups', finalData);
+
+        // Notify Manager/Supervisor
+        try {
+          await api.insert('notifications', {
+            target_divisions: [profile?.division || 'marketing'],
+            title: 'Follow Up Baru',
+            message: `${profile?.full_name} melakukan follow up baru.`,
+            sender_name: profile?.full_name || 'Staff',
+            metadata: { type: 'follow_ups' }
+          });
+        } catch (notifErr) {
+          console.error('Failed to send manager notification:', notifErr);
+        }
       }
       await fetchFollowUps();
       setIsModalOpen(false);

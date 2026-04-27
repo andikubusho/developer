@@ -185,7 +185,8 @@ const UserManagement: React.FC = () => {
     name: '',
     division: 'marketing' as UserRole,
     authorized_divisions: [] as UserRole[],
-    permissions: {} as Record<string, Capabilities>
+    permissions: {} as Record<string, Capabilities>,
+    receive_notifications: false
   });
 
   const divisionOptions: UserRole[] = ['admin', 'marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'];
@@ -243,7 +244,8 @@ const UserManagement: React.FC = () => {
       name: role.name,
       division: role.division,
       authorized_divisions: role.authorized_divisions || [],
-      permissions: role.permissions
+      permissions: role.permissions,
+      receive_notifications: !!role.receive_notifications
     });
     setSelectedRole(role);
     setIsRoleModalOpen(true);
@@ -257,7 +259,8 @@ const UserManagement: React.FC = () => {
         name: roleForm.name, 
         division: roleForm.division, 
         authorized_divisions: roleForm.authorized_divisions,
-        permissions: roleForm.permissions 
+        permissions: roleForm.permissions,
+        receive_notifications: roleForm.receive_notifications
       };
 
       if (roleForm.id) {
@@ -702,6 +705,22 @@ const UserManagement: React.FC = () => {
               </div>
               <p className="text-[9px] text-text-muted mt-1 italic font-bold">*Tentukan divisi mana saja yang bisa diakses oleh jabatan ini.</p>
             </div>
+          </div>
+
+          <div className="p-4 bg-accent-dark/5 rounded-xl border border-accent-dark/10 flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-black text-text-primary">Terima Notifikasi Real-time</h4>
+              <p className="text-[10px] text-text-secondary font-medium">Tampilkan pop-up instan saat staf menginput data baru</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={roleForm.receive_notifications}
+                onChange={(e) => setRoleForm({ ...roleForm, receive_notifications: e.target.checked })}
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-dark"></div>
+            </label>
           </div>
           
           <div className="border-t border-white/40 pt-4">

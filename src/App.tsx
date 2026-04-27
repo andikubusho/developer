@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import DivisionSelection from './pages/DivisionSelection';
 import Login from './pages/Login';
 import AppointmentReminder from './components/AppointmentReminder';
+import ManagerNotificationListener from './components/ManagerNotificationListener';
 
 // Lazy load pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -90,6 +91,7 @@ export default function App() {
   return (
     <AuthProvider>
       <AppointmentReminder />
+      <ManagerNotificationListener />
       <Router>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
