@@ -48,6 +48,7 @@ const ApprovalManager = lazy(() => import('./pages/ApprovalManager.tsx'));
 
 // Keuangan
 const KPRDisbursement = lazy(() => import('./pages/KPRDisbursement'));
+const SupplierPayables = lazy(() => import('./pages/SupplierPayables'));
 const SupplierPayments = lazy(() => import('./pages/SupplierPayments'));
 const CashFlow = lazy(() => import('./pages/CashFlow'));
 const PettyCash = lazy(() => import('./pages/PettyCash'));
@@ -148,6 +149,7 @@ export default function App() {
               {/* Keuangan */}
               <Route path="verification-queue" element={<VerificationQueue />} />
               <Route path="kpr-disbursement" element={<KPRDisbursement />} />
+              <Route path="supplier-payables" element={<SupplierPayables />} />
               <Route path="supplier-payments" element={<SupplierPayments />} />
               <Route path="cash-flow" element={<CashFlow />} />
               <Route path="petty-cash" element={<PettyCash />} />

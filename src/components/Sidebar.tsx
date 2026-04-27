@@ -99,8 +99,9 @@ const menuItems = [
   
   // Finance Priority Late
   { name: 'Pencairan KPR', icon: Banknote, path: '/kpr-disbursement', divisions: ['keuangan', 'audit'] },
-  { name: 'Master Bank', icon: Landmark, path: '/bank-master', divisions: ['keuangan', 'audit'] },
+  { name: 'Hutang Supplier', icon: Truck, path: '/supplier-payables', divisions: ['keuangan', 'audit'] },
   { name: 'Pembayaran Supplier', icon: Truck, path: '/supplier-payments', divisions: ['keuangan', 'audit'] },
+  { name: 'Master Bank', icon: Landmark, path: '/bank-master', divisions: ['keuangan', 'audit'] },
   { name: 'Piutang Konsumen', icon: FileText, path: '/customer-receivables', divisions: ['keuangan', 'audit'] },
 
   // Marketing Final

@@ -17,6 +17,7 @@ const poSchema = z.object({
   quantity: z.number().min(1, 'Jumlah minimal 1'),
   unit_price: z.number().min(0, 'Harga harus positif'),
   order_date: z.string(),
+  due_date: z.string().min(1, 'Tanggal jatuh tempo harus diisi'),
 });
 
 type POFormValues = z.infer<typeof poSchema>;
@@ -35,6 +36,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ materials, onSuccess,
     resolver: zodResolver(poSchema),
     defaultValues: {
       order_date: new Date().toISOString().split('T')[0],
+      due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       quantity: 1,
       unit_price: 0,
     },
@@ -118,12 +120,20 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ materials, onSuccess,
         />
       </div>
 
-      <Input 
-        label="Tanggal Order" 
-        type="date" 
-        {...register('order_date')} 
-        error={errors.order_date?.message} 
-      />
+      <div className="grid grid-cols-2 gap-4">
+        <Input 
+          label="Tanggal Order" 
+          type="date" 
+          {...register('order_date')} 
+          error={errors.order_date?.message} 
+        />
+        <Input 
+          label="Jatuh Tempo" 
+          type="date" 
+          {...register('due_date')} 
+          error={errors.due_date?.message} 
+        />
+      </div>
 
       <div className="p-4 bg-white/30 rounded-xl">
         <div className="flex justify-between items-center">

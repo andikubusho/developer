@@ -183,6 +183,7 @@ const PurchaseOrders: React.FC = () => {
                 <TH>No. PO</TH>
                 <TH>Proyek</TH>
                 <TH>Supplier</TH>
+                <TH>Jatuh Tempo</TH>
                 <TH>Total</TH>
                 <TH>Status</TH>
                 <TH className="text-right">Aksi</TH>
@@ -208,6 +209,14 @@ const PurchaseOrders: React.FC = () => {
                     </TD>
                     <TD>{order.project?.name || '-'}</TD>
                     <TD>{order.supplier?.name || '-'}</TD>
+                    <TD>
+                      <div className={cn(
+                        "font-medium",
+                        order.due_date && new Date(order.due_date) < new Date() && order.status !== 'COMPLETED' ? "text-rose-600" : "text-text-secondary"
+                      )}>
+                        {order.due_date ? formatDate(order.due_date) : '-'}
+                      </div>
+                    </TD>
                     <TD className="font-bold">{formatCurrency(order.total_price)}</TD>
                     <TD>
                       <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${
