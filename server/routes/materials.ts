@@ -190,7 +190,7 @@ export function registerMaterialRoutes(app: Express, broadcast: (type: string) =
   });
 
   // === PURCHASE REQUESTS ===
-  app.get("/api/purchase-requests", requireAuth, async (req, res) => {
+  app.get("/api/purchase-requests", async (req, res) => {
     try {
       const { projectId } = req.query;
       let baseQuery = db.select().from(purchaseRequests);
@@ -292,7 +292,7 @@ export function registerMaterialRoutes(app: Express, broadcast: (type: string) =
   });
 
   // === PURCHASE ORDERS ===
-  app.get("/api/purchase-orders", requireAuth, async (req, res) => {
+  app.get("/api/purchase-orders", async (req, res) => {
     try {
       const list = await db.select().from(purchaseOrders).orderBy(desc(purchaseOrders.createdAt));
       res.json(list);
