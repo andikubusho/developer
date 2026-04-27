@@ -45,17 +45,23 @@ interface SidebarProps {
 const menuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/', divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'] },
   
+  // HRD Priority (Requested Sequence)
+  { name: 'Rekrutmen', icon: Briefcase, path: '/recruitment', divisions: ['hrd', 'audit'] },
+  { name: 'Data Karyawan', icon: Users, path: '/employees', divisions: ['hrd', 'audit'] },
+  { name: 'Absensi & Cuti', icon: Clock, path: '/attendance', divisions: ['hrd', 'audit'] },
+  { name: 'Payroll', icon: Banknote, path: '/payroll', divisions: ['hrd', 'audit'] },
+
   // Finance/Accounting Shared Priority
   { name: 'Antrian Verifikasi', icon: UserCheck, path: '/verification-queue', divisions: ['keuangan', 'audit'] },
   { name: 'Cash Flow', icon: ArrowLeftRight, path: '/cash-flow', divisions: ['keuangan', 'accounting', 'audit'] },
   { name: 'Petty Cash', icon: Wallet, path: '/petty-cash', divisions: ['keuangan', 'audit'] },
 
-  // Accounting Priority (Requested Sequence)
+  // Accounting Priority
   { name: 'Jurnal Umum', icon: History, path: '/general-journal', divisions: ['accounting', 'audit'] },
   { name: 'Buku Besar', icon: FileSpreadsheet, path: '/ledger', divisions: ['accounting', 'audit'] },
   { name: 'Perpajakan', icon: Receipt, path: '/taxation', divisions: ['accounting', 'audit'] },
 
-  // Teknik Priority (Requested Sequence)
+  // Teknik Priority
   { name: 'Purchase Request', icon: ClipboardList, path: '/purchase-requests', divisions: ['teknik', 'audit'] },
   { name: 'Purchase Order', icon: ShoppingCart, path: '/purchase-orders', divisions: ['teknik', 'audit'] },
   { name: 'Stok Material', icon: Package, path: '/materials', divisions: ['teknik', 'audit'] },
@@ -65,7 +71,7 @@ const menuItems = [
   { name: 'Real Cost', icon: BarChart3, path: '/real-cost', divisions: ['teknik', 'audit'] },
   { name: 'Master Material', icon: Package, path: '/master-material', divisions: ['teknik', 'audit'] },
 
-  // Marketing Priority (Requested Sequence)
+  // Marketing Priority
   { name: 'Calon Konsumen', icon: UserPlus, path: '/leads', divisions: ['marketing'] },
   { name: 'Follow Up', icon: MessageSquare, path: '/follow-ups', divisions: ['marketing'] },
   { name: 'Titipan', icon: Wallet, path: '/deposits', divisions: ['marketing'] },
@@ -96,12 +102,6 @@ const menuItems = [
   
   // System
   { name: 'User & Role', icon: ShieldCheck, path: '/user-management', divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'] },
-
-  // HRD Specific Menus
-  { name: 'Data Karyawan', icon: Users, path: '/employees', divisions: ['hrd', 'audit'] },
-  { name: 'Absensi & Cuti', icon: Clock, path: '/attendance', divisions: ['hrd', 'audit'] },
-  { name: 'Payroll', icon: Banknote, path: '/payroll', divisions: ['hrd', 'audit'] },
-  { name: 'Rekrutmen', icon: Briefcase, path: '/recruitment', divisions: ['hrd', 'audit'] },
 
   // Audit Specific Menus
   { name: 'Audit Transaksi', icon: ShieldCheck, path: '/audit-transactions', divisions: ['audit'] },
