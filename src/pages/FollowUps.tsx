@@ -87,6 +87,7 @@ const FollowUps: React.FC = () => {
       setFormData({
         lead_id: '',
         description: '',
+        status: 'no respon',
         date_time: new Date().toISOString(),
         consultant_id: profile?.consultant_id || '',
         is_appointment: false,
@@ -142,20 +143,24 @@ const FollowUps: React.FC = () => {
   const handleSave = async () => {
     try {
       setLoading(true);
-      const finalData = {
-        ...formData,
-        // Convert local datetime to ISO UTC for database
-        appointment_date: formData.is_appointment && formData.appointment_date 
-          ? new Date(formData.appointment_date).toISOString() 
-          : null,
-        // Start reminder 2 hours before appointment_date
-        next_reminder_at: formData.is_appointment && formData.appointment_date 
-          ? new Date(new Date(formData.appointment_date).getTime() - (2 * 60 * 60 * 1000)).toISOString() 
-          : null,
-        appointment_status: formData.is_appointment ? 'pending' : null
-      };
+      const appointmentDate = formData.is_appointment && formData.appointment_date
+        ? new Date(formData.appointment_date).toISOString()
+        : null;
 
-      const { consultant_id, ...saveData } = finalData;
+      const saveData = {
+        lead_id: formData.lead_id,
+        description: formData.description,
+        status: formData.status,
+        date_time: formData.date_time,
+        is_appointment: formData.is_appointment,
+        appointment_date: appointmentDate,
+        reminder_frequency: formData.reminder_frequency,
+        appointment_notes: formData.appointment_notes,
+        next_reminder_at: appointmentDate
+          ? new Date(new Date(appointmentDate).getTime() - 2 * 60 * 60 * 1000).toISOString()
+          : null,
+        appointment_status: formData.is_appointment ? 'pending' : null,
+      };
 
       if (selectedFollowUp) {
         await api.update('follow_ups', selectedFollowUp.id, saveData);
