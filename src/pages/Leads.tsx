@@ -142,6 +142,34 @@ const Leads: React.FC = () => {
   const handleSave = async () => {
     try {
       setLoading(true);
+
+      // 1. Normalize phone for checking
+      const cleanPhone = formData.phone.replace(/[^0-9]/g, '');
+      
+      // 2. Global Duplicate Check (Only for NEW leads)
+      if (!selectedLead) {
+        try {
+          // Search in all leads using phone_normalized
+          const existing = await api.get('leads', `select=*,consultant:consultants(name)&phone_normalized=eq.${cleanPhone}`);
+          
+          if (existing && existing.length > 0) {
+            const dup = existing[0];
+            alert(`DATA GANDA! Nomor ini sudah terdaftar:\n\nNama: ${dup.name}\nKonsultan: ${dup.consultant?.name || 'Tidak diketahui'}\n\nSilakan koordinasi dengan konsultan terkait.`);
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          // If phone_normalized column doesn't exist yet, fallback to raw phone check
+          const existingRaw = await api.get('leads', `select=*,consultant:consultants(name)&phone=eq.${formData.phone}`);
+          if (existingRaw && existingRaw.length > 0) {
+            const dup = existingRaw[0];
+            alert(`DATA GANDA! Nomor ini sudah terdaftar oleh konsultan ${dup.consultant?.name || 'lain'}.`);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       if (selectedLead) {
         await api.update('leads', selectedLead.id, formData);
       } else {
