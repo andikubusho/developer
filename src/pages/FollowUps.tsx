@@ -155,10 +155,12 @@ const FollowUps: React.FC = () => {
         appointment_status: formData.is_appointment ? 'pending' : null
       };
 
+      const { consultant_id, ...saveData } = finalData;
+
       if (selectedFollowUp) {
-        await api.update('follow_ups', selectedFollowUp.id, finalData);
+        await api.update('follow_ups', selectedFollowUp.id, saveData);
       } else {
-        await api.insert('follow_ups', finalData);
+        await api.insert('follow_ups', saveData);
 
         // Notify Manager/Supervisor
         try {
