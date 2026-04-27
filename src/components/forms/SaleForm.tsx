@@ -180,6 +180,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
     } else { setCustomers([]); }
   }, [watchConsultantId, rawCustomers, rawLeads, verifiedDeposits, hasLoadedMasterData]);
 
+  const toUuid = (val: string | null | undefined) => (val && val.trim() !== '') ? val : null;
+
   const onSubmit = async (values: SaleFormValues) => {
     setLoading(true);
     try {
@@ -190,23 +192,29 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         if (newCustomer?.[0]) finalCustomerId = newCustomer[0].id;
       }
       const { initial_payments, ...restValues } = values;
-      const salePayload = { ...restValues, customer_id: finalCustomerId, status: initialData ? initialData.status : 'active' };
+      const salePayload = {
+        ...restValues,
+        customer_id: finalCustomerId,
+        promo_id: toUuid(restValues.promo_id),
+        deposit_id: toUuid(restValues.deposit_id),
+        status: initialData ? initialData.status : 'active',
+      };
       const saleData = initialData ? await api.update('sales', initialData.id, salePayload) : await api.insert('sales', salePayload);
       if (!saleData?.[0]) throw new Error('Gagal simpan.');
       const newSaleId = saleData[0].id;
       await api.update('units', values.unit_id, { status: 'sold' });
       if (values.deposit_id) await api.update('deposits', values.deposit_id, { status: 'used', sale_id: newSaleId });
-      
+
       if (!initialData && values.initial_payments && values.initial_payments.length > 0) {
         for (const pay of values.initial_payments) {
           if (pay.amount > 0) {
-            await api.insert('payments', { 
-              sale_id: newSaleId, 
-              amount: pay.amount, 
-              payment_date: pay.date, 
-              payment_method: pay.type, 
-              bank_account_id: pay.type === 'Transfer Bank' ? pay.bank_id : null, 
-              status: 'pending' 
+            await api.insert('payments', {
+              sale_id: newSaleId,
+              amount: pay.amount,
+              payment_date: pay.date,
+              payment_method: pay.type,
+              bank_account_id: pay.type === 'Transfer Bank' ? toUuid(pay.bank_id) : null,
+              status: 'pending'
             });
           }
         }
