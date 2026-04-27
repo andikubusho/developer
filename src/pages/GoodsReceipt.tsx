@@ -20,6 +20,7 @@ import { Input } from '../components/ui/Input';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { formatNumber, cn } from '../lib/utils';
 import { api } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Project {
   id: string;
@@ -45,6 +46,7 @@ interface PO {
 
 const GoodsReceipt: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -130,28 +132,25 @@ const GoodsReceipt: React.FC = () => {
       return;
     }
 
+
+
     try {
       setLoading(true);
-      const transactions = items.map(item => ({
-        materialId: item.materialId,
-        projectId: selectedProject,
-        unitId: selectedUnit || null,
-        transactionType: 'GR',
-        qtyChange: item.qty,
-        referenceType: selectedPO ? 'PO' : null,
-        referenceId: selectedPO || null,
-        notes: `Penerimaan Barang${selectedUnit ? ` (Unit ${units.find(u => u.id === selectedUnit)?.unitNumber})` : ''}: ${item.notes || notes}`
-      }));
-
-      const res = await fetch('/api/material-transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactions })
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Gagal memproses penerimaan');
+      const unitName = selectedUnit ? units.find(u => u.id === selectedUnit)?.unitNumber : '';
+      
+      // Process transactions sequentially via RPC
+      for (const item of items) {
+        await api.rpc('process_material_transaction', {
+          p_material_id: item.materialId,
+          p_project_id: selectedProject,
+          p_unit_id: selectedUnit || null,
+          p_transaction_type: 'GR',
+          p_qty_change: item.qty,
+          p_reference_type: selectedPO ? 'PO' : null,
+          p_reference_id: selectedPO || null,
+          p_user_id: user?.id,
+          p_notes: `Penerimaan Barang${unitName ? ` (Unit ${unitName})` : ''}: ${item.notes || notes}`
+        });
       }
 
       alert('Penerimaan barang berhasil diproses dan stok telah diperbarui!');
