@@ -106,18 +106,23 @@ const RealCostPage: React.FC = () => {
       const rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}`);
       const rabProjectId = rabs?.[0]?.id;
 
-      const [rabItems, orderData, opnameData] = await Promise.all([
+      const [rabItems, orderData, opnameMasterData] = await Promise.all([
         rabProjectId ? api.get('rab_items', `rab_project_id=eq.${rabProjectId}`) : Promise.resolve([]),
         api.get('purchase_orders', `select=*&project_id=eq.${selectedProjectId}&status=eq.received`),
-        api.get('project_opnames', `select=*&project_id=eq.${selectedProjectId}&status=in.(approved,paid)`)
+        api.get('project_opnames', `select=id&project_id=eq.${selectedProjectId}&status=in.(approved,paid)`)
       ]);
+
+      const opnameIds = (opnameMasterData || []).map((o: any) => o.id);
+      const opnameItemData = opnameIds.length > 0 
+        ? await api.get('project_opname_items', `opname_id=in.(${opnameIds.join(',')})`)
+        : [];
 
       const rabMaterial = (rabItems || []).reduce((sum: number, r: any) => sum + ((r.material_price || 0) * (r.volume || 1) * (r.koeff || 1)), 0);
       const rabWage = (rabItems || []).reduce((sum: number, r: any) => sum + ((r.wage_price || 0) * (r.volume || 1) * (r.koeff || 1)), 0);
       const rabTotal = rabMaterial + rabWage;
 
       const materialActual = orderData?.reduce((sum: number, o: any) => sum + o.total_price, 0) || 0;
-      const wageActual = opnameData?.reduce((sum: number, o: any) => sum + o.amount, 0) || 0;
+      const wageActual = (opnameItemData || [])?.reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0) || 0;
       const totalActual = materialActual + wageActual;
 
       setData({
@@ -130,7 +135,7 @@ const RealCostPage: React.FC = () => {
         variance: rabTotal - totalActual,
         rabItems: rabItems || [],
         materialOrders: orderData || [],
-        wageOpnames: opnameData || []
+        wageOpnames: opnameItemData || []
       });
     } catch (e) {
       console.error(e);

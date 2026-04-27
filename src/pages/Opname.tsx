@@ -1,237 +1,168 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, ClipboardList, ArrowLeft, Edit, Trash2, CheckCircle2, Clock, Calculator, ChevronRight } from 'lucide-react';
+import { Plus, Search, Filter, ClipboardList, ArrowLeft, Trash2, CheckCircle2, Clock, Calculator, AlertCircle, Save } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
-import { ProjectOpname, Project, SPK } from '../types';
+import { Project } from '../types';
 import { formatDate, formatCurrency, cn } from '../lib/utils';
 import { api } from '../lib/api';
+
+interface OpnameItem {
+  rab_item_id: string;
+  uraian: string;
+  total_budget: number;
+  paid_amount: number;
+  paid_percentage: number;
+  input_percentage: number;
+  calculated_amount: number;
+}
 
 const OpnamePage: React.FC = () => {
   const navigate = useNavigate();
   const { setDivision } = useAuth();
-  const [opnames, setOpnames] = useState<ProjectOpname[]>([]);
+  const [opnames, setOpnames] = useState<any[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [spks, setSpks] = useState<SPK[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedOpname, setSelectedOpname] = useState<ProjectOpname | null>(null);
-  const [rabItems, setRabItems] = useState<any[]>([]);
-  const [loadingRAB, setLoadingRAB] = useState(false);
-
-  // Form State
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    project_id: '',
-    rab_item_id: '',
-    spk_id: '',
-    worker_name: '',
-    work_description: '',
-    previous_percentage: 0,
-    current_percentage: 0,
-    amount: 0,
-    status: 'pending' as 'pending' | 'approved' | 'paid'
-  });
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [workerName, setWorkerName] = useState('');
+  const [opnameDate, setOpnameDate] = useState(new Date().toISOString().split('T')[0]);
+  const [batchItems, setBatchItems] = useState<OpnameItem[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, []);
 
   useEffect(() => {
-    if (selectedOpname) {
-      setFormData({
-        date: selectedOpname.date.split('T')[0],
-        project_id: selectedOpname.project_id,
-        rab_item_id: (selectedOpname as any).rab_item_id || '',
-        spk_id: selectedOpname.spk_id || '',
-        worker_name: selectedOpname.worker_name,
-        work_description: selectedOpname.work_description,
-        previous_percentage: selectedOpname.previous_percentage,
-        current_percentage: selectedOpname.current_percentage,
-        amount: selectedOpname.amount,
-        status: selectedOpname.status
-      });
-    } else {
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        project_id: '',
-        rab_item_id: '',
-        spk_id: '',
-        worker_name: '',
-        work_description: '',
-        previous_percentage: 0,
-        current_percentage: 0,
-        amount: 0,
-        status: 'pending'
-      });
+    if (selectedProjectId && isModalOpen) {
+      loadRABForBatch();
     }
-  }, [selectedOpname, isModalOpen]);
-
-  // Fetch RAB Items when project changes
-  useEffect(() => {
-    const fetchRAB = async () => {
-      if (!formData.project_id) {
-        setRabItems([]);
-        return;
-      }
-      try {
-        setLoadingRAB(true);
-        // We need items that have a wage_price or represent a task
-        // We fetch rab_items linked to rab_projects of this project
-        const rabs = await api.get('rab_projects', `project_id=eq.${formData.project_id}`);
-        if (rabs && rabs.length > 0) {
-          const items = await api.get('rab_items', `rab_project_id=eq.${rabs[0].id}&order=urutan.asc`);
-          setRabItems(items || []);
-        } else {
-          setRabItems([]);
-        }
-      } catch (err) {
-        console.error('Error fetching RAB items:', err);
-      } finally {
-        setLoadingRAB(false);
-      }
-    };
-    fetchRAB();
-  }, [formData.project_id]);
-
-  // Fetch Previous Percentage when RAB Item changes
-  useEffect(() => {
-    const fetchPrevPct = async () => {
-      if (!formData.rab_item_id || selectedOpname) return;
-      
-      try {
-        // Ambil dari opname terakhir yang ter-link ke rab_item_id yang sama
-        const data = await api.get('project_opnames', `rab_item_id=eq.${formData.rab_item_id}&order=date.desc&limit=1`);
-        const latest = data?.[0];
-        setFormData(prev => ({ 
-          ...prev, 
-          previous_percentage: latest?.current_percentage ?? 0,
-          current_percentage: latest?.current_percentage ?? 0
-        }));
-      } catch (err) {
-        console.error('Error fetching previous pct:', err);
-      }
-    };
-    fetchPrevPct();
-  }, [formData.rab_item_id, selectedOpname]);
-
-  // Auto-calculate amount
-  useEffect(() => {
-    if (formData.rab_item_id && !selectedOpname) {
-      const item = rabItems.find(i => i.id === formData.rab_item_id);
-      if (item) {
-        const diff = formData.current_percentage - formData.previous_percentage;
-        const wageBudget = (item.wage_price || 0) * (item.volume || 1);
-        const calculatedAmount = (diff / 100) * wageBudget;
-        setFormData(prev => ({ ...prev, amount: calculatedAmount }));
-      }
-    } else if (formData.spk_id && !selectedOpname) {
-      // Legacy support for SPK based calculation
-      const spk = spks.find(s => s.id === formData.spk_id);
-      if (spk) {
-        const diff = formData.current_percentage - formData.previous_percentage;
-        const calculatedAmount = (diff / 100) * spk.total_value;
-        setFormData(prev => ({ ...prev, amount: calculatedAmount }));
-      }
-    }
-  }, [formData.rab_item_id, formData.spk_id, formData.current_percentage, formData.previous_percentage]);
+  }, [selectedProjectId, isModalOpen]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [opRes, projRes, spkRes] = await Promise.all([
-        api.get('project_opnames', 'select=*,project:projects(name),spk:spk(*)&order=created_at.desc'),
-        api.get('projects', 'select=id,name'),
-        api.get('spks', 'select=*')
+      const [opRes, projRes] = await Promise.all([
+        api.get('project_opnames', 'select=*,project:projects(name)&order=date.desc'),
+        api.get('projects', 'select=id,name')
       ]);
-
-      console.log('🔍 SPK DATA STRUCTURE:', spkRes?.[0]);
       setOpnames(opRes || []);
       setProjects(projRes || []);
-      setSpks(spkRes || []);
     } catch (error) {
-      console.error('Error fetching opname data:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSave = async () => {
-    if (formData.current_percentage > 100) {
-      alert('Progress tidak boleh melebihi 100%');
+  const loadRABForBatch = async () => {
+    try {
+      setLoading(true);
+      // 1. Get RAB Project
+      const rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}`);
+      if (!rabs || rabs.length === 0) {
+        setBatchItems([]);
+        return;
+      }
+
+      // 2. Get RAB Items and Existing Progress in Parallel
+      const [items, progress] = await Promise.all([
+        api.get('rab_items', `rab_project_id=eq.${rabs[0].id}&wage_price=gt.0&order=urutan.asc`),
+        api.get('project_opname_items', `select=rab_item_id,percentage_opname,amount_opname`)
+      ]);
+
+      // 3. Map Items with their progress
+      const mapped = (items || []).map((item: any) => {
+        const itemProgress = (progress || []).filter((p: any) => p.rab_item_id === item.id);
+        const totalPaidPct = itemProgress.reduce((sum: number, p: any) => sum + Number(p.percentage_opname), 0);
+        const totalPaidRp = itemProgress.reduce((sum: number, p: any) => sum + Number(p.amount_opname), 0);
+        const totalBudget = (item.wage_price || 0) * (item.volume || 1);
+
+        return {
+          rab_item_id: item.id,
+          uraian: item.uraian,
+          total_budget: totalBudget,
+          paid_amount: totalPaidRp,
+          paid_percentage: totalPaidPct,
+          input_percentage: 0,
+          calculated_amount: 0
+        };
+      });
+
+      setBatchItems(mapped);
+    } catch (err) {
+      console.error('Error loading RAB batch:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleItemChange = (rabItemId: string, pct: number) => {
+    setBatchItems(prev => prev.map(item => {
+      if (item.rab_item_id === rabItemId) {
+        const validatedPct = Math.max(0, pct);
+        const amount = (validatedPct / 100) * item.total_budget;
+        return { ...item, input_percentage: validatedPct, calculated_amount: amount };
+      }
+      return item;
+    }));
+  };
+
+  const handleSaveBatch = async () => {
+    const validItems = batchItems.filter(item => item.input_percentage > 0);
+    if (validItems.length === 0) {
+      alert('Masukkan minimal satu progress pekerjaan');
       return;
     }
 
-    // Check budget if linked to RAB
-    if (formData.rab_item_id) {
-      const item = rabItems.find(i => i.id === formData.rab_item_id);
-      if (item) {
-        const totalBudget = (item.wage_price || 0) * (item.volume || 1);
-        // Fetch all opnames for this item to check total paid
-        const data = await api.get('project_opnames', `rab_item_id=eq.${formData.rab_item_id}`);
-        const totalPaid = (data || [])
-          .filter((o: any) => o.id !== selectedOpname?.id)
-          .reduce((sum: number, o: any) => sum + o.amount, 0);
-        
-        if (totalPaid + formData.amount > totalBudget + 100) { // +100 for rounding safety
-          if (!confirm(`Peringatan: Total pembayaran upah (${formatCurrency(totalPaid + formData.amount)}) akan melebihi budget RAB (${formatCurrency(totalBudget)}). Lanjutkan?`)) {
-            return;
-          }
-        }
-      }
+    // Validation: Check if any item exceeds 100%
+    const overflow = validItems.find(item => item.paid_percentage + item.input_percentage > 100.01);
+    if (overflow) {
+      alert(`Pekerjaan "${overflow.uraian}" melebihi progress 100% (Total: ${overflow.paid_percentage + overflow.input_percentage}%)`);
+      return;
     }
 
     try {
-      setLoading(true);
-      if (selectedOpname) {
-        await api.update('project_opnames', selectedOpname.id, formData);
-      } else {
-        await api.insert('project_opnames', formData);
-      }
-      await fetchData();
+      setSubmitting(true);
+      // 1. Create Master
+      const master = await api.insert('project_opnames', {
+        date: opnameDate,
+        project_id: selectedProjectId,
+        worker_name: workerName,
+        status: 'pending'
+      });
+      const masterId = master[0].id;
+
+      // 2. Create Details
+      const details = validItems.map(item => ({
+        opname_id: masterId,
+        rab_item_id: item.rab_item_id,
+        percentage_opname: item.input_percentage,
+        amount_opname: item.calculated_amount
+      }));
+
+      // Bulk insert details
+      await Promise.all(details.map(d => api.insert('project_opname_items', d)));
+
+      alert('Opname batch berhasil disimpan!');
       setIsModalOpen(false);
-    } catch (error: any) {
-      console.error('Error saving opname:', error);
-      alert(`Gagal menyimpan: ${error.message}`);
+      fetchData();
+    } catch (err: any) {
+      alert(`Gagal menyimpan: ${err.message}`);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Hapus data opname ini?')) return;
-    try {
-      setLoading(true);
-      await api.delete('project_opnames', id);
-      await fetchData();
-    } catch (error: any) {
-      alert(`Gagal menghapus: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const approveOpname = async (id: string) => {
-    if (!confirm('Setujui opname ini untuk pembayaran upah?')) return;
-    try {
-      setLoading(true);
-      await api.update('project_opnames', id, { status: 'approved' });
-      await fetchData();
-    } catch (error: any) {
-      alert(`Gagal menyetujui: ${error.message}`);
-    } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   const filteredOpnames = opnames.filter(item => 
-    item.worker_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.work_description.toLowerCase().includes(searchTerm.toLowerCase())
+    item.worker_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.project?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -242,11 +173,16 @@ const OpnamePage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary tracking-tight">Opname Proyek & Upah</h1>
-            <p className="text-text-secondary font-medium">Verifikasi progress lapangan untuk pembayaran upah kerja</p>
+            <h1 className="text-2xl font-bold text-text-primary tracking-tight">Opname Upah (Batch Mode)</h1>
+            <p className="text-text-secondary font-medium">Progress pembayaran upah berbasis RAB Proyek</p>
           </div>
         </div>
-        <Button className="w-full sm:w-auto shadow-glass shadow-glass" onClick={() => { setSelectedOpname(null); setIsModalOpen(true); }}>
+        <Button className="w-full sm:w-auto shadow-glass" onClick={() => { 
+          setSelectedProjectId('');
+          setWorkerName('');
+          setBatchItems([]);
+          setIsModalOpen(true); 
+        }}>
           <Plus className="w-4 h-4 mr-2" />
           Input Opname Baru
         </Button>
@@ -257,8 +193,8 @@ const OpnamePage: React.FC = () => {
           <div className="flex items-center gap-4 text-white">
             <div className="p-3 bg-white/20 rounded-xl backdrop-blur-md"><Clock className="w-6 h-6" /></div>
             <div>
-              <p className="text-xs font-bold text-white uppercase tracking-widest">Pending Payment</p>
-              <p className="text-2xl font-black">{formatCurrency(opnames.filter(o => o.status === 'approved').reduce((sum, o) => sum + o.amount, 0))}</p>
+              <p className="text-xs font-bold text-white uppercase tracking-widest">Pending Review</p>
+              <p className="text-2xl font-black">{opnames.filter(o => o.status === 'pending').length} Records</p>
             </div>
           </div>
         </Card>
@@ -266,7 +202,7 @@ const OpnamePage: React.FC = () => {
           <div className="flex items-center gap-4 text-accent-dark">
             <div className="p-3 glass-card rounded-xl shadow-glass"><ClipboardList className="w-6 h-6" /></div>
             <div>
-              <p className="text-xs font-bold text-accent-lavender uppercase tracking-widest">Total Opname</p>
+              <p className="text-xs font-bold text-accent-lavender uppercase tracking-widest">Total Batch</p>
               <p className="text-2xl font-black">{opnames.length}</p>
             </div>
           </div>
@@ -275,8 +211,8 @@ const OpnamePage: React.FC = () => {
           <div className="flex items-center gap-4 text-emerald-600">
             <div className="p-3 glass-card rounded-xl shadow-glass"><CheckCircle2 className="w-6 h-6" /></div>
             <div>
-              <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Telah Dibayar</p>
-              <p className="text-2xl font-black">{formatCurrency(opnames.filter(o => o.status === 'paid').reduce((sum, o) => sum + o.amount, 0))}</p>
+              <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Status Aktif</p>
+              <p className="text-2xl font-black">Online</p>
             </div>
           </div>
         </Card>
@@ -287,153 +223,162 @@ const OpnamePage: React.FC = () => {
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input 
-              placeholder="Cari nama pekerja, kontraktor, atau deskripsi pekerjaan..." 
+              placeholder="Cari nama pekerja atau proyek..." 
               className="pl-12 h-12 bg-white border-white/40"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" className="h-12 px-6 border-white/40">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter Lanjutan
-          </Button>
         </div>
 
         <Table className="min-w-[800px]">
-            <THead>
-              <TR className="bg-white/30/80 text-text-secondary text-[10px] uppercase tracking-widest">
-                <TH className="px-6 py-4 font-black">Tanggal</TH>
-                <TH className="px-6 py-4 font-black">Pekerja / Kontraktor</TH>
-                <TH className="px-6 py-4 font-black">Pekerjaan</TH>
-                <TH className="px-6 py-4 font-black text-center">Progress</TH>
-                <TH className="px-6 py-4 font-black">Upah (IDR)</TH>
-                <TH className="px-6 py-4 font-black text-center">Status</TH>
-                <TH className="px-6 py-4 font-black text-right">Aksi</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {loading ? (
-                <TR><TD colSpan={7} className="px-6 py-12 text-center text-text-muted">Memuat data...</TD></TR>
-              ) : filteredOpnames.length === 0 ? (
-                <TR><TD colSpan={7} className="px-6 py-20 text-center text-text-muted font-medium">Belum ada data opname yang tercatat.</TD></TR>
-              ) : (
-                filteredOpnames.map((item) => (
-                  <TR key={item.id} className="hover:bg-white/30/80 transition-all group">
-                    <TD className="px-6 py-5 text-sm font-bold text-text-secondary">{formatDate(item.date)}</TD>
-                    <TD className="px-6 py-5">
-                      <p className="text-sm font-black text-text-primary uppercase tracking-tight">{item.worker_name}</p>
-                      <p className="text-[10px] font-bold text-primary mt-0.5">{item.spk ? `SPK-${item.spk.id.substring(0, 8)}` : 'Tanpa SPK'}</p>
-                    </TD>
-                    <TD className="px-6 py-5">
-                      <p className="text-sm text-text-primary font-medium max-w-xs">{item.work_description}</p>
-                      <p className="text-[10px] text-text-muted font-bold mt-1 uppercase tracking-widest">{item.project?.name}</p>
-                    </TD>
-                    <TD className="px-6 py-5 text-center">
-                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/40 text-text-secondary">
-                        <span className="text-[10px] font-black">{item.previous_percentage}%</span>
-                        <ChevronRight className="w-3 h-3 text-text-muted" />
-                        <span className="text-[10px] font-black text-primary">{item.current_percentage}%</span>
-                      </div>
-                      <p className="text-[10px] font-black text-text-muted mt-1 uppercase tracking-widest">Naik {item.current_percentage - item.previous_percentage}%</p>
-                    </TD>
-                    <TD className="px-6 py-5 text-sm font-black text-text-primary tracking-tight">{formatCurrency(item.amount)}</TD>
-                    <TD className="px-6 py-5 text-center">
-                      <span className={cn("px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border", item.status === 'paid' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : item.status === 'approved' ? "bg-accent-lavender/20 text-accent-dark border-accent-lavender/30" : "bg-amber-50 text-amber-600 border-amber-100")}>{item.status}</span>
-                    </TD>
-                    <TD className="px-6 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {item.status === 'pending' && (
-                          <Button variant="ghost" size="sm" className="h-10 w-10 p-0 text-accent-dark hover:bg-accent-lavender/20 rounded-xl" onClick={() => approveOpname(item.id)} title="Approve"><CheckCircle2 className="w-4 h-4" /></Button>
-                        )}
-                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 hover:bg-white/40 rounded-xl" onClick={() => { setSelectedOpname(item); setIsModalOpen(true); }}><Edit className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => handleDelete(item.id)}><Trash2 className="w-4 h-4" /></Button>
-                      </div>
-                    </TD>
-                  </TR>
-                ))
-              )}
-            </TBody>
-          </Table>
+          <THead>
+            <TR className="bg-white/30 text-text-secondary text-[10px] uppercase tracking-widest">
+              <TH className="px-6 py-4 font-black">Tanggal</TH>
+              <TH className="px-6 py-4 font-black">Proyek</TH>
+              <TH className="px-6 py-4 font-black">Pekerja / Kontraktor</TH>
+              <TH className="px-6 py-4 font-black text-center">Status</TH>
+              <TH className="px-6 py-4 font-black text-right">Aksi</TH>
+            </TR>
+          </THead>
+          <TBody>
+            {loading ? (
+              <TR><TD colSpan={5} className="px-6 py-12 text-center text-text-muted">Memuat data...</TD></TR>
+            ) : filteredOpnames.length === 0 ? (
+              <TR><TD colSpan={5} className="px-6 py-20 text-center text-text-muted font-medium">Belum ada data opname batch.</TD></TR>
+            ) : (
+              filteredOpnames.map((item) => (
+                <TR key={item.id} className="hover:bg-white/30 transition-all group">
+                  <TD className="px-6 py-5 text-sm font-bold text-text-secondary">{formatDate(item.date)}</TD>
+                  <TD className="px-6 py-5 text-sm font-black text-text-primary uppercase">{item.project?.name || 'N/A'}</TD>
+                  <TD className="px-6 py-5 text-sm font-medium text-text-primary">{item.worker_name}</TD>
+                  <TD className="px-6 py-5 text-center">
+                    <span className={cn(
+                      "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                      item.status === 'paid' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                      item.status === 'approved' ? "bg-accent-lavender/20 text-accent-dark border-accent-lavender/30" :
+                      "bg-amber-50 text-amber-600 border-amber-100"
+                    )}>
+                      {item.status}
+                    </span>
+                  </TD>
+                  <TD className="px-6 py-5 text-right">
+                    <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-rose-500 hover:bg-rose-50 rounded-lg">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </TD>
+                </TR>
+              ))
+            )}
+          </TBody>
+        </Table>
       </Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedOpname ? 'Edit Data Opname / Upah' : 'Input Opname Proyek Baru'} className="max-w-2xl">
-        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-          <div className="grid grid-cols-2 gap-6">
-            <Input label="Tanggal Opname" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title="Input Progress Upah (Batch RAB)" 
+        className="max-w-6xl"
+      >
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Input label="Tanggal Opname" type="date" value={opnameDate} onChange={(e) => setOpnameDate(e.target.value)} />
             <div>
               <label className="text-[11px] font-black text-text-muted uppercase tracking-widest mb-2 block">Pilih Proyek</label>
-              <select className="w-full h-12 rounded-xl glass-input px-4 py-2 text-sm font-bold focus:outline-none focus:border-transparent transition-all" value={formData.project_id} onChange={(e) => setFormData({ ...formData, project_id: e.target.value })} required>
+              <select 
+                className="w-full h-12 rounded-xl glass-input px-4 text-sm font-bold focus:outline-none" 
+                value={selectedProjectId} 
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+              >
                 <option value="">-- Pilih Proyek --</option>
                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
+            <Input label="Nama Pekerja / Kontraktor" placeholder="Masukkan nama..." value={workerName} onChange={(e) => setWorkerName(e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="text-[11px] font-black text-text-muted uppercase tracking-widest mb-2 block">Referensi SPK (Opsional)</label>
-              <select className="w-full h-12 rounded-xl glass-input px-4 py-2 text-sm font-bold focus:outline-none focus:border-transparent transition-all" value={formData.spk_id} onChange={(e) => setFormData({ ...formData, spk_id: e.target.value, worker_name: spks.find(s => s.id === e.target.value)?.contractor_name || formData.worker_name })}>
-                <option value="">-- Tanpa SPK --</option>
-                {spks.filter(s => s.project_id === formData.project_id || !formData.project_id).map(s => <option key={s.id} value={s.id}>SPK-{s.id.substring(0, 8)} - {s.contractor_name}</option>)}
-              </select>
-            </div>
-            <Input label="Nama Pekerja / Kontraktor" placeholder="Masukkan nama..." value={formData.worker_name} onChange={(e) => setFormData({ ...formData, worker_name: e.target.value })} required />
-          </div>
-          <div className="grid grid-cols-1 gap-6">
-            <div>
-              <label className="text-[11px] font-black text-text-muted uppercase tracking-widest mb-2 block">Pekerjaan RAB (Opsional)</label>
-              <select 
-                className="w-full h-12 rounded-xl glass-input px-4 py-2 text-sm font-bold focus:outline-none disabled:opacity-50"
-                value={formData.rab_item_id}
-                onChange={(e) => {
-                  const item = rabItems.find(i => i.id === e.target.value);
-                  setFormData({ 
-                    ...formData, 
-                    rab_item_id: e.target.value,
-                    work_description: item ? item.uraian : formData.work_description
-                  });
-                }}
-                disabled={!formData.project_id || loadingRAB}
-              >
-                <option value="">-- Pilih dari RAB --</option>
-                {rabItems.filter(i => i.level >= 2).map(i => (
-                  <option key={i.id} value={i.id}>
-                    {i.uraian} ({i.volume} {i.satuan}) - Upah: {formatCurrency(i.wage_price)}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[9px] text-text-muted mt-1 ml-1">*Pilih dari RAB untuk otomatisasi hitung upah.</p>
-            </div>
-            <Input label="Deskripsi Pekerjaan (Manual)" placeholder="Contoh: Pasang keramik lantai 1..." value={formData.work_description} onChange={(e) => setFormData({ ...formData, work_description: e.target.value })} required />
-          </div>
-          <div className="p-6 bg-white/30 rounded-xl border border-white/40">
-            <div className="flex items-center gap-2 mb-4 text-primary">
-              <Calculator className="w-4 h-4" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Kalkulasi Prosentase & Upah</span>
-            </div>
-            <div className="grid grid-cols-2 gap-6">
-              <Input label="Progress Sebelumnya (%)" type="number" value={formData.previous_percentage} onChange={(e) => setFormData({ ...formData, previous_percentage: parseInt(e.target.value) || 0 })} required />
-              <Input label="Progress Saat Ini (%)" type="number" value={formData.current_percentage} onChange={(e) => setFormData({ ...formData, current_percentage: parseInt(e.target.value) || 0 })} required />
-            </div>
-            <div className="mt-6 pt-6 border-t border-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Estimasi Upah</p>
-                <div className="flex items-center gap-2 mt-1"><span className="text-2xl font-black text-text-primary">{formatCurrency(formData.amount)}</span></div>
+
+          {selectedProjectId ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-primary">
+                <Calculator className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest italic">Item Pekerjaan Terdaftar di RAB</span>
               </div>
-              <div className="text-right">
-                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Status Opname</p>
-                <select className="mt-1 bg-transparent text-sm font-black text-primary focus:outline-none cursor-pointer uppercase tracking-tighter" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}>
-                  <option value="pending">PENDING</option>
-                  <option value="approved">APPROVED</option>
-                  <option value="paid">PAID</option>
-                </select>
+              
+              <div className="border border-white/40 rounded-2xl overflow-hidden shadow-premium">
+                <Table>
+                  <THead>
+                    <TR className="bg-white/40 text-[9px] font-black uppercase tracking-widest">
+                      <TH className="px-4 py-3">Pekerjaan</TH>
+                      <TH className="px-4 py-3 text-right">Total Upah (RAB)</TH>
+                      <TH className="px-4 py-3 text-center">Progress Sblmnya</TH>
+                      <TH className="px-4 py-3 text-center w-32">Input % Baru</TH>
+                      <TH className="px-4 py-3 text-right">Nilai Rp (Auto)</TH>
+                      <TH className="px-4 py-3 text-center">Sisa Akhir %</TH>
+                    </TR>
+                  </THead>
+                  <TBody>
+                    {batchItems.length === 0 ? (
+                      <TR><TD colSpan={6} className="px-4 py-10 text-center text-text-muted">Tidak ada item upah di RAB proyek ini.</TD></TR>
+                    ) : (
+                      batchItems.map((item) => (
+                        <TR key={item.rab_item_id} className={cn("hover:bg-white/30", item.paid_percentage >= 100 && "bg-emerald-50/30")}>
+                          <TD className="px-4 py-3 text-sm font-medium text-text-primary">{item.uraian}</TD>
+                          <TD className="px-4 py-3 text-sm font-black text-text-secondary text-right">{formatCurrency(item.total_budget)}</TD>
+                          <TD className="px-4 py-3 text-center">
+                            <span className="text-xs font-bold text-text-muted">{item.paid_percentage.toFixed(1)}%</span>
+                          </TD>
+                          <TD className="px-4 py-3 text-center">
+                            <input 
+                              type="number"
+                              className={cn(
+                                "w-20 h-10 rounded-lg border border-white/60 bg-white px-2 text-center text-sm font-black focus:outline-none",
+                                item.paid_percentage >= 100 ? "opacity-50 cursor-not-allowed" : "focus:border-primary"
+                              )}
+                              value={item.input_percentage || ''}
+                              onChange={(e) => handleItemChange(item.rab_item_id, parseFloat(e.target.value) || 0)}
+                              disabled={item.paid_percentage >= 100}
+                              placeholder="0"
+                            />
+                          </TD>
+                          <TD className="px-4 py-3 text-sm font-black text-primary text-right">{formatCurrency(item.calculated_amount)}</TD>
+                          <TD className="px-4 py-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <span className={cn(
+                                "text-xs font-black",
+                                (100 - item.paid_percentage - item.input_percentage) < 0 ? "text-rose-500" : "text-emerald-600"
+                              )}>
+                                {(100 - item.paid_percentage - item.input_percentage).toFixed(1)}%
+                              </span>
+                              {(100 - item.paid_percentage - item.input_percentage) < 0 && <AlertCircle className="w-3 h-3 text-rose-500 mt-1" />}
+                            </div>
+                          </TD>
+                        </TR>
+                      ))
+                    )}
+                  </TBody>
+                </Table>
               </div>
             </div>
+          ) : (
+            <div className="h-64 flex flex-col items-center justify-center text-text-muted bg-white/20 rounded-3xl border-2 border-dashed border-white/40">
+              <ClipboardList className="w-12 h-12 opacity-20 mb-4" />
+              <p className="font-bold uppercase tracking-widest text-[10px]">Silakan pilih proyek untuk memuat daftar RAB</p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-6">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6 border-white/40">Batal</Button>
+            <Button 
+              onClick={handleSaveBatch} 
+              isLoading={submitting} 
+              disabled={!selectedProjectId || batchItems.length === 0}
+              className="rounded-xl h-12 px-10 shadow-glass"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Simpan Batch Opname
+            </Button>
           </div>
-          <div className="flex justify-end gap-3 mt-8">
-            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="h-12 px-6 rounded-xl border-white/40">Batal</Button>
-            <Button type="submit" isLoading={loading} className="h-12 px-8 rounded-xl shadow-glass shadow-glass">{selectedOpname ? 'Simpan Perubahan' : 'Simpan Data Opname'}</Button>
-          </div>
-        </form>
+        </div>
       </Modal>
     </div>
   );
