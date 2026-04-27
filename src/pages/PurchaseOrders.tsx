@@ -1,74 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, MoreVertical, Edit, Trash2, Package, Truck, CheckCircle2, ArrowLeft } from 'lucide-react';
-import { api } from '../lib/api';
-import { PurchaseOrder, Material } from '../types';
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Trash2, 
+  Package, 
+  Truck, 
+  CheckCircle2, 
+  ArrowLeft,
+  RefreshCw,
+  FileText,
+  Clock,
+  XCircle
+} from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Modal } from '../components/ui/Modal';
-import { formatDate, formatCurrency } from '../lib/utils';
-import { PurchaseOrderForm } from '../components/forms/PurchaseOrderForm';
-import { useAuth } from '../contexts/AuthContext';
-import { getMockData, saveMockData } from '../lib/storage';
+import { Input } from '../components/ui/Input';
+import { formatDate, formatCurrency, cn } from '../lib/utils';
+
+interface PO {
+  id: string;
+  po_number: string;
+  projectId: string;
+  supplierId: number;
+  total_price: string | number;
+  status: string;
+  created_at: string;
+  project_name?: string;
+  supplier_name?: string;
+}
 
 const PurchaseOrders: React.FC = () => {
   const navigate = useNavigate();
-  const { isMockMode, division, setDivision } = useAuth();
-  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
+  const [orders, setOrders] = useState<PO[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | undefined>();
-
-  useEffect(() => {
-    if (division === 'marketing') {
-      fetchOrders();
-      fetchMaterials();
-    } else {
-      setLoading(false);
-    }
-  }, [division]);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      
-      if (isMockMode) {
-        const defaultOrders: any[] = [
-          {
-            id: '1',
-            po_number: 'PO-2026-001',
-            material_id: '1',
-            supplier: 'PT. Semen Indonesia',
-            quantity: 100,
-            unit_price: 65000,
-            total_price: 6500000,
-            status: 'received',
-            order_date: new Date().toISOString(),
-            materials: { name: 'Semen Tiga Roda', unit: 'sak' },
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            po_number: 'PO-2026-002',
-            material_id: '2',
-            supplier: 'UD. Pasir Jaya',
-            quantity: 10,
-            unit_price: 250000,
-            total_price: 2500000,
-            status: 'pending',
-            order_date: new Date().toISOString(),
-            materials: { name: 'Pasir Beton', unit: 'm3' },
-            created_at: new Date().toISOString(),
-          }
-        ];
-        setOrders(getMockData<PurchaseOrder>('purchase_orders', defaultOrders));
-        return;
-      }
-
-      const data = await api.get('purchase_orders', 'select=*,materials(name,unit,price)&order=order_date.desc');
+      const res = await fetch('/api/purchase-orders');
+      const data = await res.json();
       setOrders(data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -77,225 +51,130 @@ const PurchaseOrders: React.FC = () => {
     }
   };
 
-  const fetchMaterials = async () => {
-    if (isMockMode) {
-      setMaterials([
-        { id: '1', name: 'Semen Tiga Roda', unit: 'sak', stock: 50, min_stock: 10, created_at: '', updated_at: '' },
-        { id: '2', name: 'Pasir Beton', unit: 'm3', stock: 5, min_stock: 8, created_at: '', updated_at: '' }
-      ]);
-      return;
-    }
-    const data = await api.get('materials', 'select=*');
-    setMaterials(data || []);
-  };
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
-  const handleStatusUpdate = async (id: string, status: PurchaseOrder['status'], materialId: string, quantity: number) => {
-    if (isMockMode) {
-      const updatedOrders = orders.map(o => o.id === id ? { ...o, status } : o);
-      setOrders(updatedOrders);
-      saveMockData('purchase_orders', updatedOrders);
-
-      // If received, update material stock in mock data
-      if (status === 'received') {
-        const currentMaterials = getMockData<Material>('materials', []);
-        const updatedMaterials = currentMaterials.map(m => 
-          m.id === materialId ? { ...m, stock: m.stock + quantity } : m
-        );
-        saveMockData('materials', updatedMaterials);
-        fetchMaterials();
-      }
-      return;
-    }
-    try {
-      await api.update('purchase_orders', id, { status });
-
-      // If received, update material stock
-      if (status === 'received') {
-        const material = materials.find(m => m.id === materialId);
-        if (material) {
-          await api.update('materials', materialId, { stock: material.stock + quantity });
-        }
-      }
-
-      fetchOrders();
-      fetchMaterials();
-    } catch (error) {
-      console.error('Error updating status:', error);
+  const getStatusBadge = (status: string) => {
+    switch(status.toLowerCase()) {
+      case 'received': return { label: 'DITERIMA', color: 'bg-emerald-100 text-emerald-600 border-emerald-200', icon: CheckCircle2 };
+      case 'shipped': return { label: 'DIKIRIM', color: 'bg-blue-100 text-blue-600 border-blue-200', icon: Truck };
+      case 'cancelled': return { label: 'DIBATALKAN', color: 'bg-rose-100 text-rose-600 border-rose-200', icon: XCircle };
+      default: return { label: 'PENDING', color: 'bg-amber-100 text-amber-600 border-amber-200', icon: Clock };
     }
   };
 
   const filteredOrders = orders.filter(order => 
-    order.po_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.supplier.toLowerCase().includes(searchTerm.toLowerCase())
+    order.po_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.project_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 pb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/')}
-            className="p-2 h-auto"
-          >
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Purchase Orders</h1>
-            <p className="text-text-secondary">Kelola pemesanan material proyek</p>
+            <h1 className="text-3xl font-black text-text-primary tracking-tight">Purchase Orders</h1>
+            <p className="text-text-secondary font-medium">Monitoring pemesanan material ke supplier</p>
           </div>
         </div>
-        <Button onClick={() => {
-          setSelectedOrder(undefined);
-          setIsModalOpen(true);
-        }}>
-          <Plus className="w-4 h-4 mr-2" />
-          PO Baru
+        <Button onClick={() => alert('Fitur buat PO manual sedang disiapkan. Silakan gunakan alur PR -> Approval -> PO.')} className="rounded-xl h-12 px-8 shadow-glass">
+          <Plus className="w-5 h-5 mr-2" /> Buat PO Baru
         </Button>
       </div>
 
-      <Card>
-        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="p-6 bg-white border-none shadow-premium flex items-center gap-6">
+          <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+            <Truck className="w-7 h-7" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Total Pesanan</p>
+            <p className="text-2xl font-black text-text-primary tracking-tight">{orders.length} PO</p>
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-0 border-none shadow-premium bg-white overflow-hidden">
+        <div className="p-6 border-b border-white/20 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <input
-              type="text"
-              placeholder="Cari PO atau supplier..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-white/40 focus:outline-none/20 focus:border-accent-lavender transition-all"
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+            <Input 
+              placeholder="Cari PO, supplier, atau proyek..." 
+              className="pl-12 h-12 glass-input border-none rounded-xl"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="sm">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
+          <Button variant="outline" className="h-12 rounded-xl bg-white border-white/40" onClick={fetchOrders}>
+            <RefreshCw className={cn("w-4 h-4 mr-2", loading ? "animate-spin" : "")} /> Segarkan
           </Button>
         </div>
 
-        <Table className="min-w-[800px]">
+        <div className="overflow-x-auto">
+          <Table className="w-full">
             <THead>
-              <TR className="bg-white/20">
-                <TH className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">No. PO</TH>
-                <TH className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Material</TH>
-                <TH className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Supplier</TH>
-                <TH className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Qty</TH>
-                <TH className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Total</TH>
-                <TH className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Status</TH>
-                <TH className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider text-right">Aksi</TH>
+              <TR isHoverable={false}>
+                <TH>No. PO</TH>
+                <TH>Proyek</TH>
+                <TH>Supplier</TH>
+                <TH className="text-right">Total Nilai</TH>
+                <TH className="text-center">Status</TH>
+                <TH>Tanggal</TH>
+                <TH className="text-right">Aksi</TH>
               </TR>
             </THead>
             <TBody>
-              {loading ? (
-                <TR>
-                  <TD colSpan={7} className="px-6 py-8 text-center">
-                    <div className="flex justify-center"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-dark"></div></div>
+              {loading && orders.length === 0 ? (
+                <TR isHoverable={false}>
+                  <TD colSpan={7} className="py-20 text-center">
+                    <RefreshCw className="w-8 h-8 text-accent-dark animate-spin mx-auto mb-4" />
+                    <p className="text-text-muted font-bold uppercase text-[10px] tracking-widest">Memuat Data PO...</p>
                   </TD>
                 </TR>
               ) : filteredOrders.length === 0 ? (
-                <TR>
-                  <TD colSpan={7} className="px-6 py-8 text-center text-text-secondary">Tidak ada data PO.</TD>
+                <TR isHoverable={false}>
+                  <TD colSpan={7} className="py-20 text-center text-text-muted">
+                    <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p className="font-bold uppercase text-[10px] tracking-widest">Tidak ada Purchase Order ditemukan</p>
+                  </TD>
                 </TR>
-              ) : (
-                filteredOrders.map((order) => (
-                  <TR key={order.id} className="hover:bg-white/30 transition-colors group">
-                    <TD className="px-6 py-4">
-                      <div className="font-medium text-text-primary">{order.po_number}</div>
-                      <div className="text-xs text-text-secondary">{formatDate(order.order_date)}</div>
+              ) : filteredOrders.map((order) => {
+                const badge = getStatusBadge(order.status);
+                return (
+                  <TR key={order.id}>
+                    <TD className="font-black text-text-primary text-sm uppercase tracking-tight">
+                      {order.po_number || `PO-${order.id.substring(0,6)}`}
                     </TD>
-                    <TD className="px-6 py-4">
-                      <div className="text-sm text-text-primary">{(order as any).materials?.name}</div>
+                    <TD className="font-bold text-text-secondary text-xs">{order.project_name || '-'}</TD>
+                    <TD className="font-bold text-text-primary text-xs">{order.supplier_name || '-'}</TD>
+                    <TD className="text-right font-black text-accent-dark">
+                      {formatCurrency(Number(order.total_price))}
                     </TD>
-                    <TD className="px-6 py-4">
-                      <div className="text-sm text-text-primary">{order.supplier}</div>
-                    </TD>
-                    <TD className="px-6 py-4">
-                      <div className="text-sm text-text-primary">{order.quantity} {(order as any).materials?.unit}</div>
-                    </TD>
-                    <TD className="px-6 py-4">
-                      <div className="text-sm font-medium text-text-primary">{formatCurrency(order.total_price)}</div>
-                    </TD>
-                    <TD className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        order.status === 'received' ? 'bg-emerald-100 text-emerald-800' :
-                        order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                        order.status === 'cancelled' ? 'bg-rose-100 text-rose-800' :
-                        'bg-amber-100 text-amber-800'
-                      }`}>
-                        {order.status === 'pending' ? 'Pending' :
-                         order.status === 'shipped' ? 'Dikirim' :
-                         order.status === 'received' ? 'Diterima' : 'Dibatalkan'}
+                    <TD className="text-center">
+                      <span className={cn("px-3 py-1 rounded-full text-[9px] font-black border tracking-widest flex items-center justify-center w-fit mx-auto gap-1", badge.color)}>
+                        <badge.icon className="w-3 h-3" /> {badge.label}
                       </span>
                     </TD>
-                    <TD className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        {order.status === 'pending' && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-blue-600 hover:text-blue-700"
-                            onClick={() => handleStatusUpdate(order.id, 'shipped', order.material_id, order.quantity)}
-                          >
-                            <Truck className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {order.status === 'shipped' && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-emerald-600 hover:text-emerald-700"
-                            onClick={() => handleStatusUpdate(order.id, 'received', order.material_id, order.quantity)}
-                          >
-                            <CheckCircle2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="sm" className="text-text-muted hover:text-text-secondary">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </div>
+                    <TD className="text-xs text-text-muted font-bold">{formatDate(order.created_at)}</TD>
+                    <TD className="text-right">
+                      <Button variant="ghost" size="sm" className="rounded-xl hover:bg-accent-lavender/10 text-primary">
+                        Detail
+                      </Button>
                     </TD>
                   </TR>
-                ))
-              )}
+                );
+              })}
             </TBody>
           </Table>
+        </div>
       </Card>
-
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={selectedOrder ? 'Edit Purchase Order' : 'Tambah Purchase Order'}
-        size="lg"
-      >
-        <PurchaseOrderForm
-          materials={materials}
-          onSuccess={(values) => {
-            if (isMockMode && values) {
-              const material = materials.find(m => m.id === values.material_id);
-              const newOrder: any = {
-                id: Math.random().toString(36).substr(2, 9),
-                po_number: `PO-${Date.now().toString().slice(-6)}`,
-                ...values,
-                total_price: values.quantity * values.unit_price,
-                status: 'pending',
-                materials: material ? { name: material.name, unit: material.unit } : null,
-                created_at: new Date().toISOString(),
-              };
-              const updatedOrders = [newOrder, ...orders];
-              setOrders(updatedOrders);
-              saveMockData('purchase_orders', updatedOrders);
-            }
-            setIsModalOpen(false);
-            if (!isMockMode) fetchOrders();
-          }}
-          onCancel={() => setIsModalOpen(false)}
-        />
-      </Modal>
     </div>
   );
 };
 
 export default PurchaseOrders;
-
-
-

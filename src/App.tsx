@@ -40,6 +40,11 @@ const PurchaseRequests = lazy(() => import('./pages/PurchaseRequests'));
 const SPK = lazy(() => import('./pages/SPK'));
 const Opname = lazy(() => import('./pages/Opname'));
 const RealCost = lazy(() => import('./pages/RealCost'));
+const MaterialSuppliers = lazy(() => import('./pages/Suppliers'));
+const GoodsReceipt = lazy(() => import('./pages/GoodsReceipt.tsx'));
+const MaterialUsage = lazy(() => import('./pages/MaterialUsage.tsx'));
+const StockCard = lazy(() => import('./pages/StockCard.tsx'));
+const ApprovalManager = lazy(() => import('./pages/ApprovalManager.tsx'));
 
 // Keuangan
 const KPRDisbursement = lazy(() => import('./pages/KPRDisbursement'));
@@ -133,6 +138,11 @@ export default function App() {
               <Route path="spk" element={<SPK />} />
               <Route path="opname" element={<Opname />} />
               <Route path="real-cost" element={<RealCost />} />
+              <Route path="material-suppliers" element={<MaterialSuppliers />} />
+              <Route path="goods-receipt" element={<GoodsReceipt />} />
+              <Route path="material-usage" element={<MaterialUsage />} />
+              <Route path="stock-card" element={<StockCard />} />
+              <Route path="approval-manager" element={<ApprovalManager />} />
               
               {/* Keuangan */}
               <Route path="verification-queue" element={<VerificationQueue />} />

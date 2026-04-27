@@ -703,10 +703,13 @@ export const MENU_KEYS = [
   { key: "units", label: "Unit Properti", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "rab", label: "RAB Proyek", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
   { key: "construction-progress", label: "Progress Bangun", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
-  { key: "materials", label: "Stok Material", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "master-material", label: "Master Material", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "material-suppliers", label: "Master Supplier", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "purchase-requests", label: "Purchase Request", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "purchase-orders", label: "Purchase Order", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
+  { key: "goods-receipt", label: "Penerimaan Barang", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "material-usage", label: "Pemakaian Material", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "stock-card", label: "Kartu Stok", group: "Teknik", capabilities: { view: true, create: true, edit: false, delete: false, print: true } },
   { key: "spk", label: "SPK Kontraktor", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
   { key: "opname", label: "Opname/Upah", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "real-cost", label: "Real Cost", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
@@ -1488,3 +1491,122 @@ export type PaketTier = typeof paketTier.$inferSelect;
 export type PaketProgress = typeof paketProgress.$inferSelect;
 
 
+// === ENGINEERING & MATERIAL MANAGEMENT ===
+
+export const materials = pgTable("materials", {
+  id: text("id").primaryKey(), // uuid in db, mapped as text in drizzle for simplicity or use custom uuid
+  name: text("name").notNull(),
+  unit: text("unit").notNull(),
+  category: text("category"),
+  specification: text("specification"),
+  stock: numeric("stock").default("0").notNull(),
+  minStock: numeric("min_stock").default("0").notNull(),
+  unitPrice: numeric("unit_price").default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const projects = pgTable("projects", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  location: text("location"),
+  status: text("status"),
+  sitePlanImageUrl: text("site_plan_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const propertyUnits = pgTable("units", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id").notNull(),
+  unitNumber: text("unit_number").notNull(),
+  type: text("type"),
+  price: numeric("price").default("0"),
+  status: text("status").default("available"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const rabProjects = pgTable("rab_projects", {
+  id: text("id").primaryKey(),
+  namaProyek: text("nama_proyek").notNull(),
+  lokasi: text("lokasi"),
+  totalAnggaran: numeric("total_anggaran").default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const rabItems = pgTable("rab_items", {
+  id: text("id").primaryKey(),
+  rabProjectId: text("rab_project_id").notNull(),
+  parentId: text("parent_id"),
+  level: integer("level").default(0),
+  uraian: text("uraian").notNull(),
+  volume: numeric("volume").default("0"),
+  satuan: text("satuan"),
+  hargaRab: numeric("harga_rab").default("0"),
+  urutan: integer("urutan").default(0),
+});
+
+export const purchaseRequests = pgTable("purchase_requests", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id").notNull(),
+  itemName: text("item_name"),
+  status: text("status").default("SUBMITTED").notNull(),
+  items: jsonb("items"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const purchaseOrders = pgTable("purchase_orders", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id").notNull(),
+  date: timestamp("date"),
+  status: text("status").default("PENDING").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const materialSuppliers = pgTable("material_suppliers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  address: text("address"),
+  phone: text("phone"),
+  contactPerson: text("contact_person"),
+  bankName: text("bank_name"),
+  bankAccountNumber: text("bank_account_number"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const projectMaterialStocks = pgTable("project_material_stocks", {
+  id: serial("id").primaryKey(),
+  projectId: text("project_id").notNull(),
+  materialId: text("material_id").notNull(),
+  stock: numeric("stock").default("0").notNull(),
+}, (t) => ({
+  unq: unique().on(t.projectId, t.materialId),
+}));
+
+export const materialStockLogs = pgTable("material_stock_logs", {
+  id: serial("id").primaryKey(),
+  materialId: text("material_id").notNull(),
+  projectId: text("project_id").notNull(),
+  unitId: text("unit_id"), // Added for per-unit tracking
+  transactionType: text("transaction_type").notNull(), // 'GR', 'USAGE', 'ADJUSTMENT', 'RETURN'
+  qtyChange: numeric("qty_change").notNull(),
+  qtyBefore: numeric("qty_before").notNull(),
+  qtyAfter: numeric("qty_after").notNull(),
+  referenceType: text("reference_type"),
+  referenceId: text("reference_id"),
+  createdBy: integer("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  notes: text("notes"),
+});
+
+// === SCHEMAS ===
+export const insertMaterialSupplierSchema = createInsertSchema(materialSuppliers);
+export const insertMaterialStockLogSchema = createInsertSchema(materialStockLogs);
+
+// === TYPES ===
+export type MaterialSupplier = typeof materialSuppliers.$inferSelect;
+export type ProjectMaterialStock = typeof projectMaterialStocks.$inferSelect;
+export type MaterialStockLog = typeof materialStockLogs.$inferSelect;
+export type RabProject = typeof rabProjects.$inferSelect;
+export type RabItem = typeof rabItems.$inferSelect;
+export type PurchaseRequest = typeof purchaseRequests.$inferSelect;
+export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
+export type PropertyUnit = typeof propertyUnits.$inferSelect;

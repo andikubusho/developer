@@ -63,13 +63,18 @@ const menuItems = [
 
   // Teknik Priority
   { name: 'Purchase Request', icon: ClipboardList, path: '/purchase-requests', divisions: ['teknik', 'audit'] },
+  { name: 'Approval Manager', icon: ShieldCheck, path: '/approval-manager', divisions: ['teknik', 'audit'] },
   { name: 'Purchase Order', icon: ShoppingCart, path: '/purchase-orders', divisions: ['teknik', 'audit'] },
+  { name: 'Penerimaan Barang', icon: Truck, path: '/goods-receipt', divisions: ['teknik', 'audit'] },
+  { name: 'Pemakaian Material', icon: HardHat, path: '/material-usage', divisions: ['teknik', 'audit'] },
   { name: 'Stok Material', icon: Package, path: '/materials', divisions: ['teknik', 'audit'] },
+  { name: 'Kartu Stok', icon: History, path: '/stock-card', divisions: ['teknik', 'audit'] },
   { name: 'RAB Proyek', icon: Calculator, path: '/rab', divisions: ['teknik', 'audit'] },
   { name: 'Opname/Upah', icon: ClipboardList, path: '/opname', divisions: ['teknik', 'audit'] },
   { name: 'SPK Kontraktor', icon: FileText, path: '/spk', divisions: ['teknik', 'audit'] },
   { name: 'Real Cost', icon: BarChart3, path: '/real-cost', divisions: ['teknik', 'audit'] },
   { name: 'Master Material', icon: Package, path: '/master-material', divisions: ['teknik', 'audit'] },
+  { name: 'Master Supplier', icon: Users, path: '/material-suppliers', divisions: ['teknik', 'audit'] },
 
   // Marketing Priority
   { name: 'Calon Konsumen', icon: UserPlus, path: '/leads', divisions: ['marketing'] },

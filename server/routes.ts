@@ -27,6 +27,7 @@ import { registerPelangganProgramRoutes } from "./routes/pelanggan_program";
 import { registerPelangganProgramPrincipalRoutes } from "./routes/pelanggan_program_principal";
 import { registerShipmentRoutes } from "./routes/shipments";
 import { registerSystemRoutes } from "./routes/system";
+import { registerMaterialRoutes } from "./routes/materials";
 
 export async function registerRoutes(app: Express, httpServer: Server): Promise<void> {
   // 1. Auth Setup (API endpoints inside setupAuth)
@@ -77,6 +78,7 @@ export async function registerRoutes(app: Express, httpServer: Server): Promise<
   // Principal & Joint Programs
   registerPrincipalRoutes(app, broadcast);
   registerShipmentRoutes(app, broadcast);
+  registerMaterialRoutes(app, broadcast);
   
   // System & Stats
   await registerSystemRoutes(app, broadcast);

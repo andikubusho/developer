@@ -13,8 +13,10 @@ import {
   MapPin,
   Calendar,
   Layers,
-  ArrowLeft
+  ArrowLeft,
+  Copy
 } from 'lucide-react';
+import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -22,6 +24,7 @@ import { api } from '../lib/api';
 import { formatCurrency, cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Project, Unit } from '../types';
 
 // --- Types ---
 
@@ -86,17 +89,55 @@ const RABForm: React.FC = () => {
   const navigate = useNavigate();
   const { setDivision } = useAuth();
   const [submitting, setSubmitting] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [projectHeader, setProjectHeader] = useState({
+    project_id: '',
+    unit_id: '',
     nama_proyek: '',
     lokasi: '',
     tanggal: new Date().toISOString().split('T')[0],
-    kategori: 'Rumah Tinggal Tipe 36'
   });
 
   const [tree, setTree] = useState<RABNode[]>([]);
+  const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
+  const [existingRabs, setExistingRabs] = useState<any[]>([]);
+  const [loadingExisting, setLoadingExisting] = useState(false);
 
-  // Initialize with one Level 0
+  // Fetch units when project changes
   useEffect(() => {
+    const fetchUnits = async () => {
+      if (!projectHeader.project_id) {
+        setUnits([]);
+        return;
+      }
+      try {
+        const data = await api.get('units', `project_id=eq.${projectHeader.project_id}&order=unit_number.asc`);
+        setUnits(data || []);
+      } catch (err) {
+        console.error('Error fetching units:', err);
+      }
+    };
+    fetchUnits();
+  }, [projectHeader.project_id]);
+
+  // Initialize with one Level 0 and fetch projects
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [projData, rabData] = await Promise.all([
+          api.get('projects', 'select=id,name,location&active=eq.true&order=name.asc'),
+          api.get('rab_projects', 'select=id,nama_proyek,lokasi,created_at&order=created_at.desc')
+        ]);
+        setProjects(projData || []);
+        setExistingRabs(rabData || []);
+      } catch (err) {
+        console.error('Error fetching initial data:', err);
+      }
+    };
+
+    fetchInitialData();
+
     if (tree.length === 0) {
       const initialNode: RABNode = {
         id: generateId(),
@@ -115,6 +156,63 @@ const RABForm: React.FC = () => {
       setTree([initialNode]);
     }
   }, []);
+
+  const handleCopyFrom = async (sourceRabId: string) => {
+    try {
+      setLoadingExisting(true);
+      const items = await api.get('rab_items', `rab_project_id=eq.${sourceRabId}&order=urutan.asc`);
+      
+      if (!items || items.length === 0) {
+        alert('RAB sumber tidak memiliki item.');
+        return;
+      }
+
+      // Rebuild tree from flat items
+      const idMap: { [key: string]: RABNode } = {};
+      const roots: RABNode[] = [];
+
+      items.forEach((item: any) => {
+        idMap[item.id] = {
+          id: generateId(), // New ID for the form session
+          parent_id: null, // Will be set below
+          level: item.level,
+          uraian: item.uraian,
+          volume: item.volume,
+          satuan: item.satuan,
+          koeff: item.koeff,
+          harga_rab: item.harga_rab,
+          harga_pasar: item.harga_pasar,
+          urutan: item.urutan,
+          isExpanded: true,
+          children: [],
+          _oldId: item.id // Track old ID to map parents
+        } as any;
+      });
+
+      // Map children and find roots
+      items.forEach((item: any) => {
+        const node = idMap[item.id];
+        if (item.parent_id === null) {
+          roots.push(node);
+        } else {
+          const parentNode = Object.values(idMap).find((n: any) => n._oldId === item.parent_id);
+          if (parentNode) {
+            node.parent_id = parentNode.id;
+            parentNode.children.push(node);
+          }
+        }
+      });
+
+      setTree(roots);
+      setIsCopyModalOpen(false);
+      alert('RAB berhasil disalin!');
+    } catch (err) {
+      console.error('Error copying RAB:', err);
+      alert('Gagal menyalin RAB');
+    } finally {
+      setLoadingExisting(false);
+    }
+  };
 
   // --- Tree Mutations ---
 
@@ -246,16 +344,18 @@ const RABForm: React.FC = () => {
 
     // Note: We need a clean way to handle validation state across the recursive structure.
     // For now, let's assume validation is handled or simplified for the user.
-    if (!projectHeader.nama_proyek || !projectHeader.lokasi) {
-      alert('Nama Proyek dan Lokasi wajib diisi');
+    if (!projectHeader.project_id || !projectHeader.unit_id) {
+      alert('Pilih Proyek dan Unit terlebih dahulu');
       return;
     }
 
     try {
       setSubmitting(true);
       
-      // 1. Insert Project (only columns that exist in rab_projects table)
+      // 1. Insert Project
       const project = await api.insert('rab_projects', {
+        project_id: projectHeader.project_id,
+        unit_id: projectHeader.unit_id,
         nama_proyek: projectHeader.nama_proyek,
         lokasi: projectHeader.lokasi,
         total_anggaran: grandTotal,
@@ -315,10 +415,11 @@ const RABForm: React.FC = () => {
     if (confirm('Apakah Anda yakin ingin mereset seluruh form?')) {
       setTree([]);
       setProjectHeader({
+        project_id: '',
+        unit_id: '',
         nama_proyek: '',
         lokasi: '',
         tanggal: new Date().toISOString().split('T')[0],
-        kategori: 'Rumah Tinggal Tipe 36'
       });
     }
   };
@@ -469,6 +570,9 @@ const RABForm: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-3">
+          <Button variant="outline" onClick={() => setIsCopyModalOpen(true)} className="rounded-xl h-12 px-6 bg-white shadow-glass">
+            <Copy className="w-5 h-5 mr-2 text-accent-dark" /> Salin dari RAB Lain
+          </Button>
           <Button variant="ghost" onClick={handleReset} className="rounded-xl h-12 px-6 glass-input">
             <RotateCcw className="w-5 h-5 mr-2" /> Reset
           </Button>
@@ -482,15 +586,25 @@ const RABForm: React.FC = () => {
       <Card className="p-8 border-none shadow-premium bg-white rounded-[2rem]">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-2">
-            <label className="text-xs font-black text-text-muted uppercase tracking-widest block flex items-center gap-2 ml-1">
-              <Building2 className="w-3 h-3 text-accent-dark" /> Nama Proyek
+            <label className="text-xs font-black text-text-primary uppercase tracking-widest block flex items-center gap-2 ml-1">
+              <Building2 className="w-3 h-3 text-accent-dark" /> Pilih Master Proyek
             </label>
-            <Input 
-              value={projectHeader.nama_proyek}
-              onChange={(e) => setProjectHeader({ ...projectHeader, nama_proyek: e.target.value })}
-              placeholder="Contoh: Perumahan Golden Canyon"
-              className="h-14 text-base font-bold rounded-xl"
-            />
+            <select 
+              value={projectHeader.project_id}
+              onChange={(e) => {
+                const proj = projects.find(p => p.id === e.target.value);
+                setProjectHeader({ 
+                  ...projectHeader, 
+                  project_id: e.target.value,
+                  nama_proyek: proj?.name || '',
+                  lokasi: proj?.location || ''
+                });
+              }}
+              className="w-full h-14 glass-input border-none rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none"
+            >
+              <option value="">-- Pilih Proyek --</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
           </div>
           <div className="space-y-2">
             <label className="text-xs font-black text-text-muted uppercase tracking-widest block flex items-center gap-2 ml-1">
@@ -515,15 +629,21 @@ const RABForm: React.FC = () => {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-black text-text-muted uppercase tracking-widest block flex items-center gap-2 ml-1">
-              <Layers className="w-3 h-3 text-accent-dark" /> Kategori
+            <label className="text-xs font-black text-text-primary uppercase tracking-widest block flex items-center gap-2 ml-1">
+              <Layers className="w-3 h-3 text-accent-dark" /> Pilih Unit
             </label>
             <select 
-              value={projectHeader.kategori}
-              onChange={(e) => setProjectHeader({ ...projectHeader, kategori: e.target.value })}
-              className="w-full h-14 glass-input border-none rounded-xl px-6 text-base font-bold text-text-primary glass-input focus:outline-none"
+              value={projectHeader.unit_id}
+              onChange={(e) => setProjectHeader({ ...projectHeader, unit_id: e.target.value })}
+              disabled={!projectHeader.project_id}
+              className="w-full h-14 glass-input border-none rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none disabled:opacity-50"
             >
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value="">{projectHeader.project_id ? '-- Pilih Unit --' : 'Pilih Proyek Dulu'}</option>
+              {units.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.unit_number} - {u.type}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -603,6 +723,49 @@ const RABForm: React.FC = () => {
            </div>
         </div>
       </div>
+
+      {/* Copy RAB Modal */}
+      <Modal
+        isOpen={isCopyModalOpen}
+        onClose={() => setIsCopyModalOpen(false)}
+        title="Pilih RAB Sumber untuk Disalin"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary mb-4">Pilih RAB yang sudah ada untuk menyalin struktur dan rincian biayanya ke dalam form saat ini.</p>
+          <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+            {existingRabs.length === 0 ? (
+              <div className="p-8 text-center text-text-muted italic bg-white/30 rounded-xl">Belum ada RAB lain yang tersedia.</div>
+            ) : (
+              existingRabs.map((r: any) => (
+                <div 
+                  key={r.id} 
+                  className="p-4 bg-white hover:bg-accent-lavender/10 border border-white/60 rounded-xl flex items-center justify-between cursor-pointer transition-all group shadow-sm hover:shadow-md"
+                  onClick={() => handleCopyFrom(r.id)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-accent-lavender/20 rounded-lg group-hover:bg-accent-lavender/40 transition-colors">
+                      <Calculator className="w-5 h-5 text-accent-dark" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-text-primary">{r.nama_proyek}</h4>
+                      <p className="text-xs text-text-secondary flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3 h-3" /> {r.lokasi || '-'} • {formatDate(r.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="ghost" className="text-accent-dark font-black text-[10px] uppercase tracking-wider group-hover:bg-accent-dark group-hover:text-white rounded-lg">
+                    Pilih & Salin
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="flex justify-end pt-4">
+            <Button variant="ghost" onClick={() => setIsCopyModalOpen(false)}>Batal</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

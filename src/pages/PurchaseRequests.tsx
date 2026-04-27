@@ -10,6 +10,7 @@ import {
   Home,
   Trash2,
   PlusCircle,
+  Search,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -37,6 +38,13 @@ const PurchaseRequests: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const [materialSearch, setMaterialSearch] = useState('');
+
+  const filteredMaterials = materials.filter(m => 
+    m.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
+    (m.specification && m.specification.toLowerCase().includes(materialSearch.toLowerCase()))
+  );
 
   const [form, setForm] = useState({
     project_id: '',
@@ -270,9 +278,21 @@ const PurchaseRequests: React.FC = () => {
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-text-primary uppercase tracking-widest flex items-center gap-2">
-                <Package className="w-4 h-4 text-accent-dark" /> Daftar Material
-              </h3>
+              <div className="flex items-center gap-4">
+                <h3 className="text-sm font-black text-text-primary uppercase tracking-widest flex items-center gap-2">
+                  <Package className="w-4 h-4 text-accent-dark" /> Daftar Material
+                </h3>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <input
+                    type="text"
+                    placeholder="Cari material..."
+                    className="h-8 pl-9 pr-4 rounded-pill bg-white/50 border border-white/40 text-[11px] font-bold focus:outline-none focus:ring-1 focus:ring-accent-lavender w-48"
+                    value={materialSearch}
+                    onChange={(e) => setMaterialSearch(e.target.value)}
+                  />
+                </div>
+              </div>
               <Button type="button" variant="ghost" size="sm" onClick={addItemRow} className="text-accent-dark font-black text-[10px] uppercase tracking-widest hover:bg-accent-lavender/20">
                 <PlusCircle className="w-4 h-4 mr-1" /> Tambah Baris
               </Button>
@@ -292,7 +312,7 @@ const PurchaseRequests: React.FC = () => {
                         required
                       >
                         <option value="">Pilih Material...</option>
-                        {materials.map((m: MaterialWithPrice) => (
+                        {filteredMaterials.map((m: MaterialWithPrice) => (
                           <option key={m.id} value={m.id}>
                             {m.name} {m.specification ? `(${m.specification})` : ''}
                           </option>
