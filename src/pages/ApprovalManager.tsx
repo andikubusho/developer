@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ShieldCheck, 
-  Search, 
-  CheckCircle2, 
-  XCircle, 
-  Eye, 
+import {
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  Eye,
   ArrowLeft,
   Building2,
   ClipboardList,
@@ -18,25 +17,22 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { formatDate, formatCurrency, cn } from '../lib/utils';
+import { api } from '../lib/api';
 
 interface PR {
   id: string;
-  projectId: string;
-  itemName: string;
+  project_id: string;
+  item_name: string;
   status: string;
   items: any[];
-  createdAt: string;
-}
-
-interface Project {
-  id: string;
-  name: string;
+  created_at: string;
+  // enriched
+  projectName?: string;
 }
 
 const ApprovalManager: React.FC = () => {
   const navigate = useNavigate();
   const [prs, setPrs] = useState<PR[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPR, setSelectedPR] = useState<PR | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,12 +40,20 @@ const ApprovalManager: React.FC = () => {
   const fetchPRs = async () => {
     try {
       setLoading(true);
-      const [resPR, resProj] = await Promise.all([
-        fetch('/api/purchase-requests').then(res => res.json()),
-        fetch('/api/projects').then(res => res.json())
+      const [prData, projData] = await Promise.all([
+        api.get('purchase_requests', 'select=*&order=created_at.desc'),
+        api.get('projects', 'select=id,name'),
       ]);
-      setPrs(resPR || []);
-      setProjects(resProj || []);
+
+      const projMap: Record<string, string> = {};
+      (projData || []).forEach((p: any) => { projMap[p.id] = p.name; });
+
+      const enriched = (prData || []).map((pr: any) => ({
+        ...pr,
+        projectName: pr.project_id ? (projMap[pr.project_id] || 'Unknown') : '-',
+      }));
+
+      setPrs(enriched);
     } catch (error) {
       console.error('Error fetching PRs:', error);
     } finally {
@@ -67,18 +71,11 @@ const ApprovalManager: React.FC = () => {
 
     try {
       setLoading(true);
-      const res = await fetch(`/api/purchase-requests/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
-
-      if (!res.ok) throw new Error('Gagal memperbarui status');
-      
+      await api.update('purchase_requests', id, { status });
       setIsModalOpen(false);
       fetchPRs();
-    } catch (error) {
-      alert('Error updating status');
+    } catch (error: any) {
+      alert(`Gagal memperbarui status: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -158,20 +155,19 @@ const ApprovalManager: React.FC = () => {
                 </TR>
               ) : prs.map((pr) => {
                 const badge = getStatusBadge(pr.status);
-                const proj = projects.find(p => p.id === pr.projectId);
                 return (
                   <TR key={pr.id}>
                     <TD className="text-xs font-bold text-text-secondary">
                       #{pr.id.substring(0, 8)}
-                      <div className="text-[10px] opacity-60 font-medium">{formatDate(pr.createdAt)}</div>
+                      <div className="text-[10px] opacity-60 font-medium">{formatDate(pr.created_at)}</div>
                     </TD>
                     <TD>
                       <div className="flex items-center gap-2">
                         <Building2 className="w-3.5 h-3.5 text-text-muted" />
-                        <span className="font-bold text-text-primary text-sm">{proj?.name || 'Unknown'}</span>
+                        <span className="font-bold text-text-primary text-sm">{pr.projectName}</span>
                       </div>
                     </TD>
-                    <TD className="font-black text-text-primary text-sm">{pr.itemName}</TD>
+                    <TD className="font-black text-text-primary text-sm">{pr.item_name}</TD>
                     <TD className="text-center font-bold text-text-secondary">{pr.items?.length || 0} Item</TD>
                     <TD>
                       <span className={cn("px-3 py-1 rounded-full text-[9px] font-black border tracking-widest flex items-center w-fit gap-1", badge.color)}>
@@ -208,9 +204,9 @@ const ApprovalManager: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between gap-4 p-4 rounded-2xl bg-glass-deep/30 border border-white/40">
               <div>
                 <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Detail PR</p>
-                <h3 className="text-xl font-black text-text-primary uppercase tracking-tight">{selectedPR.itemName}</h3>
+                <h3 className="text-xl font-black text-text-primary uppercase tracking-tight">{selectedPR.item_name}</h3>
                 <p className="text-xs font-bold text-text-secondary mt-1">
-                  Proyek: {projects.find(p => p.id === selectedPR.projectId)?.name}
+                  Proyek: {selectedPR.projectName}
                 </p>
               </div>
               <div className="text-right">
