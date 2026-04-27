@@ -22,7 +22,7 @@ import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { api } from '../lib/api';
 import { formatCurrency, cn } from '../lib/utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Project, Unit } from '../types';
 
@@ -87,6 +87,8 @@ const calculateNodeTotal = (node: RABNode): number => {
 
 const RABForm: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('id');
   const { setDivision } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -136,26 +138,90 @@ const RABForm: React.FC = () => {
       }
     };
 
+    const fetchEditData = async () => {
+      try {
+        const [rabProj, itemsData] = await Promise.all([
+          api.get('rab_projects', `select=*&id=eq.${editId}`),
+          api.get('rab_items', `rab_project_id=eq.${editId}&order=urutan.asc`)
+        ]);
+
+        if (rabProj && rabProj.length > 0) {
+          const proj = rabProj[0];
+          setProjectHeader({
+            project_id: proj.project_id || '',
+            unit_id: proj.unit_id || '',
+            nama_proyek: proj.nama_proyek || '',
+            lokasi: proj.lokasi || '',
+            tanggal: proj.created_at ? proj.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
+          });
+        }
+
+        if (itemsData && itemsData.length > 0) {
+          const idMap: { [key: string]: RABNode } = {};
+          const roots: RABNode[] = [];
+
+          itemsData.forEach((item: any) => {
+            idMap[item.id] = {
+              id: item.id, // keep the old id for editing
+              parent_id: item.parent_id,
+              level: item.level,
+              uraian: item.uraian,
+              volume: item.volume,
+              satuan: item.satuan,
+              koeff: item.koeff,
+              harga_rab: item.harga_rab,
+              harga_pasar: item.harga_pasar,
+              urutan: item.urutan,
+              isExpanded: true,
+              children: [],
+              _oldId: item.id
+            } as any;
+          });
+
+          itemsData.forEach((item: any) => {
+            const node = idMap[item.id];
+            if (item.parent_id === null) {
+              roots.push(node);
+            } else {
+              const parentNode = idMap[item.parent_id];
+              if (parentNode) {
+                parentNode.children.push(node);
+              }
+            }
+          });
+
+          setTree(roots);
+        } else {
+          setTree([createInitialNode()]);
+        }
+      } catch (err) {
+        console.error('Error fetching edit data:', err);
+      }
+    };
+
+    const createInitialNode = (): RABNode => ({
+      id: generateId(),
+      parent_id: null,
+      level: 0,
+      uraian: 'PEKERJAAN LANTAI 1',
+      volume: null,
+      satuan: '',
+      koeff: null,
+      harga_rab: null,
+      harga_pasar: null,
+      urutan: 0,
+      isExpanded: true,
+      children: []
+    });
+
     fetchInitialData();
 
-    if (tree.length === 0) {
-      const initialNode: RABNode = {
-        id: generateId(),
-        parent_id: null,
-        level: 0,
-        uraian: 'PEKERJAAN LANTAI 1',
-        volume: null,
-        satuan: '',
-        koeff: null,
-        harga_rab: null,
-        harga_pasar: null,
-        urutan: 0,
-        isExpanded: true,
-        children: []
-      };
-      setTree([initialNode]);
+    if (editId) {
+      fetchEditData();
+    } else if (tree.length === 0) {
+      setTree([createInitialNode()]);
     }
-  }, []);
+  }, [editId]);
 
   const handleCopyFrom = async (sourceRabId: string) => {
     try {
@@ -352,16 +418,35 @@ const RABForm: React.FC = () => {
     try {
       setSubmitting(true);
       
-      // 1. Insert Project
-      const project = await api.insert('rab_projects', {
-        project_id: projectHeader.project_id,
-        unit_id: projectHeader.unit_id,
-        nama_proyek: projectHeader.nama_proyek,
-        lokasi: projectHeader.lokasi,
-        total_anggaran: grandTotal,
-      });
+      let projectId = '';
 
-      const projectId = project[0].id;
+      if (editId) {
+        // Update Project
+        await api.update('rab_projects', editId, {
+          project_id: projectHeader.project_id,
+          unit_id: projectHeader.unit_id,
+          nama_proyek: projectHeader.nama_proyek,
+          lokasi: projectHeader.lokasi,
+          total_anggaran: grandTotal,
+        });
+        projectId = editId;
+
+        // Delete old items to be replaced
+        const existingItems = await api.get('rab_items', `select=id&rab_project_id=eq.${editId}`);
+        if (existingItems && existingItems.length > 0) {
+          await Promise.all(existingItems.map((item: any) => api.delete('rab_items', item.id)));
+        }
+      } else {
+        // Insert Project
+        const project = await api.insert('rab_projects', {
+          project_id: projectHeader.project_id,
+          unit_id: projectHeader.unit_id,
+          nama_proyek: projectHeader.nama_proyek,
+          lokasi: projectHeader.lokasi,
+          total_anggaran: grandTotal,
+        });
+        projectId = project[0].id;
+      }
 
       // 2. Flatten Tree
       const flatItems: any[] = [];
