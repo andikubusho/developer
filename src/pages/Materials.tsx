@@ -18,6 +18,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { formatNumber, cn } from '../lib/utils';
+import { api } from '../lib/api';
 
 interface Project {
   id: string;
