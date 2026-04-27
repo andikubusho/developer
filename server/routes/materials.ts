@@ -23,7 +23,7 @@ import crypto from "crypto";
 export function registerMaterialRoutes(app: Express, broadcast: (type: string) => void) {
   
   // === SUPPLIERS ===
-  app.get("/api/material-suppliers", requireAuth, async (req, res) => {
+  app.get("/api/material-suppliers", async (req, res) => {
     try {
       const suppliers = await db.select().from(materialSuppliers).orderBy(desc(materialSuppliers.createdAt));
       res.json(suppliers);
@@ -46,7 +46,7 @@ export function registerMaterialRoutes(app: Express, broadcast: (type: string) =
   });
 
   // === PROJECT STOCKS ===
-  app.get("/api/project-material-stocks", requireAuth, async (req, res) => {
+  app.get("/api/project-material-stocks", async (req, res) => {
     try {
       const { projectId } = req.query;
       if (!projectId) return res.status(400).json({ message: "Project ID is required" });
@@ -60,7 +60,7 @@ export function registerMaterialRoutes(app: Express, broadcast: (type: string) =
   });
 
   // === STOCK LOGS ===
-  app.get("/api/material-stock-logs", requireAuth, async (req, res) => {
+  app.get("/api/material-stock-logs", async (req, res) => {
     try {
       const { projectId, materialId } = req.query;
       let query = db.select().from(materialStockLogs);
@@ -140,7 +140,7 @@ export function registerMaterialRoutes(app: Express, broadcast: (type: string) =
   });
 
   // === PROJECTS (HELPER) ===
-  app.get("/api/projects", requireAuth, async (req, res) => {
+  app.get("/api/projects", async (req, res) => {
     try {
       const list = await db.select().from(projects).orderBy(desc(projects.createdAt));
       res.json(list);
@@ -151,7 +151,7 @@ export function registerMaterialRoutes(app: Express, broadcast: (type: string) =
   });
 
   // === UNITS (HELPER) ===
-  app.get("/api/units", requireAuth, async (req, res) => {
+  app.get("/api/units", async (req, res) => {
     try {
       const { projectId } = req.query;
       let query = db.select().from(propertyUnits);
@@ -167,7 +167,7 @@ export function registerMaterialRoutes(app: Express, broadcast: (type: string) =
   });
 
   // === RAB PROJECTS ===
-  app.get("/api/rab-projects", requireAuth, async (req, res) => {
+  app.get("/api/rab-projects", async (req, res) => {
     try {
       const list = await db.select().from(rabProjects).orderBy(desc(rabProjects.createdAt));
       res.json(list);
@@ -177,7 +177,7 @@ export function registerMaterialRoutes(app: Express, broadcast: (type: string) =
     }
   });
 
-  app.get("/api/rab-items", requireAuth, async (req, res) => {
+  app.get("/api/rab-items", async (req, res) => {
     try {
       const { rabProjectId } = req.query;
       if (!rabProjectId) return res.status(400).json({ message: "RAB Project ID is required" });
@@ -303,7 +303,7 @@ export function registerMaterialRoutes(app: Express, broadcast: (type: string) =
   });
 
   // === MATERIALS (PROXY/HELPER) ===
-  app.get("/api/materials", requireAuth, async (req, res) => {
+  app.get("/api/materials", async (req, res) => {
     try {
       const list = await db.select().from(materialTable).orderBy(materialTable.name);
       res.json(list);
