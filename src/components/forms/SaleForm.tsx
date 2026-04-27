@@ -229,7 +229,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         const newCustomer = await api.insert('customers', { full_name: lead.name, phone: lead.phone, address: 'Alamat belum diisi' });
         if (newCustomer?.[0]) finalCustomerId = newCustomer[0].id;
       }
-      const { initial_payments, ...restValues } = values;
+      const { initial_payments, installments, ...restValues } = values;
       const salePayload = {
         ...restValues,
         customer_id: finalCustomerId,
@@ -282,13 +282,13 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       }
 
       // Save Installments Schedule
-      if (values.payment_method === 'installment' && values.installments && values.installments.length > 0) {
+      if (values.payment_method === 'installment' && installments && installments.length > 0) {
         // If edit, clear old schedule first
         if (initialData) {
           await api.apiRequest(`installments?sale_id=eq.${newSaleId}`, { method: 'DELETE' });
         }
-        
-        const installmentPayload = values.installments.map((inst, idx) => ({
+
+        const installmentPayload = installments.map((inst, idx) => ({
           sale_id: newSaleId,
           due_date: inst.due_date,
           amount: inst.amount,
