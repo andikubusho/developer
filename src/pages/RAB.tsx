@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, Plus, ArrowLeft, MapPin, Eye, Edit } from 'lucide-react';
+import { Calculator, Plus, ArrowLeft, MapPin, Eye, Edit, Trash2, Home } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { api } from '../lib/api';
@@ -19,12 +19,27 @@ const RAB: React.FC = () => {
   const fetchRabs = async () => {
     try {
       setLoading(true);
-      const data = await api.get('rab_projects', 'select=id,nama_proyek,lokasi,total_anggaran,created_at&order=created_at.desc');
+      const data = await api.get(
+        'rab_projects',
+        'select=id,nama_proyek,lokasi,total_anggaran,created_at,unit:units(unit_number,type)&order=created_at.desc'
+      );
       setRabs(data || []);
     } catch (error) {
       console.error('Error fetching RAB:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm('Hapus RAB ini? Semua item di dalamnya juga akan dihapus.')) return;
+    try {
+      // rab_items akan terhapus otomatis via ON DELETE CASCADE
+      await api.delete('rab_projects', id);
+      setRabs((prev: any[]) => prev.filter((r: any) => r.id !== id));
+    } catch (error: any) {
+      alert(`Gagal menghapus: ${error.message}`);
     }
   };
 
@@ -46,10 +61,11 @@ const RAB: React.FC = () => {
       </div>
 
       <Card className="p-0">
-        <Table className="min-w-[700px]">
+        <Table className="min-w-[800px]">
           <THead>
             <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
               <TH className="px-6 py-3 font-semibold">Nama Proyek</TH>
+              <TH className="px-6 py-3 font-semibold">Unit</TH>
               <TH className="px-6 py-3 font-semibold">Lokasi</TH>
               <TH className="px-6 py-3 font-semibold text-right">Total Anggaran</TH>
               <TH className="px-6 py-3 font-semibold">Tanggal Buat</TH>
@@ -58,9 +74,9 @@ const RAB: React.FC = () => {
           </THead>
           <TBody>
             {loading ? (
-              <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
+              <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
             ) : rabs.length === 0 ? (
-              <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">
+              <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">
                 <Calculator className="w-12 h-12 text-text-muted mx-auto mb-3" />
                 <p>Belum ada data RAB. Klik <strong>Buat RAB Baru</strong> untuk memulai.</p>
               </TD></TR>
@@ -73,29 +89,50 @@ const RAB: React.FC = () => {
                 >
                   <TD className="px-6 py-4 font-bold text-text-primary">{r.nama_proyek}</TD>
                   <TD className="px-6 py-4 text-sm text-text-secondary">
+                    {r.unit ? (
+                      <span className="flex items-center gap-1">
+                        <Home className="w-3 h-3 shrink-0" />
+                        {r.unit.unit_number}{r.unit.type ? ` - ${r.unit.type}` : ''}
+                      </span>
+                    ) : (
+                      <span className="text-text-muted">-</span>
+                    )}
+                  </TD>
+                  <TD className="px-6 py-4 text-sm text-text-secondary">
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.lokasi || '-'}</span>
                   </TD>
-                  <TD className="px-6 py-4 text-sm font-black text-accent-dark text-right">{formatCurrency(Number(r.total_anggaran) || 0)}</TD>
+                  <TD className="px-6 py-4 text-sm font-black text-accent-dark text-right">
+                    {formatCurrency(Number(r.total_anggaran) || 0)}
+                  </TD>
                   <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(r.created_at)}</TD>
                   <TD className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-8 w-8 p-0 text-accent-dark"
                         onClick={(e) => { e.stopPropagation(); navigate(`/rab/create?id=${r.id}`); }}
-                        title="Lihat Data"
+                        title="Lihat / Edit"
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-8 w-8 p-0 text-amber-600"
                         onClick={(e) => { e.stopPropagation(); navigate(`/rab/create?id=${r.id}`); }}
-                        title="Edit Data"
+                        title="Edit"
                       >
                         <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50"
+                        onClick={(e) => handleDelete(e, r.id)}
+                        title="Hapus RAB"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </TD>
