@@ -101,13 +101,26 @@ const FollowUps: React.FC = () => {
   const fetchFollowUps = async () => {
     try {
       setLoading(true);
-      const filterParam = selectedConsultantId !== 'all' ? `&lead.consultant_id=eq.${selectedConsultantId}` : '';
-      const query = selectedConsultantId !== 'all'
-        ? `select=*,lead:leads!inner(name,phone,consultant_id)${filterParam}&order=date_time.desc`
-        : `select=*,lead:leads(name,phone)&order=date_time.desc`;
-      
-      const data = await api.get('follow_ups', query);
-      setFollowUps(data || []);
+
+      const [fuData, leadsData] = await Promise.all([
+        api.get('follow_ups', 'select=*&order=date_time.desc'),
+        api.get('leads', 'select=id,name,phone,consultant_id'),
+      ]);
+
+      const leadsMap: Record<string, { name: string; phone: string; consultant_id: string }> = {};
+      (leadsData || []).forEach((l: any) => { leadsMap[l.id] = l; });
+
+      let enriched = (fuData || []).map((f: any) => ({
+        ...f,
+        lead: f.lead_id ? (leadsMap[f.lead_id] || null) : null,
+      }));
+
+      // Filter by consultant client-side
+      if (selectedConsultantId !== 'all') {
+        enriched = enriched.filter((f: any) => f.lead?.consultant_id === selectedConsultantId);
+      }
+
+      setFollowUps(enriched);
     } catch (error) {
       console.error('Error fetching follow ups:', error);
     } finally {
@@ -118,7 +131,7 @@ const FollowUps: React.FC = () => {
   const fetchLeads = async () => {
     try {
       const filterParam = selectedConsultantId !== 'all' ? `&consultant_id=eq.${selectedConsultantId}` : '';
-      const data = await api.get('leads', `select=*&order=name.asc${filterParam}`);
+      const data = await api.get('leads', `select=id,name,phone,consultant_id&order=name.asc${filterParam}`);
       setLeads(data || []);
     } catch (error) {
       console.error('Error fetching leads:', error);

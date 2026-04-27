@@ -127,9 +127,21 @@ const Leads: React.FC = () => {
     try {
       setLoading(true);
       const filterParam = selectedConsultantId !== 'all' ? `&consultant_id=eq.${selectedConsultantId}` : '';
-      
-      const data = await api.get('leads', `select=*,consultant:consultants(name)&order=created_at.desc&limit=50${filterParam}`);
-      setLeads(data || []);
+
+      const [leadsData, consultantsData] = await Promise.all([
+        api.get('leads', `select=*&order=created_at.desc&limit=100${filterParam}`),
+        api.get('consultants', 'select=id,name'),
+      ]);
+
+      const consultantMap: Record<string, string> = {};
+      (consultantsData || []).forEach((c: any) => { consultantMap[c.id] = c.name; });
+
+      const enriched = (leadsData || []).map((l: any) => ({
+        ...l,
+        consultant: l.consultant_id ? { name: consultantMap[l.consultant_id] || '-' } : null,
+      }));
+
+      setLeads(enriched);
       setError(null);
     } catch (err: any) {
       console.error('Fetch Leads Failed:', err);
@@ -153,20 +165,25 @@ const Leads: React.FC = () => {
       if (!selectedLead) {
         try {
           // Search in all leads using phone_normalized
-          const existing = await api.get('leads', `select=*,consultant:consultants(name)&phone_normalized=eq.${cleanPhone}`);
-          
+          const [existing, consultantsData] = await Promise.all([
+            api.get('leads', `select=id,name,consultant_id&phone_normalized=eq.${cleanPhone}`),
+            api.get('consultants', 'select=id,name'),
+          ]);
+          const consultantMap: Record<string, string> = {};
+          (consultantsData || []).forEach((c: any) => { consultantMap[c.id] = c.name; });
+
           if (existing && existing.length > 0) {
             const dup = existing[0];
-            alert(`DATA GANDA! Nomor ini sudah terdaftar:\n\nNama: ${dup.name}\nKonsultan: ${dup.consultant?.name || 'Tidak diketahui'}\n\nSilakan koordinasi dengan konsultan terkait.`);
+            const consultantName = dup.consultant_id ? (consultantMap[dup.consultant_id] || 'Tidak diketahui') : 'Tidak diketahui';
+            alert(`DATA GANDA! Nomor ini sudah terdaftar:\n\nNama: ${dup.name}\nKonsultan: ${consultantName}\n\nSilakan koordinasi dengan konsultan terkait.`);
             setLoading(false);
             return;
           }
         } catch (err) {
-          // If phone_normalized column doesn't exist yet, fallback to raw phone check
-          const existingRaw = await api.get('leads', `select=*,consultant:consultants(name)&phone=eq.${formData.phone}`);
+          // Fallback: check by raw phone if phone_normalized column doesn't exist
+          const existingRaw = await api.get('leads', `select=id,name,consultant_id&phone=eq.${formData.phone}`);
           if (existingRaw && existingRaw.length > 0) {
-            const dup = existingRaw[0];
-            alert(`DATA GANDA! Nomor ini sudah terdaftar oleh konsultan ${dup.consultant?.name || 'lain'}.`);
+            alert(`DATA GANDA! Nomor ini sudah terdaftar oleh konsultan lain.`);
             setLoading(false);
             return;
           }
