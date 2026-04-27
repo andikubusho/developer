@@ -142,7 +142,7 @@ const RABForm: React.FC = () => {
     const fetchAllData = async () => {
       try {
         const [projData, rabData] = await Promise.all([
-          api.get('projects', 'select=id,name,location&active=eq.true&order=name.asc'),
+          api.get('projects', 'select=id,name,location&order=name.asc'),
           api.get('rab_projects', 'select=id,nama_proyek,lokasi,created_at&order=created_at.desc')
         ]);
         setProjects(projData || []);
