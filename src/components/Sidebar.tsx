@@ -125,7 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   });
 
   return (
-    <aside className="w-72 bg-glass/40 backdrop-blur-glass border-r border-white/40 flex flex-col h-screen sticky top-0 z-40 print:hidden shadow-glass">
+    <aside id="sidebar-nav" className="w-72 bg-glass/40 backdrop-blur-glass border-r border-white/40 flex flex-col h-screen sticky top-0 z-40 print:hidden shadow-glass">
       <div className="px-6 pt-8 pb-4">
         <img 
           src="/logo-perusahaan.png" 
@@ -134,7 +134,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         />
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 mt-8 overflow-y-auto scrollbar-hide">
+      <nav aria-label="Navigasi utama" className="flex-1 px-4 space-y-1 mt-8 overflow-y-auto scrollbar-hide">
         <div className="px-4 mb-4">
           <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-2">Menu Utama</p>
         </div>

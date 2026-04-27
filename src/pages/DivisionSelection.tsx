@@ -67,8 +67,8 @@ const DivisionSelection: React.FC = () => {
   return (
     <div className="min-h-screen bg-page flex items-center justify-center p-6 selection:bg-accent-lavender/30 relative overflow-hidden">
       {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent-mint/20 blur-[120px] rounded-full animate-pulse" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-accent-lavender/20 blur-[120px] rounded-full animate-pulse" />
+      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent-mint/20 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-accent-lavender/20 blur-[120px] rounded-full" />
 
       <div className="max-w-5xl w-full relative z-10">
         <div className="text-center mb-10 sm:mb-16 space-y-2 sm:space-y-4">

@@ -48,8 +48,8 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen bg-page flex overflow-hidden selection:bg-accent-lavender/30">
       {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent-mint/20 blur-[120px] rounded-full animate-pulse" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-accent-lavender/20 blur-[120px] rounded-full animate-pulse" />
+      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent-mint/20 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-accent-lavender/20 blur-[120px] rounded-full" />
       
       <div className="flex-1 hidden lg:flex flex-col justify-center p-20 bg-white/10 backdrop-blur-glass relative overflow-hidden border-r border-white/40">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_2px_2px,var(--color-accent-mint)_1px,transparent_0)] bg-[length:40px_40px]" />
@@ -103,7 +103,7 @@ const Login: React.FC = () => {
 
           <form onSubmit={handleAuth} className="space-y-6">
             {error && (
-              <div className="p-4 bg-red-400/10 border border-red-400/20 text-xs font-black uppercase tracking-widest rounded-pill text-red-500 text-center">
+              <div role="alert" aria-live="assertive" className="p-4 bg-red-400/10 border border-red-400/20 text-xs font-black uppercase tracking-widest rounded-pill text-red-500 text-center">
                 {error}
               </div>
             )}

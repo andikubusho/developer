@@ -2,10 +2,12 @@
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').trim();
 const ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
+const isDev = import.meta.env.DEV;
+
 export async function apiRequest(path: string, options: RequestInit = {}) {
   const url = `${SUPABASE_URL}/rest/v1/${path}`;
-  console.log(`🚀 API CALL: ${url}`);
-  
+  if (isDev) console.log(`🚀 API CALL: ${url}`);
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -20,17 +22,17 @@ export async function apiRequest(path: string, options: RequestInit = {}) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ API ERROR [${response.status}] for ${url}:`, errorText);
+      if (isDev) console.error(`❌ API ERROR [${response.status}] for ${url}:`, errorText);
       throw new Error(`API Error ${response.status}: ${errorText}`);
     }
 
-    console.log(`✅ API SUCCESS: ${url}`);
+    if (isDev) console.log(`✅ API SUCCESS: ${url}`);
     // Handle DELETE or empty responses
     if (response.status === 204) return null;
-    
+
     return await response.json();
   } catch (err) {
-    console.error(`💥 API CRASH for ${url}:`, err);
+    if (isDev) console.error(`💥 API CRASH for ${url}:`, err);
     throw err;
   }
 }
@@ -41,7 +43,7 @@ export const api = {
       const data = await apiRequest(`${table}?${query}`, { method: 'GET', ...options });
       return Array.isArray(data) ? data : [];
     } catch (err) {
-      console.error(`[API Standardizer] Fallback to [] for ${table}:`, err);
+      if (isDev) console.error(`[API Standardizer] Fallback to [] for ${table}:`, err);
       return [];
     }
   },

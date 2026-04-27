@@ -40,7 +40,6 @@ import {
   Cell
 } from 'recharts';
 import { Skeleton } from '../components/ui/Skeleton';
-import { supabase } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Sale, Installment, Payment } from '../types';
 import { Card } from '../components/ui/Card';
@@ -99,6 +98,13 @@ const Dashboard: React.FC = () => {
     }
   }, [division, profile?.id]);
 
+  // Persist fresh stats to cache only after loading completes (avoids stale closure bug)
+  useEffect(() => {
+    if (!loading && division) {
+      localStorage.setItem(`dashboard_stats_${division}`, JSON.stringify(stats));
+    }
+  }, [stats, loading, division]);
+
   const fetchMarketingData = async () => {
     // Only set loading true if no cache available
     if (!localStorage.getItem(`dashboard_stats_${division}`)) {
@@ -114,8 +120,6 @@ const Dashboard: React.FC = () => {
         fetchOverdueInstallments(),
         fetchMarketingSpecifics()
       ]);
-      // Save to cache after successful fetch
-      localStorage.setItem(`dashboard_stats_${division}`, JSON.stringify(stats));
     } catch (e) {
       console.error(e);
     } finally {
@@ -134,7 +138,6 @@ const Dashboard: React.FC = () => {
         fetchTeknikStats(),
         fetchTeknikSpecifics()
       ]);
-      localStorage.setItem(`dashboard_stats_${division}`, JSON.stringify(stats));
     } catch (e) {
       console.error(e);
     } finally {

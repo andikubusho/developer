@@ -9,6 +9,9 @@ const Layout: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-page/10 relative font-sans selection:bg-accent-lavender/30 selection:text-accent-dark">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-accent-dark focus:text-white focus:rounded-pill focus:font-bold focus:text-sm">
+        Lewati ke konten utama
+      </a>
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div 
@@ -34,17 +37,20 @@ const Layout: React.FC = () => {
               alt="Company Logo" 
               className="h-8 w-auto object-contain mix-blend-multiply"
             />
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            aria-label={isSidebarOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+            aria-expanded={isSidebarOpen}
+            aria-controls="sidebar-nav"
             className="p-2 h-10 w-10 text-text-primary hover:bg-white/40"
           >
-            {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isSidebarOpen ? <X className="w-6 h-6" aria-hidden="true" /> : <Menu className="w-6 h-6" aria-hidden="true" />}
           </Button>
         </header>
 
-        <div className="flex-1 px-4 py-6 md:px-8 md:py-12 overflow-y-auto overflow-x-hidden transition-all duration-300 print:p-0 print:overflow-visible">
+        <div id="main-content" className="flex-1 px-4 py-6 md:px-8 md:py-12 overflow-y-auto overflow-x-hidden transition-all duration-300 print:p-0 print:overflow-visible">
           <div className="max-w-[1600px] mx-auto space-y-8 md:space-y-12 print:max-w-none print:space-y-0">
             <Outlet />
           </div>
