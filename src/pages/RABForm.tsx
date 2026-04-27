@@ -39,6 +39,7 @@ interface RABNode {
   harga_rab: number | null;
   harga_pasar: number | null;
   urutan: number;
+  is_manual: boolean;   // true = input total langsung, false = pakai koefisien
   isExpanded: boolean;
   children: RABNode[];
   errorFields?: string[];
@@ -135,6 +136,7 @@ const RABForm: React.FC = () => {
       harga_rab: null,
       harga_pasar: null,
       urutan: 0,
+      is_manual: false,
       isExpanded: true,
       children: []
     });
@@ -189,6 +191,7 @@ const RABForm: React.FC = () => {
                 koeff: item.koeff,
                 harga_rab: item.harga_rab,
                 harga_pasar: item.harga_pasar,
+                is_manual: item.is_manual || false,
                 urutan: item.urutan,
                 isExpanded: true,
                 children: [],
@@ -239,8 +242,8 @@ const RABForm: React.FC = () => {
 
       items.forEach((item: any) => {
         idMap[item.id] = {
-          id: generateId(), // New ID for the form session
-          parent_id: null, // Will be set below
+          id: generateId(),
+          parent_id: null,
           level: item.level,
           uraian: item.uraian,
           volume: item.volume,
@@ -248,10 +251,11 @@ const RABForm: React.FC = () => {
           koeff: item.koeff,
           harga_rab: item.harga_rab,
           harga_pasar: item.harga_pasar,
+          is_manual: item.is_manual || false,
           urutan: item.urutan,
           isExpanded: true,
           children: [],
-          _oldId: item.id // Track old ID to map parents
+          _oldId: item.id
         } as any;
       });
 
@@ -293,7 +297,8 @@ const RABForm: React.FC = () => {
       koeff: level === 3 ? 1 : null,
       harga_rab: level === 3 ? 0 : null,
       harga_pasar: null,
-      urutan: 0, // Will be set on flatten
+      urutan: 0,
+      is_manual: false,
       isExpanded: true,
       children: []
     };
@@ -354,9 +359,14 @@ const RABForm: React.FC = () => {
         let total_material = 0;
 
         if (node.level === 3) {
-          jumlah_material = (node.koeff || 0) * (node.volume || 0);
-          total_material = jumlah_material * (node.harga_rab || 0);
-          subtotal = total_material;
+          if (node.is_manual) {
+            // Mode manual: total langsung diisi user (disimpan di harga_rab)
+            subtotal = node.harga_rab || 0;
+          } else {
+            jumlah_material = (node.koeff || 0) * (node.volume || 0);
+            total_material = jumlah_material * (node.harga_rab || 0);
+            subtotal = total_material;
+          }
         } else {
           children = calc(node.children, node.level === 2 ? node.volume : parentVolume);
           subtotal = children.reduce((sum, child) => sum + child.subtotal, 0);
@@ -476,6 +486,7 @@ const RABForm: React.FC = () => {
             koeff: node.koeff,
             harga_rab: node.harga_rab,
             harga_pasar: node.harga_pasar,
+            is_manual: node.is_manual || false,
             urutan: i
           };
           const res = await api.insert('rab_items', data);
@@ -554,10 +565,10 @@ const RABForm: React.FC = () => {
               </div>
             </TD>
 
-            {/* KOEFF */}
+            {/* KOEFF — hanya mode koefisien, Level 3 */}
             <TD className="px-4 py-3 border-r border-white/40 w-24">
-              {isLevel3 && (
-                <input 
+              {isLevel3 && !node.is_manual && (
+                <input
                   type="number"
                   step="0.001"
                   value={node.koeff ?? ''}
@@ -565,28 +576,38 @@ const RABForm: React.FC = () => {
                   className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
                 />
               )}
+              {isLevel3 && node.is_manual && (
+                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">MANUAL</span>
+              )}
             </TD>
 
-            {/* VOLUME / JUMLAH */}
+            {/* VOLUME */}
             <TD className="px-4 py-3 border-r border-white/40 w-32">
-              {(isLevel2 || isLevel3) && (
-                <input 
+              {isLevel2 && (
+                <input
                   type="number"
                   step="0.01"
-                  value={isLevel2 ? (node.volume ?? '') : (node.volume ?? '')}
+                  value={node.volume ?? ''}
                   onChange={(e) => updateNode(node.id, { volume: Number(e.target.value) })}
-                  placeholder={isLevel3 ? '0' : ''}
-                  className={cn(
-                    "bg-transparent border-none focus:ring-0 w-full text-right p-0"
-                  )}
+                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
+                />
+              )}
+              {isLevel3 && !node.is_manual && (
+                <input
+                  type="number"
+                  step="0.01"
+                  value={node.volume ?? ''}
+                  onChange={(e) => updateNode(node.id, { volume: Number(e.target.value) })}
+                  placeholder="0"
+                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
                 />
               )}
             </TD>
 
             {/* SATUAN */}
             <TD className="px-4 py-3 border-r border-white/40 w-24 text-center">
-              {(isLevel2 || isLevel3) && (
-                <input 
+              {(isLevel2 || (isLevel3 && !node.is_manual)) && (
+                <input
                   type="text"
                   value={node.satuan}
                   onChange={(e) => updateNode(node.id, { satuan: e.target.value })}
@@ -596,10 +617,10 @@ const RABForm: React.FC = () => {
               )}
             </TD>
 
-            {/* HARGA RAB */}
+            {/* HARGA SATUAN — hanya mode koefisien */}
             <TD className="px-4 py-3 border-r border-white/40 w-40">
-              {isLevel3 && (
-                <input 
+              {isLevel3 && !node.is_manual && (
+                <input
                   type="number"
                   value={node.harga_rab ?? ''}
                   onChange={(e) => updateNode(node.id, { harga_rab: e.target.value === '' ? null : Number(e.target.value) })}
@@ -609,27 +630,51 @@ const RABForm: React.FC = () => {
               )}
             </TD>
 
-            {/* SUBTOTAL / TOTAL */}
+            {/* SUBTOTAL / TOTAL — editable di mode manual */}
             <TD className="px-4 py-3 font-bold text-right w-44">
-              {formatCurrency(node.subtotal)}
+              {isLevel3 && node.is_manual ? (
+                <input
+                  type="number"
+                  value={node.harga_rab ?? ''}
+                  onChange={(e) => updateNode(node.id, { harga_rab: e.target.value === '' ? null : Number(e.target.value) })}
+                  placeholder="0"
+                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold text-emerald-700"
+                />
+              ) : (
+                formatCurrency(node.subtotal)
+              )}
             </TD>
 
             {/* ACTION */}
             <TD className="px-4 py-3 w-40">
                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {isLevel3 && (
+                    <button
+                      title={node.is_manual ? 'Ganti ke mode Koefisien' : 'Ganti ke mode Manual'}
+                      onClick={() => updateNode(node.id, { is_manual: !node.is_manual, koeff: null, volume: null })}
+                      className={cn(
+                        'h-7 px-2 rounded text-[9px] font-black uppercase tracking-widest border transition-colors',
+                        node.is_manual
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
+                      )}
+                    >
+                      {node.is_manual ? 'M→K' : 'K→M'}
+                    </button>
+                  )}
                   {node.level < 3 && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => addNode(node.id, (node.level + 1) as any)}
                       className={cn("h-8 px-2 text-[10px] uppercase font-black tracking-tighter", isLevel0 ? "text-white hover:bg-accent-dark/60" : "text-accent-dark")}
                     >
                       <Plus className="w-3 h-3 mr-1" /> {node.level === 0 ? "Pekerjaan" : node.level === 1 ? "Item" : "Material"}
                     </Button>
                   )}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => removeNode(node.id)}
                     className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50"
                   >
