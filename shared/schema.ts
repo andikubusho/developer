@@ -1548,6 +1548,7 @@ export const rabItems = pgTable("rab_items", {
 export const purchaseRequests = pgTable("purchase_requests", {
   id: text("id").primaryKey(),
   projectId: text("project_id").notNull(),
+  unitId: text("unit_id"),
   itemName: text("item_name"),
   status: text("status").default("SUBMITTED").notNull(),
   items: jsonb("items"),
@@ -1557,8 +1558,10 @@ export const purchaseRequests = pgTable("purchase_requests", {
 export const purchaseOrders = pgTable("purchase_orders", {
   id: text("id").primaryKey(),
   projectId: text("project_id").notNull(),
+  supplierId: integer("supplier_id"),
   date: timestamp("date"),
   status: text("status").default("PENDING").notNull(),
+  totalPrice: numeric("total_price").default("0"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

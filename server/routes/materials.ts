@@ -193,13 +193,8 @@ export function registerMaterialRoutes(app: Express, broadcast: (type: string) =
   app.get("/api/purchase-requests", async (req, res) => {
     try {
       const { projectId } = req.query;
-      let baseQuery = db.select().from(purchaseRequests);
       
-      const list = await baseQuery
-        .leftJoin(projects, eq(purchaseRequests.projectId, projects.id))
-        .leftJoin(propertyUnits, eq(purchaseRequests.unitId, propertyUnits.id))
-        .where(projectId ? eq(purchaseRequests.projectId, String(projectId)) : undefined)
-        .orderBy(desc(purchaseRequests.createdAt))
+      const list = await db
         .select({
           id: purchaseRequests.id,
           projectId: purchaseRequests.projectId,
@@ -214,7 +209,13 @@ export function registerMaterialRoutes(app: Express, broadcast: (type: string) =
           unit: {
             unit_number: propertyUnits.unitNumber
           }
-        });
+        })
+        .from(purchaseRequests)
+        .leftJoin(projects, eq(purchaseRequests.projectId, projects.id))
+        .leftJoin(propertyUnits, eq(purchaseRequests.unitId, propertyUnits.id))
+        .where(projectId ? eq(purchaseRequests.projectId, String(projectId)) : undefined)
+        .orderBy(desc(purchaseRequests.createdAt));
+
       res.json(list);
     } catch (err: any) {
       log(`Error in GET /api/purchase-requests: ${err.message}`);
