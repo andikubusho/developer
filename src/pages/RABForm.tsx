@@ -254,10 +254,11 @@ const RABForm: React.FC = () => {
     try {
       setSubmitting(true);
       
-      // 1. Insert Project
+      // 1. Insert Project (only columns that exist in rab_projects table)
       const project = await api.insert('rab_projects', {
-        ...projectHeader,
-        total_anggaran: grandTotal
+        nama_proyek: projectHeader.nama_proyek,
+        lokasi: projectHeader.lokasi,
+        total_anggaran: grandTotal,
       });
 
       const projectId = project[0].id;
@@ -301,7 +302,7 @@ const RABForm: React.FC = () => {
       await insertRecursive(computedTree);
       
       alert('RAB Berhasil Disimpan!');
-      navigate(`/rab/${projectId}`);
+      navigate('/rab');
     } catch (error: any) {
       console.error('Save error:', error);
       alert(`Gagal menyimpan: ${error.message}`);
