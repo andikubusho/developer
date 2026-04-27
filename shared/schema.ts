@@ -689,12 +689,14 @@ export const MENU_KEYS = [
   { key: "follow-ups", label: "Follow Up", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false, viewAll: true } },
   { key: "deposits", label: "Titipan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true, viewAll: true } },
   { key: "sales", label: "Penjualan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true, viewAll: true } },
+  { key: "customers", label: "Data Konsumen", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true, viewAll: true } },
   { key: "promos", label: "Master Promo", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "price-list", label: "Price List", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
   { key: "site-plan", label: "Siteplan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "floor-plan", label: "Denah", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "marketing-schedule", label: "Jadwal Konsultan", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "marketing-master", label: "Master Konsultan Property", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "document-templates", label: "Template Dokumen", group: "Marketing", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 
   // TEKNIK
   { key: "projects", label: "Proyek", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
@@ -702,14 +704,18 @@ export const MENU_KEYS = [
   { key: "rab", label: "RAB Proyek", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
   { key: "construction-progress", label: "Progress Bangun", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "materials", label: "Stok Material", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "master-material", label: "Master Material", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "purchase-requests", label: "Purchase Request", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "purchase-orders", label: "Purchase Order", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
   { key: "spk", label: "SPK Kontraktor", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
   { key: "opname", label: "Opname/Upah", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "real-cost", label: "Real Cost", group: "Teknik", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
 
   // KEUANGAN
+  { key: "verification-queue", label: "Antrian Verifikasi", group: "Keuangan", capabilities: { view: true, create: false, edit: true, delete: false, print: false } },
   { key: "payments", label: "Pembayaran Konsumen", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
   { key: "kpr-disbursement", label: "Pencairan KPR", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "bank-master", label: "Master Bank", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "supplier-payments", label: "Pembayaran Supplier", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "cash-flow", label: "Cash Flow", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
   { key: "petty-cash", label: "Petty Cash", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
