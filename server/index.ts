@@ -136,6 +136,112 @@ app.use((req, res, next) => {
           created_at TIMESTAMP DEFAULT NOW() NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS projects (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          location TEXT,
+          status TEXT,
+          site_plan_image_url TEXT,
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS materials (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          unit TEXT NOT NULL,
+          category TEXT,
+          specification TEXT,
+          stock NUMERIC DEFAULT '0' NOT NULL,
+          min_stock NUMERIC DEFAULT '0' NOT NULL,
+          unit_price NUMERIC DEFAULT '0',
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS units (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          unit_number TEXT NOT NULL,
+          type TEXT,
+          price NUMERIC DEFAULT '0',
+          status TEXT DEFAULT 'available',
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS rab_projects (
+          id TEXT PRIMARY KEY,
+          nama_proyek TEXT NOT NULL,
+          lokasi TEXT,
+          total_anggaran NUMERIC DEFAULT '0',
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS rab_items (
+          id TEXT PRIMARY KEY,
+          rab_project_id TEXT NOT NULL,
+          parent_id TEXT,
+          level INTEGER DEFAULT 0,
+          uraian TEXT NOT NULL,
+          volume NUMERIC DEFAULT '0',
+          satuan TEXT,
+          harga_rab NUMERIC DEFAULT '0',
+          urutan INTEGER DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS purchase_requests (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          unit_id TEXT,
+          item_name TEXT,
+          status TEXT DEFAULT 'SUBMITTED' NOT NULL,
+          items JSONB,
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS purchase_orders (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          supplier_id INTEGER,
+          date TIMESTAMP,
+          status TEXT DEFAULT 'PENDING' NOT NULL,
+          total_price NUMERIC DEFAULT '0',
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS material_suppliers (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          address TEXT,
+          phone TEXT,
+          contact_person TEXT,
+          bank_name TEXT,
+          bank_account_number TEXT,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS project_material_stocks (
+          id SERIAL PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          material_id TEXT NOT NULL,
+          stock NUMERIC DEFAULT '0' NOT NULL,
+          UNIQUE(project_id, material_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS material_stock_logs (
+          id SERIAL PRIMARY KEY,
+          material_id TEXT NOT NULL,
+          project_id TEXT NOT NULL,
+          unit_id TEXT,
+          transaction_type TEXT NOT NULL,
+          qty_change NUMERIC NOT NULL,
+          qty_before NUMERIC NOT NULL,
+          qty_after NUMERIC NOT NULL,
+          reference_type TEXT,
+          reference_id TEXT,
+          created_by INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          notes TEXT
+        );
+
         CREATE TABLE IF NOT EXISTS orders (
           id SERIAL PRIMARY KEY,
           salesman_id INTEGER NOT NULL,
