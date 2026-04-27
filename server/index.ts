@@ -5,6 +5,8 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupAuth } from "./auth";
 import compression from "compression";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 export { app };
@@ -485,8 +487,11 @@ app.use((req, res, next) => {
     log("Step 2: Routes registration complete.");
 
     log("Step 3: Checking environment for Vite/Static...");
-    if (process.env.NODE_ENV === "production") {
-      log("Step 3: Serving static files (Production mode)");
+    const distExists = fs.existsSync(path.resolve(process.cwd(), "dist", "index.html"));
+    const isProduction = process.env.NODE_ENV === "production" || distExists;
+
+    if (isProduction) {
+      log(`Step 3: Serving static files (dist exists: ${distExists}, NODE_ENV: ${process.env.NODE_ENV})`);
       serveStatic(app);
     } else {
       log("Step 3: Setting up Vite (Development mode)...");
