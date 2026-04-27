@@ -108,6 +108,12 @@ export interface FollowUp {
   description: string;
   status: LeadStatus;
   lead?: Lead;
+  // Visitation Appointment Fields
+  is_appointment?: boolean;
+  appointment_date?: string | null;
+  reminder_frequency?: '5min' | '1hour' | '1day' | 'none';
+  next_reminder_at?: string | null;
+  appointment_status?: 'pending' | 'completed' | 'cancelled' | 'missed';
 }
 
 export interface Deposit {

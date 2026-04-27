@@ -33,7 +33,10 @@ const FollowUps: React.FC = () => {
     description: '',
     status: 'no respon' as LeadStatus,
     date_time: new Date().toISOString(),
-    consultant_id: ''
+    consultant_id: '',
+    is_appointment: false,
+    appointment_date: '',
+    reminder_frequency: 'none' as FollowUp['reminder_frequency']
   });
   const [staff, setStaff] = useState<any[]>([]);
 
@@ -73,15 +76,20 @@ const FollowUps: React.FC = () => {
         description: selectedFollowUp.description,
         status: selectedFollowUp.status,
         date_time: selectedFollowUp.date_time,
-        consultant_id: selectedFollowUp.lead?.consultant_id || ''
+        consultant_id: selectedFollowUp.lead?.consultant_id || '',
+        is_appointment: !!selectedFollowUp.is_appointment,
+        appointment_date: selectedFollowUp.appointment_date ? new Date(selectedFollowUp.appointment_date).toISOString().slice(0, 16) : '',
+        reminder_frequency: selectedFollowUp.reminder_frequency || 'none'
       });
     } else {
       setFormData({
         lead_id: '',
         description: '',
-        status: 'no respon',
         date_time: new Date().toISOString(),
-        consultant_id: profile?.consultant_id || ''
+        consultant_id: profile?.consultant_id || '',
+        is_appointment: false,
+        appointment_date: '',
+        reminder_frequency: 'none'
       });
     }
   }, [selectedFollowUp, isModalOpen, profile]);
@@ -131,10 +139,22 @@ const FollowUps: React.FC = () => {
   const handleSave = async () => {
     try {
       setLoading(true);
+      const finalData = {
+        ...formData,
+        // Convert local datetime to ISO UTC for database
+        appointment_date: formData.is_appointment && formData.appointment_date 
+          ? new Date(formData.appointment_date).toISOString() 
+          : null,
+        next_reminder_at: formData.is_appointment && formData.appointment_date 
+          ? new Date(formData.appointment_date).toISOString() 
+          : null,
+        appointment_status: formData.is_appointment ? 'pending' : null
+      };
+
       if (selectedFollowUp) {
-        await api.update('follow_ups', selectedFollowUp.id, formData);
+        await api.update('follow_ups', selectedFollowUp.id, finalData);
       } else {
-        await api.insert('follow_ups', formData);
+        await api.insert('follow_ups', finalData);
       }
       await fetchFollowUps();
       setIsModalOpen(false);
@@ -256,7 +276,18 @@ const FollowUps: React.FC = () => {
                         </div>
                       </TD>
                       <TD className="px-3 py-4">
-                        <div className="font-black text-text-primary text-xs whitespace-nowrap">{f.lead?.name}</div>
+                        <div className="font-black text-text-primary text-xs whitespace-nowrap flex items-center gap-2">
+                          {f.lead?.name}
+                          {f.is_appointment && (
+                            <span className={cn(
+                              "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider",
+                              f.appointment_status === 'completed' ? "bg-emerald-100 text-emerald-700" : "bg-accent-dark/10 text-accent-dark"
+                            )}>
+                              <Clock className="w-2 h-2" />
+                              Janji {f.appointment_status === 'completed' ? '✓' : ''}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[10px] text-text-secondary sm:hidden mb-1">{formatDateTime(f.date_time)}</div>
                         <div className="text-[10px] text-text-secondary italic line-clamp-2 max-w-[150px] sm:max-w-xs">{f.description}</div>
                       </TD>
@@ -359,6 +390,63 @@ const FollowUps: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {/* Janji Kunjungan Section */}
+          <div className="pt-4 border-t border-white/40">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-accent-dark" />
+                <span className="text-sm font-bold text-text-primary">Janji Kunjungan</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, is_appointment: !formData.is_appointment })}
+                className={cn(
+                  "relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none",
+                  formData.is_appointment ? "bg-accent-dark" : "bg-white/40 border border-white/60"
+                )}
+              >
+                <span
+                  className={cn(
+                    "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                    formData.is_appointment ? "translate-x-6" : "translate-x-1"
+                  )}
+                />
+              </button>
+            </div>
+
+            {formData.is_appointment && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input 
+                    type="datetime-local"
+                    label="Waktu Janji"
+                    value={formData.appointment_date}
+                    onChange={(e) => setFormData({ ...formData, appointment_date: e.target.value })}
+                    required
+                  />
+                  <div>
+                    <label className="text-sm font-medium text-text-primary mb-1.5 block">Frekuensi Reminder</label>
+                    <select 
+                      className="w-full h-10 rounded-xl border border-white/60 px-3 py-2 text-sm focus:outline-none bg-white/50"
+                      value={formData.reminder_frequency}
+                      onChange={(e) => setFormData({ ...formData, reminder_frequency: e.target.value as any })}
+                      required
+                    >
+                      <option value="none">Hanya Sekali</option>
+                      <option value="5min">Tiap 5 Menit</option>
+                      <option value="1hour">Tiap Jam</option>
+                      <option value="1day">Tiap Hari</option>
+                    </select>
+                  </div>
+                </div>
+                <p className="text-[10px] text-text-secondary italic">
+                  * Notifikasi pengingat akan muncul di layar Anda sesuai waktu yang ditentukan.
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-3 mt-6">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>Batal</Button>
             <Button type="submit">Simpan Follow Up</Button>

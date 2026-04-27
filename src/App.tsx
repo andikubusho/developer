@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import DivisionSelection from './pages/DivisionSelection';
 import Login from './pages/Login';
+import AppointmentReminder from './components/AppointmentReminder';
 
 // Lazy load pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -88,6 +89,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 export default function App() {
   return (
     <AuthProvider>
+      <AppointmentReminder />
       <Router>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
