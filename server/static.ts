@@ -38,8 +38,6 @@ export function serveStatic(app: Express) {
     const possibleIndexPaths = [
       path.resolve(distPath, "index.html"),
       path.resolve(process.cwd(), "dist", "index.html"),
-      path.resolve(__dirname, "..", "dist", "index.html"),
-      path.resolve(__dirname, "index.html"), // Just in case it's in the same dir
     ];
 
     let indexPath = possibleIndexPaths.find(p => fs.existsSync(p));

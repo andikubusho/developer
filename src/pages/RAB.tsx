@@ -19,13 +19,23 @@ const RAB: React.FC = () => {
   const fetchRabs = async () => {
     try {
       setLoading(true);
-      const data = await api.get(
-        'rab_projects',
-        'select=id,nama_proyek,lokasi,total_anggaran,created_at,unit:units(unit_number,type)&order=created_at.desc'
-      );
-      setRabs(data || []);
+      const [rabData, unitsData] = await Promise.all([
+        api.get('rab_projects', 'select=id,nama_proyek,lokasi,total_anggaran,created_at,unit_id&order=created_at.desc'),
+        api.get('units', 'select=id,unit_number,type'),
+      ]);
+
+      const unitsMap: Record<string, { unit_number: string; type: string }> = {};
+      (unitsData || []).forEach((u: any) => { unitsMap[u.id] = u; });
+
+      const enriched = (rabData || []).map((r: any) => ({
+        ...r,
+        unit: r.unit_id ? (unitsMap[r.unit_id] || null) : null,
+      }));
+
+      setRabs(enriched);
     } catch (error) {
       console.error('Error fetching RAB:', error);
+      setRabs([]);
     } finally {
       setLoading(false);
     }
