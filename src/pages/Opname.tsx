@@ -26,10 +26,12 @@ const OpnamePage: React.FC = () => {
   const { setDivision } = useAuth();
   const [opnames, setOpnames] = useState<any[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedUnitId, setSelectedUnitId] = useState('');
   const [workerName, setWorkerName] = useState('');
   const [opnameDate, setOpnameDate] = useState(new Date().toISOString().split('T')[0]);
   const [batchItems, setBatchItems] = useState<OpnameItem[]>([]);
@@ -41,9 +43,19 @@ const OpnamePage: React.FC = () => {
 
   useEffect(() => {
     if (selectedProjectId && isModalOpen) {
+      loadUnits();
       loadRABForBatch();
     }
-  }, [selectedProjectId, isModalOpen]);
+  }, [selectedProjectId, selectedUnitId, isModalOpen]);
+
+  const loadUnits = async () => {
+    try {
+      const data = await api.get('units', `project_id=eq.${selectedProjectId}&order=unit_number.asc`);
+      setUnits(data || []);
+    } catch (err) {
+      console.error('Error fetching units:', err);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -64,8 +76,13 @@ const OpnamePage: React.FC = () => {
   const loadRABForBatch = async () => {
     try {
       setLoading(true);
-      // 1. Get RAB Project
-      const rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}`);
+      // 1. Get RAB Project (Filtered by Project and Unit if available)
+      let query = `project_id=eq.${selectedProjectId}`;
+      if (selectedUnitId) {
+        query += `&unit_id=eq.${selectedUnitId}`;
+      }
+      
+      const rabs = await api.get('rab_projects', query);
       if (!rabs || rabs.length === 0) {
         setBatchItems([]);
         return;
@@ -134,6 +151,7 @@ const OpnamePage: React.FC = () => {
       const master = await api.insert('project_opnames', {
         date: opnameDate,
         project_id: selectedProjectId,
+        unit_id: selectedUnitId || null,
         worker_name: workerName,
         status: 'pending'
       });
@@ -179,6 +197,7 @@ const OpnamePage: React.FC = () => {
         </div>
         <Button className="w-full sm:w-auto shadow-glass" onClick={() => { 
           setSelectedProjectId('');
+          setSelectedUnitId('');
           setWorkerName('');
           setBatchItems([]);
           setIsModalOpen(true); 
@@ -281,17 +300,32 @@ const OpnamePage: React.FC = () => {
         className="max-w-6xl"
       >
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Input label="Tanggal Opname" type="date" value={opnameDate} onChange={(e) => setOpnameDate(e.target.value)} />
             <div>
               <label className="text-[11px] font-black text-text-muted uppercase tracking-widest mb-2 block">Pilih Proyek</label>
               <select 
                 className="w-full h-12 rounded-xl glass-input px-4 text-sm font-bold focus:outline-none" 
                 value={selectedProjectId} 
-                onChange={(e) => setSelectedProjectId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedProjectId(e.target.value);
+                  setSelectedUnitId('');
+                }}
               >
                 <option value="">-- Pilih Proyek --</option>
                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-black text-text-muted uppercase tracking-widest mb-2 block">Pilih Unit (Opsional)</label>
+              <select 
+                className="w-full h-12 rounded-xl glass-input px-4 text-sm font-bold focus:outline-none disabled:opacity-50" 
+                value={selectedUnitId} 
+                onChange={(e) => setSelectedUnitId(e.target.value)}
+                disabled={!selectedProjectId}
+              >
+                <option value="">-- Semua Unit / Umum --</option>
+                {units.map(u => <option key={u.id} value={u.id}>{u.unit_number} - {u.type}</option>)}
               </select>
             </div>
             <Input label="Nama Pekerja / Kontraktor" placeholder="Masukkan nama..." value={workerName} onChange={(e) => setWorkerName(e.target.value)} />
