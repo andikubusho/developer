@@ -93,7 +93,15 @@ const VerificationQueue: React.FC = () => {
         return { ...item, bank, payment: null, deposit: null };
       }));
 
-      setItems(enriched);
+      // Deduplicate by reference_id — keep only first occurrence per payment/deposit
+      const seen = new Set<string>();
+      const unique = enriched.filter((item) => {
+        if (seen.has(item.reference_id)) return false;
+        seen.add(item.reference_id);
+        return true;
+      });
+
+      setItems(unique);
     } catch (error) {
       console.error('Error fetching verification queue:', error);
     } finally {
@@ -106,6 +114,7 @@ const VerificationQueue: React.FC = () => {
     if (!confirm('Verifikasi transaksi ini? Data akan masuk ke laporan Arus Kas.')) return;
     try {
       setLoading(true);
+
       // Update source table
       const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
       await api.update(table, item.reference_id, { status: 'verified' });
@@ -118,8 +127,14 @@ const VerificationQueue: React.FC = () => {
         });
       }
 
-      // Update cash_flow status
-      await api.update('cash_flow', item.id, { status: 'verified' });
+      // Update ALL cash_flow entries with this reference_id (handles duplicates)
+      const relatedCf = await api.get('cash_flow', `reference_id=eq.${item.reference_id}&status=eq.pending`);
+      if (relatedCf && relatedCf.length > 0) {
+        await Promise.all(relatedCf.map((cf: any) => api.update('cash_flow', cf.id, { status: 'verified' })));
+      } else {
+        await api.update('cash_flow', item.id, { status: 'verified' });
+      }
+
       await fetchData();
     } catch (error: any) {
       alert(`Gagal verifikasi: ${error.message}`);
@@ -135,7 +150,15 @@ const VerificationQueue: React.FC = () => {
       setLoading(true);
       const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
       await api.update(table, item.reference_id, { status: 'pending' });
-      await api.delete('cash_flow', item.id);
+
+      // Delete ALL cash_flow entries with this reference_id (handles duplicates)
+      const relatedCf = await api.get('cash_flow', `reference_id=eq.${item.reference_id}`);
+      if (relatedCf && relatedCf.length > 0) {
+        await Promise.all(relatedCf.map((cf: any) => api.delete('cash_flow', cf.id)));
+      } else {
+        await api.delete('cash_flow', item.id);
+      }
+
       await fetchData();
     } catch (error: any) {
       alert(`Gagal menolak: ${error.message}`);
