@@ -83,7 +83,7 @@ const PurchaseOrders: React.FC = () => {
       }
 
       // Use the standardized api utility
-      const poData = await api.get('purchase_orders', 'select=*,project:projects(name),supplier:suppliers(name)&order=created_at.desc');
+      const poData = await api.get('purchase_orders', 'select=*,materials:materials(name,unit)&order=created_at.desc');
       const prData = await api.get('purchase_requests', 'select=*,project:projects(name),unit:units(unit_number)&order=created_at.desc');
       
       console.log('📦 Purchase Orders Response:', poData);
