@@ -36,8 +36,15 @@ export async function apiRequest(path: string, options: RequestInit = {}) {
 }
 
 export const api = {
-  get: (table: string, query: string = 'select=*', options: RequestInit = {}) => 
-    apiRequest(`${table}?${query}`, { method: 'GET', ...options }),
+  get: async (table: string, query: string = 'select=*', options: RequestInit = {}) => {
+    try {
+      const data = await apiRequest(`${table}?${query}`, { method: 'GET', ...options });
+      return Array.isArray(data) ? data : [];
+    } catch (err) {
+      console.error(`[API Standardizer] Fallback to [] for ${table}:`, err);
+      return [];
+    }
+  },
     
   insert: (table: string, data: any) => 
     apiRequest(table, { method: 'POST', body: JSON.stringify(data) }),

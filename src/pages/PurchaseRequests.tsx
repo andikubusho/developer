@@ -12,13 +12,13 @@ import {
   PlusCircle,
   Search,
   Calculator,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { api } from '../lib/api';
-import { formatCurrency, formatDate, cn } from '../lib/utils';
+import { formatCurrency, formatDate } from '../lib/utils';
 import { Project, Material } from '../types';
 
 interface PRItem {
@@ -39,15 +39,6 @@ const PurchaseRequests: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [budgetInfo, setBudgetInfo] = useState<{ rab: number; actual: number; remaining: number } | null>(null);
-  const [fetchingBudget, setFetchingBudget] = useState(false);
-
-  const [materialSearch, setMaterialSearch] = useState('');
-
-  const filteredMaterials = materials.filter(m => 
-    m.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
-    (m.specification && m.specification.toLowerCase().includes(materialSearch.toLowerCase()))
-  );
 
   const [form, setForm] = useState({
     project_id: '',
@@ -56,20 +47,23 @@ const PurchaseRequests: React.FC = () => {
     items: [{ material_id: '', quantity: 1 }] as PRItem[]
   });
 
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
   const fetchInitialData = async () => {
     setLoading(true);
     try {
       const [projData, matData, reqData] = await Promise.all([
-        api.get('projects', 'select=id,name&order=name.asc').catch(() => []),
-        api.get('materials', 'select=id,name,unit,unit_price&order=name.asc').catch(() => []),
-        api.get(
-          'purchase_requests',
-          'select=*,project:projects(name),unit:property_units(unit_number)&order=created_at.desc'
-        ).catch(() => []),
+        api.get('projects', 'select=id,name&order=name.asc'),
+        api.get('materials', 'select=id,name,unit,unit_price&order=name.asc'),
+        api.get('purchase_requests', 'select=*,project:projects(name),unit:units(unit_number)&order=created_at.desc')
       ]);
-      setProjects(projData || []);
-      setMaterials(matData || []);
-      setRequests(reqData || []);
+
+      console.log('📦 Purchase Requests Response:', reqData);
+      setProjects(projData);
+      setMaterials(matData);
+      setRequests(reqData);
     } catch (err) {
       console.error('Error fetching initial data:', err);
     } finally {
@@ -78,196 +72,108 @@ const PurchaseRequests: React.FC = () => {
   };
 
   const fetchUnitsForProject = async (projectId: string) => {
-    if (!projectId) { setUnits([]); return; }
-    try {
-      const unitData = await api.get('units', `select=id,unit_number&project_id=eq.${projectId}`);
-      setUnits(unitData || []);
-    } catch (error) {
-      console.error('Error fetching units:', error);
+    if (!projectId) {
+      setUnits([]);
+      return;
     }
+    const data = await api.get('units', `project_id=eq.${projectId}&select=id,unit_number&order=unit_number.asc`);
+    setUnits(data);
   };
-
-  useEffect(() => { fetchInitialData(); }, []);
-  useEffect(() => { fetchUnitsForProject(form.project_id); }, [form.project_id]);
 
   useEffect(() => {
-    const fetchBudget = async () => {
-      if (!form.project_id) { setBudgetInfo(null); return; }
-      try {
-        setFetchingBudget(true);
-        const unitFilter = form.unit_id ? `&unit_id=eq.${form.unit_id}` : '';
-        
-        // 1. Get RAB Total
-        const rabData = await api.get('rab_projects', `select=total_anggaran&project_id=eq.${form.project_id}${unitFilter}`);
-        const totalRab = rabData?.reduce((sum: number, r: any) => sum + (Number(r.total_anggaran) || 0), 0) || 0;
-
-        // 2. Get Actual Spent (POs + PRs in progress + Opnames)
-        const [poData, opnameData] = await Promise.all([
-          api.get('purchase_orders', `select=total_price&project_id=eq.${form.project_id}${form.unit_id ? `&unit_id=eq.${form.unit_id}` : ''}&status=neq.rejected`),
-          api.get('project_opnames', `select=amount&project_id=eq.${form.project_id}&status=neq.rejected`)
-        ]);
-
-        const totalActual = (poData?.reduce((sum: number, o: any) => sum + (Number(o.total_price) || 0), 0) || 0) +
-                           (opnameData?.reduce((sum: number, o: any) => sum + (Number(o.amount) || 0), 0) || 0);
-
-        setBudgetInfo({
-          rab: totalRab,
-          actual: totalActual,
-          remaining: totalRab - totalActual
-        });
-      } catch (error) {
-        console.error('Error fetching budget info:', error);
-      } finally {
-        setFetchingBudget(false);
-      }
-    };
-
-    fetchBudget();
-  }, [form.project_id, form.unit_id]);
-
-  const addItemRow = () => {
-    setForm({ ...form, items: [...form.items, { material_id: '', quantity: 1 }] });
-  };
-
-  const removeItemRow = (index: number) => {
-    if (form.items.length <= 1) return;
-    const newItems = [...form.items];
-    newItems.splice(index, 1);
-    setForm({ ...form, items: newItems });
-  };
-
-  const updateItem = (index: number, field: keyof PRItem, value: string | number) => {
-    const newItems = [...form.items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setForm({ ...form, items: newItems });
-  };
-
-  const calculateTotal = () => {
-    return form.items.reduce((sum: number, item: PRItem) => {
-      const mat = materials.find((m: MaterialWithPrice) => m.id === item.material_id);
-      return sum + (mat?.unit_price || 0) * item.quantity;
-    }, 0);
-  };
+    fetchUnitsForProject(form.project_id);
+  }, [form.project_id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.project_id) { alert('Mohon pilih proyek'); return; }
-    if (form.items.some((i: PRItem) => !i.material_id)) {
-      alert('Mohon pilih material untuk semua baris');
-      return;
-    }
-
+    setSubmitting(true);
     try {
-      setSubmitting(true);
-      const itemsWithData = form.items.map((item: PRItem) => {
-        const mat = materials.find((m: MaterialWithPrice) => m.id === item.material_id);
-        return {
-          materialId: item.material_id,
-          name: mat?.name,
-          unit: mat?.unit,
-          qty: item.quantity,
-          price: mat?.unit_price || 0,
-        };
-      });
-
       await api.insert('purchase_requests', {
         project_id: form.project_id,
-        unit_id: form.unit_id || null,
-        item_name: form.description || `PR Material - ${new Date().toLocaleDateString()}`,
-        items: itemsWithData,
-        status: 'SUBMITTED',
+        unit_id: form.unit_id,
+        description: form.description,
+        status: 'PENDING',
+        items: form.items
       });
-
       setIsModalOpen(false);
-      setForm({ project_id: '', unit_id: '', description: '', items: [{ material_id: '', quantity: 1 }] });
       fetchInitialData();
-      alert('Purchase Request berhasil diajukan!');
-    } catch (error: any) {
-      console.error('Error saving PR:', error);
-      alert(`Gagal mengajukan PR: ${error.message}`);
+      setForm({
+        project_id: '',
+        unit_id: '',
+        description: '',
+        items: [{ material_id: '', quantity: 1 }]
+      });
+    } catch (err) {
+      console.error('Error submitting PR:', err);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="space-y-8 pb-10">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="flex items-center gap-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-3 h-auto rounded-xl bg-white shadow-glass border border-white/40">
-            <ArrowLeft className="w-5 h-5 text-text-secondary" />
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+            <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-black text-text-primary tracking-tight">Purchase Request</h1>
-            <p className="text-text-secondary font-medium">Pengajuan pengadaan material per unit proyek</p>
+            <h1 className="text-2xl font-bold text-text-primary">Purchase Requests</h1>
+            <p className="text-text-secondary">Permintaan pembelian material</p>
           </div>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="rounded-xl h-12 px-8 shadow-glass">
-          <Plus className="w-5 h-5 mr-2" /> Buat Request Baru
+        <Button onClick={() => setIsModalOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          PR Baru
         </Button>
       </div>
 
-      <Card className="p-0 border-none shadow-premium bg-white overflow-hidden">
+      <Card>
         <Table>
           <THead>
-            <TR className="bg-white/20 text-text-muted text-[10px] font-black uppercase tracking-[0.2em]">
-              <TH className="px-10 py-7 font-black">No. Request</TH>
-              <TH className="px-10 py-7 font-black">Proyek & Unit</TH>
-              <TH className="px-10 py-7 font-black">Item Material</TH>
-              <TH className="px-10 py-7 font-black text-right">Estimasi Biaya</TH>
-              <TH className="px-10 py-7 font-black text-center">Status</TH>
-              <TH className="px-10 py-7 font-black">Tanggal</TH>
+            <TR>
+              <TH>No. PR / Tgl</TH>
+              <TH>Proyek & Unit</TH>
+              <TH>Deskripsi</TH>
+              <TH>Status</TH>
+              <TH className="text-right">Aksi</TH>
             </TR>
           </THead>
           <TBody>
             {loading ? (
-              <TR><TD colSpan={6} className="px-10 py-24 text-center text-text-muted">Memuat data...</TD></TR>
-            ) : requests.length === 0 ? (
               <TR>
-                <TD colSpan={6} className="px-10 py-24 text-center">
-                  <ClipboardList className="w-16 h-16 text-white mx-auto mb-6" />
-                  <p className="text-text-muted font-bold uppercase text-xs tracking-widest">Belum ada data permintaan.</p>
+                <TD colSpan={5} className="text-center py-8">
+                  <RefreshCw className="animate-spin mx-auto" />
                 </TD>
               </TR>
+            ) : requests.length === 0 ? (
+              <TR>
+                <TD colSpan={5} className="text-center py-8 text-text-secondary">Tidak ada data permintaan.</TD>
+              </TR>
             ) : (
-              requests.map((r: any) => (
-                <TR key={r.id} className="hover:bg-white/20 transition-colors group">
-                  <TD className="px-10 py-8 font-black text-text-primary uppercase text-xs">PR-{r.id.substring(0, 8)}</TD>
-                  <TD className="px-10 py-8">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-black text-text-primary">{r.project?.name || 'Proyek Umum'}</span>
-                      <span className="text-xs font-bold text-accent-dark uppercase tracking-tight mt-1 flex items-center gap-1">
-                        <Home className="w-3.5 h-3.5" /> {r.unit?.unit_number || 'Gudang Utama'}
-                      </span>
-                    </div>
+              requests.map((req) => (
+                <TR key={req.id}>
+                  <TD>
+                    <div className="font-bold">PR-{req.id.slice(0, 8).toUpperCase()}</div>
+                    <div className="text-xs text-text-secondary">{formatDate(req.created_at)}</div>
                   </TD>
-                  <TD className="px-10 py-8">
-                    {r.items && Array.isArray(r.items) ? (
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-sm font-bold text-text-primary">{r.items.length} Macam Material</span>
-                        <span className="text-[11px] text-text-muted truncate max-w-[250px]">
-                          {r.items.map((i: any) => {
-                            const m = materials.find((mat: MaterialWithPrice) => mat.id === i.material_id);
-                            return m ? `${m.name} (${i.quantity} ${m.unit})` : '';
-                          }).join(', ')}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-sm font-bold text-text-primary">{r.material?.name || 'Material'} ({r.quantity})</span>
-                    )}
+                  <TD>
+                    <div className="font-medium">{req.project?.name || '-'}</div>
+                    <div className="text-xs text-text-secondary">Unit: {req.unit?.unit_number || '-'}</div>
                   </TD>
-                  <TD className="px-10 py-8 text-base font-black text-accent-dark text-right">{formatCurrency(r.estimated_cost)}</TD>
-                  <TD className="px-10 py-8 text-center">
-                    <span className={cn(
-                      'px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border',
-                      r.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                      r.status === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                      'bg-amber-50 text-amber-600 border-amber-100'
-                    )}>
-                      {r.status}
+                  <TD className="text-sm">{req.description || '-'}</TD>
+                  <TD>
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${
+                      req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                      req.status === 'REJECTED' ? 'bg-rose-100 text-rose-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {req.status}
                     </span>
                   </TD>
-                  <TD className="px-10 py-8 text-sm font-bold text-text-secondary">{formatDate(r.created_at)}</TD>
+                  <TD className="text-right">
+                    <Button variant="ghost" size="sm">Detail</Button>
+                  </TD>
                 </TR>
               ))
             )}
@@ -278,187 +184,112 @@ const PurchaseRequests: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Buat Purchase Request Baru"
-        size="4xl"
+        title="Buat Permintaan Pembelian (PR)"
+        size="lg"
       >
-        <form onSubmit={handleSubmit} className="space-y-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white/30 p-8 rounded-[2rem] border border-white/40">
-            <div className="space-y-2.5">
-              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block flex items-center gap-2 ml-1">
-                <Building2 className="w-4 h-4 text-accent-dark" /> Pilih Daftar Proyek
-              </label>
-              <select
-                className="w-full h-14 glass-input rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none transition-all shadow-glass"
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold">Proyek</label>
+              <select 
+                className="w-full p-2 border rounded-xl"
                 value={form.project_id}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, project_id: e.target.value, unit_id: '' })}
+                onChange={(e) => setForm({ ...form, project_id: e.target.value })}
                 required
               >
-                <option value="">Pilih Proyek dari Daftar Proyek...</option>
-                {projects.map((p: Project) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                <option value="">Pilih Proyek</option>
+                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
-
-            <div className="space-y-2.5">
-              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block flex items-center gap-2 ml-1">
-                <Home className="w-4 h-4 text-accent-dark" /> Pilih Unit Properti (Opsional)
-              </label>
-              <select
-                className="w-full h-14 glass-input rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none transition-all shadow-glass disabled:opacity-50"
+            <div className="space-y-2">
+              <label className="text-sm font-bold">Unit</label>
+              <select 
+                className="w-full p-2 border rounded-xl"
                 value={form.unit_id}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, unit_id: e.target.value })}
-                disabled={!form.project_id}
+                onChange={(e) => setForm({ ...form, unit_id: e.target.value })}
+                required
               >
-                <option value="">Pilih Unit dari Unit Properti...</option>
-                {units.map((u: { id: string; unit_number: string }) => <option key={u.id} value={u.id}>{u.unit_number}</option>)}
+                <option value="">Pilih Unit</option>
+                {units.map(u => <option key={u.id} value={u.id}>{u.unit_number}</option>)}
               </select>
             </div>
           </div>
 
-          {/* BUDGET ALERT / INFO */}
-          {form.project_id && (
-            <div className={cn(
-              "p-6 rounded-[1.5rem] border-2 transition-all flex items-center justify-between gap-6",
-              fetchingBudget ? "bg-white/40 animate-pulse border-white/60" :
-              !budgetInfo || budgetInfo.rab === 0 ? "bg-amber-50 border-amber-200" :
-              budgetInfo.remaining < 0 ? "bg-rose-50 border-rose-200" : "bg-emerald-50 border-emerald-200 shadow-glass"
-            )}>
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "p-3 rounded-xl",
-                  budgetInfo?.remaining && budgetInfo.remaining < 0 ? "bg-rose-500 text-white" : "bg-white text-accent-dark shadow-glass"
-                )}>
-                  <Calculator className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-0.5">Posisi Anggaran Proyek</h4>
-                  {fetchingBudget ? (
-                    <span className="text-xs font-bold text-text-muted">Menghitung budget...</span>
-                  ) : !budgetInfo || budgetInfo.rab === 0 ? (
-                    <span className="text-xs font-bold text-amber-600">RAB Belum dibuat untuk proyek/unit ini</span>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-text-primary uppercase tracking-tight">Terpakai: {formatCurrency(budgetInfo.actual)}</span>
-                      <span className="text-text-muted">/</span>
-                      <span className="text-sm font-black text-text-muted">Plan: {formatCurrency(budgetInfo.rab)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold">Deskripsi / Alasan</label>
+            <textarea 
+              className="w-full p-2 border rounded-xl"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows={3}
+            />
+          </div>
 
-              {budgetInfo && budgetInfo.rab > 0 && !fetchingBudget && (
-                <div className="text-right">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-0.5">Sisa Budget Tersedia</p>
-                  <p className={cn(
-                    "text-xl font-black tracking-tighter",
-                    budgetInfo.remaining < 0 ? "text-rose-600" : "text-emerald-600"
-                  )}>
-                    {formatCurrency(budgetInfo.remaining)}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <h3 className="text-sm font-black text-text-primary uppercase tracking-widest flex items-center gap-2">
-                  <Package className="w-4 h-4 text-accent-dark" /> Daftar Material
-                </h3>
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input
-                    type="text"
-                    placeholder="Cari material..."
-                    className="h-8 pl-9 pr-4 rounded-pill bg-white/50 border border-white/40 text-[11px] font-bold focus:outline-none focus:ring-1 focus:ring-accent-lavender w-48"
-                    value={materialSearch}
-                    onChange={(e) => setMaterialSearch(e.target.value)}
-                  />
-                </div>
-              </div>
-              <Button type="button" variant="ghost" size="sm" onClick={addItemRow} className="text-accent-dark font-black text-[10px] uppercase tracking-widest hover:bg-accent-lavender/20">
-                <PlusCircle className="w-4 h-4 mr-1" /> Tambah Baris
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-bold">Item Material</label>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={() => setForm({ ...form, items: [...form.items, { material_id: '', quantity: 1 }] })}
+              >
+                <PlusCircle className="w-4 h-4 mr-2" /> Tambah Item
               </Button>
             </div>
-
-            <div className="space-y-3">
-              {form.items.map((item: PRItem, index: number) => {
-                const selectedMat = materials.find((m: MaterialWithPrice) => m.id === item.material_id);
-                return (
-                  <div key={index} className="flex flex-wrap md:flex-nowrap items-end gap-4 p-4 glass-card rounded-xl border border-white/40 shadow-glass group">
-                    <div className="flex-1 min-w-[200px] space-y-1">
-                      <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Material</label>
-                      <select
-                        className="w-full h-11 glass-input border-none rounded-xl px-3 text-xs font-bold text-text-primary focus:outline-none"
-                        value={item.material_id}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateItem(index, 'material_id', e.target.value)}
-                        required
-                      >
-                        <option value="">Pilih Material...</option>
-                        {filteredMaterials.map((m: MaterialWithPrice) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name} {m.specification ? `(${m.specification})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="w-24 space-y-1">
-                      <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Qty</label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(index, 'quantity', Number(e.target.value))}
-                        className="h-11 text-xs"
-                      />
-                    </div>
-
-                    <div className="w-32 space-y-1">
-                      <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Subtotal</label>
-                      <div className="h-11 flex items-center px-3 bg-white/30 rounded-xl text-[11px] font-black text-accent-dark">
-                        {formatCurrency((selectedMat?.unit_price || 0) * item.quantity)}
-                      </div>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => removeItemRow(index)}
-                      className="h-11 w-11 p-0 rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50"
-                      disabled={form.items.length === 1}
+            <div className="space-y-2">
+              {form.items.map((item, idx) => (
+                <div key={idx} className="flex gap-2 items-end">
+                  <div className="flex-1 space-y-1">
+                    <select 
+                      className="w-full p-2 border rounded-xl text-sm"
+                      value={item.material_id}
+                      onChange={(e) => {
+                        const newItems = [...form.items];
+                        newItems[idx].material_id = e.target.value;
+                        setForm({ ...form, items: newItems });
+                      }}
+                      required
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                      <option value="">Pilih Material</option>
+                      {materials.map(m => <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>)}
+                    </select>
                   </div>
-                );
-              })}
+                  <div className="w-24 space-y-1">
+                    <input 
+                      type="number"
+                      className="w-full p-2 border rounded-xl text-sm"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const newItems = [...form.items];
+                        newItems[idx].quantity = parseInt(e.target.value);
+                        setForm({ ...form, items: newItems });
+                      }}
+                      min="1"
+                      required
+                    />
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-rose-500"
+                    onClick={() => {
+                      const newItems = form.items.filter((_, i) => i !== idx);
+                      setForm({ ...form, items: newItems });
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-6 border-t border-white/40">
-            <div className="flex-1 w-full space-y-1.5">
-              <label className="text-xs font-black text-text-muted uppercase tracking-widest block">Keterangan / Keperluan</label>
-              <textarea
-                className="w-full h-20 glass-input border-none rounded-xl p-4 text-sm font-medium text-text-primary focus:outline-none transition-all resize-none"
-                placeholder="Catatan tambahan..."
-                value={form.description}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm({ ...form, description: e.target.value })}
-              />
-            </div>
-
-            <div className="w-full md:w-64 p-6 bg-accent-dark rounded-xl text-white shadow-glass">
-              <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Total Estimasi</span>
-              <div className="text-2xl font-black mt-1 text-emerald-400">
-                {formatCurrency(calculateTotal())}
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-4 flex gap-4">
-            <Button type="button" variant="ghost" className="flex-1 h-12 rounded-xl" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button type="submit" className="flex-1 h-12 rounded-xl shadow-glass" isLoading={submitting}>
-              Ajukan Permintaan
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Menyimpan...' : 'Simpan PR'}
             </Button>
           </div>
         </form>

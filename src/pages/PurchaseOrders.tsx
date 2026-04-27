@@ -16,10 +16,15 @@ import {
   XCircle,
   ClipboardList
 } from 'lucide-react';
+import { api } from '../lib/api';
+import { PurchaseOrder, Material } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
-import { formatDate, formatCurrency, cn } from '../lib/utils';
+import { Modal } from '../components/ui/Modal';
+import { formatDate, formatCurrency } from '../lib/utils';
+import { PurchaseOrderForm } from '../components/forms/PurchaseOrderForm';
+import { useAuth } from '../contexts/AuthContext';
+import { getMockData, saveMockData } from '../lib/storage';
 
 interface PO {
   id: string;
@@ -35,27 +40,58 @@ interface PO {
 
 const PurchaseOrders: React.FC = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<PO[]>([]);
+  const { isMockMode, division } = useAuth();
+  const [orders, setOrders] = useState<any[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
   const [approvedPRItems, setApprovedPRItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | undefined>();
+
+  useEffect(() => {
+    if (division === 'marketing' || division === 'teknik' || division === 'audit') {
+      fetchOrders();
+      fetchMaterials();
+    } else {
+      setLoading(false);
+    }
+  }, [division]);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const [poRes, prRes] = await Promise.all([
-        fetch('/api/purchase-orders'),
-        fetch('/api/purchase-requests')
-      ]);
       
-      const poData = await poRes.json();
-      const prData = await prRes.json();
+      if (isMockMode) {
+        const defaultOrders: any[] = [
+          {
+            id: '1',
+            po_number: 'PO-2026-001',
+            material_id: '1',
+            supplier: 'PT. Semen Indonesia',
+            quantity: 100,
+            unit_price: 65000,
+            total_price: 6500000,
+            status: 'received',
+            order_date: new Date().toISOString(),
+            materials: { name: 'Semen Tiga Roda', unit: 'sak' },
+            created_at: new Date().toISOString(),
+          }
+        ];
+        setOrders(getMockData<PurchaseOrder>('purchase_orders', defaultOrders));
+        return;
+      }
+
+      // Use the standardized api utility
+      const poData = await api.get('purchase_orders', 'select=*,project:projects(name),supplier:suppliers(name)&order=created_at.desc');
+      const prData = await api.get('purchase_requests', 'select=*,project:projects(name),unit:units(unit_number)&order=created_at.desc');
       
-      setOrders(poData || []);
+      console.log('📦 Purchase Orders Response:', poData);
+      setOrders(poData);
       
       // Flatten items from APPROVED PRs
       const approvedItems: any[] = [];
-      (prData || []).forEach((pr: any) => {
+      prData.forEach((pr: any) => {
         if (pr.status === 'APPROVED') {
           (pr.items || []).forEach((item: any) => {
             approvedItems.push({
@@ -69,7 +105,6 @@ const PurchaseOrders: React.FC = () => {
         }
       });
       setApprovedPRItems(approvedItems);
-      
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
@@ -77,198 +112,176 @@ const PurchaseOrders: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const fetchMaterials = async () => {
+    if (isMockMode) {
+      setMaterials([
+        { id: '1', name: 'Semen Tiga Roda', unit: 'sak', stock: 50, min_stock: 10, created_at: '', updated_at: '' }
+      ]);
+      return;
+    }
+    const data = await api.get('materials', 'select=*');
+    setMaterials(data);
+  };
 
-  const getStatusBadge = (status: string) => {
-    switch(status.toLowerCase()) {
-      case 'received': return { label: 'DITERIMA', color: 'bg-emerald-100 text-emerald-600 border-emerald-200', icon: CheckCircle2 };
-      case 'shipped': return { label: 'DIKIRIM', color: 'bg-blue-100 text-blue-600 border-blue-200', icon: Truck };
-      case 'cancelled': return { label: 'DIBATALKAN', color: 'bg-rose-100 text-rose-600 border-rose-200', icon: XCircle };
-      default: return { label: 'PENDING', color: 'bg-amber-100 text-amber-600 border-amber-200', icon: Clock };
+  const handleStatusUpdate = async (id: string, status: string) => {
+    try {
+      await api.update('purchase_orders', id, { status });
+      fetchOrders();
+    } catch (error) {
+      console.error('Error updating status:', error);
     }
   };
 
   const filteredOrders = orders.filter(order => 
-    order.po_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.project_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    (order.po_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (order.supplier?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="space-y-8 pb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate('/')}
+            className="p-2 h-auto"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-black text-text-primary tracking-tight">Purchase Orders</h1>
-            <p className="text-text-secondary font-medium">Monitoring pemesanan material ke supplier</p>
+            <h1 className="text-2xl font-bold text-text-primary">Purchase Orders</h1>
+            <p className="text-text-secondary">Kelola pemesanan material proyek</p>
           </div>
         </div>
-        <Button onClick={() => alert('Fitur buat PO manual sedang disiapkan. Silakan gunakan alur PR -> Approval -> PO.')} className="rounded-xl h-12 px-8 shadow-glass">
-          <Plus className="w-5 h-5 mr-2" /> Buat PO Baru
+        <Button onClick={() => {
+          setSelectedOrder(undefined);
+          setIsModalOpen(true);
+        }}>
+          <Plus className="w-4 h-4 mr-2" />
+          PO Baru
         </Button>
       </div>
 
-      {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 bg-white border-none shadow-premium flex items-center gap-6">
-          <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-            <Truck className="w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Total Pesanan</p>
-            <p className="text-2xl font-black text-text-primary tracking-tight">{orders.length} PO</p>
-          </div>
-        </Card>
-        
-        <Card className="p-6 bg-white border-none shadow-premium flex items-center gap-6">
-          <div className="w-14 h-14 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
-            <Package className="w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Item Menunggu PO</p>
-            <p className="text-2xl font-black text-text-primary tracking-tight">{approvedPRItems.length} Item</p>
-          </div>
-        </Card>
-      </div>
-
-      {/* PR Item Queue - Added as per request to see approved items */}
-      {approvedPRItems.length > 0 && (
-        <Card className="p-0 border-none shadow-premium bg-white overflow-hidden border-l-4 border-l-primary">
-          <div className="p-6 border-b border-white/20 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-primary" />
-              <h2 className="font-black text-text-primary uppercase tracking-tight">Daftar Tunggu dari PR Approved</h2>
-            </div>
-            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
-              Ready to Order
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <Table className="w-full">
-              <THead>
-                <TR isHoverable={false}>
-                  <TH>Material</TH>
-                  <TH>Proyek / Unit</TH>
-                  <TH className="text-center">Qty</TH>
-                  <TH className="text-right">Est. Harga</TH>
-                  <TH className="text-right">Total Est.</TH>
-                  <TH>No. PR</TH>
-                </TR>
-              </THead>
-              <TBody>
-                {approvedPRItems.map((item, idx) => (
-                  <TR key={`${item.prId}-${idx}`}>
-                    <TD className="font-bold text-text-primary text-sm">{item.name || item.materialName}</TD>
-                    <TD>
-                      <div className="text-xs font-bold text-text-secondary">{item.projectName}</div>
-                      <div className="text-[10px] opacity-60 font-medium">Unit: {item.unitNumber}</div>
-                    </TD>
-                    <TD className="text-center font-black text-text-primary text-sm">
-                      {item.qty} <span className="text-[10px] font-bold text-text-muted">{item.unit}</span>
-                    </TD>
-                    <TD className="text-right text-text-muted font-bold text-xs">
-                      {formatCurrency(item.price || 0)}
-                    </TD>
-                    <TD className="text-right font-black text-text-primary text-sm">
-                      {formatCurrency((item.qty || 0) * (item.price || 0))}
-                    </TD>
-                    <TD className="text-[10px] font-bold text-text-muted uppercase tracking-tighter">
-                      PR-{item.prId.substring(0, 8)}
-                    </TD>
-                  </TR>
-                ))}
-              </TBody>
-            </Table>
-          </div>
-          <div className="p-4 bg-primary/5">
-             <p className="text-[10px] text-primary font-bold italic">
-               * Daftar di atas adalah item yang sudah disetujui Manager dan siap diproses ke Purchase Order (PO). 
-               Satu PR dapat dipecah ke beberapa PO jika supplier berbeda.
-             </p>
-          </div>
-        </Card>
-      )}
-
-      <Card className="p-0 border-none shadow-premium bg-white overflow-hidden">
-        <div className="p-6 border-b border-white/20 flex flex-col sm:flex-row gap-4">
+      <Card>
+        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <Input 
-              placeholder="Cari PO, supplier, atau proyek..." 
-              className="pl-12 h-12 glass-input border-none rounded-xl"
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Cari PO atau supplier..."
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-white/40 focus:outline-none focus:border-accent-lavender transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" className="h-12 rounded-xl bg-white border-white/40" onClick={fetchOrders}>
-            <RefreshCw className={cn("w-4 h-4 mr-2", loading ? "animate-spin" : "")} /> Segarkan
-          </Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <Table className="w-full">
+        <Table className="min-w-[800px]">
             <THead>
-              <TR isHoverable={false}>
+              <TR className="bg-white/20">
                 <TH>No. PO</TH>
                 <TH>Proyek</TH>
                 <TH>Supplier</TH>
-                <TH className="text-right">Total Nilai</TH>
-                <TH className="text-center">Status</TH>
-                <TH>Tanggal</TH>
+                <TH>Total</TH>
+                <TH>Status</TH>
                 <TH className="text-right">Aksi</TH>
               </TR>
             </THead>
             <TBody>
-              {loading && orders.length === 0 ? (
-                <TR isHoverable={false}>
-                  <TD colSpan={7} className="py-20 text-center">
-                    <RefreshCw className="w-8 h-8 text-accent-dark animate-spin mx-auto mb-4" />
-                    <p className="text-text-muted font-bold uppercase text-[10px] tracking-widest">Memuat Data PO...</p>
+              {loading ? (
+                <TR>
+                  <TD colSpan={6} className="text-center py-8">
+                    <div className="flex justify-center"><RefreshCw className="animate-spin" /></div>
                   </TD>
                 </TR>
               ) : filteredOrders.length === 0 ? (
-                <TR isHoverable={false}>
-                  <TD colSpan={7} className="py-20 text-center text-text-muted">
-                    <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p className="font-bold uppercase text-[10px] tracking-widest">Tidak ada Purchase Order ditemukan</p>
-                  </TD>
+                <TR>
+                  <TD colSpan={6} className="text-center py-8 text-text-secondary">Tidak ada data PO.</TD>
                 </TR>
-              ) : filteredOrders.map((order) => {
-                const badge = getStatusBadge(order.status);
-                return (
+              ) : (
+                filteredOrders.map((order) => (
                   <TR key={order.id}>
-                    <TD className="font-black text-text-primary text-sm uppercase tracking-tight">
-                      {order.po_number || `PO-${order.id.substring(0,6)}`}
+                    <TD>
+                      <div className="font-bold">{order.po_number}</div>
+                      <div className="text-xs text-text-secondary">{formatDate(order.created_at)}</div>
                     </TD>
-                    <TD className="font-bold text-text-secondary text-xs">{order.project_name || '-'}</TD>
-                    <TD className="font-bold text-text-primary text-xs">{order.supplier_name || '-'}</TD>
-                    <TD className="text-right font-black text-accent-dark">
-                      {formatCurrency(Number(order.total_price))}
-                    </TD>
-                    <TD className="text-center">
-                      <span className={cn("px-3 py-1 rounded-full text-[9px] font-black border tracking-widest flex items-center justify-center w-fit mx-auto gap-1", badge.color)}>
-                        <badge.icon className="w-3 h-3" /> {badge.label}
+                    <TD>{order.project?.name || '-'}</TD>
+                    <TD>{order.supplier?.name || '-'}</TD>
+                    <TD className="font-bold">{formatCurrency(order.total_price)}</TD>
+                    <TD>
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${
+                        order.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
+                        order.status === 'CANCELLED' ? 'bg-rose-100 text-rose-700' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {order.status}
                       </span>
                     </TD>
-                    <TD className="text-xs text-text-muted font-bold">{formatDate(order.created_at)}</TD>
                     <TD className="text-right">
-                      <Button variant="ghost" size="sm" className="rounded-xl hover:bg-accent-lavender/10 text-primary">
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/purchase-orders/${order.id}`)}>
                         Detail
                       </Button>
                     </TD>
                   </TR>
-                );
-              })}
+                ))
+              )}
             </TBody>
           </Table>
-        </div>
       </Card>
+      
+      {/* Approved PR Items Section */}
+      <Card>
+        <div className="p-4 border-b border-white/40">
+          <h2 className="text-lg font-bold">PR Disetujui (Belum PO)</h2>
+        </div>
+        <Table>
+          <THead>
+            <TR>
+              <TH>Proyek</TH>
+              <TH>Unit</TH>
+              <TH>Material</TH>
+              <TH>Qty</TH>
+              <TH>Aksi</TH>
+            </TR>
+          </THead>
+          <TBody>
+            {approvedPRItems.length === 0 ? (
+              <TR>
+                <TD colSpan={5} className="text-center py-4 text-text-secondary text-sm">Tidak ada PR yang menunggu PO</TD>
+              </TR>
+            ) : (
+              approvedPRItems.map((item, idx) => (
+                <TR key={idx}>
+                  <TD>{item.projectName}</TD>
+                  <TD>{item.unitNumber}</TD>
+                  <TD>{item.material_id}</TD>
+                  <TD>{item.quantity}</TD>
+                  <TD>
+                    <Button size="sm" variant="outline">Buat PO</Button>
+                  </TD>
+                </TR>
+              ))
+            )}
+          </TBody>
+        </Table>
+      </Card>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={selectedOrder ? 'Edit Purchase Order' : 'Tambah Purchase Order'}
+        size="lg"
+      >
+        <PurchaseOrderForm
+          materials={materials}
+          onSuccess={() => {
+            setIsModalOpen(false);
+            fetchOrders();
+          }}
+          onCancel={() => setIsModalOpen(false)}
+        />
+      </Modal>
     </div>
   );
 };
