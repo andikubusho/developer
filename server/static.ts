@@ -5,49 +5,56 @@ import { log } from "./index";
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(process.cwd(), "dist");
-  log(`Resolved static assets path: ${distPath}`, "static");
+  const publicPath = path.resolve(process.cwd(), "public"); // Some deployments use public for static
   
-  if (!fs.existsSync(distPath)) {
-    log(`ERROR: Static assets path NOT FOUND: ${distPath}`, "static");
-    // Fallback to a secondary check if needed, but normally process.cwd() should be correct on Railway
+  log(`Checking static assets at: ${distPath}`, "static");
+  
+  // Serve static files from the dist directory
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath, {
+      maxAge: "1d",
+      index: false
+    }));
   }
 
-  // Serve static files from the dist/public directory
-  app.use(express.static(distPath, {
-    maxAge: "1d",
-    index: false // We handle the root separately
-  }));
-
-  // Fallback handler
+  // Fallback handler for SPA
   app.use((req: Request, res: Response, next: NextFunction) => {
-    // DO NOT serve index.html for assets, api, or common static file types
-    // If an asset wasn't found by express.static, return a real 404
-    const isAsset = req.path.startsWith("/assets/") || 
-                   /\.(js|css|png|jpg|jpeg|gif|ico|svg|json|woff|woff2|ttf|eot)$/i.test(req.path);
+    // 1. Skip if it's an API call
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+
+    // 2. Skip if it looks like a static asset file
+    const isAsset = /\.(js|css|png|jpg|jpeg|gif|ico|svg|json|woff|woff2|ttf|eot)$/i.test(req.path) || 
+                   req.path.startsWith("/assets/");
     
     if (isAsset) {
       log(`Asset not found: ${req.path}`, "static");
       return res.status(404).send("Asset not found");
     }
 
-    if (req.path.startsWith("/api")) {
-      return next();
-    }
-    
-    // Only serve index.html for non-asset and non-api requests
-    const indexPath = path.resolve(distPath, "index.html");
-    if (fs.existsSync(indexPath)) {
-      // Ensure index.html is NEVER cached to prevent old asset hashes from being used
+    // 3. For everything else (SPA routes), serve index.html
+    // Try multiple possible locations for index.html
+    const possibleIndexPaths = [
+      path.resolve(distPath, "index.html"),
+      path.resolve(process.cwd(), "dist", "index.html"),
+      path.resolve(__dirname, "..", "dist", "index.html"),
+      path.resolve(__dirname, "index.html"), // Just in case it's in the same dir
+    ];
+
+    let indexPath = possibleIndexPaths.find(p => fs.existsSync(p));
+
+    if (indexPath) {
       res.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
         'Surrogate-Control': 'no-store'
       });
-      res.sendFile(indexPath);
-    } else {
-      log(`ERROR: index.html not found at ${indexPath}`, "static");
-      next();
+      return res.sendFile(indexPath);
     }
+
+    log(`ERROR: index.html not found in any expected location: ${req.path}`, "static");
+    next();
   });
 }

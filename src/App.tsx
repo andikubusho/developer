@@ -170,7 +170,6 @@ export default function App() {
               <Route path="audit-transactions" element={<AuditTransactions />} />
               <Route path="audit-stock" element={<AuditStock />} />
               <Route path="audit-costs" element={<AuditCosts />} />
-              <Route path="user-management" element={<UserManagement />} />
               
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
