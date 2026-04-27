@@ -103,13 +103,14 @@ const StockCard: React.FC = () => {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      let url = '/api/material-stock-logs?';
-      if (selectedProject) url += `projectId=${selectedProject}&`;
-      if (selectedUnit) url += `unitId=${selectedUnit}&`;
-      if (selectedMaterial) url += `materialId=${selectedMaterial}&`;
       
-      const res = await fetch(url);
-      const data = await res.json();
+      const filters: string[] = [];
+      if (selectedProject) filters.push(`project_id=eq.${selectedProject}`);
+      if (selectedUnit) filters.push(`unit_id=eq.${selectedUnit}`);
+      if (selectedMaterial) filters.push(`material_id=eq.${selectedMaterial}`);
+      
+      const queryString = `select=*${filters.length > 0 ? `&${filters.join('&')}` : ''}&order=created_at.desc`;
+      const data = await api.get('material_stock_logs', queryString);
       setLogs(data || []);
     } catch (err) {
       console.error('Error fetching logs:', err);
