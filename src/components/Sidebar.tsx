@@ -81,6 +81,7 @@ const menuItems = [
   { name: 'Follow Up', icon: MessageSquare, path: '/follow-ups', divisions: ['marketing'] },
   { name: 'Titipan', icon: Wallet, path: '/deposits', divisions: ['marketing'] },
   { name: 'Jadwal Konsultan', icon: Calendar, path: '/marketing-schedule', divisions: ['marketing'] },
+  { name: 'Master Konsultan', icon: Users, path: '/marketing-master', divisions: ['marketing'] },
   { name: 'Master Promo', icon: Tag, path: '/promos', divisions: ['marketing'] },
   { name: 'Price List', icon: FileText, path: '/price-list', divisions: ['marketing'] },
   { name: 'Siteplan', icon: Map, path: '/site-plan', divisions: ['marketing'] },
@@ -100,6 +101,7 @@ const menuItems = [
   { name: 'Pencairan KPR', icon: Banknote, path: '/kpr-disbursement', divisions: ['keuangan', 'audit'] },
   { name: 'Master Bank', icon: Landmark, path: '/bank-master', divisions: ['keuangan', 'audit'] },
   { name: 'Pembayaran Supplier', icon: Truck, path: '/supplier-payments', divisions: ['keuangan', 'audit'] },
+  { name: 'Piutang Konsumen', icon: FileText, path: '/customer-receivables', divisions: ['keuangan', 'audit'] },
 
   // Marketing Final
   { name: 'Template Dokumen', icon: FileText, path: '/document-templates', divisions: ['marketing', 'audit'] },

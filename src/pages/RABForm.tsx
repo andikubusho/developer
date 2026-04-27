@@ -288,7 +288,7 @@ const RABForm: React.FC = () => {
         let total_material = 0;
 
         if (node.level === 3) {
-          jumlah_material = (parentVolume || 0) * (node.koeff || 0);
+          jumlah_material = (node.koeff || 0) * (node.volume || 0);
           total_material = jumlah_material * (node.harga_rab || 0);
           subtotal = total_material;
         } else {
@@ -467,17 +467,30 @@ const RABForm: React.FC = () => {
               </div>
             </TD>
 
+            {/* KOEFF */}
+            <TD className="px-4 py-3 border-r border-white/40 w-24">
+              {isLevel3 && (
+                <input 
+                  type="number"
+                  step="0.001"
+                  value={node.koeff ?? ''}
+                  onChange={(e) => updateNode(node.id, { koeff: Number(e.target.value) })}
+                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
+                />
+              )}
+            </TD>
+
             {/* VOLUME / JUMLAH */}
             <TD className="px-4 py-3 border-r border-white/40 w-32">
               {(isLevel2 || isLevel3) && (
                 <input 
                   type="number"
-                  value={isLevel3 ? node.jumlah_material.toFixed(2) : (node.volume || '')}
-                  readOnly={isLevel3}
+                  step="0.01"
+                  value={isLevel2 ? (node.volume ?? '') : (node.volume ?? '')}
                   onChange={(e) => updateNode(node.id, { volume: Number(e.target.value) })}
+                  placeholder={isLevel3 ? '0' : ''}
                   className={cn(
-                    "bg-transparent border-none focus:ring-0 w-full text-right p-0",
-                    isLevel3 && "text-text-muted"
+                    "bg-transparent border-none focus:ring-0 w-full text-right p-0"
                   )}
                 />
               )}
@@ -496,26 +509,14 @@ const RABForm: React.FC = () => {
               )}
             </TD>
 
-            {/* KOEFF */}
-            <TD className="px-4 py-3 border-r border-white/40 w-24">
-              {isLevel3 && (
-                <input 
-                  type="number"
-                  step="0.001"
-                  value={node.koeff || ''}
-                  onChange={(e) => updateNode(node.id, { koeff: Number(e.target.value) })}
-                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
-                />
-              )}
-            </TD>
-
             {/* HARGA RAB */}
             <TD className="px-4 py-3 border-r border-white/40 w-40">
               {isLevel3 && (
                 <input 
                   type="number"
-                  value={node.harga_rab || ''}
-                  onChange={(e) => updateNode(node.id, { harga_rab: Number(e.target.value) })}
+                  value={node.harga_rab ?? ''}
+                  onChange={(e) => updateNode(node.id, { harga_rab: e.target.value === '' ? null : Number(e.target.value) })}
+                  placeholder="0"
                   className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
                 />
               )}
@@ -656,9 +657,9 @@ const RABForm: React.FC = () => {
               <TR className="bg-accent-dark text-white text-[10px] font-black uppercase tracking-[0.2em] sticky top-0 z-10">
                 <TH className="px-4 py-5 border-r border-white/40 w-16">No</TH>
                 <TH className="px-4 py-5 border-r border-white/40">Uraian Pekerjaan</TH>
+                <TH className="px-4 py-5 border-r border-white/40 w-24">Koeff</TH>
                 <TH className="px-4 py-5 border-r border-white/40 w-32">Volume</TH>
                 <TH className="px-4 py-5 border-r border-white/40 w-24">Satuan</TH>
-                <TH className="px-4 py-5 border-r border-white/40 w-24">Koeff</TH>
                 <TH className="px-4 py-5 border-r border-white/40 w-40">Harga Satuan</TH>
                 <TH className="px-4 py-5 w-44 text-right">Total Biaya</TH>
                 <TH className="px-4 py-5 w-40">Aksi</TH>

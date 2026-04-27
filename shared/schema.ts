@@ -722,6 +722,7 @@ export const MENU_KEYS = [
   { key: "supplier-payments", label: "Pembayaran Supplier", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "cash-flow", label: "Cash Flow", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
   { key: "petty-cash", label: "Petty Cash", group: "Keuangan", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "customer-receivables", label: "Piutang Konsumen", group: "Keuangan", capabilities: { view: true, create: false, edit: false, delete: false, print: true } },
 
   // ACCOUNTING
   { key: "general-journal", label: "Jurnal Umum", group: "Accounting", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
