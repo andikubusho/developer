@@ -13,7 +13,8 @@ import {
   RefreshCw,
   FileText,
   Clock,
-  XCircle
+  XCircle,
+  ClipboardList
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -35,15 +36,40 @@ interface PO {
 const PurchaseOrders: React.FC = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<PO[]>([]);
+  const [approvedPRItems, setApprovedPRItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/purchase-orders');
-      const data = await res.json();
-      setOrders(data || []);
+      const [poRes, prRes] = await Promise.all([
+        fetch('/api/purchase-orders'),
+        fetch('/api/purchase-requests')
+      ]);
+      
+      const poData = await poRes.json();
+      const prData = await prRes.json();
+      
+      setOrders(poData || []);
+      
+      // Flatten items from APPROVED PRs
+      const approvedItems: any[] = [];
+      (prData || []).forEach((pr: any) => {
+        if (pr.status === 'APPROVED') {
+          (pr.items || []).forEach((item: any) => {
+            approvedItems.push({
+              ...item,
+              prId: pr.id,
+              projectName: pr.project?.name || 'Unknown',
+              unitNumber: pr.unit?.unit_number || '-',
+              createdAt: pr.createdAt
+            });
+          });
+        }
+      });
+      setApprovedPRItems(approvedItems);
+      
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
@@ -87,6 +113,7 @@ const PurchaseOrders: React.FC = () => {
         </Button>
       </div>
 
+      {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6 bg-white border-none shadow-premium flex items-center gap-6">
           <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
@@ -97,7 +124,76 @@ const PurchaseOrders: React.FC = () => {
             <p className="text-2xl font-black text-text-primary tracking-tight">{orders.length} PO</p>
           </div>
         </Card>
+        
+        <Card className="p-6 bg-white border-none shadow-premium flex items-center gap-6">
+          <div className="w-14 h-14 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+            <Package className="w-7 h-7" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Item Menunggu PO</p>
+            <p className="text-2xl font-black text-text-primary tracking-tight">{approvedPRItems.length} Item</p>
+          </div>
+        </Card>
       </div>
+
+      {/* PR Item Queue - Added as per request to see approved items */}
+      {approvedPRItems.length > 0 && (
+        <Card className="p-0 border-none shadow-premium bg-white overflow-hidden border-l-4 border-l-primary">
+          <div className="p-6 border-b border-white/20 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-primary" />
+              <h2 className="font-black text-text-primary uppercase tracking-tight">Daftar Tunggu dari PR Approved</h2>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
+              Ready to Order
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table className="w-full">
+              <THead>
+                <TR isHoverable={false}>
+                  <TH>Material</TH>
+                  <TH>Proyek / Unit</TH>
+                  <TH className="text-center">Qty</TH>
+                  <TH className="text-right">Est. Harga</TH>
+                  <TH className="text-right">Total Est.</TH>
+                  <TH>No. PR</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {approvedPRItems.map((item, idx) => (
+                  <TR key={`${item.prId}-${idx}`}>
+                    <TD className="font-bold text-text-primary text-sm">{item.name || item.materialName}</TD>
+                    <TD>
+                      <div className="text-xs font-bold text-text-secondary">{item.projectName}</div>
+                      <div className="text-[10px] opacity-60 font-medium">Unit: {item.unitNumber}</div>
+                    </TD>
+                    <TD className="text-center font-black text-text-primary text-sm">
+                      {item.qty} <span className="text-[10px] font-bold text-text-muted">{item.unit}</span>
+                    </TD>
+                    <TD className="text-right text-text-muted font-bold text-xs">
+                      {formatCurrency(item.price || 0)}
+                    </TD>
+                    <TD className="text-right font-black text-text-primary text-sm">
+                      {formatCurrency((item.qty || 0) * (item.price || 0))}
+                    </TD>
+                    <TD className="text-[10px] font-bold text-text-muted uppercase tracking-tighter">
+                      PR-{item.prId.substring(0, 8)}
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </div>
+          <div className="p-4 bg-primary/5">
+             <p className="text-[10px] text-primary font-bold italic">
+               * Daftar di atas adalah item yang sudah disetujui Manager dan siap diproses ke Purchase Order (PO). 
+               Satu PR dapat dipecah ke beberapa PO jika supplier berbeda.
+             </p>
+          </div>
+        </Card>
+      )}
 
       <Card className="p-0 border-none shadow-premium bg-white overflow-hidden">
         <div className="p-6 border-b border-white/20 flex flex-col sm:flex-row gap-4">
