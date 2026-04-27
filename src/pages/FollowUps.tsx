@@ -148,8 +148,9 @@ const FollowUps: React.FC = () => {
         appointment_date: formData.is_appointment && formData.appointment_date 
           ? new Date(formData.appointment_date).toISOString() 
           : null,
+        // Start reminder 2 hours before appointment_date
         next_reminder_at: formData.is_appointment && formData.appointment_date 
-          ? new Date(formData.appointment_date).toISOString() 
+          ? new Date(new Date(formData.appointment_date).getTime() - (2 * 60 * 60 * 1000)).toISOString() 
           : null,
         appointment_status: formData.is_appointment ? 'pending' : null
       };
@@ -449,8 +450,8 @@ const FollowUps: React.FC = () => {
                   value={formData.appointment_notes}
                   onChange={(e) => setFormData({ ...formData, appointment_notes: e.target.value })}
                 />
-                <p className="text-[10px] text-text-secondary italic">
-                  * Notifikasi pengingat akan muncul di layar Anda sesuai waktu yang ditentukan.
+                <p className="text-[10px] text-accent-dark font-bold italic bg-accent-dark/5 p-2 rounded-lg border border-accent-dark/10">
+                  * Sistem akan mulai memberikan notifikasi pengingat kepada Anda 2 jam sebelum waktu janji yang ditentukan.
                 </p>
               </div>
             )}
