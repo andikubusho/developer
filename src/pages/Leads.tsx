@@ -143,8 +143,11 @@ const Leads: React.FC = () => {
     try {
       setLoading(true);
 
-      // 1. Normalize phone for checking
-      const cleanPhone = formData.phone.replace(/[^0-9]/g, '');
+      // 1. Normalize phone for checking (matches DB generated column logic)
+      let cleanPhone = formData.phone.replace(/\D/g, '');
+      if (cleanPhone.startsWith('62')) {
+        cleanPhone = '0' + cleanPhone.slice(2);
+      }
       
       // 2. Global Duplicate Check (Only for NEW leads)
       if (!selectedLead) {
