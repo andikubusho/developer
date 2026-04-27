@@ -142,9 +142,9 @@ const AppointmentReminder: React.FC = () => {
             </div>
 
             <div className="space-y-1.5">
-              <span className="text-[10px] font-black uppercase text-text-muted tracking-wider ml-1">Keterangan</span>
+              <span className="text-[10px] font-black uppercase text-text-muted tracking-wider ml-1">Keterangan Janji</span>
               <p className="text-sm text-text-primary font-medium leading-relaxed bg-white/20 p-3 rounded-xl border border-white/30 italic">
-                "{activeReminder.description}"
+                "{activeReminder.appointment_notes || activeReminder.description}"
               </p>
             </div>
           </div>

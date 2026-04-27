@@ -114,6 +114,7 @@ export interface FollowUp {
   reminder_frequency?: '5min' | '1hour' | '1day' | 'none';
   next_reminder_at?: string | null;
   appointment_status?: 'pending' | 'completed' | 'cancelled' | 'missed';
+  appointment_notes?: string;
 }
 
 export interface Deposit {

@@ -36,7 +36,8 @@ const FollowUps: React.FC = () => {
     consultant_id: '',
     is_appointment: false,
     appointment_date: '',
-    reminder_frequency: 'none' as FollowUp['reminder_frequency']
+    reminder_frequency: 'none' as FollowUp['reminder_frequency'],
+    appointment_notes: ''
   });
   const [staff, setStaff] = useState<any[]>([]);
 
@@ -79,7 +80,8 @@ const FollowUps: React.FC = () => {
         consultant_id: selectedFollowUp.lead?.consultant_id || '',
         is_appointment: !!selectedFollowUp.is_appointment,
         appointment_date: selectedFollowUp.appointment_date ? new Date(selectedFollowUp.appointment_date).toISOString().slice(0, 16) : '',
-        reminder_frequency: selectedFollowUp.reminder_frequency || 'none'
+        reminder_frequency: selectedFollowUp.reminder_frequency || 'none',
+        appointment_notes: selectedFollowUp.appointment_notes || ''
       });
     } else {
       setFormData({
@@ -89,7 +91,8 @@ const FollowUps: React.FC = () => {
         consultant_id: profile?.consultant_id || '',
         is_appointment: false,
         appointment_date: '',
-        reminder_frequency: 'none'
+        reminder_frequency: 'none',
+        appointment_notes: ''
       });
     }
   }, [selectedFollowUp, isModalOpen, profile]);
@@ -440,6 +443,12 @@ const FollowUps: React.FC = () => {
                     </select>
                   </div>
                 </div>
+                <Input 
+                  label="Keterangan Janji"
+                  placeholder="Contoh: Ketemu di lokasi, bawa brosur..."
+                  value={formData.appointment_notes}
+                  onChange={(e) => setFormData({ ...formData, appointment_notes: e.target.value })}
+                />
                 <p className="text-[10px] text-text-secondary italic">
                   * Notifikasi pengingat akan muncul di layar Anda sesuai waktu yang ditentukan.
                 </p>
