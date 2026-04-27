@@ -36,7 +36,9 @@ interface RABNode {
   volume: number | null;
   satuan: string;
   koeff: number | null;
-  harga_rab: number | null;
+  material_price: number | null;
+  wage_price: number | null;
+  harga_rab: number | null; // This will be the SUM of material + wage
   harga_pasar: number | null;
   urutan: number;
   is_manual: boolean;   // true = input total langsung, false = pakai koefisien
@@ -189,6 +191,8 @@ const RABForm: React.FC = () => {
                 volume: item.volume,
                 satuan: item.satuan,
                 koeff: item.koeff,
+                material_price: item.material_price || 0,
+                wage_price: item.wage_price || 0,
                 harga_rab: item.harga_rab,
                 harga_pasar: item.harga_pasar,
                 is_manual: item.is_manual || false,
@@ -249,6 +253,8 @@ const RABForm: React.FC = () => {
           volume: item.volume,
           satuan: item.satuan,
           koeff: item.koeff,
+          material_price: item.material_price || 0,
+          wage_price: item.wage_price || 0,
           harga_rab: item.harga_rab,
           harga_pasar: item.harga_pasar,
           is_manual: item.is_manual || false,
@@ -295,6 +301,8 @@ const RABForm: React.FC = () => {
       volume: level === 2 ? 1 : null,
       satuan: '',
       koeff: level === 3 ? 1 : null,
+      material_price: level === 3 ? 0 : null,
+      wage_price: level === 3 ? 0 : null,
       harga_rab: level === 3 ? 0 : null,
       harga_pasar: null,
       urutan: 0,
@@ -360,11 +368,13 @@ const RABForm: React.FC = () => {
 
         if (node.level === 3) {
           if (node.is_manual) {
-            // Mode manual: total langsung diisi user (disimpan di harga_rab)
             subtotal = node.harga_rab || 0;
           } else {
+            const material = node.material_price || 0;
+            const wage = node.wage_price || 0;
+            const unitTotal = material + wage;
             jumlah_material = (node.koeff || 0) * (node.volume || 0);
-            total_material = jumlah_material * (node.harga_rab || 0);
+            total_material = jumlah_material * unitTotal;
             subtotal = total_material;
           }
         } else {
@@ -484,7 +494,9 @@ const RABForm: React.FC = () => {
             volume: node.volume,
             satuan: node.satuan,
             koeff: node.koeff,
-            harga_rab: node.harga_rab,
+            material_price: node.material_price,
+            wage_price: node.wage_price,
+            harga_rab: (node.material_price || 0) + (node.wage_price || 0),
             harga_pasar: node.harga_pasar,
             is_manual: node.is_manual || false,
             urutan: i
@@ -617,13 +629,26 @@ const RABForm: React.FC = () => {
               )}
             </TD>
 
-            {/* HARGA SATUAN — hanya mode koefisien */}
-            <TD className="px-4 py-3 border-r border-white/40 w-40">
+            {/* HARGA MATERIAL — hanya mode koefisien */}
+            <TD className="px-4 py-3 border-r border-white/40 w-32">
               {isLevel3 && !node.is_manual && (
                 <input
                   type="number"
-                  value={node.harga_rab ?? ''}
-                  onChange={(e) => updateNode(node.id, { harga_rab: e.target.value === '' ? null : Number(e.target.value) })}
+                  value={node.material_price ?? ''}
+                  onChange={(e) => updateNode(node.id, { material_price: e.target.value === '' ? null : Number(e.target.value) })}
+                  placeholder="0"
+                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
+                />
+              )}
+            </TD>
+
+            {/* HARGA UPAH — hanya mode koefisien */}
+            <TD className="px-4 py-3 border-r border-white/40 w-32">
+              {isLevel3 && !node.is_manual && (
+                <input
+                  type="number"
+                  value={node.wage_price ?? ''}
+                  onChange={(e) => updateNode(node.id, { wage_price: e.target.value === '' ? null : Number(e.target.value) })}
                   placeholder="0"
                   className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
                 />
@@ -792,7 +817,8 @@ const RABForm: React.FC = () => {
                 <TH className="px-4 py-5 border-r border-white/40 w-24">Koeff</TH>
                 <TH className="px-4 py-5 border-r border-white/40 w-32">Volume</TH>
                 <TH className="px-4 py-5 border-r border-white/40 w-24">Satuan</TH>
-                <TH className="px-4 py-5 border-r border-white/40 w-40">Harga Satuan</TH>
+                <TH className="px-4 py-5 border-r border-white/40 w-32 text-center text-[8px]">H. Material</TH>
+                <TH className="px-4 py-5 border-r border-white/40 w-32 text-center text-[8px]">H. Upah</TH>
                 <TH className="px-4 py-5 w-44 text-right">Total Biaya</TH>
                 <TH className="px-4 py-5 w-40">Aksi</TH>
               </TR>

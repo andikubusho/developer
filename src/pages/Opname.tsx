@@ -21,11 +21,14 @@ const OpnamePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOpname, setSelectedOpname] = useState<ProjectOpname | null>(null);
+  const [rabItems, setRabItems] = useState<any[]>([]);
+  const [loadingRAB, setLoadingRAB] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     project_id: '',
+    rab_item_id: '',
     spk_id: '',
     worker_name: '',
     work_description: '',
@@ -44,6 +47,7 @@ const OpnamePage: React.FC = () => {
       setFormData({
         date: selectedOpname.date.split('T')[0],
         project_id: selectedOpname.project_id,
+        rab_item_id: (selectedOpname as any).rab_item_id || '',
         spk_id: selectedOpname.spk_id || '',
         worker_name: selectedOpname.worker_name,
         work_description: selectedOpname.work_description,
@@ -56,6 +60,7 @@ const OpnamePage: React.FC = () => {
       setFormData({
         date: new Date().toISOString().split('T')[0],
         project_id: '',
+        rab_item_id: '',
         spk_id: '',
         worker_name: '',
         work_description: '',
@@ -67,19 +72,74 @@ const OpnamePage: React.FC = () => {
     }
   }, [selectedOpname, isModalOpen]);
 
-  // Auto-calculate amount if SPK is selected
+  // Fetch RAB Items when project changes
   useEffect(() => {
-    if (formData.spk_id && !selectedOpname) {
+    const fetchRAB = async () => {
+      if (!formData.project_id) {
+        setRabItems([]);
+        return;
+      }
+      try {
+        setLoadingRAB(true);
+        // We need items that have a wage_price or represent a task
+        // We fetch rab_items linked to rab_projects of this project
+        const rabs = await api.get('rab_projects', `project_id=eq.${formData.project_id}`);
+        if (rabs && rabs.length > 0) {
+          const items = await api.get('rab_items', `rab_project_id=eq.${rabs[0].id}&order=urutan.asc`);
+          setRabItems(items || []);
+        } else {
+          setRabItems([]);
+        }
+      } catch (err) {
+        console.error('Error fetching RAB items:', err);
+      } finally {
+        setLoadingRAB(false);
+      }
+    };
+    fetchRAB();
+  }, [formData.project_id]);
+
+  // Fetch Previous Percentage when RAB Item changes
+  useEffect(() => {
+    const fetchPrevPct = async () => {
+      if (!formData.rab_item_id || selectedOpname) return;
+      
+      try {
+        // Ambil dari opname terakhir yang ter-link ke rab_item_id yang sama
+        const data = await api.get('project_opnames', `rab_item_id=eq.${formData.rab_item_id}&order=date.desc&limit=1`);
+        const latest = data?.[0];
+        setFormData(prev => ({ 
+          ...prev, 
+          previous_percentage: latest?.current_percentage ?? 0,
+          current_percentage: latest?.current_percentage ?? 0
+        }));
+      } catch (err) {
+        console.error('Error fetching previous pct:', err);
+      }
+    };
+    fetchPrevPct();
+  }, [formData.rab_item_id, selectedOpname]);
+
+  // Auto-calculate amount
+  useEffect(() => {
+    if (formData.rab_item_id && !selectedOpname) {
+      const item = rabItems.find(i => i.id === formData.rab_item_id);
+      if (item) {
+        const diff = formData.current_percentage - formData.previous_percentage;
+        const wageBudget = (item.wage_price || 0) * (item.volume || 1);
+        const calculatedAmount = (diff / 100) * wageBudget;
+        setFormData(prev => ({ ...prev, amount: calculatedAmount }));
+      }
+    } else if (formData.spk_id && !selectedOpname) {
+      // Legacy support for SPK based calculation
       const spk = spks.find(s => s.id === formData.spk_id);
       if (spk) {
         const diff = formData.current_percentage - formData.previous_percentage;
-        if (diff > 0) {
-          const calculatedAmount = (diff / 100) * spk.total_value;
-          setFormData(prev => ({ ...prev, amount: calculatedAmount }));
-        }
+        const calculatedAmount = (diff / 100) * spk.total_value;
+        setFormData(prev => ({ ...prev, amount: calculatedAmount }));
       }
     }
-  }, [formData.spk_id, formData.current_percentage, formData.previous_percentage]);
+  }, [formData.rab_item_id, formData.spk_id, formData.current_percentage, formData.previous_percentage]);
 
   const fetchData = async () => {
     try {
@@ -102,6 +162,30 @@ const OpnamePage: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (formData.current_percentage > 100) {
+      alert('Progress tidak boleh melebihi 100%');
+      return;
+    }
+
+    // Check budget if linked to RAB
+    if (formData.rab_item_id) {
+      const item = rabItems.find(i => i.id === formData.rab_item_id);
+      if (item) {
+        const totalBudget = (item.wage_price || 0) * (item.volume || 1);
+        // Fetch all opnames for this item to check total paid
+        const data = await api.get('project_opnames', `rab_item_id=eq.${formData.rab_item_id}`);
+        const totalPaid = (data || [])
+          .filter((o: any) => o.id !== selectedOpname?.id)
+          .reduce((sum: number, o: any) => sum + o.amount, 0);
+        
+        if (totalPaid + formData.amount > totalBudget + 100) { // +100 for rounding safety
+          if (!confirm(`Peringatan: Total pembayaran upah (${formatCurrency(totalPaid + formData.amount)}) akan melebihi budget RAB (${formatCurrency(totalBudget)}). Lanjutkan?`)) {
+            return;
+          }
+        }
+      }
+    }
+
     try {
       setLoading(true);
       if (selectedOpname) {
@@ -294,9 +378,32 @@ const OpnamePage: React.FC = () => {
             </div>
             <Input label="Nama Pekerja / Kontraktor" placeholder="Masukkan nama..." value={formData.worker_name} onChange={(e) => setFormData({ ...formData, worker_name: e.target.value })} required />
           </div>
-          <div>
-            <label className="text-[11px] font-black text-text-muted uppercase tracking-widest mb-2 block">Deskripsi Pekerjaan</label>
-            <textarea className="w-full rounded-xl border border-white/40 px-4 py-3 text-sm font-medium focus:outline-none focus:border-transparent transition-all" rows={3} placeholder="Contoh: Pasang keramik lantai 1, Pengecatan eksterior..." value={formData.work_description} onChange={(e) => setFormData({ ...formData, work_description: e.target.value })} required />
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <label className="text-[11px] font-black text-text-muted uppercase tracking-widest mb-2 block">Pekerjaan RAB (Opsional)</label>
+              <select 
+                className="w-full h-12 rounded-xl glass-input px-4 py-2 text-sm font-bold focus:outline-none disabled:opacity-50"
+                value={formData.rab_item_id}
+                onChange={(e) => {
+                  const item = rabItems.find(i => i.id === e.target.value);
+                  setFormData({ 
+                    ...formData, 
+                    rab_item_id: e.target.value,
+                    work_description: item ? item.uraian : formData.work_description
+                  });
+                }}
+                disabled={!formData.project_id || loadingRAB}
+              >
+                <option value="">-- Pilih dari RAB --</option>
+                {rabItems.filter(i => i.level >= 2).map(i => (
+                  <option key={i.id} value={i.id}>
+                    {i.uraian} ({i.volume} {i.satuan}) - Upah: {formatCurrency(i.wage_price)}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[9px] text-text-muted mt-1 ml-1">*Pilih dari RAB untuk otomatisasi hitung upah.</p>
+            </div>
+            <Input label="Deskripsi Pekerjaan (Manual)" placeholder="Contoh: Pasang keramik lantai 1..." value={formData.work_description} onChange={(e) => setFormData({ ...formData, work_description: e.target.value })} required />
           </div>
           <div className="p-6 bg-white/30 rounded-xl border border-white/40">
             <div className="flex items-center gap-2 mb-4 text-primary">

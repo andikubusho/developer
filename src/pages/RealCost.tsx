@@ -23,11 +23,13 @@ const RealCostPage: React.FC = () => {
   
   const [data, setData] = useState({
     rabTotal: 0,
+    rabMaterial: 0,
+    rabWage: 0,
     materialActual: 0,
     wageActual: 0,
     totalActual: 0,
     variance: 0,
-    rabItems: [] as RAB[],
+    rabItems: [] as any[],
     materialOrders: [] as PurchaseOrder[],
     wageOpnames: [] as ProjectOpname[]
   });
@@ -100,24 +102,33 @@ const RealCostPage: React.FC = () => {
     }
 
     try {
-      const [rabData, orderData, opnameData] = await Promise.all([
-        api.get('rab', `select=*&project_id=eq.${selectedProjectId}`),
+      // 1. Get RAB Project ID
+      const rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}`);
+      const rabProjectId = rabs?.[0]?.id;
+
+      const [rabItems, orderData, opnameData] = await Promise.all([
+        rabProjectId ? api.get('rab_items', `rab_project_id=eq.${rabProjectId}`) : Promise.resolve([]),
         api.get('purchase_orders', `select=*&project_id=eq.${selectedProjectId}&status=eq.received`),
         api.get('project_opnames', `select=*&project_id=eq.${selectedProjectId}&status=in.(approved,paid)`)
       ]);
 
-      const rabTotal = rabData?.reduce((sum: number, r: any) => sum + r.total_price, 0) || 0;
+      const rabMaterial = (rabItems || []).reduce((sum: number, r: any) => sum + ((r.material_price || 0) * (r.volume || 1) * (r.koeff || 1)), 0);
+      const rabWage = (rabItems || []).reduce((sum: number, r: any) => sum + ((r.wage_price || 0) * (r.volume || 1) * (r.koeff || 1)), 0);
+      const rabTotal = rabMaterial + rabWage;
+
       const materialActual = orderData?.reduce((sum: number, o: any) => sum + o.total_price, 0) || 0;
       const wageActual = opnameData?.reduce((sum: number, o: any) => sum + o.amount, 0) || 0;
       const totalActual = materialActual + wageActual;
 
       setData({
         rabTotal,
+        rabMaterial,
+        rabWage,
         materialActual,
         wageActual,
         totalActual,
         variance: rabTotal - totalActual,
-        rabItems: rabData || [],
+        rabItems: rabItems || [],
         materialOrders: orderData || [],
         wageOpnames: opnameData || []
       });
@@ -235,78 +246,28 @@ const RealCostPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card title="Budget vs Actual" subtitle="Perbandingan total anggaran dengan pengeluaran nyata">
+        <Card title="Budget vs Actual (By Category)" subtitle="Perbandingan budget vs realisasi per kategori">
           <div className="h-[350px] min-h-[350px] w-full min-w-0 mt-6">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+              <BarChart 
+                data={[
+                  { name: 'Material', plan: data.rabMaterial, actual: data.materialActual },
+                  { name: 'Upah', plan: data.rabWage, actual: data.wageActual }
+                ]} 
+                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} 
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} 
-                  tickFormatter={(val) => `Rp${val/1000000}M`}
-                />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} tickFormatter={(val) => `Rp${val/1000000}M`} />
                 <Tooltip 
                   cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ 
-                    borderRadius: '20px', 
-                    border: 'none', 
-                    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
-                    padding: '16px'
-                  }}
-                  formatter={(val: number) => [formatCurrency(val), '']}
+                  contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '16px' }}
                 />
-                <Bar dataKey="value" radius={[12, 12, 0, 0]} barSize={60}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 0 ? '#e2e8f0' : (data.variance < 0 ? '#ef4444' : '#6366f1')} />
-                  ))}
-                </Bar>
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', paddingTop: '20px' }} />
+                <Bar name="Budget (Plan)" dataKey="plan" fill="#e2e8f0" radius={[6, 6, 0, 0]} barSize={40} />
+                <Bar name="Actual Spent" dataKey="actual" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={40} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card title="Pengeluaran Berdasarkan Kategori" subtitle="Distribusi real-cost antara material dan upah kerja">
-          <div className="h-[280px] min-h-[280px] w-full min-w-0 mt-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={breakdownData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={80}
-                  outerRadius={110}
-                  paddingAngle={8}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {breakdownData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                  formatter={(val: number) => formatCurrency(val)}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex justify-center gap-8 mt-4">
-              {breakdownData.map((entry, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }}></div>
-                  <div>
-                    <p className="text-[10px] font-black text-text-muted uppercase tracking-widest leading-none">{entry.name}</p>
-                    <p className="text-xs font-black text-text-primary mt-1">{formatCurrency(entry.value)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </Card>
       </div>
