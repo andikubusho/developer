@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Search, ArrowLeft, CheckCircle2, Trash2, Clock, Landmark, Wallet } from 'lucide-react';
+import { Search, ArrowLeft, CheckCircle2, XCircle, Clock, Landmark, Wallet, RotateCcw, Home, User } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
 
-interface PendingTransaction {
+type CfStatus = 'pending' | 'verified';
+
+interface CashFlowItem {
   id: string;
   date: string;
   description: string;
@@ -16,42 +18,82 @@ interface PendingTransaction {
   type: 'in' | 'out';
   category: string;
   bank_account_id: string | null;
-  status: 'pending';
+  status: CfStatus;
   reference_id: string;
   reference_type: 'deposit' | 'payment';
-  bank?: {
-    bank_name: string;
-    account_number: string;
-  };
+  // joined
+  bank?: { bank_name: string; account_number: string } | null;
+  payment?: {
+    id: string;
+    payment_method: string;
+    installment_id: string | null;
+    sale?: {
+      customer?: { full_name: string };
+      unit?: { unit_number: string };
+    };
+  } | null;
+  deposit?: { name: string; phone: string } | null;
 }
+
+type TabType = 'pending' | 'verified';
 
 const VerificationQueue: React.FC = () => {
   const navigate = useNavigate();
   const { profile, division } = useAuth();
-  const [transactions, setTransactions] = useState<PendingTransaction[]>([]);
+  const [items, setItems] = useState<CashFlowItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [banks, setBanks] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<TabType>('pending');
+
+  const isKeuangan = profile?.role === 'admin' || division === 'keuangan' || division === 'audit';
 
   useEffect(() => {
-    // RBAC: Only Keuangan, Audit, and Admin can access
-    const isAuthorized = profile?.role === 'admin' || division === 'keuangan' || division === 'audit';
-    if (!isAuthorized && !loading) {
+    if (!isKeuangan && !loading) {
       navigate('/', { replace: true });
-      return;
     }
     fetchData();
-  }, [division, profile, navigate]);
+  }, [division, profile]);
+
+  useEffect(() => {
+    fetchData();
+  }, [activeTab]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const [cfData, bankData] = await Promise.all([
-        api.get('cash_flow', 'status=eq.pending&order=date.desc'),
-        api.get('bank_accounts', 'select=id,bank_name,account_number')
+        api.get('cash_flow', `status=eq.${activeTab}&order=date.desc`),
+        api.get('bank_accounts', 'select=id,bank_name,account_number'),
       ]);
-      setTransactions(cfData || []);
-      setBanks(bankData || []);
+      const rawItems: CashFlowItem[] = cfData || [];
+
+      // Enrich each item with payment/deposit detail
+      const enriched = await Promise.all(rawItems.map(async (item) => {
+        const bank = item.bank_account_id
+          ? (bankData || []).find((b: any) => b.id === item.bank_account_id) || null
+          : null;
+
+        if (item.reference_type === 'payment' && item.reference_id) {
+          try {
+            const payData = await api.get(
+              'payments',
+              `id=eq.${item.reference_id}&select=id,payment_method,installment_id,sale:sales(customer:customers(full_name),unit:units(unit_number))`
+            );
+            return { ...item, bank, payment: payData?.[0] || null, deposit: null };
+          } catch { return { ...item, bank, payment: null, deposit: null }; }
+        }
+
+        if (item.reference_type === 'deposit' && item.reference_id) {
+          try {
+            const depData = await api.get('deposits', `id=eq.${item.reference_id}&select=id,name,phone`);
+            return { ...item, bank, payment: null, deposit: depData?.[0] || null };
+          } catch { return { ...item, bank, payment: null, deposit: null }; }
+        }
+
+        return { ...item, bank, payment: null, deposit: null };
+      }));
+
+      setItems(enriched);
     } catch (error) {
       console.error('Error fetching verification queue:', error);
     } finally {
@@ -59,37 +101,26 @@ const VerificationQueue: React.FC = () => {
     }
   };
 
-  const handleVerify = async (item: PendingTransaction) => {
-    if (profile?.role !== 'admin' && division !== 'keuangan') {
-      alert('Hanya Admin atau Keuangan yang dapat melakukan verifikasi.');
-      return;
-    }
+  const handleVerify = async (item: CashFlowItem) => {
+    if (!isKeuangan) { alert('Hanya Admin atau Keuangan yang dapat melakukan verifikasi.'); return; }
     if (!confirm('Verifikasi transaksi ini? Data akan masuk ke laporan Arus Kas.')) return;
     try {
       setLoading(true);
-      // 1. Update Cash Flow Status
-      // 1. Update Source Table Status
-      if (item.reference_id && item.reference_type) {
-        const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
-        await api.update(table, item.reference_id, { status: 'verified' });
-        
-        // Special case for payments: update installment if exists
-        if (item.reference_type === 'payment') {
-          const paymentData = await api.get('payments', `id=eq.${item.reference_id}`);
-          if (paymentData?.[0]?.installment_id) {
-            await api.update('installments', paymentData[0].installment_id, { 
-              status: 'paid', 
-              paid_at: new Date().toISOString() 
-            });
-          }
-        }
+      // Update source table
+      const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
+      await api.update(table, item.reference_id, { status: 'verified' });
+
+      // If payment has installment, mark it paid
+      if (item.reference_type === 'payment' && item.payment?.installment_id) {
+        await api.update('installments', item.payment.installment_id, {
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+        });
       }
 
-      // 2. Update Cash Flow Status
+      // Update cash_flow status
       await api.update('cash_flow', item.id, { status: 'verified' });
-      
       await fetchData();
-      alert('Transaksi berhasil diverifikasi.');
     } catch (error: any) {
       alert(`Gagal verifikasi: ${error.message}`);
     } finally {
@@ -97,35 +128,76 @@ const VerificationQueue: React.FC = () => {
     }
   };
 
-  const handleReject = async (item: PendingTransaction) => {
-    if (!confirm('Batalkan transaksi ini? Record akan dihapus dari antrean dan status di modul asal kembali ke pending.')) return;
+  const handleReject = async (item: CashFlowItem) => {
+    if (!isKeuangan) { alert('Hanya Admin atau Keuangan yang dapat menolak transaksi.'); return; }
+    if (!confirm('Tolak & hapus transaksi ini? Status di modul asal akan kembali ke pending.')) return;
     try {
       setLoading(true);
-      // 1. Revert Source Status
-      if (item.reference_id && item.reference_type) {
-        const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
-        await api.update(table, item.reference_id, { status: 'pending' });
-      }
-      
-      // 2. Hard Delete from Cash Flow
+      const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
+      await api.update(table, item.reference_id, { status: 'pending' });
       await api.delete('cash_flow', item.id);
-      
       await fetchData();
-      alert('Transaksi berhasil dibatalkan.');
     } catch (error: any) {
-      alert(`Gagal membatalkan: ${error.message}`);
+      alert(`Gagal menolak: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredTransactions = transactions.map(item => ({
-    ...item,
-    bank: item.bank_account_id ? banks.find(b => b.id === item.bank_account_id) : null
-  })).filter(item => 
-    item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleUnverify = async (item: CashFlowItem) => {
+    if (!isKeuangan) { alert('Hanya Admin atau Keuangan yang dapat membatalkan verifikasi.'); return; }
+    if (!confirm('Batalkan verifikasi ini? Mutasi arus kas akan dihapus dan status kembali ke pending.')) return;
+    try {
+      setLoading(true);
+      // Revert source
+      const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
+      await api.update(table, item.reference_id, { status: 'pending' });
+
+      // If payment had installment, revert it
+      if (item.reference_type === 'payment' && item.payment?.installment_id) {
+        await api.update('installments', item.payment.installment_id, {
+          status: 'unpaid',
+          paid_at: null,
+        });
+      }
+
+      // Revert cash_flow to pending (don't delete — keep audit trail)
+      await api.update('cash_flow', item.id, { status: 'pending' });
+      await fetchData();
+    } catch (error: any) {
+      alert(`Gagal batalkan verifikasi: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getSubject = (item: CashFlowItem) => {
+    if (item.reference_type === 'payment') {
+      return {
+        name: item.payment?.sale?.customer?.full_name || '-',
+        unit: item.payment?.sale?.unit?.unit_number || '-',
+        method: item.payment?.payment_method || '-',
+      };
+    }
+    return {
+      name: item.deposit?.name || '-',
+      unit: '-',
+      method: 'Titipan / Deposit',
+    };
+  };
+
+  const filtered = items.filter((item: CashFlowItem) => {
+    const subj = getSubject(item);
+    const q = searchTerm.toLowerCase();
+    return (
+      item.description.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q) ||
+      subj.name.toLowerCase().includes(q) ||
+      subj.unit.toLowerCase().includes(q)
+    );
+  });
+
+  const pendingCount = activeTab === 'pending' ? filtered.length : null;
 
   return (
     <div className="space-y-6">
@@ -136,17 +208,50 @@ const VerificationQueue: React.FC = () => {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-text-primary">Verifikasi Transaksi</h1>
-            <p className="text-text-secondary">Antrean transaksi yang menunggu persetujuan keuangan</p>
+            <p className="text-text-secondary">Antrean transaksi pembayaran — hanya Keuangan / Admin</p>
           </div>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActiveTab('pending')}
+          className={cn(
+            'px-5 py-2 rounded-xl text-sm font-black transition-all',
+            activeTab === 'pending'
+              ? 'bg-amber-500 text-white shadow-md'
+              : 'bg-white/40 text-text-secondary hover:bg-white/60'
+          )}
+        >
+          <Clock className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+          Menunggu Verifikasi
+          {pendingCount !== null && pendingCount > 0 && (
+            <span className="ml-2 bg-white/30 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+              {pendingCount}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('verified')}
+          className={cn(
+            'px-5 py-2 rounded-xl text-sm font-black transition-all',
+            activeTab === 'verified'
+              ? 'bg-emerald-500 text-white shadow-md'
+              : 'bg-white/40 text-text-secondary hover:bg-white/60'
+          )}
+        >
+          <CheckCircle2 className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+          Sudah Diverifikasi
+        </button>
       </div>
 
       <Card className="p-0">
         <div className="p-4 border-b border-white/40">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <input 
-              placeholder="Cari deskripsi atau kategori..." 
+            <input
+              placeholder="Cari nama, unit, deskripsi..."
               className="w-full h-10 rounded-xl border border-white/40 pl-10 pr-4 text-sm focus:outline-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -154,66 +259,128 @@ const VerificationQueue: React.FC = () => {
           </div>
         </div>
 
-        <Table className="min-w-[800px]">
-          <THead>
-            <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
-              <TH className="px-6 py-3 font-semibold text-center">Tipe</TH>
-              <TH className="px-6 py-3 font-semibold">Tanggal</TH>
-              <TH className="px-6 py-3 font-semibold">Akun / Rekening</TH>
-              <TH className="px-6 py-3 font-semibold">Kategori & Deskripsi</TH>
-              <TH className="px-6 py-3 font-semibold text-right">Jumlah</TH>
-              <TH className="px-6 py-3 font-semibold text-center">Aksi</TH>
-            </TR>
-          </THead>
-          <TBody>
-            {loading ? (
-              <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-muted">Memuat antrean...</TD></TR>
-            ) : filteredTransactions.length === 0 ? (
-              <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">Tidak ada transaksi yang menunggu verifikasi.</TD></TR>
-            ) : (
-              filteredTransactions.map((item) => (
-                <TR key={item.id} className="hover:bg-white/30 transition-colors border-l-4 border-amber-400">
-                  <TD className="px-6 py-4">
-                    <div className="flex justify-center">
-                      <div className={cn("p-2 rounded-full", item.type === 'in' ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600")}>
-                        <Clock className="w-4 h-4" />
-                      </div>
-                    </div>
-                  </TD>
-                  <TD className="px-6 py-4 text-sm text-text-primary font-medium">{formatDate(item.date)}</TD>
-                  <TD className="px-6 py-4">
-                    {item.bank ? (
-                      <div className="flex items-center gap-2">
-                        <Landmark className="w-4 h-4 text-accent-dark" />
-                        <div>
-                          <p className="text-[10px] font-black text-text-primary uppercase">{item.bank.bank_name}</p>
-                          <p className="text-[9px] text-text-secondary">{item.bank.account_number}</p>
+        <div className="overflow-x-auto">
+          <Table className="min-w-[900px]">
+            <THead>
+              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+                <TH className="px-4 py-3 font-semibold">Tgl</TH>
+                <TH className="px-4 py-3 font-semibold">Konsumen / Sumber</TH>
+                <TH className="px-4 py-3 font-semibold">Unit</TH>
+                <TH className="px-4 py-3 font-semibold">Metode</TH>
+                <TH className="px-4 py-3 font-semibold">Rekening</TH>
+                <TH className="px-4 py-3 font-semibold">Kategori</TH>
+                <TH className="px-4 py-3 font-semibold text-right">Jumlah</TH>
+                <TH className="px-4 py-3 font-semibold text-center">Aksi</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {loading ? (
+                <TR><TD colSpan={8} className="px-4 py-10 text-center text-text-muted">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-dark mx-auto" />
+                </TD></TR>
+              ) : filtered.length === 0 ? (
+                <TR><TD colSpan={8} className="px-4 py-10 text-center text-text-secondary text-sm">
+                  {activeTab === 'pending' ? 'Tidak ada transaksi yang menunggu verifikasi.' : 'Belum ada transaksi terverifikasi.'}
+                </TD></TR>
+              ) : (
+                filtered.map((item: CashFlowItem) => {
+                  const subj = getSubject(item);
+                  return (
+                    <TR
+                      key={item.id}
+                      className={cn(
+                        'hover:bg-white/30 transition-colors border-l-4',
+                        activeTab === 'pending' ? 'border-amber-400' : 'border-emerald-400'
+                      )}
+                    >
+                      <TD className="px-4 py-3 text-xs text-text-secondary whitespace-nowrap">
+                        {formatDate(item.date)}
+                      </TD>
+                      <TD className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <User className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                          <span className="text-xs font-black text-text-primary">{subj.name}</span>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Wallet className="w-4 h-4 text-emerald-600" />
-                        <span className="text-[10px] font-black text-emerald-700 uppercase">Kas Besar</span>
-                      </div>
-                    )}
-                  </TD>
-                  <TD className="px-6 py-4">
-                    <p className="text-xs font-black text-text-primary uppercase tracking-tight">{item.category}</p>
-                    <p className="text-[10px] text-text-secondary truncate max-w-xs">{item.description}</p>
-                  </TD>
-                  <TD className="px-6 py-4 text-sm font-black text-text-primary text-right">{formatCurrency(item.amount)}</TD>
-                    <TD className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-2">
-                      <Button variant="outline" size="sm" className="h-8 px-4 text-[10px] font-black border-emerald-500 text-emerald-700 hover:bg-emerald-50" onClick={() => handleVerify(item)}>
-                        <CheckCircle2 className="w-3 h-3 mr-1" /> VERIFIKASI
-                      </Button>
-                    </div>
-                  </TD>
-                </TR>
-              ))
-            )}
-          </TBody>
-        </Table>
+                      </TD>
+                      <TD className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <Home className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                          <span className="text-xs font-bold text-text-secondary">{subj.unit}</span>
+                        </div>
+                      </TD>
+                      <TD className="px-4 py-3">
+                        <span className={cn(
+                          'inline-block px-2 py-0.5 rounded-lg text-[10px] font-black uppercase',
+                          subj.method === 'Tunai' || subj.method === 'Tunai / Cash'
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-blue-50 text-blue-700'
+                        )}>
+                          {subj.method}
+                        </span>
+                      </TD>
+                      <TD className="px-4 py-3">
+                        {item.bank ? (
+                          <div className="flex items-center gap-1.5">
+                            <Landmark className="w-3.5 h-3.5 text-accent-dark shrink-0" />
+                            <div>
+                              <p className="text-[10px] font-black text-text-primary">{item.bank.bank_name}</p>
+                              <p className="text-[9px] text-text-secondary">{item.bank.account_number}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span className="text-[10px] font-black text-emerald-700">Kas Tunai</span>
+                          </div>
+                        )}
+                      </TD>
+                      <TD className="px-4 py-3">
+                        <p className="text-[10px] font-black text-text-primary uppercase tracking-tight">{item.category}</p>
+                        <p className="text-[10px] text-text-secondary truncate max-w-[140px]">{item.description}</p>
+                      </TD>
+                      <TD className="px-4 py-3 text-sm font-black text-text-primary text-right whitespace-nowrap">
+                        {formatCurrency(item.amount)}
+                      </TD>
+                      <TD className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {activeTab === 'pending' ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-3 text-[10px] font-black border-emerald-500 text-emerald-700 hover:bg-emerald-50"
+                                onClick={() => handleVerify(item)}
+                              >
+                                <CheckCircle2 className="w-3 h-3 mr-1" /> Terima
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-3 text-[10px] font-black text-red-500 hover:bg-red-50"
+                                onClick={() => handleReject(item)}
+                              >
+                                <XCircle className="w-3 h-3 mr-1" /> Tolak
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-3 text-[10px] font-black text-amber-600 hover:bg-amber-50"
+                              onClick={() => handleUnverify(item)}
+                            >
+                              <RotateCcw className="w-3 h-3 mr-1" /> Batalkan
+                            </Button>
+                          )}
+                        </div>
+                      </TD>
+                    </TR>
+                  );
+                })
+              )}
+            </TBody>
+          </Table>
+        </div>
       </Card>
     </div>
   );

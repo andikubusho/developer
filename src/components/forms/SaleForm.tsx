@@ -206,16 +206,36 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       if (values.deposit_id) await api.update('deposits', values.deposit_id, { status: 'used', sale_id: newSaleId });
 
       if (!initialData && values.initial_payments && values.initial_payments.length > 0) {
+        const customerName = rawCustomers.find(c => c.id === finalCustomerId)?.full_name
+          || rawLeads.find(l => l.id === finalCustomerId)?.name
+          || 'Konsumen';
+        const unitNumber = units.find(u => u.id === values.unit_id)?.unit_number || values.unit_id;
+
         for (const pay of values.initial_payments) {
           if (pay.amount > 0) {
-            await api.insert('payments', {
+            const bankId = pay.type === 'Transfer Bank' ? toUuid(pay.bank_id) : null;
+            const payResult = await api.insert('payments', {
               sale_id: newSaleId,
               amount: pay.amount,
               payment_date: pay.date,
               payment_method: pay.type,
-              bank_account_id: pay.type === 'Transfer Bank' ? toUuid(pay.bank_id) : null,
-              status: 'pending'
+              bank_account_id: bankId,
+              status: 'pending',
             });
+            const paymentId = payResult?.[0]?.id;
+            if (paymentId) {
+              await api.insert('cash_flow', {
+                date: pay.date,
+                description: `Pembayaran ${pay.type} - ${customerName} (Unit ${unitNumber})`,
+                type: 'in',
+                category: 'Penjualan Unit',
+                amount: pay.amount,
+                bank_account_id: bankId,
+                reference_id: paymentId,
+                reference_type: 'payment',
+                status: 'pending',
+              });
+            }
           }
         }
       }
