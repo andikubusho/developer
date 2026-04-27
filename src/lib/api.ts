@@ -54,6 +54,9 @@ export const api = {
     
   delete: (table: string, id: string | number) => 
     apiRequest(`${table}?id=eq.${id}`, { method: 'DELETE' }),
+
+  rpc: (functionName: string, params: any) =>
+    apiRequest(`rpc/${functionName}`, { method: 'POST', body: JSON.stringify(params) }),
     
   storage: {
     upload: async (bucket: string, path: string, file: File) => {

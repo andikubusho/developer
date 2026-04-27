@@ -57,8 +57,8 @@ const Materials: React.FC = () => {
     try {
       setLoading(true);
       const [resProj, resMat] = await Promise.all([
-        fetch('/api/projects').then(res => res.json()),
-        fetch('/api/materials').then(res => res.json())
+        api.get('projects', 'select=id,name&order=name.asc'),
+        api.get('materials', 'select=*&order=name.asc')
       ]);
       setProjects(resProj || []);
       setMaterials(resMat || []);
@@ -72,11 +72,13 @@ const Materials: React.FC = () => {
   const fetchProjectStocks = async (projectId: string) => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/project-material-stocks?projectId=${projectId}`);
-      const data = await res.json();
+      const data = await api.get('project_material_stocks', `project_id=eq.${projectId}`);
       const stocks: Record<string, number> = {};
       data.forEach((s: any) => {
-        stocks[s.materialId] = Number(s.stock);
+        const matId = s.material_id || s.materialId;
+        if (matId) {
+          stocks[matId] = Number(s.stock);
+        }
       });
       setProjectStocks(stocks);
     } catch (err) {

@@ -21,6 +21,7 @@ import { Modal } from '../components/ui/Modal';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { formatCurrency, cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../lib/api';
 
 interface Supplier {
   id: number;
@@ -52,9 +53,7 @@ const Suppliers: React.FC = () => {
   const fetchSuppliers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/material-suppliers');
-      if (!response.ok) throw new Error('Failed to fetch suppliers');
-      const data = await response.json();
+      const data = await api.get('suppliers', 'select=*&order=created_at.desc');
       setSuppliers(data || []);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
@@ -71,18 +70,10 @@ const Suppliers: React.FC = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      const method = editingSupplier ? 'PUT' : 'POST';
-      const url = editingSupplier ? `/api/material-suppliers/${editingSupplier.id}` : '/api/material-suppliers';
-      
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || 'Gagal menyimpan supplier');
+      if (editingSupplier) {
+        await api.update('suppliers', editingSupplier.id, form);
+      } else {
+        await api.insert('suppliers', form);
       }
 
       setIsModalOpen(false);
@@ -101,8 +92,7 @@ const Suppliers: React.FC = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus supplier ini?')) return;
     try {
       setLoading(true);
-      const response = await fetch(`/api/material-suppliers/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Gagal menghapus supplier');
+      await api.delete('suppliers', id);
       fetchSuppliers();
     } catch (error) {
       console.error('Error deleting supplier:', error);
