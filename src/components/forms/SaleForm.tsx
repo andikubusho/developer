@@ -288,12 +288,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           await api.apiRequest(`installments?sale_id=eq.${newSaleId}`, { method: 'DELETE' });
         }
 
-        const installmentPayload = installments.map((inst, idx) => ({
+        const installmentPayload = installments.map((inst) => ({
           sale_id: newSaleId,
           due_date: inst.due_date,
           amount: inst.amount,
           status: 'unpaid',
-          description: `Cicilan #${idx + 1}`
         }));
         
         await api.insert('installments', installmentPayload);
