@@ -11,6 +11,7 @@ import {
   Trash2,
   PlusCircle,
   Search,
+  Calculator,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -38,6 +39,8 @@ const PurchaseRequests: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [budgetInfo, setBudgetInfo] = useState<{ rab: number; actual: number; remaining: number } | null>(null);
+  const [fetchingBudget, setFetchingBudget] = useState(false);
 
   const [materialSearch, setMaterialSearch] = useState('');
 
@@ -86,6 +89,41 @@ const PurchaseRequests: React.FC = () => {
 
   useEffect(() => { fetchInitialData(); }, []);
   useEffect(() => { fetchUnitsForProject(form.project_id); }, [form.project_id]);
+
+  useEffect(() => {
+    const fetchBudget = async () => {
+      if (!form.project_id) { setBudgetInfo(null); return; }
+      try {
+        setFetchingBudget(true);
+        const unitFilter = form.unit_id ? `&unit_id=eq.${form.unit_id}` : '';
+        
+        // 1. Get RAB Total
+        const rabData = await api.get('rab_projects', `select=total_anggaran&project_id=eq.${form.project_id}${unitFilter}`);
+        const totalRab = rabData?.reduce((sum: number, r: any) => sum + (Number(r.total_anggaran) || 0), 0) || 0;
+
+        // 2. Get Actual Spent (POs + PRs in progress + Opnames)
+        const [poData, opnameData] = await Promise.all([
+          api.get('purchase_orders', `select=total_price&project_id=eq.${form.project_id}${form.unit_id ? `&unit_id=eq.${form.unit_id}` : ''}&status=neq.rejected`),
+          api.get('project_opnames', `select=amount&project_id=eq.${form.project_id}&status=neq.rejected`)
+        ]);
+
+        const totalActual = (poData?.reduce((sum: number, o: any) => sum + (Number(o.total_price) || 0), 0) || 0) +
+                           (opnameData?.reduce((sum: number, o: any) => sum + (Number(o.amount) || 0), 0) || 0);
+
+        setBudgetInfo({
+          rab: totalRab,
+          actual: totalActual,
+          remaining: totalRab - totalActual
+        });
+      } catch (error) {
+        console.error('Error fetching budget info:', error);
+      } finally {
+        setFetchingBudget(false);
+      }
+    };
+
+    fetchBudget();
+  }, [form.project_id, form.unit_id]);
 
   const addItemRow = () => {
     setForm({ ...form, items: [...form.items, { material_id: '', quantity: 1 }] });
@@ -275,6 +313,51 @@ const PurchaseRequests: React.FC = () => {
               </select>
             </div>
           </div>
+
+          {/* BUDGET ALERT / INFO */}
+          {form.project_id && (
+            <div className={cn(
+              "p-6 rounded-[1.5rem] border-2 transition-all flex items-center justify-between gap-6",
+              fetchingBudget ? "bg-white/40 animate-pulse border-white/60" :
+              !budgetInfo || budgetInfo.rab === 0 ? "bg-amber-50 border-amber-200" :
+              budgetInfo.remaining < 0 ? "bg-rose-50 border-rose-200" : "bg-emerald-50 border-emerald-200 shadow-glass"
+            )}>
+              <div className="flex items-center gap-4">
+                <div className={cn(
+                  "p-3 rounded-xl",
+                  budgetInfo?.remaining && budgetInfo.remaining < 0 ? "bg-rose-500 text-white" : "bg-white text-accent-dark shadow-glass"
+                )}>
+                  <Calculator className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-0.5">Posisi Anggaran Proyek</h4>
+                  {fetchingBudget ? (
+                    <span className="text-xs font-bold text-text-muted">Menghitung budget...</span>
+                  ) : !budgetInfo || budgetInfo.rab === 0 ? (
+                    <span className="text-xs font-bold text-amber-600">RAB Belum dibuat untuk proyek/unit ini</span>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-black text-text-primary uppercase tracking-tight">Terpakai: {formatCurrency(budgetInfo.actual)}</span>
+                      <span className="text-text-muted">/</span>
+                      <span className="text-sm font-black text-text-muted">Plan: {formatCurrency(budgetInfo.rab)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {budgetInfo && budgetInfo.rab > 0 && !fetchingBudget && (
+                <div className="text-right">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-0.5">Sisa Budget Tersedia</p>
+                  <p className={cn(
+                    "text-xl font-black tracking-tighter",
+                    budgetInfo.remaining < 0 ? "text-rose-600" : "text-emerald-600"
+                  )}>
+                    {formatCurrency(budgetInfo.remaining)}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
