@@ -28,6 +28,7 @@ const MarketingSchedule = lazy(() => import('./pages/ConsultantSchedule'));
 const MarketingMaster = lazy(() => import('./pages/ConsultantMaster'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const DocumentTemplates = lazy(() => import('./pages/DocumentTemplates'));
+const VerificationQueue = lazy(() => import('./pages/VerificationQueue'));
 
 // Teknik
 const RAB = lazy(() => import('./pages/RAB'));
@@ -130,6 +131,7 @@ export default function App() {
               <Route path="real-cost" element={<RealCost />} />
               
               {/* Keuangan */}
+              <Route path="verification-queue" element={<VerificationQueue />} />
               <Route path="kpr-disbursement" element={<KPRDisbursement />} />
               <Route path="supplier-payments" element={<SupplierPayments />} />
               <Route path="cash-flow" element={<CashFlow />} />

@@ -34,8 +34,14 @@ const VerificationQueue: React.FC = () => {
   const [banks, setBanks] = useState<any[]>([]);
 
   useEffect(() => {
+    // RBAC: Only Keuangan, Audit, and Admin can access
+    const isAuthorized = profile?.role === 'admin' || division === 'keuangan' || division === 'audit';
+    if (!isAuthorized && !loading) {
+      navigate('/', { replace: true });
+      return;
+    }
     fetchData();
-  }, []);
+  }, [division, profile, navigate]);
 
   const fetchData = async () => {
     try {

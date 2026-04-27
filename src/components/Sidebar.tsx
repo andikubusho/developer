@@ -43,25 +43,38 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  // Marketing Flow (Prioritized)
   { name: 'Dashboard', icon: LayoutDashboard, path: '/', divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'] },
+  
+  // Finance Early Priority
+  { name: 'Antrian Verifikasi', icon: UserCheck, path: '/verification-queue', divisions: ['keuangan', 'audit'] },
+  { name: 'Cash Flow', icon: ArrowLeftRight, path: '/cash-flow', divisions: ['keuangan', 'accounting', 'audit'] },
+  { name: 'Petty Cash', icon: Wallet, path: '/petty-cash', divisions: ['keuangan', 'audit'] },
+
+  // Marketing Flow (Requested Sequence)
   { name: 'Calon Konsumen', icon: UserPlus, path: '/leads', divisions: ['marketing'] },
   { name: 'Follow Up', icon: MessageSquare, path: '/follow-ups', divisions: ['marketing'] },
+  { name: 'Titipan', icon: Wallet, path: '/deposits', divisions: ['marketing'] },
+  { name: 'Jadwal Konsultan', icon: Calendar, path: '/marketing-schedule', divisions: ['marketing'] },
   { name: 'Master Promo', icon: Tag, path: '/promos', divisions: ['marketing'] },
   { name: 'Price List', icon: FileText, path: '/price-list', divisions: ['marketing'] },
   { name: 'Siteplan', icon: Map, path: '/site-plan', divisions: ['marketing'] },
   { name: 'Denah', icon: Layout, path: '/floor-plan', divisions: ['marketing'] },
+  { name: 'Progress Bangun', icon: HardHat, path: '/construction-progress', divisions: ['marketing', 'teknik', 'audit'] },
   { name: 'Data Konsumen', icon: Users, path: '/customers', divisions: ['marketing', 'audit'] },
-  { name: 'Titipan', icon: Wallet, path: '/deposits', divisions: ['marketing'] },
   { name: 'Penjualan', icon: ShoppingCart, path: '/sales', divisions: ['marketing', 'audit'] },
   { name: 'Pembayaran Konsumen', icon: CreditCard, path: '/payments', divisions: ['marketing', 'keuangan', 'accounting', 'audit'] },
-  { name: 'Laporan', icon: BarChart3, path: '/financial-reports', divisions: ['marketing', 'accounting', 'audit'] },
-  { name: 'Jadwal Konsultan', icon: Calendar, path: '/marketing-schedule', divisions: ['marketing'] },
-  { name: 'Master Konsultan', icon: UserCog, path: '/marketing-master', divisions: ['marketing'] },
+  
+  // Finance Late Priority
+  { name: 'Pencairan KPR', icon: Banknote, path: '/kpr-disbursement', divisions: ['keuangan', 'audit'] },
+  { name: 'Master Bank', icon: Landmark, path: '/bank-master', divisions: ['keuangan', 'audit'] },
+  { name: 'Pembayaran Supplier', icon: Truck, path: '/supplier-payments', divisions: ['keuangan', 'audit'] },
+
+  // Marketing Final Items
   { name: 'Template Dokumen', icon: FileText, path: '/document-templates', divisions: ['marketing', 'audit'] },
-  { name: 'Unit Properti', icon: Home, path: '/units', divisions: ['marketing', 'teknik', 'audit'] },
-  { name: 'Progress Bangun', icon: HardHat, path: '/construction-progress', divisions: ['marketing', 'teknik', 'audit'] },
+  { name: 'Laporan', icon: BarChart3, path: '/financial-reports', divisions: ['marketing', 'accounting', 'audit'] },
   { name: 'Proyek', icon: Building2, path: '/projects', divisions: ['marketing', 'teknik', 'audit'] },
+  
+  // System
   { name: 'User & Role', icon: ShieldCheck, path: '/user-management', divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'] },
 
   // Teknik Specific Menus
@@ -74,14 +87,7 @@ const menuItems = [
   { name: 'Real Cost', icon: BarChart3, path: '/real-cost', divisions: ['teknik', 'audit'] },
   { name: 'Master Material', icon: Package, path: '/master-material', divisions: ['teknik', 'audit'] },
 
-  // Keuangan Specific Menus
-  { name: 'Pencairan KPR', icon: Banknote, path: '/kpr-disbursement', divisions: ['keuangan', 'audit'] },
-  { name: 'Pembayaran Supplier', icon: Truck, path: '/supplier-payments', divisions: ['keuangan', 'audit'] },
-  { name: 'Cash Flow', icon: ArrowLeftRight, path: '/cash-flow', divisions: ['keuangan', 'accounting', 'audit'] },
-  { name: 'Petty Cash', icon: Wallet, path: '/petty-cash', divisions: ['keuangan', 'audit'] },
-  { name: 'Master Bank', icon: Landmark, path: '/bank-master', divisions: ['keuangan', 'audit'] },
-
-  // Accounting Specific Menus
+  // Accounting Specific
   { name: 'Jurnal Umum', icon: History, path: '/general-journal', divisions: ['accounting', 'audit'] },
   { name: 'Buku Besar', icon: FileSpreadsheet, path: '/ledger', divisions: ['accounting', 'audit'] },
   { name: 'Perpajakan', icon: Receipt, path: '/taxation', divisions: ['accounting', 'audit'] },
