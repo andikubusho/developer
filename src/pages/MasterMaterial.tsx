@@ -85,23 +85,38 @@ const MasterMaterial: React.FC = () => {
   };
 
   const handleDownloadTemplate = () => {
-    const template = [
-      {
-        'Kode Material': 'MAT-001',
-        'Nama Material': 'Semen Gresik 40kg',
-        'Kategori': 'Material Pokok',
-        'Spesifikasi': 'PC Tipe 1',
-        'Satuan': 'Sak',
-        'Volume': 100,
-        'Harga Satuan': 65000,
-        'Min Stok': 10
-      }
+    // Ekspor data aktual jika ada, fallback ke contoh jika kosong
+    const exportData = materials.length > 0
+      ? materials.map(m => ({
+          'Kode Material': (m as any).code || '',
+          'Nama Material': m.name || '',
+          'Kategori': (m as any).category || '',
+          'Spesifikasi': (m as any).specification || '',
+          'Satuan': m.unit || '',
+          'Volume': m.stock ?? 0,
+          'Harga Satuan': (m as any).unit_price ?? 0,
+          'Min Stok': m.min_stock ?? 10
+        }))
+      : [{
+          'Kode Material': 'MAT-001',
+          'Nama Material': 'Semen Gresik 40kg',
+          'Kategori': 'Material Pokok',
+          'Spesifikasi': 'PC Tipe 1',
+          'Satuan': 'Sak',
+          'Volume': 100,
+          'Harga Satuan': 65000,
+          'Min Stok': 10
+        }];
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    // Atur lebar kolom agar mudah dibaca
+    ws['!cols'] = [
+      { wch: 15 }, { wch: 35 }, { wch: 20 }, { wch: 25 },
+      { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 10 }
     ];
-    
-    const ws = XLSX.utils.json_to_sheet(template);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, "Template_Master_Material.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "Master Material");
+    XLSX.writeFile(wb, `Master_Material_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
