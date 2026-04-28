@@ -39,6 +39,7 @@ const MasterMaterial: React.FC = () => {
   const [form, setForm] = useState({
     code: '',
     name: '',
+    category: '',
     unit: '',
     stock: 0,
     min_stock: 10,
@@ -73,7 +74,7 @@ const MasterMaterial: React.FC = () => {
       }
       setIsModalOpen(false);
       setEditingMaterial(null);
-      setForm({ code: '', name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' });
+      setForm({ code: '', name: '', category: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' });
       fetchMaterials();
     } catch (error) {
       console.error('Error saving material:', error);
@@ -86,12 +87,13 @@ const MasterMaterial: React.FC = () => {
   const handleDownloadTemplate = () => {
     const template = [
       {
-        'Kode Material': '',
-        'Nama Material': '',
-        'Spesifikasi': '',
-        'Satuan': 'Pilih: Sak, m³, Batang, kg, Liter, Lembar, m², Unit',
-        'Volume': 0,
-        'Harga Satuan': 0,
+        'Kode Material': 'MAT-001',
+        'Nama Material': 'Semen Gresik 40kg',
+        'Kategori': 'Material Pokok',
+        'Spesifikasi': 'PC Tipe 1',
+        'Satuan': 'Sak',
+        'Volume': 100,
+        'Harga Satuan': 65000,
         'Min Stok': 10
       }
     ];
@@ -119,6 +121,7 @@ const MasterMaterial: React.FC = () => {
         const mappedData = data.map((item: any) => ({
           code: item['Kode Material'] || '',
           name: item['Nama Material'],
+          category: item['Kategori'] || '',
           specification: item['Spesifikasi'] || '',
           unit: item['Satuan'] || 'Unit',
           stock: Number(item['Volume']) || 0,
@@ -204,7 +207,7 @@ const MasterMaterial: React.FC = () => {
               <Upload className="w-5 h-5 mr-2 text-emerald-600" /> Upload Excel
             </div>
           </label>
-          <Button onClick={() => { setEditingMaterial(null); setForm({ code: '', name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' }); setIsModalOpen(true); }} className="rounded-xl h-12 px-8 shadow-glass shadow-glass">
+          <Button onClick={() => { setEditingMaterial(null); setForm({ code: '', name: '', category: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' }); setIsModalOpen(true); }} className="rounded-xl h-12 px-8 shadow-glass shadow-glass">
             <Plus className="w-5 h-5 mr-2" /> Tambah Manual
           </Button>
         </div>
@@ -260,6 +263,7 @@ const MasterMaterial: React.FC = () => {
               <TR isHoverable={false}>
                 <TH>Kode</TH>
                 <TH>Nama Material</TH>
+                <TH>Kategori</TH>
                 <TH>Spesifikasi</TH>
                 <TH>Satuan</TH>
                 <TH>Harga Satuan</TH>
@@ -285,6 +289,7 @@ const MasterMaterial: React.FC = () => {
                   <TR key={m.id}>
                     <TD className="text-[10px] font-black text-accent-dark tracking-wider">{m.code || '-'}</TD>
                     <TD className="font-black text-text-primary">{m.name}</TD>
+                    <TD className="text-[10px] font-bold text-text-muted uppercase">{m.category || '-'}</TD>
                     <TD className="text-[10px] text-text-secondary font-medium max-w-[200px] truncate">{m.specification || '-'}</TD>
                     <TD><span className="px-3 py-1 rounded-xl bg-white/40 text-text-secondary text-[10px] font-black uppercase tracking-widest">{m.unit}</span></TD>
                     <TD className="font-bold text-text-secondary">{formatCurrency((m as any).unit_price || 0)}</TD>
@@ -298,7 +303,7 @@ const MasterMaterial: React.FC = () => {
                     <TD className="text-right font-black text-text-primary">{formatCurrency(totalValue)}</TD>
                     <TD className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => { setEditingMaterial(m); setForm({ code: m.code || '', name: m.name, unit: m.unit, stock: m.stock, min_stock: m.min_stock, unit_price: (m as any).unit_price || 0, specification: m.specification || '' }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-white/40">
+                        <Button variant="ghost" size="sm" onClick={() => { setEditingMaterial(m); setForm({ code: m.code || '', name: m.name, category: m.category || '', unit: m.unit, stock: m.stock, min_stock: m.min_stock, unit_price: (m as any).unit_price || 0, specification: m.specification || '' }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-white/40">
                           <Pencil className="w-4 h-4 text-accent-dark" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(m.id)} className="h-9 w-9 p-0 rounded-xl hover:bg-rose-50">
@@ -344,6 +349,16 @@ const MasterMaterial: React.FC = () => {
               />
             </div>
             
+            <div className="space-y-2">
+              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Kategori</label>
+              <Input 
+                placeholder="Contoh: Pondasi, Dinding, Atap, dll."
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
+              />
+            </div>
+
             <div className="space-y-2">
               <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Spesifikasi Detail</label>
               <Input 
