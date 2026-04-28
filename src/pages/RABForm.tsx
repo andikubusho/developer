@@ -587,11 +587,12 @@ const RABForm: React.FC = () => {
                     value={node.material_id || ''}
                     onChange={(e) => {
                       const matId = e.target.value;
-                      const mat = materials.find(m => m.id === matId);
+                      const mat = (materials as any[]).find(m => m.id === matId);
                       updateNode(node.id, { 
                         material_id: matId || null,
                         uraian: mat ? mat.name : node.uraian,
-                        satuan: mat ? mat.unit : node.satuan
+                        satuan: mat ? mat.unit : node.satuan,
+                        material_price: mat ? Number(mat.unitPrice || mat.unit_price || 0) : node.material_price
                       });
                     }}
                     className="h-7 w-7 bg-white/50 border border-white/60 rounded flex-shrink-0 text-transparent focus:text-black focus:ring-1 focus:ring-accent-lavender"
