@@ -7,7 +7,7 @@ import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
-import { PriceListItem, Sale, Project } from '../types';
+import { PriceListItem, Project } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { PriceItemForm } from '../components/forms/PriceItemForm';
 import jsPDF from 'jspdf';
@@ -54,16 +54,33 @@ const PriceList: React.FC = () => {
     if (!selectedProjectId) return;
     try {
       setLoading(true);
-      const [items, sales] = await Promise.all([
+      const [items, unitsData] = await Promise.all([
         api.get('price_list_items', `select=*&project_id=eq.${selectedProjectId}&order=created_at.asc`),
-        api.get('sales', 'select=unit_id')
+        api.get('units', `select=unit_number,status&project_id=eq.${selectedProjectId}`)
       ]);
 
+      // Parse unit_number into [blok, unitNum] using the same logic as PriceItemForm
+      // Handles formats: "South - 09", "A-01", "GC - 01", "A1"
+      const parseUnitNum = (raw: string): [string, string] => {
+        const parts = (raw || '').split(/[\s-]+/).filter(Boolean);
+        if (parts.length >= 2) return [parts[0].toLowerCase(), parts[parts.length - 1].toLowerCase()];
+        const blokMatch = raw.match(/^[a-zA-Z]+/);
+        const numMatch = raw.match(/\d+$/);
+        return [blokMatch ? blokMatch[0].toLowerCase() : raw.toLowerCase(), numMatch ? numMatch[0].toLowerCase() : ''];
+      };
+
+      const unitStatusMap: Record<string, string> = {};
+      (unitsData || []).forEach((u: any) => {
+        const [blok, unitNum] = parseUnitNum(u.unit_number || '');
+        if (blok && unitNum) unitStatusMap[`${blok}|${unitNum}`] = u.status;
+      });
+
       const itemsWithStatus = (items || []).map((item: PriceListItem) => {
-        const hasSale = (sales || []).some((sale: Sale) => sale.unit_id === item.unit_id);
+        const key = `${(item.blok || '').toLowerCase()}|${(item.unit || '').toLowerCase()}`;
+        const unitStatus = unitStatusMap[key];
         return {
           ...item,
-          status: hasSale ? 'sold' : 'available'
+          status: unitStatus === 'sold' ? 'sold' : 'available'
         };
       });
 
