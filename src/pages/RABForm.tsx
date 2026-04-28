@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { 
-  ChevronDown, 
-  ChevronRight, 
-  Plus, 
-  Trash2, 
-  Save, 
-  RotateCcw, 
-  X, 
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Trash2,
+  Save,
+  RotateCcw,
+  X,
   Calculator,
   Building2,
   MapPin,
   Calendar,
   Layers,
   ArrowLeft,
-  Copy
+  Copy,
+  Search
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
@@ -110,6 +111,8 @@ const RABForm: React.FC = () => {
   const [existingRabs, setExistingRabs] = useState<any[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
   const [loadingExisting, setLoadingExisting] = useState(false);
+  const [materialSearchNodeId, setMaterialSearchNodeId] = useState<string | null>(null);
+  const [materialSearchTerm, setMaterialSearchTerm] = useState('');
 
   // Fetch units when project changes
   useEffect(() => {
@@ -583,26 +586,68 @@ const RABForm: React.FC = () => {
                   )}
                 />
                 {isLevel3 && (
-                  <select
-                    value={node.material_id || ''}
-                    onChange={(e) => {
-                      const matId = e.target.value;
-                      const mat = (materials as any[]).find(m => m.id === matId);
-                      updateNode(node.id, { 
-                        material_id: matId || null,
-                        uraian: mat ? mat.name : node.uraian,
-                        satuan: mat ? mat.unit : node.satuan,
-                        material_price: mat ? Number(mat.unitPrice || mat.unit_price || 0) : node.material_price
-                      });
-                    }}
-                    className="h-7 w-7 bg-white/50 border border-white/60 rounded flex-shrink-0 text-transparent focus:text-black focus:ring-1 focus:ring-accent-lavender"
-                    title="Hubungkan ke Master Material"
-                  >
-                    <option value="" className="text-black text-[10px]">-- Pilih Material --</option>
-                    {materials.map(m => (
-                      <option key={m.id} value={m.id} className="text-black text-[10px]">{m.name}</option>
-                    ))}
-                  </select>
+                  <div className="relative flex-shrink-0">
+                    <button
+                      type="button"
+                      title="Cari Material"
+                      onClick={() => {
+                        setMaterialSearchNodeId(materialSearchNodeId === node.id ? null : node.id);
+                        setMaterialSearchTerm('');
+                      }}
+                      className={cn(
+                        "h-7 w-7 rounded border flex items-center justify-center transition-colors",
+                        materialSearchNodeId === node.id
+                          ? "bg-accent-dark border-accent-dark text-white"
+                          : "bg-white/50 border-white/60 text-accent-dark hover:bg-accent-lavender/20"
+                      )}
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                    </button>
+
+                    {materialSearchNodeId === node.id && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setMaterialSearchNodeId(null)} />
+                        <div className="absolute left-0 top-8 z-50 bg-white border border-gray-200 rounded-xl shadow-2xl w-72 p-2">
+                          <input
+                            type="text"
+                            autoFocus
+                            placeholder="Ketik nama material..."
+                            value={materialSearchTerm}
+                            onChange={(e) => setMaterialSearchTerm(e.target.value)}
+                            className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-1 focus:ring-accent-lavender"
+                          />
+                          <div className="max-h-48 overflow-y-auto space-y-0.5">
+                            {materials
+                              .filter(m => m.name.toLowerCase().includes(materialSearchTerm.toLowerCase()))
+                              .map(m => (
+                                <button
+                                  key={m.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateNode(node.id, {
+                                      material_id: m.id,
+                                      uraian: m.name,
+                                      satuan: m.unit,
+                                      material_price: Number(m.unitPrice || m.unit_price || 0)
+                                    });
+                                    setMaterialSearchNodeId(null);
+                                    setMaterialSearchTerm('');
+                                  }}
+                                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-accent-lavender/10 transition-colors"
+                                >
+                                  <div className="text-xs font-bold text-text-primary">{m.name}</div>
+                                  <div className="text-[10px] text-text-muted">{m.unit}</div>
+                                </button>
+                              ))
+                            }
+                            {materials.filter(m => m.name.toLowerCase().includes(materialSearchTerm.toLowerCase())).length === 0 && (
+                              <p className="text-center text-[10px] text-text-muted py-4 italic">Material tidak ditemukan</p>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             </TD>
