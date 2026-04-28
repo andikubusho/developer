@@ -139,13 +139,19 @@ const MasterMaterial: React.FC = () => {
           return;
         }
 
-        // Ambil semua data existing untuk pencocokan
-        const existingList = await api.get('materials', 'select=id,code,name');
-        const byCode: Record<string, any> = {};
+        // Ambil semua data existing — hanya id dan name (aman, tidak bergantung kolom opsional)
+        const existingList = await api.get('materials', 'select=id,name,code');
+        if (existingList.length === 0) {
+          const confirm = window.confirm(`Tidak ada data existing ditemukan (${rows.length} baris akan diinsert baru). Lanjutkan?`);
+          if (!confirm) return;
+        }
         const byName: Record<string, any> = {};
+        const byCode: Record<string, any> = {};
         (existingList || []).forEach((m: any) => {
-          if (m.code) byCode[m.code.trim().toLowerCase()] = m;
-          byName[m.name.trim().toLowerCase()] = m;
+          const key = (m.name || '').replace(/\s+/g, ' ').trim().toLowerCase();
+          if (key) byName[key] = m;
+          const codeKey = (m.code || '').trim().toLowerCase();
+          if (codeKey) byCode[codeKey] = m;
         });
 
         let ditambah = 0;
@@ -159,9 +165,9 @@ const MasterMaterial: React.FC = () => {
 
           if (!excelName) { dilewati++; continue; }
 
-          // Cari existing berdasarkan kode (prioritas) lalu nama
+          // Cari existing: prioritas kode, fallback nama
           const existing = (excelCode ? byCode[excelCode.toLowerCase()] : null)
-            || byName[excelName.toLowerCase()];
+            || byName[(excelName || '').replace(/\s+/g, ' ').trim().toLowerCase()];
 
           // Bangun payload — hanya isi field yang tidak kosong di Excel
           const payload: Record<string, any> = {};

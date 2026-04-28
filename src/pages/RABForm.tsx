@@ -497,7 +497,7 @@ const RABForm: React.FC = () => {
       const insertRecursive = async (nodes: any[], parentId: string | null = null) => {
         for (let i = 0; i < nodes.length; i++) {
           const node = nodes[i];
-          const data = {
+          const data: Record<string, any> = {
             rab_project_id: projectId,
             parent_id: parentId,
             level: node.level,
@@ -510,9 +510,9 @@ const RABForm: React.FC = () => {
             harga_rab: (node.material_price || 0) + (node.wage_price || 0),
             harga_pasar: node.harga_pasar,
             is_manual: node.is_manual || false,
-            material_id: node.material_id,
             urutan: i
           };
+          if (node.material_id) data.material_id = node.material_id;
           const res = await api.insert('rab_items', data);
           const newId = res[0].id;
           if (node.children.length > 0) {
