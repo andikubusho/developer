@@ -582,28 +582,29 @@ const RABForm: React.FC = () => {
                     isLevel0 ? "placeholder-text-muted" : "placeholder-text-muted"
                   )}
                 />
-                    <select
-                      value={node.material_id || ''}
-                      onChange={(e) => {
-                        const matId = e.target.value;
-                        const mat = materials.find(m => m.id === matId);
-                        updateNode(node.id, { 
-                          material_id: matId || null,
-                          uraian: mat ? mat.name : node.uraian,
-                          satuan: mat ? mat.unit : node.satuan
-                        });
-                      }}
-                      className="h-7 w-7 bg-white/50 border border-white/60 rounded flex-shrink-0 text-transparent focus:text-black focus:ring-1 focus:ring-accent-lavender"
-                      title="Hubungkan ke Master Material"
-                    >
-                      <option value="" className="text-black text-[10px]">-- Pilih Material --</option>
-                      {materials.map(m => (
-                        <option key={m.id} value={m.id} className="text-black text-[10px]">{m.name}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </TD>
+                {isLevel3 && (
+                  <select
+                    value={node.material_id || ''}
+                    onChange={(e) => {
+                      const matId = e.target.value;
+                      const mat = materials.find(m => m.id === matId);
+                      updateNode(node.id, { 
+                        material_id: matId || null,
+                        uraian: mat ? mat.name : node.uraian,
+                        satuan: mat ? mat.unit : node.satuan
+                      });
+                    }}
+                    className="h-7 w-7 bg-white/50 border border-white/60 rounded flex-shrink-0 text-transparent focus:text-black focus:ring-1 focus:ring-accent-lavender"
+                    title="Hubungkan ke Master Material"
+                  >
+                    <option value="" className="text-black text-[10px]">-- Pilih Material --</option>
+                    {materials.map(m => (
+                      <option key={m.id} value={m.id} className="text-black text-[10px]">{m.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </TD>
 
             {/* KOEFF — hanya mode koefisien, Level 3 */}
             <TD className="px-4 py-3 border-r border-white/40 w-20">
