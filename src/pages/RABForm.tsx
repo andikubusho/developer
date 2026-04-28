@@ -113,6 +113,7 @@ const RABForm: React.FC = () => {
   const [loadingExisting, setLoadingExisting] = useState(false);
   const [materialSearchNodeId, setMaterialSearchNodeId] = useState<string | null>(null);
   const [materialSearchTerm, setMaterialSearchTerm] = useState('');
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
 
   // Fetch units when project changes
   useEffect(() => {
@@ -586,11 +587,13 @@ const RABForm: React.FC = () => {
                   )}
                 />
                 {isLevel3 && (
-                  <div className="relative flex-shrink-0">
+                  <div className="flex-shrink-0">
                     <button
                       type="button"
                       title="Cari Material"
-                      onClick={() => {
+                      onClick={(e) => {
+                        const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                        setDropdownPos({ top: rect.bottom + 4, left: rect.left });
                         setMaterialSearchNodeId(materialSearchNodeId === node.id ? null : node.id);
                         setMaterialSearchTerm('');
                       }}
@@ -603,50 +606,6 @@ const RABForm: React.FC = () => {
                     >
                       <Search className="w-3.5 h-3.5" />
                     </button>
-
-                    {materialSearchNodeId === node.id && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setMaterialSearchNodeId(null)} />
-                        <div className="absolute left-0 top-8 z-50 bg-white border border-gray-200 rounded-xl shadow-2xl w-72 p-2">
-                          <input
-                            type="text"
-                            autoFocus
-                            placeholder="Ketik nama material..."
-                            value={materialSearchTerm}
-                            onChange={(e) => setMaterialSearchTerm(e.target.value)}
-                            className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-1 focus:ring-accent-lavender"
-                          />
-                          <div className="max-h-48 overflow-y-auto space-y-0.5">
-                            {materials
-                              .filter(m => m.name.toLowerCase().includes(materialSearchTerm.toLowerCase()))
-                              .map(m => (
-                                <button
-                                  key={m.id}
-                                  type="button"
-                                  onClick={() => {
-                                    updateNode(node.id, {
-                                      material_id: m.id,
-                                      uraian: m.name,
-                                      satuan: m.unit,
-                                      material_price: Number(m.unitPrice || m.unit_price || 0)
-                                    });
-                                    setMaterialSearchNodeId(null);
-                                    setMaterialSearchTerm('');
-                                  }}
-                                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-accent-lavender/10 transition-colors"
-                                >
-                                  <div className="text-xs font-bold text-text-primary">{m.name}</div>
-                                  <div className="text-[10px] text-text-muted">{m.unit}</div>
-                                </button>
-                              ))
-                            }
-                            {materials.filter(m => m.name.toLowerCase().includes(materialSearchTerm.toLowerCase())).length === 0 && (
-                              <p className="text-center text-[10px] text-text-muted py-4 italic">Material tidak ditemukan</p>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    )}
                   </div>
                 )}
               </div>
@@ -1024,6 +983,54 @@ const RABForm: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Material Search Dropdown — fixed position agar tidak ter-clip overflow table */}
+      {materialSearchNodeId && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setMaterialSearchNodeId(null)} />
+          <div
+            className="fixed z-50 bg-white border border-gray-200 rounded-xl shadow-2xl w-72 p-2"
+            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          >
+            <input
+              type="text"
+              autoFocus
+              placeholder="Ketik nama material..."
+              value={materialSearchTerm}
+              onChange={(e) => setMaterialSearchTerm(e.target.value)}
+              className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-1 focus:ring-accent-lavender"
+            />
+            <div className="max-h-52 overflow-y-auto space-y-0.5">
+              {materials
+                .filter(m => m.name.toLowerCase().includes(materialSearchTerm.toLowerCase()))
+                .map((m: any) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      updateNode(materialSearchNodeId, {
+                        material_id: m.id,
+                        uraian: m.name,
+                        satuan: m.unit,
+                        material_price: Number(m.unitPrice || m.unit_price || 0)
+                      });
+                      setMaterialSearchNodeId(null);
+                      setMaterialSearchTerm('');
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-accent-lavender/10 transition-colors"
+                  >
+                    <div className="text-xs font-bold text-text-primary">{m.name}</div>
+                    <div className="text-[10px] text-text-muted">{m.unit}</div>
+                  </button>
+                ))
+              }
+              {materials.filter(m => m.name.toLowerCase().includes(materialSearchTerm.toLowerCase())).length === 0 && (
+                <p className="text-center text-[10px] text-text-muted py-4 italic">Material tidak ditemukan</p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
