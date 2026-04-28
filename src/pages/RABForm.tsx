@@ -21,7 +21,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { api } from '../lib/api';
-import { formatCurrency, cn, formatDate } from '../lib/utils';
+import { formatCurrency, formatNumber, cn, formatDate } from '../lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Project, Unit } from '../types';
