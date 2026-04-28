@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Plus, Search, ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
+import { FileText, Plus, Search, ArrowLeft, CheckCircle2, Clock, Printer } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,12 +13,14 @@ const SPK: React.FC = () => {
   const { setDivision } = useAuth();
   const [spks, setSpks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     project_id: '',
+    unit_id: '',
     contractor_name: '',
     work_description: '',
     contract_value: 0,
@@ -32,6 +34,23 @@ const SPK: React.FC = () => {
     fetchProjects();
   }, []);
 
+  useEffect(() => {
+    if (formData.project_id) {
+      fetchUnits(formData.project_id);
+    } else {
+      setUnits([]);
+    }
+  }, [formData.project_id]);
+
+  const fetchUnits = async (projectId: string) => {
+    try {
+      const data = await api.get('units', `project_id=eq.${projectId}&order=unit_number.asc`);
+      setUnits(data || []);
+    } catch (err) {
+      console.error('Error fetching units:', err);
+    }
+  };
+
   const fetchProjects = async () => {
     try {
       const data = await api.get('projects', 'select=id,name&order=name.asc');
@@ -44,7 +63,7 @@ const SPK: React.FC = () => {
   const fetchSpks = async () => {
     try {
       setLoading(true);
-      const data = await api.get('spks', 'select=*,project:projects(name)&order=created_at.desc');
+      const data = await api.get('spks', 'select=*,project:projects(name),unit:units(unit_number)&order=created_at.desc');
       setSpks(data || []);
     } catch (error) {
       console.error('Error fetching SPK:', error);
@@ -73,6 +92,7 @@ const SPK: React.FC = () => {
       setIsModalOpen(false);
       setFormData({
         project_id: '',
+        unit_id: '',
         contractor_name: '',
         work_description: '',
         contract_value: 0,
@@ -87,6 +107,80 @@ const SPK: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handlePrint = (spk: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const content = `
+      <html>
+        <head>
+          <title>SPK - ${spk.id.substring(0, 8)}</title>
+          <style>
+            body { font-family: 'Arial', sans-serif; padding: 40px; color: #333; }
+            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+            .title { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+            .subtitle { font-size: 16px; color: #666; }
+            .info-grid { display: grid; grid-template-cols: 150px 1fr; gap: 10px; margin-bottom: 30px; }
+            .label { font-weight: bold; }
+            .description { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 30px; line-height: 1.6; }
+            .footer { margin-top: 50px; display: flex; justify-content: space-between; }
+            .sign-box { text-align: center; width: 200px; }
+            .sign-line { border-bottom: 1px solid #333; margin-top: 60px; margin-bottom: 5px; }
+            @media print {
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">SURAT PERINTAH KERJA (SPK)</div>
+            <div class="subtitle">Nomor: SPK/${spk.id.substring(0, 8).toUpperCase()}/${new Date(spk.created_at).getFullYear()}</div>
+          </div>
+          
+          <div class="info-grid">
+            <div class="label">Proyek:</div>
+            <div>${spk.project?.name || '-'}</div>
+            <div class="label">Unit Property:</div>
+            <div>${spk.unit?.unit_number || 'Semua Unit / Proyek Umum'}</div>
+            <div class="label">Penerima Kerja:</div>
+            <div>${spk.contractor_name}</div>
+            <div class="label">Nilai Kontrak:</div>
+            <div>${formatCurrency(spk.contract_value)}</div>
+            <div class="label">Tanggal Mulai:</div>
+            <div>${formatDate(spk.start_date)}</div>
+            <div class="label">Target Selesai:</div>
+            <div>${formatDate(spk.end_date) || '-'}</div>
+          </div>
+
+          <div class="label">Deskripsi & Lingkup Pekerjaan:</div>
+          <div class="description">
+            ${spk.work_description || 'Tidak ada deskripsi detail.'}
+          </div>
+
+          <div class="footer">
+            <div class="sign-box">
+              <div>Pihak Pertama,</div>
+              <div class="sign-line"></div>
+              <div>( Bag. Teknik / Proyek )</div>
+            </div>
+            <div class="sign-box">
+              <div>Pihak Kedua,</div>
+              <div class="sign-line"></div>
+              <div>( ${spk.contractor_name} )</div>
+            </div>
+          </div>
+
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(content);
+    printWindow.document.close();
   };
 
   return (
@@ -111,11 +205,12 @@ const SPK: React.FC = () => {
             <THead>
               <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
                 <TH className="px-6 py-3 font-semibold">No. SPK</TH>
-                <TH className="px-6 py-3 font-semibold">Proyek</TH>
+                <TH className="px-6 py-3 font-semibold">Proyek / Unit</TH>
                 <TH className="px-6 py-3 font-semibold">Penerima</TH>
                 <TH className="px-6 py-3 font-semibold text-right">Nilai Kontrak</TH>
                 <TH className="px-6 py-3 font-semibold text-center">Status</TH>
                 <TH className="px-6 py-3 font-semibold">Tanggal</TH>
+                <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
               </TR>
             </THead>
             <TBody>
@@ -125,18 +220,26 @@ const SPK: React.FC = () => {
                 <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">Belum ada data SPK.</TD></TR>
               ) : (
                 spks.map((s) => (
-                  <TR key={s.id} className="hover:bg-white/30 transition-colors">
+                  <TR key={s.id} className="hover:bg-white/30 transition-colors group">
                     <TD className="px-6 py-4 font-bold text-text-primary uppercase">SPK-{s.id.substring(0, 8)}</TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary">{s.project?.name || 'Proyek Umum'}</TD>
+                    <TD className="px-6 py-4">
+                      <div className="text-sm text-text-primary font-bold">{s.project?.name || 'Proyek Umum'}</div>
+                      <div className="text-[10px] text-text-muted uppercase font-black tracking-widest">{s.unit?.unit_number ? `Unit: ${s.unit.unit_number}` : 'Global'}</div>
+                    </TD>
                     <TD className="px-6 py-4 text-sm text-text-primary font-medium">{s.contractor_name || '-'}</TD>
                     <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">{formatCurrency(s.contract_value)}</TD>
-                    <TD className="px-6 py-4">
+                    <TD className="px-6 py-4 text-center">
                       <div className="flex justify-center items-center gap-1.5">
                         {s.status === 'completed' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Clock className="w-4 h-4 text-amber-500" />}
                         <span className={cn('text-xs font-medium capitalize', s.status === 'completed' ? 'text-emerald-700' : 'text-amber-700')}>{s.status}</span>
                       </div>
                     </TD>
                     <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(s.created_at)}</TD>
+                    <TD className="px-6 py-4 text-right">
+                      <Button variant="ghost" size="sm" onClick={() => handlePrint(s)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Printer className="w-4 h-4 mr-2" /> Print
+                      </Button>
+                    </TD>
                   </TR>
                 ))
               )}
@@ -167,6 +270,19 @@ const SPK: React.FC = () => {
                   >
                     <option value="">-- Pilih Lokasi Proyek --</option>
                     {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-1">Pilih Unit (Opsional)</label>
+                  <select
+                    className="w-full h-12 bg-white/50 border border-white/60 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-accent-lavender/50 transition-all"
+                    value={formData.unit_id}
+                    onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })}
+                    disabled={!formData.project_id}
+                  >
+                    <option value="">-- Pilih Unit Property --</option>
+                    {units.map(u => <option key={u.id} value={u.id}>{u.unit_number}</option>)}
                   </select>
                 </div>
 
