@@ -37,6 +37,7 @@ const MasterMaterial: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [form, setForm] = useState({
+    code: '',
     name: '',
     unit: '',
     stock: 0,
@@ -72,7 +73,7 @@ const MasterMaterial: React.FC = () => {
       }
       setIsModalOpen(false);
       setEditingMaterial(null);
-      setForm({ name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' });
+      setForm({ code: '', name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' });
       fetchMaterials();
     } catch (error) {
       console.error('Error saving material:', error);
@@ -85,6 +86,7 @@ const MasterMaterial: React.FC = () => {
   const handleDownloadTemplate = () => {
     const template = [
       {
+        'Kode Material': '',
         'Nama Material': '',
         'Spesifikasi': '',
         'Satuan': 'Pilih: Sak, m³, Batang, kg, Liter, Lembar, m², Unit',
@@ -115,6 +117,7 @@ const MasterMaterial: React.FC = () => {
         const data = XLSX.utils.sheet_to_json(ws);
 
         const mappedData = data.map((item: any) => ({
+          code: item['Kode Material'] || '',
           name: item['Nama Material'],
           specification: item['Spesifikasi'] || '',
           unit: item['Satuan'] || 'Unit',
@@ -163,7 +166,8 @@ const MasterMaterial: React.FC = () => {
   };
 
   const filteredMaterials = materials.filter(m => 
-    m.name.toLowerCase().includes(search.toLowerCase())
+    m.name.toLowerCase().includes(search.toLowerCase()) ||
+    (m.code && m.code.toLowerCase().includes(search.toLowerCase()))
   );
 
   const stats = {
@@ -200,7 +204,7 @@ const MasterMaterial: React.FC = () => {
               <Upload className="w-5 h-5 mr-2 text-emerald-600" /> Upload Excel
             </div>
           </label>
-          <Button onClick={() => { setEditingMaterial(null); setForm({ name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' }); setIsModalOpen(true); }} className="rounded-xl h-12 px-8 shadow-glass shadow-glass">
+          <Button onClick={() => { setEditingMaterial(null); setForm({ code: '', name: '', unit: '', stock: 0, min_stock: 10, unit_price: 0, specification: '' }); setIsModalOpen(true); }} className="rounded-xl h-12 px-8 shadow-glass shadow-glass">
             <Plus className="w-5 h-5 mr-2" /> Tambah Manual
           </Button>
         </div>
@@ -254,6 +258,7 @@ const MasterMaterial: React.FC = () => {
           <Table className="w-full">
             <THead>
               <TR isHoverable={false}>
+                <TH>Kode</TH>
                 <TH>Nama Material</TH>
                 <TH>Spesifikasi</TH>
                 <TH>Satuan</TH>
@@ -278,6 +283,7 @@ const MasterMaterial: React.FC = () => {
                 const totalValue = m.stock * ((m as any).unit_price || 0);
                 return (
                   <TR key={m.id}>
+                    <TD className="text-[10px] font-black text-accent-dark tracking-wider">{m.code || '-'}</TD>
                     <TD className="font-black text-text-primary">{m.name}</TD>
                     <TD className="text-[10px] text-text-secondary font-medium max-w-[200px] truncate">{m.specification || '-'}</TD>
                     <TD><span className="px-3 py-1 rounded-xl bg-white/40 text-text-secondary text-[10px] font-black uppercase tracking-widest">{m.unit}</span></TD>
@@ -292,7 +298,7 @@ const MasterMaterial: React.FC = () => {
                     <TD className="text-right font-black text-text-primary">{formatCurrency(totalValue)}</TD>
                     <TD className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => { setEditingMaterial(m); setForm({ name: m.name, unit: m.unit, stock: m.stock, min_stock: m.min_stock, unit_price: (m as any).unit_price || 0, specification: m.specification || '' }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-white/40">
+                        <Button variant="ghost" size="sm" onClick={() => { setEditingMaterial(m); setForm({ code: m.code || '', name: m.name, unit: m.unit, stock: m.stock, min_stock: m.min_stock, unit_price: (m as any).unit_price || 0, specification: m.specification || '' }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-white/40">
                           <Pencil className="w-4 h-4 text-accent-dark" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(m.id)} className="h-9 w-9 p-0 rounded-xl hover:bg-rose-50">
@@ -317,6 +323,16 @@ const MasterMaterial: React.FC = () => {
       >
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Kode Material</label>
+              <Input 
+                placeholder="Contoh: MAT-001"
+                value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value })}
+                className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
+              />
+            </div>
+
             <div className="space-y-2">
               <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Nama Material</label>
               <Input 

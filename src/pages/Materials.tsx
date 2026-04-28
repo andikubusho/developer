@@ -186,6 +186,7 @@ const Materials: React.FC = () => {
           <Table className="w-full">
             <THead>
               <TR isHoverable={false}>
+                <TH>Kode</TH>
                 <TH>Nama Material</TH>
                 <TH>Spesifikasi</TH>
                 <TH>Satuan</TH>
@@ -209,6 +210,7 @@ const Materials: React.FC = () => {
                 
                 return (
                   <TR key={m.id}>
+                    <TD className="text-[10px] font-black text-accent-dark tracking-wider">{m.code || '-'}</TD>
                     <TD className="font-black text-text-primary">{m.name}</TD>
                     <TD className="text-[10px] text-text-secondary font-medium max-w-[200px] truncate">{m.specification || '-'}</TD>
                     <TD>

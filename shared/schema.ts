@@ -1496,6 +1496,7 @@ export type PaketProgress = typeof paketProgress.$inferSelect;
 
 export const materials = pgTable("materials", {
   id: text("id").primaryKey(), // uuid in db, mapped as text in drizzle for simplicity or use custom uuid
+  code: text("code"),
   name: text("name").notNull(),
   unit: text("unit").notNull(),
   category: text("category"),

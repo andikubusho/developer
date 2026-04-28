@@ -23,14 +23,19 @@ const AppointmentReminder: React.FC = () => {
 
       try {
         isProcessing.current = true;
-        
-        // Fetch all pending reminders that are due
-        const now = new Date().toISOString();
-        const query = `select=*,lead:leads!inner(name,phone,consultant_id)&next_reminder_at=lte.${now}&appointment_status=eq.pending`;
-        const data: FollowUp[] = await api.get('follow_ups', query);
 
-        // Filter by consultant_id in client (PostgREST embedded filter limitation workaround)
-        const myReminders = data?.filter(f => f.lead?.consultant_id === profile.consultant_id) || [];
+        const now = new Date().toISOString();
+        const [remindersData, leadsData] = await Promise.all([
+          api.get('follow_ups', `select=*&next_reminder_at=lte.${now}&appointment_status=eq.pending`),
+          api.get('leads', `select=id,name,phone,consultant_id&consultant_id=eq.${profile.consultant_id}`)
+        ]);
+
+        const leadsMap: Record<string, any> = {};
+        (leadsData || []).forEach((l: any) => { leadsMap[l.id] = l; });
+
+        const myReminders = (remindersData || [])
+          .map((f: any) => ({ ...f, lead: f.lead_id ? (leadsMap[f.lead_id] || null) : null }))
+          .filter((f: any) => f.lead !== null);
 
         if (myReminders.length > 0) {
           const reminder = myReminders[0];
@@ -149,17 +154,19 @@ const AppointmentReminder: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Button 
-              variant="outline" 
-              className="rounded-xl border-white/60 bg-white/40 hover:bg-white/60"
-              onClick={handleSnooze}
-            >
-              <Clock className="w-4 h-4 mr-2" />
-              Nanti Saja
-            </Button>
-            <Button 
-              className="rounded-xl shadow-lg shadow-accent-dark/20"
+          <div className={cn("gap-3", activeReminder.reminder_frequency !== 'none' ? "grid grid-cols-2" : "flex")}>
+            {activeReminder.reminder_frequency !== 'none' && (
+              <Button
+                variant="outline"
+                className="rounded-xl border-white/60 bg-white/40 hover:bg-white/60"
+                onClick={handleSnooze}
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                Nanti Saja
+              </Button>
+            )}
+            <Button
+              className="flex-1 rounded-xl shadow-lg shadow-accent-dark/20"
               onClick={handleComplete}
             >
               <CheckCircle className="w-4 h-4 mr-2" />

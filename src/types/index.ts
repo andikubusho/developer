@@ -392,6 +392,7 @@ export interface Recruitment {
 
 export interface Material {
   id: string;
+  code?: string;
   name: string;
   unit: string;
   stock: number;

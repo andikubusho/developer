@@ -160,6 +160,17 @@ const FollowUps: React.FC = () => {
         ? new Date(formData.appointment_date).toISOString()
         : null;
 
+      // Hanya hitung ulang next_reminder_at jika appointment_date berubah atau record baru
+      const prevAppointmentDate = selectedFollowUp?.appointment_date
+        ? new Date(selectedFollowUp.appointment_date).toISOString()
+        : null;
+      const appointmentDateChanged = appointmentDate !== prevAppointmentDate;
+      const nextReminderAt = appointmentDate
+        ? (selectedFollowUp && !appointmentDateChanged
+            ? selectedFollowUp.next_reminder_at  // pertahankan jika tanggal tidak berubah
+            : new Date(new Date(appointmentDate).getTime() - 2 * 60 * 60 * 1000).toISOString())
+        : null;
+
       const saveData = {
         lead_id: formData.lead_id,
         description: formData.description,
@@ -169,10 +180,11 @@ const FollowUps: React.FC = () => {
         appointment_date: appointmentDate,
         reminder_frequency: formData.reminder_frequency,
         appointment_notes: formData.appointment_notes,
-        next_reminder_at: appointmentDate
-          ? new Date(new Date(appointmentDate).getTime() - 2 * 60 * 60 * 1000).toISOString()
+        next_reminder_at: nextReminderAt,
+        // Pertahankan appointment_status saat edit, jangan reset ke 'pending'
+        appointment_status: formData.is_appointment
+          ? (selectedFollowUp?.appointment_status || 'pending')
           : null,
-        appointment_status: formData.is_appointment ? 'pending' : null,
       };
 
       if (selectedFollowUp) {
