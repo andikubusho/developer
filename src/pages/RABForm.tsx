@@ -576,37 +576,53 @@ const RABForm: React.FC = () => {
                     {node.isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </button>
                 )}
-                <input 
-                  type="text"
-                  value={node.uraian}
-                  onChange={(e) => updateNode(node.id, { uraian: e.target.value })}
-                  placeholder={isLevel0 ? "Nama Lantai / Bagian..." : isLevel1 ? "Kelompok Pekerjaan..." : "Deskripsi..."}
-                  className={cn(
-                    "bg-transparent border-none focus:ring-0 w-full p-0 font-inherit",
-                    isLevel0 ? "placeholder-text-muted" : "placeholder-text-muted"
-                  )}
-                />
-                {isLevel3 && (
-                  <div className="flex-shrink-0">
-                    <button
-                      type="button"
-                      title="Cari Material"
-                      onClick={(e) => {
-                        const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
-                        setDropdownPos({ top: rect.bottom + 4, left: rect.left });
-                        setMaterialSearchNodeId(materialSearchNodeId === node.id ? null : node.id);
-                        setMaterialSearchTerm('');
+                {isLevel3 ? (
+                  /* Level 3: input autocomplete material */
+                  <div className="flex-1 relative flex items-center gap-1.5 bg-white/60 border border-white/60 rounded-lg px-2 py-1 focus-within:border-accent-lavender focus-within:ring-1 focus-within:ring-accent-lavender/30">
+                    <Search className="w-3 h-3 text-text-muted flex-shrink-0" />
+                    <input
+                      type="text"
+                      value={materialSearchNodeId === node.id ? materialSearchTerm : (node.uraian || '')}
+                      placeholder="Cari / ketik nama material..."
+                      onChange={(e) => {
+                        setMaterialSearchTerm(e.target.value);
+                        if (materialSearchNodeId !== node.id) setMaterialSearchNodeId(node.id);
                       }}
-                      className={cn(
-                        "h-7 w-7 rounded border flex items-center justify-center transition-colors",
-                        materialSearchNodeId === node.id
-                          ? "bg-accent-dark border-accent-dark text-white"
-                          : "bg-white/50 border-white/60 text-accent-dark hover:bg-accent-lavender/20"
-                      )}
-                    >
-                      <Search className="w-3.5 h-3.5" />
-                    </button>
+                      onFocus={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setDropdownPos({ top: rect.bottom + 6, left: rect.left - 8 });
+                        setMaterialSearchNodeId(node.id);
+                        setMaterialSearchTerm(node.uraian || '');
+                      }}
+                      onBlur={() => {
+                        // Delay to allow click on dropdown item
+                        setTimeout(() => {
+                          if (materialSearchNodeId === node.id) {
+                            updateNode(node.id, { uraian: materialSearchTerm || node.uraian });
+                          }
+                        }, 200);
+                      }}
+                      className="bg-transparent border-none focus:ring-0 w-full p-0 text-xs text-text-primary placeholder-text-muted"
+                    />
+                    {node.material_id && (
+                      <button
+                        type="button"
+                        title="Hapus pilihan material"
+                        onClick={() => updateNode(node.id, { material_id: null, uraian: '', satuan: '', material_price: 0 })}
+                        className="flex-shrink-0 text-text-muted hover:text-rose-500"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={node.uraian}
+                    onChange={(e) => updateNode(node.id, { uraian: e.target.value })}
+                    placeholder={isLevel0 ? "Nama Lantai / Bagian..." : isLevel1 ? "Kelompok Pekerjaan..." : "Deskripsi..."}
+                    className="bg-transparent border-none focus:ring-0 w-full p-0 font-inherit placeholder-text-muted"
+                  />
                 )}
               </div>
             </TD>
