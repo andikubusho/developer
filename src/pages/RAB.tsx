@@ -65,9 +65,14 @@ const RAB: React.FC = () => {
             <p className="text-text-secondary">Rencana Anggaran Biaya pembangunan</p>
           </div>
         </div>
-        <Button onClick={() => navigate('/rab/create')}>
-          <Plus className="w-4 h-4 mr-2" /> Buat RAB Baru
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => navigate('/rab/recap')} className="bg-white">
+            <BarChart3 className="w-4 h-4 mr-2" /> Rekap Material
+          </Button>
+          <Button onClick={() => navigate('/rab/create')}>
+            <Plus className="w-4 h-4 mr-2" /> Buat RAB Baru
+          </Button>
+        </div>
       </div>
 
       <Card className="p-0">

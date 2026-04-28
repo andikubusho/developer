@@ -40,6 +40,7 @@ interface RABNode {
   wage_price: number | null;
   harga_rab: number | null; // This will be the SUM of material + wage
   harga_pasar: number | null;
+  material_id: string | null;
   urutan: number;
   is_manual: boolean;   // true = input total langsung, false = pakai koefisien
   isExpanded: boolean;
@@ -107,6 +108,7 @@ const RABForm: React.FC = () => {
   const [tree, setTree] = useState<RABNode[]>([]);
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
   const [existingRabs, setExistingRabs] = useState<any[]>([]);
+  const [materials, setMaterials] = useState<any[]>([]);
   const [loadingExisting, setLoadingExisting] = useState(false);
 
   // Fetch units when project changes
@@ -145,12 +147,14 @@ const RABForm: React.FC = () => {
 
     const fetchAllData = async () => {
       try {
-        const [projData, rabData] = await Promise.all([
+        const [projData, rabData, matData] = await Promise.all([
           api.get('projects', 'select=id,name,location&order=name.asc'),
-          api.get('rab_projects', 'select=id,nama_proyek,lokasi,created_at&order=created_at.desc')
+          api.get('rab_projects', 'select=id,nama_proyek,lokasi,created_at&order=created_at.desc'),
+          api.get('materials', 'select=id,name,unit&order=name.asc')
         ]);
         setProjects(projData || []);
         setExistingRabs(rabData || []);
+        setMaterials(matData || []);
 
         if (editId) {
           const [rabProj, itemsData] = await Promise.all([
@@ -196,6 +200,7 @@ const RABForm: React.FC = () => {
                 harga_rab: item.harga_rab,
                 harga_pasar: item.harga_pasar,
                 is_manual: item.is_manual || false,
+                material_id: item.material_id,
                 urutan: item.urutan,
                 isExpanded: true,
                 children: [],
@@ -258,6 +263,7 @@ const RABForm: React.FC = () => {
           harga_rab: item.harga_rab,
           harga_pasar: item.harga_pasar,
           is_manual: item.is_manual || false,
+          material_id: item.material_id,
           urutan: item.urutan,
           isExpanded: true,
           children: [],
@@ -305,6 +311,7 @@ const RABForm: React.FC = () => {
       wage_price: level === 3 ? 0 : null,
       harga_rab: level === 3 ? 0 : null,
       harga_pasar: null,
+      material_id: null,
       urutan: 0,
       is_manual: false,
       isExpanded: true,
@@ -499,6 +506,7 @@ const RABForm: React.FC = () => {
             harga_rab: (node.material_price || 0) + (node.wage_price || 0),
             harga_pasar: node.harga_pasar,
             is_manual: node.is_manual || false,
+            material_id: node.material_id,
             urutan: i
           };
           const res = await api.insert('rab_items', data);
@@ -574,6 +582,26 @@ const RABForm: React.FC = () => {
                     isLevel0 ? "placeholder-text-muted" : "placeholder-text-muted"
                   )}
                 />
+                {isLevel3 && (
+                  <select
+                    value={node.material_id || ''}
+                    onChange={(e) => {
+                      const matId = e.target.value;
+                      const mat = materials.find(m => m.id === matId);
+                      updateNode(node.id, { 
+                        material_id: matId || null,
+                        uraian: mat ? mat.name : node.uraian,
+                        satuan: mat ? mat.unit : node.satuan
+                      });
+                    }}
+                    className="h-8 bg-white/50 border-none rounded-lg text-[10px] font-bold focus:ring-1 focus:ring-accent-lavender min-w-[120px]"
+                  >
+                    <option value="">-- Hubungkan Material --</option>
+                    {materials.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             </TD>
 

@@ -39,6 +39,8 @@ const PurchaseRequests: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [budgetStatus, setBudgetStatus] = useState<any[]>([]);
+  const [loadingBudget, setLoadingBudget] = useState(false);
 
   const [form, setForm] = useState({
     project_id: '',
@@ -82,7 +84,24 @@ const PurchaseRequests: React.FC = () => {
 
   useEffect(() => {
     fetchUnitsForProject(form.project_id);
-  }, [form.project_id]);
+    if (form.project_id) {
+      fetchBudgetStatus(form.project_id, form.unit_id);
+    } else {
+      setBudgetStatus([]);
+    }
+  }, [form.project_id, form.unit_id]);
+
+  const fetchBudgetStatus = async (projectId: string, unitId?: string) => {
+    setLoadingBudget(true);
+    try {
+      const data = await api.getBudgetStatus(projectId, unitId);
+      setBudgetStatus(data);
+    } catch (err) {
+      console.error('Error fetching budget status:', err);
+    } finally {
+      setLoadingBudget(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,8 +271,33 @@ const PurchaseRequests: React.FC = () => {
                       required
                     >
                       <option value="">Pilih Material</option>
-                      {materials.map(m => <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>)}
+                      <optgroup label="MATERIAL DALAM RAB">
+                        {budgetStatus.map(b => (
+                          <option key={b.material_id} value={b.material_id}>
+                            💎 {b.name} (Sisa: {Math.max(0, b.quota - b.used)} {b.unit})
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="LAINNYA (NON-RAB)">
+                        {materials
+                          .filter(m => !budgetStatus.some(b => b.material_id === m.id))
+                          .map(m => <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>)}
+                      </optgroup>
                     </select>
+                    {item.material_id && (
+                      <div className="mt-1 px-1">
+                        {budgetStatus.find(b => b.material_id === item.material_id) ? (
+                          <div className="flex justify-between text-[10px] font-bold text-emerald-600 uppercase">
+                            <span>Quota RAB: {budgetStatus.find(b => b.material_id === item.material_id).quota}</span>
+                            <span>Sisa: {budgetStatus.find(b => b.material_id === item.material_id).quota - budgetStatus.find(b => b.material_id === item.material_id).used}</span>
+                          </div>
+                        ) : (
+                          <div className="text-[10px] font-bold text-amber-600 uppercase">
+                            ⚠️ Material tidak terdaftar di RAB Unit ini
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="w-24 space-y-1">
                     <input 

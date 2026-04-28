@@ -35,6 +35,7 @@ const VerificationQueue = lazy(() => import('./pages/VerificationQueue'));
 // Teknik
 const RAB = lazy(() => import('./pages/RAB'));
 const RABForm = lazy(() => import('./pages/RABForm'));
+const RABRecap = lazy(() => import('./pages/RABRecap'));
 const ConstructionProgress = lazy(() => import('./pages/ConstructionProgress'));
 const PurchaseRequests = lazy(() => import('./pages/PurchaseRequests'));
 const SPK = lazy(() => import('./pages/SPK'));
@@ -135,6 +136,7 @@ export default function App() {
               {/* Teknik */}
               <Route path="rab" element={<RAB />} />
               <Route path="rab/create" element={<ProtectedRoute><RABForm /></ProtectedRoute>} />
+              <Route path="rab/recap" element={<RABRecap />} />
               <Route path="construction-progress" element={<ConstructionProgress />} />
               <Route path="purchase-requests" element={<PurchaseRequests />} />
               <Route path="spk" element={<SPK />} />

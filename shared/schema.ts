@@ -1537,6 +1537,7 @@ export const rabItems = pgTable("rab_items", {
   id: text("id").primaryKey(),
   rabProjectId: text("rab_project_id").notNull(),
   parentId: text("parent_id"),
+  materialId: text("material_id"),
   level: integer("level").default(0),
   uraian: text("uraian").notNull(),
   volume: numeric("volume").default("0"),
