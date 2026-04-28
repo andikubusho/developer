@@ -565,7 +565,7 @@ const RABForm: React.FC = () => {
             </TD>
             
             {/* URAIAN */}
-            <TD className="px-4 py-3 border-r border-white/40 min-w-[300px]">
+            <TD className="px-4 py-3 border-r border-white/40 min-w-[400px]">
               <div className="flex items-center gap-2" style={{ paddingLeft: `${node.level * 24}px` }}>
                 {!isLevel3 && (
                   <button onClick={() => toggleExpand(node.id)} className="p-1 hover:bg-white/50/20 rounded">
@@ -582,31 +582,31 @@ const RABForm: React.FC = () => {
                     isLevel0 ? "placeholder-text-muted" : "placeholder-text-muted"
                   )}
                 />
-                {isLevel3 && (
-                  <select
-                    value={node.material_id || ''}
-                    onChange={(e) => {
-                      const matId = e.target.value;
-                      const mat = materials.find(m => m.id === matId);
-                      updateNode(node.id, { 
-                        material_id: matId || null,
-                        uraian: mat ? mat.name : node.uraian,
-                        satuan: mat ? mat.unit : node.satuan
-                      });
-                    }}
-                    className="h-8 bg-white/50 border-none rounded-lg text-[10px] font-bold focus:ring-1 focus:ring-accent-lavender min-w-[120px]"
-                  >
-                    <option value="">-- Hubungkan Material --</option>
-                    {materials.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </TD>
+                    <select
+                      value={node.material_id || ''}
+                      onChange={(e) => {
+                        const matId = e.target.value;
+                        const mat = materials.find(m => m.id === matId);
+                        updateNode(node.id, { 
+                          material_id: matId || null,
+                          uraian: mat ? mat.name : node.uraian,
+                          satuan: mat ? mat.unit : node.satuan
+                        });
+                      }}
+                      className="h-7 w-7 bg-white/50 border border-white/60 rounded flex-shrink-0 text-transparent focus:text-black focus:ring-1 focus:ring-accent-lavender"
+                      title="Hubungkan ke Master Material"
+                    >
+                      <option value="" className="text-black text-[10px]">-- Pilih Material --</option>
+                      {materials.map(m => (
+                        <option key={m.id} value={m.id} className="text-black text-[10px]">{m.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </TD>
 
             {/* KOEFF — hanya mode koefisien, Level 3 */}
-            <TD className="px-4 py-3 border-r border-white/40 w-24">
+            <TD className="px-4 py-3 border-r border-white/40 w-20">
               {isLevel3 && !node.is_manual && (
                 <input
                   type="number"
@@ -622,7 +622,7 @@ const RABForm: React.FC = () => {
             </TD>
 
             {/* VOLUME */}
-            <TD className="px-4 py-3 border-r border-white/40 w-32">
+            <TD className="px-4 py-3 border-r border-white/40 w-28">
               {isLevel2 && (
                 <input
                   type="number"
@@ -645,7 +645,7 @@ const RABForm: React.FC = () => {
             </TD>
 
             {/* SATUAN */}
-            <TD className="px-4 py-3 border-r border-white/40 w-24 text-center">
+            <TD className="px-4 py-3 border-r border-white/40 w-20 text-center">
               {(isLevel2 || (isLevel3 && !node.is_manual)) && (
                 <input
                   type="text"
@@ -658,43 +658,67 @@ const RABForm: React.FC = () => {
             </TD>
 
             {/* HARGA MATERIAL — hanya mode koefisien */}
-            <TD className="px-4 py-3 border-r border-white/40 w-32">
+            <TD className="px-4 py-3 border-r border-white/40 w-44">
               {isLevel3 && !node.is_manual && (
-                <input
-                  type="number"
-                  value={node.material_price ?? ''}
-                  onChange={(e) => updateNode(node.id, { material_price: e.target.value === '' ? null : Number(e.target.value) })}
-                  placeholder="0"
-                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
-                />
+                <div className="flex items-center">
+                  <span className="text-[10px] text-text-muted mr-1">Rp</span>
+                  <input
+                    type="text"
+                    value={node.material_price !== null ? formatNumber(node.material_price) : ''}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\./g, '');
+                      if (val === '' || /^\d+$/.test(val)) {
+                        updateNode(node.id, { material_price: val === '' ? null : Number(val) });
+                      }
+                    }}
+                    placeholder="0"
+                    className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
+                  />
+                </div>
               )}
             </TD>
 
             {/* HARGA UPAH — hanya mode koefisien */}
-            <TD className="px-4 py-3 border-r border-white/40 w-32">
+            <TD className="px-4 py-3 border-r border-white/40 w-44">
               {isLevel3 && !node.is_manual && (
-                <input
-                  type="number"
-                  value={node.wage_price ?? ''}
-                  onChange={(e) => updateNode(node.id, { wage_price: e.target.value === '' ? null : Number(e.target.value) })}
-                  placeholder="0"
-                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
-                />
+                <div className="flex items-center">
+                  <span className="text-[10px] text-text-muted mr-1">Rp</span>
+                  <input
+                    type="text"
+                    value={node.wage_price !== null ? formatNumber(node.wage_price) : ''}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\./g, '');
+                      if (val === '' || /^\d+$/.test(val)) {
+                        updateNode(node.id, { wage_price: val === '' ? null : Number(val) });
+                      }
+                    }}
+                    placeholder="0"
+                    className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
+                  />
+                </div>
               )}
             </TD>
 
             {/* SUBTOTAL / TOTAL — editable di mode manual */}
-            <TD className="px-4 py-3 font-bold text-right w-44">
+            <TD className="px-4 py-3 font-bold text-right w-52">
               {isLevel3 && node.is_manual ? (
-                <input
-                  type="number"
-                  value={node.harga_rab ?? ''}
-                  onChange={(e) => updateNode(node.id, { harga_rab: e.target.value === '' ? null : Number(e.target.value) })}
-                  placeholder="0"
-                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold text-emerald-700"
-                />
+                <div className="flex items-center justify-end">
+                   <span className="text-[10px] text-emerald-700 mr-1">Rp</span>
+                   <input
+                    type="text"
+                    value={node.harga_rab !== null ? formatNumber(node.harga_rab) : ''}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\./g, '');
+                      if (val === '' || /^\d+$/.test(val)) {
+                        updateNode(node.id, { harga_rab: val === '' ? null : Number(val) });
+                      }
+                    }}
+                    placeholder="0"
+                    className="bg-transparent border-none focus:ring-0 w-32 text-right p-0 font-bold text-emerald-700"
+                  />
+                </div>
               ) : (
-                formatCurrency(node.subtotal)
+                <span className="text-text-primary">{formatCurrency(node.subtotal)}</span>
               )}
             </TD>
 
