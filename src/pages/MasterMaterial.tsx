@@ -107,45 +107,56 @@ const MasterMaterial: React.FC = () => {
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Reset input agar file yang sama bisa diupload ulang
+    e.target.value = '';
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
         setLoading(true);
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
+        const arrayBuffer = evt.target?.result as ArrayBuffer;
+        const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json(ws);
 
-        const mappedData = data.map((item: any) => ({
-          code: item['Kode Material'] || '',
-          name: item['Nama Material'],
-          category: item['Kategori'] || '',
-          specification: item['Spesifikasi'] || '',
-          unit: item['Satuan'] || 'Unit',
+        const mappedData = (data as any[]).map((item) => ({
+          code: String(item['Kode Material'] || ''),
+          name: String(item['Nama Material'] || ''),
+          category: String(item['Kategori'] || ''),
+          specification: String(item['Spesifikasi'] || ''),
+          unit: String(item['Satuan'] || 'Unit'),
           stock: Number(item['Volume']) || 0,
           unit_price: Number(item['Harga Satuan']) || 0,
           min_stock: Number(item['Min Stok']) || 10
-        })).filter(i => i.name);
+        })).filter(i => i.name.trim() !== '');
 
         if (mappedData.length === 0) {
-          alert('Tidak ada data valid untuk diimpor');
+          alert('Tidak ada data valid. Pastikan kolom "Nama Material" terisi.');
           return;
         }
 
-        // Insert in bulk
-        await api.insert('materials', mappedData);
-        alert(`Berhasil mengimpor ${mappedData.length} material!`);
+        // Insert satu-satu agar yang error tidak menggagalkan semua data
+        let berhasil = 0;
+        let gagal = 0;
+        for (const item of mappedData) {
+          try {
+            await api.insert('materials', item);
+            berhasil++;
+          } catch {
+            gagal++;
+          }
+        }
+
+        alert(`Import selesai: ${berhasil} berhasil${gagal > 0 ? `, ${gagal} gagal (mungkin duplikat)` : ''}`);
         fetchMaterials();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Import error:', err);
-        alert('Gagal mengimpor file. Pastikan format benar.');
+        alert(`Gagal membaca file Excel: ${err?.message || 'Pastikan format file .xlsx benar'}`);
       } finally {
         setLoading(false);
       }
     };
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   };
 
   const handleDelete = async (id: string) => {
