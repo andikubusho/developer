@@ -117,37 +117,67 @@ const MasterMaterial: React.FC = () => {
         const arrayBuffer = evt.target?.result as ArrayBuffer;
         const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json(ws);
+        const rows = XLSX.utils.sheet_to_json(ws) as any[];
 
-        const mappedData = (data as any[]).map((item) => ({
-          code: String(item['Kode Material'] || ''),
-          name: String(item['Nama Material'] || ''),
-          category: String(item['Kategori'] || ''),
-          specification: String(item['Spesifikasi'] || ''),
-          unit: String(item['Satuan'] || 'Unit'),
-          stock: Number(item['Volume']) || 0,
-          unit_price: Number(item['Harga Satuan']) || 0,
-          min_stock: Number(item['Min Stok']) || 10
-        })).filter(i => i.name.trim() !== '');
-
-        if (mappedData.length === 0) {
-          alert('Tidak ada data valid. Pastikan kolom "Nama Material" terisi.');
+        if (rows.length === 0) {
+          alert('File Excel kosong atau tidak ada data.');
           return;
         }
 
-        // Insert satu-satu agar yang error tidak menggagalkan semua data
-        let berhasil = 0;
-        let gagal = 0;
-        for (const item of mappedData) {
+        // Ambil semua data existing untuk pencocokan
+        const existingList = await api.get('materials', 'select=id,code,name');
+        const byCode: Record<string, any> = {};
+        const byName: Record<string, any> = {};
+        (existingList || []).forEach((m: any) => {
+          if (m.code) byCode[m.code.trim().toLowerCase()] = m;
+          byName[m.name.trim().toLowerCase()] = m;
+        });
+
+        let ditambah = 0;
+        let diperbarui = 0;
+        let dilewati = 0;
+
+        for (const row of rows) {
+          // Ambil nilai dari Excel — null jika kolom kosong/tidak ada
+          const excelCode = row['Kode Material'] != null && row['Kode Material'] !== '' ? String(row['Kode Material']).trim() : null;
+          const excelName = row['Nama Material'] != null && row['Nama Material'] !== '' ? String(row['Nama Material']).trim() : null;
+
+          if (!excelName) { dilewati++; continue; }
+
+          // Cari existing berdasarkan kode (prioritas) lalu nama
+          const existing = (excelCode ? byCode[excelCode.toLowerCase()] : null)
+            || byName[excelName.toLowerCase()];
+
+          // Bangun payload — hanya isi field yang tidak kosong di Excel
+          const payload: Record<string, any> = {};
+          if (excelCode) payload.code = excelCode;
+          if (excelName) payload.name = excelName;
+          if (row['Kategori'] != null && row['Kategori'] !== '') payload.category = String(row['Kategori']).trim();
+          if (row['Spesifikasi'] != null && row['Spesifikasi'] !== '') payload.specification = String(row['Spesifikasi']).trim();
+          if (row['Satuan'] != null && row['Satuan'] !== '') payload.unit = String(row['Satuan']).trim();
+          if (row['Volume'] != null && row['Volume'] !== '') payload.stock = Number(row['Volume']) || 0;
+          if (row['Harga Satuan'] != null && row['Harga Satuan'] !== '') payload.unit_price = Number(row['Harga Satuan']) || 0;
+          if (row['Min Stok'] != null && row['Min Stok'] !== '') payload.min_stock = Number(row['Min Stok']) || 10;
+
           try {
-            await api.insert('materials', item);
-            berhasil++;
-          } catch {
-            gagal++;
+            if (existing) {
+              await api.update('materials', existing.id, payload);
+              diperbarui++;
+            } else {
+              // Untuk insert baru, set default jika tidak ada di Excel
+              await api.insert('materials', {
+                unit: 'Unit', stock: 0, unit_price: 0, min_stock: 10,
+                ...payload
+              });
+              ditambah++;
+            }
+          } catch (err) {
+            console.error('Gagal proses baris:', row, err);
+            dilewati++;
           }
         }
 
-        alert(`Import selesai: ${berhasil} berhasil${gagal > 0 ? `, ${gagal} gagal (mungkin duplikat)` : ''}`);
+        alert(`Import selesai:\n✅ ${ditambah} data baru ditambahkan\n🔄 ${diperbarui} data diperbarui${dilewati > 0 ? `\n⚠️ ${dilewati} baris dilewati` : ''}`);
         fetchMaterials();
       } catch (err: any) {
         console.error('Import error:', err);
