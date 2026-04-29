@@ -63,10 +63,28 @@ const SPK: React.FC = () => {
   const fetchSpks = async () => {
     try {
       setLoading(true);
-      const data = await api.get('spks', 'select=*,project:projects(name),unit:units(unit_number)&order=created_at.desc');
-      setSpks(data || []);
+      const [spkData, projectsData, unitsData] = await Promise.all([
+        api.get('spks', 'select=*&order=created_at.desc'),
+        api.get('projects', 'select=id,name'),
+        api.get('units', 'select=id,unit_number'),
+      ]);
+
+      const projectMap: Record<string, string> = {};
+      (projectsData || []).forEach((p: any) => { projectMap[p.id] = p.name; });
+
+      const unitMap: Record<string, string> = {};
+      (unitsData || []).forEach((u: any) => { unitMap[u.id] = u.unit_number; });
+
+      const enriched = (spkData || []).map((s: any) => ({
+        ...s,
+        project: s.project_id ? { name: projectMap[s.project_id] || '-' } : null,
+        unit: s.unit_id ? { unit_number: unitMap[s.unit_id] || '-' } : null,
+      }));
+
+      setSpks(enriched);
     } catch (error) {
       console.error('Error fetching SPK:', error);
+      setSpks([]);
     } finally {
       setLoading(false);
     }
