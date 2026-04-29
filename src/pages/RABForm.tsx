@@ -154,8 +154,11 @@ const RABForm: React.FC = () => {
       volume: null,
       satuan: '',
       koeff: null,
+      material_price: null,
+      wage_price: null,
       harga_rab: null,
       harga_pasar: null,
+      material_id: null,
       urutan: 0,
       is_manual: false,
       isExpanded: true,
@@ -454,6 +457,7 @@ const RABForm: React.FC = () => {
             material_price: Math.round(Number(row['Harga Material']) || 0),
             wage_price: Math.round(Number(row['Harga Upah']) || 0),
             harga_rab: round(row['Harga RAB (Manual)'], 2),
+            harga_pasar: null,
             is_manual: (row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '')
               ? true
               : (level === 2 && (
