@@ -299,9 +299,9 @@ const OpnamePage: React.FC = () => {
         title="Input Progress Upah (Batch RAB)" 
         className="max-w-6xl"
       >
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Input label="Tanggal Opname" type="date" value={opnameDate} onChange={(e) => setOpnameDate(e.target.value)} />
+        <div className="space-y-8 p-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6 bg-white/40 p-6 rounded-[2rem] border border-white/60">
+            <Input label="Tanggal Opname" type="date" value={opnameDate} onChange={(e) => setOpnameDate(e.target.value)} className="h-12 rounded-xl border-white/60 shadow-sm" />
             <div>
               <label className="text-[11px] font-black text-text-muted uppercase tracking-widest mb-2 block">Pilih Proyek</label>
               <select 
@@ -328,7 +328,7 @@ const OpnamePage: React.FC = () => {
                 {units.map(u => <option key={u.id} value={u.id}>{u.unit_number} - {u.type}</option>)}
               </select>
             </div>
-            <Input label="Nama Pekerja / Kontraktor" placeholder="Masukkan nama..." value={workerName} onChange={(e) => setWorkerName(e.target.value)} />
+            <Input label="Nama Pekerja / Kontraktor" placeholder="Contoh: Mandor Slamet..." value={workerName} onChange={(e) => setWorkerName(e.target.value)} className="h-12 rounded-xl border-white/60 shadow-sm" />
           </div>
 
           {selectedProjectId ? (
@@ -338,16 +338,16 @@ const OpnamePage: React.FC = () => {
                 <span className="text-[10px] font-black uppercase tracking-widest italic">Item Pekerjaan Terdaftar di RAB</span>
               </div>
               
-              <div className="border border-white/40 rounded-2xl overflow-hidden shadow-premium">
-                <Table>
+              <div className="border border-white/40 rounded-[2rem] overflow-hidden shadow-premium bg-white/20 backdrop-blur-sm">
+                <Table className="min-w-[1000px]">
                   <THead>
-                    <TR className="bg-white/40 text-[9px] font-black uppercase tracking-widest">
-                      <TH className="px-4 py-3">Pekerjaan</TH>
-                      <TH className="px-4 py-3 text-right">Total Upah (RAB)</TH>
-                      <TH className="px-4 py-3 text-center">Progress Sblmnya</TH>
-                      <TH className="px-4 py-3 text-center w-32">Input % Baru</TH>
-                      <TH className="px-4 py-3 text-right">Nilai Rp (Auto)</TH>
-                      <TH className="px-4 py-3 text-center">Sisa Akhir %</TH>
+                    <TR className="bg-accent-dark text-white text-[10px] font-black uppercase tracking-[0.2em]">
+                      <TH className="px-6 py-5 border-r border-white/20">Uraian Pekerjaan</TH>
+                      <TH className="px-6 py-5 border-r border-white/20 text-right">Total Upah (RAB)</TH>
+                      <TH className="px-6 py-5 border-r border-white/20 text-center">Progress Lalu</TH>
+                      <TH className="px-6 py-5 border-r border-white/20 text-center w-40">Progress Baru (%)</TH>
+                      <TH className="px-6 py-5 border-r border-white/20 text-right">Nilai Rupiah</TH>
+                      <TH className="px-6 py-5 text-center">Sisa Progress</TH>
                     </TR>
                   </THead>
                   <TBody>
@@ -355,35 +355,51 @@ const OpnamePage: React.FC = () => {
                       <TR><TD colSpan={6} className="px-4 py-10 text-center text-text-muted">Tidak ada item upah di RAB proyek ini.</TD></TR>
                     ) : (
                       batchItems.map((item) => (
-                        <TR key={item.rab_item_id} className={cn("hover:bg-white/30", item.paid_percentage >= 100 && "bg-emerald-50/30")}>
-                          <TD className="px-4 py-3 text-sm font-medium text-text-primary">{item.uraian}</TD>
-                          <TD className="px-4 py-3 text-sm font-black text-text-secondary text-right">{formatCurrency(item.total_budget)}</TD>
-                          <TD className="px-4 py-3 text-center">
-                            <span className="text-xs font-bold text-text-muted">{item.paid_percentage.toFixed(1)}%</span>
+                        <TR key={item.rab_item_id} className={cn("hover:bg-white/50 transition-colors group border-b border-white/40 last:border-0", item.paid_percentage >= 100 && "bg-emerald-50/50")}>
+                          <TD className="px-6 py-5">
+                            <div className="text-sm font-bold text-text-primary leading-snug">{item.uraian}</div>
+                            <div className="text-[9px] font-black text-text-muted uppercase tracking-widest mt-1">Kode: {item.rab_item_id.substring(0,6).toUpperCase()}</div>
                           </TD>
-                          <TD className="px-4 py-3 text-center">
-                            <input 
-                              type="number"
-                              className={cn(
-                                "w-20 h-10 rounded-lg border border-white/60 bg-white px-2 text-center text-sm font-black focus:outline-none",
-                                item.paid_percentage >= 100 ? "opacity-50 cursor-not-allowed" : "focus:border-primary"
-                              )}
-                              value={item.input_percentage || ''}
-                              onChange={(e) => handleItemChange(item.rab_item_id, parseFloat(e.target.value) || 0)}
-                              disabled={item.paid_percentage >= 100}
-                              placeholder="0"
-                            />
+                          <TD className="px-6 py-5 text-sm font-black text-text-secondary text-right">{formatCurrency(item.total_budget)}</TD>
+                          <TD className="px-6 py-5 text-center">
+                            <div className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-[10px] font-black text-slate-600 border border-slate-200">
+                              {item.paid_percentage.toFixed(1)}%
+                            </div>
                           </TD>
-                          <TD className="px-4 py-3 text-sm font-black text-primary text-right">{formatCurrency(item.calculated_amount)}</TD>
-                          <TD className="px-4 py-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <span className={cn(
-                                "text-xs font-black",
-                                (100 - item.paid_percentage - item.input_percentage) < 0 ? "text-rose-500" : "text-emerald-600"
+                          <TD className="px-6 py-5 text-center">
+                            <div className="relative inline-block w-full max-w-[120px]">
+                              <input 
+                                type="number"
+                                className={cn(
+                                  "w-full h-11 rounded-xl border border-white/60 bg-white/80 px-3 text-center text-sm font-black focus:outline-none focus:ring-2 focus:ring-accent-lavender/50 transition-all shadow-sm",
+                                  item.paid_percentage >= 100 ? "opacity-50 cursor-not-allowed grayscale" : "hover:border-accent-lavender"
+                                )}
+                                value={item.input_percentage || ''}
+                                onChange={(e) => handleItemChange(item.rab_item_id, parseFloat(e.target.value) || 0)}
+                                disabled={item.paid_percentage >= 100}
+                                placeholder="0"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-muted">%</span>
+                            </div>
+                          </TD>
+                          <TD className="px-6 py-5 text-sm font-black text-accent-dark text-right bg-accent-lavender/5">{formatCurrency(item.calculated_amount)}</TD>
+                          <TD className="px-6 py-5 text-center">
+                            <div className="flex flex-col items-center justify-center min-h-[40px]">
+                              <div className={cn(
+                                "px-3 py-1 rounded-lg text-[11px] font-black flex items-center gap-1.5 shadow-sm border",
+                                (100 - item.paid_percentage - item.input_percentage) < 0 
+                                  ? "bg-rose-50 text-rose-600 border-rose-200" 
+                                  : "bg-emerald-50 text-emerald-600 border-emerald-200"
                               )}>
                                 {(100 - item.paid_percentage - item.input_percentage).toFixed(1)}%
-                              </span>
-                              {(100 - item.paid_percentage - item.input_percentage) < 0 && <AlertCircle className="w-3 h-3 text-rose-500 mt-1" />}
+                                {(100 - item.paid_percentage - item.input_percentage) < 0 && <AlertCircle className="w-3.5 h-3.5" />}
+                              </div>
+                              <div className="w-16 h-1 bg-slate-100 rounded-full mt-2 overflow-hidden">
+                                <div 
+                                  className={cn("h-full transition-all duration-500", (item.paid_percentage + item.input_percentage) > 100 ? "bg-rose-500" : "bg-emerald-500")}
+                                  style={{ width: `${Math.min(100, item.paid_percentage + item.input_percentage)}%` }}
+                                />
+                              </div>
                             </div>
                           </TD>
                         </TR>
