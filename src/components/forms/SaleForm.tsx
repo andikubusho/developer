@@ -156,6 +156,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   }, [initialData]);
 
   useEffect(() => {
+    // Edit mode: jangan reset deposit jika konsumen tidak berubah
+    if (initialData && watchCustomerId === initialData.customer_id) return;
     const customer = rawCustomers.find(c => c.id === watchCustomerId) || rawLeads.find(l => l.id === watchCustomerId);
     if (customer && verifiedDeposits.length > 0) {
       const cleanPhone = (p: string) => (p || "").replace(/\D/g, "").replace(/^62/, "0");
@@ -166,18 +168,22 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   }, [watchCustomerId, verifiedDeposits, rawCustomers, rawLeads, setValue]);
 
   useEffect(() => {
+    // Edit mode: jangan override harga jika unit tidak berubah dari data asal
+    if (initialData && watchUnitId === initialData.unit_id) return;
     const unit = units.find(u => u.id === watchUnitId);
     if (unit) setValue('price', unit.price || 0);
   }, [watchUnitId, units, setValue]);
 
   useEffect(() => {
+    // Edit mode: jangan recalculate harga jika harga/diskon/promo tidak berubah dari data asal
+    if (initialData &&
+      watchPrice === initialData.price &&
+      watchDiscount === initialData.discount &&
+      String(watchPromoId) === String(initialData.promo_id)) return;
     const totalPrice = Math.max(0, (watchPrice || 0) - (watchDiscount || 0));
     setValue('total_price', totalPrice);
-    
-    // Temukan promo dengan perbandingan ID yang lebih aman
-    const promo = promos.find(p => String(p.id) === String(watchPromoId));
+    const promo = promos.find((p: any) => String(p.id) === String(watchPromoId));
     const promoValue = promo?.value || 0;
-    
     setValue('final_price', Math.max(0, totalPrice - promoValue));
   }, [watchPrice, watchDiscount, watchPromoId, promos, setValue]);
 
