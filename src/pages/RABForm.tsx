@@ -686,8 +686,8 @@ const RABForm: React.FC = () => {
 
     // Note: We need a clean way to handle validation state across the recursive structure.
     // For now, let's assume validation is handled or simplified for the user.
-    if (!projectHeader.project_id || !projectHeader.unit_id) {
-      alert('Pilih Proyek dan Unit terlebih dahulu');
+    if (!projectHeader.project_id) {
+      alert('Pilih Proyek terlebih dahulu');
       return;
     }
 
@@ -700,8 +700,8 @@ const RABForm: React.FC = () => {
         // Update Project
         await api.update('rab_projects', editId, {
           project_id: projectHeader.project_id,
-          unit_id: projectHeader.unit_id,
-          kategori: projectHeader.unit_id, // Save as kategori as a fallback
+          unit_id: projectHeader.unit_id || null,
+          kategori: projectHeader.unit_id || null,
           nama_proyek: projectHeader.nama_proyek,
           lokasi: projectHeader.lokasi,
           total_anggaran: grandTotal,
@@ -717,8 +717,8 @@ const RABForm: React.FC = () => {
         // Insert Project
         const project = await api.insert('rab_projects', {
           project_id: projectHeader.project_id,
-          unit_id: projectHeader.unit_id,
-          kategori: projectHeader.unit_id, // Save as kategori as a fallback
+          unit_id: projectHeader.unit_id || null,
+          kategori: projectHeader.unit_id || null,
           nama_proyek: projectHeader.nama_proyek,
           lokasi: projectHeader.lokasi,
           total_anggaran: grandTotal,
@@ -1144,15 +1144,15 @@ const RABForm: React.FC = () => {
           </div>
           <div className="space-y-2">
             <label className="text-xs font-black text-text-primary uppercase tracking-widest block flex items-center gap-2 ml-1">
-              <Layers className="w-3 h-3 text-accent-dark" /> Pilih Unit
+              <Layers className="w-3 h-3 text-accent-dark" /> Pilih Unit <span className="text-text-muted font-normal normal-case">(opsional — kosongkan untuk pekerjaan umum/infrastruktur)</span>
             </label>
-            <select 
+            <select
               value={projectHeader.unit_id}
               onChange={(e) => setProjectHeader({ ...projectHeader, unit_id: e.target.value })}
               disabled={!projectHeader.project_id}
               className="w-full h-14 glass-input border-none rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none disabled:opacity-50"
             >
-              <option value="">{projectHeader.project_id ? '-- Pilih Unit --' : 'Pilih Proyek Dulu'}</option>
+              <option value="">{projectHeader.project_id ? '-- Tanpa Unit (Umum / Infrastruktur) --' : 'Pilih Proyek Dulu'}</option>
               {units.map(u => (
                 <option key={u.id} value={u.id}>
                   {u.unit_number} - {u.type}
