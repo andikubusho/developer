@@ -1,109 +1,132 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Plus, 
-  Search, 
   Package, 
-  AlertTriangle, 
-  ArrowRightLeft, 
+  Search, 
   ArrowLeft,
-  Building2,
   RefreshCw,
   History,
   Truck,
-  HardHat
+  HardHat,
+  Plus,
+  Tag,
+  Pencil
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { formatNumber, cn } from '../lib/utils';
+import { Modal } from '../components/ui/Modal';
+import { formatNumber, formatCurrency, cn } from '../lib/utils';
 import { api } from '../lib/api';
 
-interface Project {
-  id: string;
-  name: string;
-}
-
-interface Material {
+interface MasterMaterial {
   id: string;
   name: string;
   unit: string;
-  stock: number;
-  min_stock: number;
-  specification?: string;
+  code?: string;
+}
+
+interface MaterialVariant {
+  id: number;
+  material_id: string;
+  merk: string;
+  spesifikasi: string;
+  stok: number;
+  harga_terakhir: number;
+  supplier_default?: number;
 }
 
 const Materials: React.FC = () => {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [projectStocks, setProjectStocks] = useState<Record<string, number>>({});
-  
-  const [selectedProject, setSelectedProject] = useState('');
+  const [masters, setMasters] = useState<MasterMaterial[]>([]);
+  const [variants, setVariants] = useState<MaterialVariant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'summary' | 'detail'>('detail');
+  const [search, setSearch] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingVariant, setEditingVariant] = useState<MaterialVariant | null>(null);
+  const [form, setForm] = useState({
+    material_id: '',
+    merk: '',
+    spesifikasi: '',
+    supplier_default: null as number | null
+  });
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [resMaster, resVariant] = await Promise.all([
+        api.get('materials', 'select=id,name,unit,code&order=name.asc'),
+        api.get('material_variants', 'select=*&order=material_id.asc,merk.asc')
+      ]);
+      setMasters(resMaster || []);
+      setVariants(resVariant || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetchBaseData();
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    if (selectedProject) {
-      fetchProjectStocks(selectedProject);
-    }
-  }, [selectedProject]);
+  const masterSummary = useMemo(() => {
+    return masters.map(m => {
+      const relatedVariants = variants.filter(v => v.material_id === m.id);
+      const totalStok = relatedVariants.reduce((sum, v) => sum + Number(v.stok || 0), 0);
+      return { ...m, totalStok, variantCount: relatedVariants.length };
+    });
+  }, [masters, variants]);
 
-  const fetchBaseData = async () => {
-    try {
-      setLoading(true);
-      const [resProj, resMat] = await Promise.all([
-        api.get('projects', 'select=id,name&order=name.asc'),
-        api.get('materials', 'select=*&order=name.asc')
-      ]);
-      setProjects(resProj || []);
-      setMaterials(resMat || []);
-    } catch (error) {
-      console.error('Error fetching materials:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchProjectStocks = async (projectId: string) => {
-    try {
-      setLoading(true);
-      const data = await api.get('project_material_stocks', `project_id=eq.${projectId}`);
-      const stocks: Record<string, number> = {};
-      data.forEach((s: any) => {
-        const matId = s.material_id || s.materialId;
-        if (matId) {
-          stocks[matId] = Number(s.stock);
-        }
+  const filteredData = useMemo(() => {
+    if (viewMode === 'summary') {
+      return masterSummary.filter(m => 
+        m.name.toLowerCase().includes(search.toLowerCase()) ||
+        (m.code || '').toLowerCase().includes(search.toLowerCase())
+      );
+    } else {
+      return variants.filter(v => {
+        const master = masters.find(m => m.id === v.material_id);
+        const searchStr = `${v.merk} ${master?.name} ${master?.code || ''}`.toLowerCase();
+        return searchStr.includes(search.toLowerCase());
       });
-      setProjectStocks(stocks);
-    } catch (err) {
-      console.error('Error fetching project stocks:', err);
+    }
+  }, [viewMode, search, masterSummary, variants, masters]);
+
+  const handleSubmitVariant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      if (editingVariant) {
+        await api.update('material_variants', editingVariant.id, form);
+      } else {
+        await api.insert('material_variants', { ...form, stok: 0 });
+      }
+      setIsModalOpen(false);
+      setEditingVariant(null);
+      setForm({ material_id: '', merk: '', spesifikasi: '', supplier_default: null });
+      fetchData();
+    } catch (error) {
+      console.error('Error saving variant:', error);
+      alert('Gagal menyimpan data variant');
     } finally {
       setLoading(false);
     }
   };
-
-  const displayMaterials = materials.filter(m => 
-    m.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="space-y-8 pb-10">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-black text-text-primary tracking-tight">Stok Material</h1>
-            <p className="text-text-secondary font-medium">Monitoring persediaan material di setiap lokasi proyek</p>
+            <h1 className="text-3xl font-black text-text-primary tracking-tight">Manajemen Stok</h1>
+            <p className="text-text-secondary font-medium">Stok Material berdasarkan Master dan Varian (Merk)</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -113,144 +136,206 @@ const Materials: React.FC = () => {
           <Button variant="outline" onClick={() => navigate('/material-usage')} className="rounded-xl h-12 bg-white">
             <HardHat className="w-5 h-5 mr-2 text-orange-600" /> Catat Pakai
           </Button>
-          <Button onClick={() => navigate('/stock-card')} className="rounded-xl h-12 px-6 shadow-premium">
-            <History className="w-5 h-5 mr-2" /> Riwayat/Kartu Stok
+          <Button onClick={() => { setEditingVariant(null); setForm({ kode_material: '', merk: '', spesifikasi: '', supplier_default: null }); setIsModalOpen(true); }} className="rounded-xl h-12 px-6 shadow-premium">
+            <Plus className="w-5 h-5 mr-2" /> Tambah Variant
           </Button>
         </div>
       </div>
 
-      {/* Project Selector & Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <Card className="p-6 bg-accent-dark text-white border-none shadow-premium lg:col-span-1">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Building2 className="w-5 h-5 text-accent-lavender" />
-              <h3 className="font-black uppercase text-xs tracking-widest">Pilih Lokasi Proyek</h3>
-            </div>
-            <select 
-              className="w-full h-12 bg-white/10 border border-white/20 rounded-xl px-4 text-sm font-bold focus:outline-none focus:bg-white/20 transition-all text-white"
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-            >
-              <option value="" className="text-gray-900">Global (Master Material)</option>
-              {projects.map(p => <option key={p.id} value={p.id} className="text-gray-900">{p.name}</option>)}
-            </select>
-            <p className="text-[10px] opacity-70 leading-relaxed italic">
-              *Pilih proyek untuk melihat saldo stok aktual di lapangan.
-            </p>
-          </div>
-        </Card>
-
-        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
-           <Card className="p-6 bg-white border-none shadow-premium flex items-center gap-6">
-              <div className="w-14 h-14 rounded-xl bg-accent-lavender/20 flex items-center justify-center text-primary">
-                <Package className="w-7 h-7" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Total Jenis Material</p>
-                <p className="text-2xl font-black text-text-primary tracking-tight">{materials.length} Item</p>
-              </div>
-           </Card>
-           <Card className="p-6 bg-white border-none shadow-premium flex items-center gap-6">
-              <div className="w-14 h-14 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
-                <AlertTriangle className="w-7 h-7" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Stok Menipis / Habis</p>
-                <p className="text-2xl font-black text-rose-600 tracking-tight">
-                  {selectedProject 
-                    ? materials.filter(m => (projectStocks[m.id] || 0) <= m.min_stock).length 
-                    : materials.filter(m => m.stock <= m.min_stock).length
-                  } Item
-                </p>
-              </div>
-           </Card>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="p-1 bg-slate-100 rounded-2xl flex gap-1">
+          <button 
+            onClick={() => setViewMode('detail')}
+            className={cn(
+              "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+              viewMode === 'detail' ? "bg-white text-primary shadow-sm" : "text-text-muted hover:text-text-primary"
+            )}
+          >
+            Detail Variant
+          </button>
+          <button 
+            onClick={() => setViewMode('summary')}
+            className={cn(
+              "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+              viewMode === 'summary' ? "bg-white text-primary shadow-sm" : "text-text-muted hover:text-text-primary"
+            )}
+          >
+            Summary Master
+          </button>
+        </div>
+        
+        <div className="flex-1 w-full relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+          <Input 
+            placeholder={viewMode === 'summary' ? "Cari master material..." : "Cari merk atau material..."}
+            className="pl-12 h-12 bg-white border-none shadow-sm rounded-2xl w-full"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
       </div>
 
-      {/* Material Table */}
       <Card className="p-0 border-none shadow-premium overflow-hidden bg-white">
-        <div className="p-6 border-b border-white/20 flex items-center gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <Input 
-              placeholder="Cari material..." 
-              className="pl-12 h-12 glass-input border-none rounded-xl"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-
         <div className="overflow-x-auto">
           <Table className="w-full">
             <THead>
-              <TR isHoverable={false}>
-                <TH>Kode</TH>
-                <TH>Nama Material</TH>
-                <TH>Spesifikasi</TH>
-                <TH>Satuan</TH>
-                <TH className="text-center">{selectedProject ? 'Stok Proyek' : 'Stok Global'}</TH>
-                <TH className="text-center">Min. Stok</TH>
-                <TH>Status</TH>
-                <TH className="text-right">Aksi</TH>
-              </TR>
+              {viewMode === 'summary' ? (
+                <TR isHoverable={false}>
+                  <TH className="px-6 py-4">Kode</TH>
+                  <TH className="px-6 py-4">Nama Material (Master)</TH>
+                  <TH className="px-6 py-4 text-center">Jumlah Varian</TH>
+                  <TH className="px-6 py-4 text-center">Total Stok</TH>
+                  <TH className="px-6 py-4">Satuan</TH>
+                </TR>
+              ) : (
+                <TR isHoverable={false}>
+                  <TH className="px-6 py-4">Master</TH>
+                  <TH className="px-6 py-4">Merk / Varian</TH>
+                  <TH className="px-6 py-4">Spesifikasi</TH>
+                  <TH className="px-6 py-4 text-right">Stok Aktual</TH>
+                  <TH className="px-6 py-4 text-right">Harga Terakhir</TH>
+                  <TH className="px-6 py-4 text-right">Aksi</TH>
+                </TR>
+              )}
             </THead>
             <TBody>
               {loading ? (
                 <TR isHoverable={false}>
-                  <TD colSpan={7} className="py-20 text-center">
+                  <TD colSpan={6} className="py-20 text-center">
                     <RefreshCw className="w-8 h-8 text-accent-dark animate-spin mx-auto mb-4" />
-                    <p className="text-text-muted font-bold uppercase text-[10px] tracking-widest">Memuat Persediaan...</p>
+                    <p className="text-text-muted font-bold uppercase text-[10px] tracking-widest">Memuat Data Stok...</p>
                   </TD>
                 </TR>
-              ) : displayMaterials.map((m) => {
-                const currentStock = selectedProject ? (projectStocks[m.id] || 0) : m.stock;
-                const isCritical = currentStock <= m.min_stock;
-                
-                return (
+              ) : filteredData.length === 0 ? (
+                <TR isHoverable={false}>
+                  <TD colSpan={6} className="py-20 text-center text-text-muted">Tidak ada data ditemukan.</TD>
+                </TR>
+              ) : viewMode === 'summary' ? (
+                (filteredData as any[]).map((m) => (
                   <TR key={m.id}>
-                    <TD className="text-[10px] font-black text-accent-dark tracking-wider">{m.code || '-'}</TD>
-                    <TD className="font-black text-text-primary">{m.name}</TD>
-                    <TD className="text-[10px] text-text-secondary font-medium max-w-[200px] truncate">{m.specification || '-'}</TD>
-                    <TD>
-                      <span className="px-3 py-1 rounded-xl bg-white/40 text-text-secondary text-[10px] font-black uppercase tracking-widest">
-                        {m.unit}
+                    <TD className="px-6 py-4">
+                      <span className="px-2 py-1 rounded bg-slate-100 text-[10px] font-black text-slate-600">{m.code || '-'}</span>
+                    </TD>
+                    <TD className="px-6 py-4 font-black text-text-primary">{m.name}</TD>
+                    <TD className="px-6 py-4 text-center">
+                      <span className="px-2 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black">{m.variantCount} Varian</span>
+                    </TD>
+                    <TD className="px-6 py-4 text-center">
+                      <span className={cn("text-lg font-black", Number(m.totalStok) === 0 ? "text-rose-500" : "text-emerald-600")}>
+                        {formatNumber(m.totalStok)}
                       </span>
                     </TD>
-                    <TD className="text-center">
-                      <span className={cn(
-                        "text-lg font-black",
-                        isCritical ? "text-rose-600" : "text-text-primary"
-                      )}>
-                        {formatNumber(currentStock)}
-                      </span>
-                    </TD>
-                    <TD className="text-center text-text-muted font-bold">{formatNumber(m.min_stock)}</TD>
-                    <TD>
-                      {isCritical ? (
-                        <span className="px-3 py-1 rounded-full text-[9px] font-black bg-rose-100 text-rose-600 border border-rose-200 uppercase tracking-widest">Kritis / Habis</span>
-                      ) : (
-                        <span className="px-3 py-1 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-600 border border-emerald-200 uppercase tracking-widest">Tersedia</span>
-                      )}
-                    </TD>
-                    <TD className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="rounded-xl hover:bg-accent-lavender/10 text-primary"
-                        onClick={() => navigate(`/stock-card?materialId=${m.id}${selectedProject ? `&projectId=${selectedProject}` : ''}`)}
-                      >
-                        <History className="w-4 h-4 mr-2" /> Kartu Stok
-                      </Button>
-                    </TD>
+                    <TD className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">{m.unit}</TD>
                   </TR>
-                );
-              })}
+                ))
+              ) : (
+                (filteredData as MaterialVariant[]).map((v) => {
+                  const master = masters.find(m => m.id === v.material_id);
+                  return (
+                    <TR key={v.id}>
+                      <TD className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-accent-dark uppercase tracking-widest">{master?.code || '-'}</span>
+                          <span className="text-sm font-bold text-text-muted">{master?.name || 'Unknown'}</span>
+                        </div>
+                      </TD>
+                      <TD className="px-6 py-4">
+                         <div className="flex items-center gap-2">
+                           <Tag className="w-3 h-3 text-emerald-500" />
+                           <span className="font-black text-text-primary uppercase tracking-tight">{v.merk}</span>
+                         </div>
+                      </TD>
+                      <TD className="px-6 py-4 text-[10px] text-text-secondary italic font-medium">{v.spesifikasi || '-'}</TD>
+                      <TD className="px-6 py-4 text-right">
+                        <span className={cn("text-base font-black", Number(v.stok) === 0 ? "text-rose-500" : "text-emerald-600")}>
+                          {formatNumber(v.stok)}
+                        </span>
+                        <span className="ml-1 text-[9px] font-bold text-text-muted uppercase">{master?.unit}</span>
+                      </TD>
+                      <TD className="px-6 py-4 text-right font-bold text-text-secondary">{formatCurrency(v.harga_terakhir || 0)}</TD>
+                      <TD className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => { setEditingVariant(v); setForm({ material_id: v.material_id, merk: v.merk, spesifikasi: v.spesifikasi || '', supplier_default: v.supplier_default || null }); setIsModalOpen(true); }}
+                            className="h-8 w-8 p-0 rounded-xl hover:bg-slate-100"
+                          >
+                            <Pencil className="w-4 h-4 text-accent-dark" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => navigate(`/stock-card?variantId=${v.id}`)}
+                            className="h-8 w-8 p-0 rounded-xl hover:bg-slate-100"
+                          >
+                            <History className="w-4 h-4 text-slate-500" />
+                          </Button>
+                        </div>
+                      </TD>
+                    </TR>
+                  );
+                })
+              )}
             </TBody>
           </Table>
         </div>
       </Card>
+
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title={editingVariant ? "Edit Variant Material" : "Tambah Variant Baru"}
+        size="lg"
+      >
+        <form onSubmit={handleSubmitVariant} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Pilih Master Material</label>
+            <select 
+              className="w-full h-14 glass-input rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none shadow-glass"
+              value={form.material_id}
+              onChange={(e) => setForm({ ...form, material_id: e.target.value })}
+              required
+              disabled={!!editingVariant}
+            >
+              <option value="">-- Pilih Master --</option>
+              {masters.map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.code ? `[${m.code}] ` : ''}{m.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Merk / Varian</label>
+            <Input 
+              placeholder="Contoh: Semen Gresik, Semen Tiga Roda, Besi Krakatau"
+              value={form.merk}
+              onChange={(e) => setForm({ ...form, merk: e.target.value })}
+              className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Spesifikasi (Opsional)</label>
+            <Input 
+              placeholder="Contoh: Tipe 1, 40kg, Diameter 10mm"
+              value={form.spesifikasi}
+              onChange={(e) => setForm({ ...form, spesifikasi: e.target.value })}
+              className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
+            />
+          </div>
+          
+          <div className="pt-6 flex gap-4">
+            <Button type="button" variant="ghost" className="flex-1 h-12 rounded-xl" onClick={() => setIsModalOpen(false)}>Batal</Button>
+            <Button type="submit" className="flex-1 h-12 rounded-xl text-base font-extrabold shadow-glass" isLoading={loading}>
+              {editingVariant ? "Simpan Perubahan" : "Tambahkan Variant"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

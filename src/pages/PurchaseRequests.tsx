@@ -12,29 +12,28 @@ import {
   PlusCircle,
   Search,
   Calculator,
-  RefreshCw
+  RefreshCw,
+  Info
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { api } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
-import { Project, Material } from '../types';
+import { Project } from '../types';
 
-interface PRItem {
-  material_id: string;
-  quantity: number;
-}
-
-interface MaterialWithPrice extends Material {
-  unit_price?: number;
+interface MasterMaterial {
+  id: string;
+  name: string;
+  unit: string;
+  code?: string;
 }
 
 const PurchaseRequests: React.FC = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState<any[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [materials, setMaterials] = useState<MaterialWithPrice[]>([]);
+  const [masters, setMasters] = useState<MasterMaterial[]>([]);
   const [units, setUnits] = useState<{ id: string; unit_number: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,20 +44,17 @@ const PurchaseRequests: React.FC = () => {
   const [form, setForm] = useState({
     project_id: '',
     unit_id: '',
-    description: '',
-    items: [{ material_id: '', quantity: 1 }] as PRItem[]
+    material_id: '',
+    quantity: 1,
+    description: ''
   });
-
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
 
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [projData, matData, reqData, unitData] = await Promise.all([
+      const [projData, masterData, reqData, unitData] = await Promise.all([
         api.get('projects', 'select=id,name&order=name.asc'),
-        api.get('materials', 'select=id,name,unit,unit_price&order=name.asc'),
+        api.get('materials', 'select=id,name,unit,code&order=name.asc'),
         api.get('purchase_requests', 'select=*&order=created_at.desc'),
         api.get('units', 'select=id,unit_number'),
       ]);
@@ -67,14 +63,18 @@ const PurchaseRequests: React.FC = () => {
       (projData || []).forEach((p: any) => { projectMap[p.id] = p; });
       const unitMap: Record<string, any> = {};
       (unitData || []).forEach((u: any) => { unitMap[u.id] = u; });
+      const masterMap: Record<string, any> = {};
+      (masterData || []).forEach((m: any) => { masterMap[m.id] = m; });
+
       const enrichedReqs = (reqData || []).map((r: any) => ({
         ...r,
         project: r.project_id ? (projectMap[r.project_id] || null) : null,
         unit: r.unit_id ? (unitMap[r.unit_id] || null) : null,
+        master: r.material_id ? (masterMap[r.material_id] || null) : null,
       }));
 
       setProjects(projData);
-      setMaterials(matData);
+      setMasters(masterData);
       setRequests(enrichedReqs);
     } catch (err) {
       console.error('Error fetching initial data:', err);
@@ -82,6 +82,10 @@ const PurchaseRequests: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
 
   const fetchUnitsForProject = async (projectId: string) => {
     if (!projectId) {
@@ -94,24 +98,8 @@ const PurchaseRequests: React.FC = () => {
 
   useEffect(() => {
     fetchUnitsForProject(form.project_id);
-    if (form.project_id) {
-      fetchBudgetStatus(form.project_id, form.unit_id);
-    } else {
-      setBudgetStatus([]);
-    }
+    // Budget check logic will need update to use master material mapping in the future
   }, [form.project_id, form.unit_id]);
-
-  const fetchBudgetStatus = async (projectId: string, unitId?: string) => {
-    setLoadingBudget(true);
-    try {
-      const data = await api.getBudgetStatus(projectId, unitId);
-      setBudgetStatus(data);
-    } catch (err) {
-      console.error('Error fetching budget status:', err);
-    } finally {
-      setLoadingBudget(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,17 +108,19 @@ const PurchaseRequests: React.FC = () => {
       await api.insert('purchase_requests', {
         project_id: form.project_id,
         unit_id: form.unit_id,
+        material_id: form.material_id,
+        items: [{ material_id: form.material_id, quantity: form.quantity }], 
         description: form.description,
-        status: 'PENDING',
-        items: form.items
+        status: 'PENDING'
       });
       setIsModalOpen(false);
       fetchInitialData();
       setForm({
         project_id: '',
         unit_id: '',
-        description: '',
-        items: [{ material_id: '', quantity: 1 }]
+        material_id: '',
+        quantity: 1,
+        description: ''
       });
     } catch (err) {
       console.error('Error submitting PR:', err);
@@ -140,68 +130,78 @@ const PurchaseRequests: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Purchase Requests</h1>
-            <p className="text-text-secondary">Permintaan pembelian material</p>
+            <h1 className="text-2xl font-bold text-text-primary tracking-tight">Purchase Requests</h1>
+            <p className="text-text-secondary">Permintaan pengadaan Master Material</p>
           </div>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => setIsModalOpen(true)} className="rounded-xl h-11 px-6 shadow-premium">
           <Plus className="w-4 h-4 mr-2" />
           PR Baru
         </Button>
       </div>
 
-      <Card>
+      <Card className="p-0 overflow-hidden border-none shadow-premium bg-white">
         <Table>
           <THead>
-            <TR>
+            <TR isHoverable={false}>
               <TH>No. PR / Tgl</TH>
               <TH>Proyek & Unit</TH>
-              <TH>Deskripsi</TH>
+              <TH>Material (Master)</TH>
+              <TH className="text-right">Qty</TH>
               <TH>Status</TH>
               <TH className="text-right">Aksi</TH>
             </TR>
           </THead>
           <TBody>
             {loading ? (
-              <TR>
-                <TD colSpan={5} className="text-center py-8">
-                  <RefreshCw className="animate-spin mx-auto" />
+              <TR isHoverable={false}>
+                <TD colSpan={6} className="text-center py-12">
+                  <RefreshCw className="animate-spin mx-auto text-accent-dark" />
                 </TD>
               </TR>
             ) : requests.length === 0 ? (
-              <TR>
-                <TD colSpan={5} className="text-center py-8 text-text-secondary">Tidak ada data permintaan.</TD>
+              <TR isHoverable={false}>
+                <TD colSpan={6} className="text-center py-12 text-text-muted font-medium">Tidak ada data permintaan.</TD>
               </TR>
             ) : (
               requests.map((req) => (
                 <TR key={req.id}>
-                  <TD>
-                    <div className="font-bold">PR-{req.id.slice(0, 8).toUpperCase()}</div>
-                    <div className="text-xs text-text-secondary">{formatDate(req.created_at)}</div>
+                  <TD className="py-4">
+                    <div className="font-black text-accent-dark">PR-{req.id.slice(0, 8).toUpperCase()}</div>
+                    <div className="text-[10px] text-text-muted font-bold uppercase">{formatDate(req.created_at)}</div>
                   </TD>
                   <TD>
-                    <div className="font-medium">{req.project?.name || '-'}</div>
+                    <div className="font-bold text-text-primary">{req.project?.name || '-'}</div>
                     <div className="text-xs text-text-secondary">Unit: {req.unit?.unit_number || '-'}</div>
                   </TD>
-                  <TD className="text-sm">{req.description || '-'}</TD>
                   <TD>
-                    <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${
-                      req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
-                      req.status === 'REJECTED' ? 'bg-rose-100 text-rose-700' :
-                      'bg-amber-100 text-amber-700'
+                    <div className="flex items-center gap-2">
+                      <div className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-black text-slate-600">{req.master?.code || '-'}</div>
+                      <div className="font-black text-text-primary uppercase text-sm">{req.master?.name || 'Material Deleted'}</div>
+                    </div>
+                  </TD>
+                  <TD className="text-right font-black text-text-primary">
+                    {formatNumber((req.items?.[0]?.quantity || req.quantity || 0))}
+                    <span className="ml-1 text-[10px] text-text-muted uppercase">{req.master?.unit}</span>
+                  </TD>
+                  <TD>
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                      req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                      req.status === 'REJECTED' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                      'bg-amber-50 text-amber-600 border-amber-100'
                     }`}>
                       {req.status}
                     </span>
                   </TD>
                   <TD className="text-right">
-                    <Button variant="ghost" size="sm">Detail</Button>
+                    <Button variant="ghost" size="sm" className="rounded-xl">Detail</Button>
                   </TD>
                 </TR>
               ))
@@ -216,12 +216,12 @@ const PurchaseRequests: React.FC = () => {
         title="Buat Permintaan Pembelian (PR)"
         size="lg"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold">Proyek</label>
+              <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Proyek</label>
               <select 
-                className="w-full p-2 border rounded-xl"
+                className="w-full h-12 glass-input rounded-xl px-4 text-sm font-bold focus:outline-none"
                 value={form.project_id}
                 onChange={(e) => setForm({ ...form, project_id: e.target.value })}
                 required
@@ -231,9 +231,9 @@ const PurchaseRequests: React.FC = () => {
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold">Unit</label>
+              <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Unit</label>
               <select 
-                className="w-full p-2 border rounded-xl"
+                className="w-full h-12 glass-input rounded-xl px-4 text-sm font-bold focus:outline-none"
                 value={form.unit_id}
                 onChange={(e) => setForm({ ...form, unit_id: e.target.value })}
                 required
@@ -245,105 +245,58 @@ const PurchaseRequests: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold">Deskripsi / Alasan</label>
-            <textarea 
-              className="w-full p-2 border rounded-xl"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              rows={3}
-            />
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Pilih Master Material</label>
+            <select 
+              className="w-full h-12 glass-input rounded-xl px-4 text-sm font-bold focus:outline-none"
+              value={form.material_id}
+              onChange={(e) => setForm({ ...form, material_id: e.target.value })}
+              required
+            >
+              <option value="">-- Pilih Material --</option>
+              {masters.map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.code ? `[${m.code}] ` : ''}{m.name} ({m.unit})
+                </option>
+              ))}
+            </select>
+            <div className="px-2 py-1 bg-blue-50 rounded-lg flex items-center gap-2">
+              <Info className="w-3 h-3 text-blue-600" />
+              <p className="text-[10px] text-blue-600 font-bold uppercase tracking-tight">PR hanya boleh memilih Master Material (Bukan Merk)</p>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-bold">Item Material</label>
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm"
-                onClick={() => setForm({ ...form, items: [...form.items, { material_id: '', quantity: 1 }] })}
-              >
-                <PlusCircle className="w-4 h-4 mr-2" /> Tambah Item
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {form.items.map((item, idx) => (
-                <div key={idx} className="flex gap-2 items-end">
-                  <div className="flex-1 space-y-1">
-                    <select 
-                      className="w-full p-2 border rounded-xl text-sm"
-                      value={item.material_id}
-                      onChange={(e) => {
-                        const newItems = [...form.items];
-                        newItems[idx].material_id = e.target.value;
-                        setForm({ ...form, items: newItems });
-                      }}
-                      required
-                    >
-                      <option value="">Pilih Material</option>
-                      <optgroup label="MATERIAL DALAM RAB">
-                        {budgetStatus.map(b => (
-                          <option key={b.material_id} value={b.material_id}>
-                            💎 {b.name} (Sisa: {Math.max(0, b.quota - b.used)} {b.unit})
-                          </option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="LAINNYA (NON-RAB)">
-                        {materials
-                          .filter(m => !budgetStatus.some(b => b.material_id === m.id))
-                          .map(m => <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>)}
-                      </optgroup>
-                    </select>
-                    {item.material_id && (
-                      <div className="mt-1 px-1">
-                        {budgetStatus.find(b => b.material_id === item.material_id) ? (
-                          <div className="flex justify-between text-[10px] font-bold text-emerald-600 uppercase">
-                            <span>Quota RAB: {budgetStatus.find(b => b.material_id === item.material_id).quota}</span>
-                            <span>Sisa: {budgetStatus.find(b => b.material_id === item.material_id).quota - budgetStatus.find(b => b.material_id === item.material_id).used}</span>
-                          </div>
-                        ) : (
-                          <div className="text-[10px] font-bold text-amber-600 uppercase">
-                            ⚠️ Material tidak terdaftar di RAB Unit ini
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="w-24 space-y-1">
-                    <input 
-                      type="number"
-                      className="w-full p-2 border rounded-xl text-sm"
-                      value={item.quantity}
-                      onChange={(e) => {
-                        const newItems = [...form.items];
-                        newItems[idx].quantity = parseInt(e.target.value);
-                        setForm({ ...form, items: newItems });
-                      }}
-                      min="1"
-                      required
-                    />
-                  </div>
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-rose-500"
-                    onClick={() => {
-                      const newItems = form.items.filter((_, i) => i !== idx);
-                      setForm({ ...form, items: newItems });
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Kuantitas Permintaan</label>
+            <div className="relative">
+              <Input 
+                type="number"
+                className="h-12 glass-input rounded-xl px-4 font-black text-lg"
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: parseInt(e.target.value) || 0 })}
+                min="1"
+                required
+              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-text-muted uppercase tracking-widest">
+                {masters.find(m => m.id === form.material_id)?.unit}
+              </div>
             </div>
           </div>
 
+          <div className="space-y-2">
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Keterangan / Alasan</label>
+            <textarea 
+              className="w-full p-4 glass-input rounded-xl text-sm font-medium focus:outline-none"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows={3}
+              placeholder="Contoh: Stok menipis, kebutuhan untuk cor lantai 2..."
+            />
+          </div>
+
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? 'Menyimpan...' : 'Simpan PR'}
+            <Button type="button" variant="ghost" className="h-12 rounded-xl" onClick={() => setIsModalOpen(false)}>Batal</Button>
+            <Button type="submit" className="h-12 rounded-xl px-8 font-black shadow-premium" isLoading={submitting}>
+              Simpan Permintaan
             </Button>
           </div>
         </form>
@@ -353,3 +306,8 @@ const PurchaseRequests: React.FC = () => {
 };
 
 export default PurchaseRequests;
+
+// Adding formatNumber if not imported
+const formatNumber = (num: number) => {
+  return new Intl.NumberFormat('id-ID').format(num);
+};

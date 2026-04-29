@@ -11,8 +11,8 @@ import { Info } from 'lucide-react';
 
 const poSchema = z.object({
   project_id: z.string().min(1, 'Proyek harus dipilih'),
-  kode_material: z.string().min(1, 'Master Material harus dipilih'),
-  id_variant: z.number().min(1, 'Variant harus dipilih'),
+  material_id: z.string().min(1, 'Master Material harus dipilih'),
+  id_variant: z.number().optional(),
   supplier_id: z.string().min(1, 'Supplier harus dipilih'),
   quantity: z.number().min(1, 'Jumlah minimal 1'),
   unit_price: z.number().min(0, 'Harga harus positif'),
@@ -43,29 +43,33 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       quantity: initialPR?.quantity || 1,
       project_id: initialPR?.project_id || '',
-      kode_material: initialPR?.kode_material || '',
+      material_id: initialPR?.material_id || '',
+      id_variant: undefined,
       pr_id: initialPR?.id || undefined,
     },
   });
 
-  const selectedKode = watch('kode_material');
+  const [isNewVariant, setIsNewVariant] = useState(false);
+  const [newVariant, setNewVariant] = useState({ merk: '', spesifikasi: '' });
+
+  const selectedMaterialId = watch('material_id');
 
   useEffect(() => {
     fetchInitialData();
   }, []);
 
   useEffect(() => {
-    if (selectedKode) {
-      fetchVariants(selectedKode);
+    if (selectedMaterialId) {
+      fetchVariants(selectedMaterialId);
     } else {
       setVariants([]);
     }
-  }, [selectedKode]);
+  }, [selectedMaterialId]);
 
   const fetchInitialData = async () => {
     try {
       const [masterData, supplierData, projectData] = await Promise.all([
-        api.get('master_materials', 'select=*&order=nama_material.asc'),
+        api.get('materials', 'select=id,name&order=name.asc'),
         api.get('suppliers', 'select=id,name&order=name.asc'),
         api.get('projects', 'select=id,name&order=name.asc')
       ]);
@@ -77,9 +81,9 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
     }
   };
 
-  const fetchVariants = async (kode: string) => {
+  const fetchVariants = async (id: string) => {
     try {
-      const data = await api.get('material_variants', `kode_material=eq.${kode}&select=*&order=merk.asc`);
+      const data = await api.get('material_variants', `material_id=eq.${id}&select=*&order=merk.asc`);
       setVariants(data);
     } catch (err) {
       console.error('Error fetching variants:', err);
@@ -89,11 +93,36 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
   const onSubmit = async (values: POFormValues) => {
     setLoading(true);
     try {
+      let finalVariantId = values.id_variant;
+
+      // Jika user memilih tambah varian baru
+      if (isNewVariant) {
+        if (!newVariant.merk) {
+          alert('Nama Merk harus diisi untuk varian baru');
+          setLoading(false);
+          return;
+        }
+        const createdVariant = await api.insert('material_variants', {
+          material_id: values.material_id,
+          merk: newVariant.merk,
+          spesifikasi: newVariant.spesifikasi,
+          stok: 0
+        });
+        finalVariantId = createdVariant.id;
+      }
+
+      if (!finalVariantId) {
+        alert('Silakan pilih varian atau tambah merk baru');
+        setLoading(false);
+        return;
+      }
+
       const po_number = `PO-${Date.now().toString().slice(-8)}`;
       const total_price = values.quantity * values.unit_price;
 
       await api.insert('purchase_orders', {
         ...values,
+        id_variant: finalVariantId,
         po_number,
         total_price,
         status: 'PENDING'
@@ -139,24 +168,55 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-text-primary">Master Material</label>
-            <select {...register('kode_material')} className="w-full h-12 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none">
+            <select {...register('material_id')} className="w-full h-12 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none">
               <option value="">Pilih Master</option>
               {masters.map(m => (
-                <option key={m.kode_material} value={m.kode_material}>{m.kode_material} - {m.nama_material}</option>
+                <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
-            {errors.kode_material && <p className="text-xs text-red-500">{errors.kode_material.message}</p>}
+            {errors.material_id && <p className="text-xs text-red-500">{errors.material_id.message}</p>}
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-text-primary">Variant (Merk)</label>
-            <select {...register('id_variant', { valueAsNumber: true })} disabled={!selectedKode} className="w-full h-12 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none disabled:opacity-50">
-              <option value="">Pilih Variant / Merk</option>
-              {variants.map(v => (
-                <option key={v.id} value={v.id}>{v.merk} {v.spesifikasi ? `(${v.spesifikasi})` : ''}</option>
-              ))}
-            </select>
-            {errors.id_variant && <p className="text-xs text-red-500">{errors.id_variant.message}</p>}
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-text-primary">Variant (Merk)</label>
+              <button 
+                type="button"
+                onClick={() => setIsNewVariant(!isNewVariant)}
+                className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline"
+              >
+                {isNewVariant ? '← Pilih yang ada' : '+ Merk Baru'}
+              </button>
+            </div>
+            
+            {isNewVariant ? (
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Nama Merk..." 
+                  value={newVariant.merk}
+                  onChange={(e) => setNewVariant({ ...newVariant, merk: e.target.value })}
+                  className="h-12 text-sm rounded-xl"
+                />
+                <Input 
+                  placeholder="Spek (Opsional)" 
+                  value={newVariant.spesifikasi}
+                  onChange={(e) => setNewVariant({ ...newVariant, spesifikasi: e.target.value })}
+                  className="h-12 text-sm rounded-xl"
+                />
+              </div>
+            ) : (
+              <select 
+                {...register('id_variant', { valueAsNumber: true })} 
+                disabled={!selectedMaterialId} 
+                className="w-full h-12 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none disabled:opacity-50"
+              >
+                <option value="">Pilih Variant / Merk</option>
+                {variants.map(v => (
+                  <option key={v.id} value={v.id}>{v.merk} {v.spesifikasi ? `(${v.spesifikasi})` : ''}</option>
+                ))}
+              </select>
+            )}
+            {errors.id_variant && !isNewVariant && <p className="text-xs text-red-500">{errors.id_variant.message}</p>}
           </div>
         </div>
       </div>

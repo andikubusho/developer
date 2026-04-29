@@ -21,7 +21,7 @@ import { PurchaseOrder, Material } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
-import { formatDate, formatCurrency } from '../lib/utils';
+import { formatDate, formatCurrency, cn } from '../lib/utils';
 import { PurchaseOrderForm } from '../components/forms/PurchaseOrderForm';
 import { useAuth } from '../contexts/AuthContext';
 import { getMockData, saveMockData } from '../lib/storage';
@@ -46,8 +46,9 @@ const PurchaseOrders: React.FC = () => {
   const [approvedPRItems, setApprovedPRItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | undefined>();
+   const [isModalOpen, setIsModalOpen] = useState(false);
+   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | undefined>();
+   const [selectedPR, setSelectedPR] = useState<any | null>(null);
 
   useEffect(() => {
     if (division === 'marketing' || division === 'teknik' || division === 'audit') {
@@ -84,7 +85,7 @@ const PurchaseOrders: React.FC = () => {
 
       // Use the standardized api utility
       const poData = await api.get('purchase_orders', 'select=*,project:projects(name),supplier:suppliers(name)&order=created_at.desc');
-      const prData = await api.get('purchase_requests', 'select=*,project:projects(name),unit:units(unit_number)&order=created_at.desc');
+      const prData = await api.get('purchase_requests', 'select=*,project:projects(name),unit:units(unit_number),master:materials(name,code)&order=created_at.desc');
       
       console.log('📦 Purchase Orders Response:', poData);
       setOrders(poData);
@@ -95,10 +96,12 @@ const PurchaseOrders: React.FC = () => {
         if (pr.status === 'APPROVED') {
           (pr.items || []).forEach((item: any) => {
             approvedItems.push({
-              ...item,
+               ...item,
               prId: pr.id,
               projectName: pr.project?.name || 'Unknown',
               unitNumber: pr.unit?.unit_number || '-',
+              material_id: pr.material_id,
+              master: pr.master,
               createdAt: pr.createdAt
             });
           });
@@ -262,12 +265,27 @@ const PurchaseOrders: React.FC = () => {
             ) : (
               approvedPRItems.map((item, idx) => (
                 <TR key={idx}>
-                  <TD>{item.projectName}</TD>
-                  <TD>{item.unitNumber}</TD>
-                  <TD>{item.material_id}</TD>
-                  <TD>{item.quantity}</TD>
+                  <TD className="py-3 font-bold text-text-primary">{item.projectName}</TD>
+                  <TD className="text-sm font-medium">{item.unitNumber}</TD>
+                    <TD>
+                       <div className="flex items-center gap-2">
+                         <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-black text-slate-600">{item.master?.code || '-'}</span>
+                         <span className="font-bold text-text-primary">{item.master?.name || item.nama_material}</span>
+                       </div>
+                    </TD>
+                  <TD className="font-black text-text-primary">{item.quantity}</TD>
                   <TD>
-                    <Button size="sm" variant="outline">Buat PO</Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="rounded-xl"
+                      onClick={() => {
+                        setSelectedPR(item);
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      Buat PO
+                    </Button>
                   </TD>
                 </TR>
               ))
@@ -278,17 +296,24 @@ const PurchaseOrders: React.FC = () => {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedPR(null);
+        }}
         title={selectedOrder ? 'Edit Purchase Order' : 'Tambah Purchase Order'}
         size="lg"
       >
         <PurchaseOrderForm
-          materials={materials}
           onSuccess={() => {
             setIsModalOpen(false);
+            setSelectedPR(null);
             fetchOrders();
           }}
-          onCancel={() => setIsModalOpen(false)}
+          onCancel={() => {
+            setIsModalOpen(false);
+            setSelectedPR(null);
+          }}
+          initialPR={selectedPR}
         />
       </Modal>
     </div>

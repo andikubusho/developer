@@ -51,11 +51,18 @@ export const api = {
   insert: (table: string, data: any) => 
     apiRequest(table, { method: 'POST', body: JSON.stringify(data) }),
     
-  update: (table: string, id: string | number, data: any) => 
-    apiRequest(`${table}?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  upsert: (table: string, data: any, on_conflict: string = 'id') => 
+    apiRequest(`${table}?on_conflict=${on_conflict}`, { 
+      method: 'POST', 
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify(data) 
+    }),
     
-  delete: (table: string, id: string | number) => 
-    apiRequest(`${table}?id=eq.${id}`, { method: 'DELETE' }),
+  update: (table: string, id: string | number, data: any, pk: string = 'id') => 
+    apiRequest(`${table}?${pk}=eq.${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    
+  delete: (table: string, id: string | number, pk: string = 'id') => 
+    apiRequest(`${table}?${pk}=eq.${id}`, { method: 'DELETE' }),
 
   rpc: (functionName: string, params: any) =>
     apiRequest(`rpc/${functionName}`, { method: 'POST', body: JSON.stringify(params) }),
