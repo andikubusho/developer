@@ -150,8 +150,8 @@ const SPK: React.FC = () => {
             .info-grid { display: grid; grid-template-columns: 160px 1fr; gap: 10px; margin-bottom: 30px; }
             .label { font-weight: bold; }
             .description { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 30px; line-height: 1.6; }
-            .footer { margin-top: 50px; display: flex; justify-content: space-between; }
-            .sign-box { text-align: center; width: 200px; }
+            .footer { margin-top: 50px; display: flex; justify-content: space-between; gap: 20px; }
+            .sign-box { text-align: center; width: 180px; }
             .sign-line { border-bottom: 1px solid #333; margin-top: 60px; margin-bottom: 5px; }
           </style>
         </head>
@@ -172,8 +172,9 @@ const SPK: React.FC = () => {
           <div class="label">Deskripsi & Lingkup Pekerjaan:</div>
           <div class="description">${spk.work_description || 'Tidak ada deskripsi detail.'}</div>
           <div class="footer">
-            <div class="sign-box"><div>Pihak Pertama,</div><div class="sign-line"></div><div>( Bag. Teknik / Proyek )</div></div>
-            <div class="sign-box"><div>Pihak Kedua,</div><div class="sign-line"></div><div>( ${spk.contractor_name} )</div></div>
+            <div class="sign-box"><div>Dibuat oleh,</div><div class="sign-line"></div><div>( Manajer Proyek )</div></div>
+            <div class="sign-box"><div>Penerima Kerja,</div><div class="sign-line"></div><div>( ${spk.contractor_name} )</div></div>
+            <div class="sign-box"><div>Disetujui oleh,</div><div class="sign-line"></div><div>( Management )</div></div>
           </div>
           <script>window.onload = function() { window.print(); }</script>
         </body>
