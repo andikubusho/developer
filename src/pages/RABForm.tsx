@@ -17,7 +17,8 @@ import {
   Copy,
   Search,
   Download,
-  Upload
+  Upload,
+  FileText
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
@@ -108,6 +109,7 @@ const RABForm: React.FC = () => {
     nama_proyek: '',
     lokasi: '',
     tanggal: new Date().toISOString().split('T')[0],
+    keterangan: '',
   });
 
   const [tree, setTree] = useState<RABNode[]>([]);
@@ -193,7 +195,8 @@ const RABForm: React.FC = () => {
               unit_id: resolvedUnitId,
               nama_proyek: proj.nama_proyek || '',
               lokasi: proj.lokasi || '',
-              tanggal: proj.created_at ? proj.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
+              tanggal: proj.created_at ? proj.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              keterangan: proj.keterangan || ''
             });
 
             if (resolvedProjectId) {
@@ -704,6 +707,7 @@ const RABForm: React.FC = () => {
           kategori: projectHeader.unit_id || null,
           nama_proyek: projectHeader.nama_proyek,
           lokasi: projectHeader.lokasi,
+          keterangan: projectHeader.keterangan,
           total_anggaran: grandTotal,
         });
         projectId = editId;
@@ -721,6 +725,7 @@ const RABForm: React.FC = () => {
           kategori: projectHeader.unit_id || null,
           nama_proyek: projectHeader.nama_proyek,
           lokasi: projectHeader.lokasi,
+          keterangan: projectHeader.keterangan,
           total_anggaran: grandTotal,
         });
         projectId = project[0].id;
@@ -787,6 +792,7 @@ const RABForm: React.FC = () => {
         nama_proyek: '',
         lokasi: '',
         tanggal: new Date().toISOString().split('T')[0],
+        keterangan: '',
       });
     }
   };
@@ -1099,26 +1105,39 @@ const RABForm: React.FC = () => {
       {/* Project Info Card */}
       <Card className="p-8 border-none shadow-premium bg-white rounded-[2rem]">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="space-y-2">
-            <label className="text-xs font-black text-text-primary uppercase tracking-widest block flex items-center gap-2 ml-1">
-              <Building2 className="w-3 h-3 text-accent-dark" /> Pilih Master Proyek
-            </label>
-            <select 
-              value={projectHeader.project_id}
-              onChange={(e) => {
-                const proj = projects.find(p => p.id === e.target.value);
-                setProjectHeader({ 
-                  ...projectHeader, 
-                  project_id: e.target.value,
-                  nama_proyek: proj?.name || '',
-                  lokasi: proj?.location || ''
-                });
-              }}
-              className="w-full h-14 glass-input border-none rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none"
-            >
-              <option value="">-- Pilih Proyek --</option>
-              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-text-primary uppercase tracking-widest block flex items-center gap-2 ml-1">
+                <Building2 className="w-3 h-3 text-accent-dark" /> Pilih Master Proyek
+              </label>
+              <select 
+                value={projectHeader.project_id}
+                onChange={(e) => {
+                  const proj = projects.find(p => p.id === e.target.value);
+                  setProjectHeader({ 
+                    ...projectHeader, 
+                    project_id: e.target.value,
+                    nama_proyek: proj?.name || '',
+                    lokasi: proj?.location || ''
+                  });
+                }}
+                className="w-full h-14 glass-input border-none rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none"
+              >
+                <option value="">-- Pilih Proyek --</option>
+                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-text-muted uppercase tracking-widest block flex items-center gap-2 ml-1">
+                <FileText className="w-3 h-3 text-accent-dark" /> Keterangan Pekerjaan
+              </label>
+              <Input 
+                value={projectHeader.keterangan}
+                onChange={(e) => setProjectHeader({ ...projectHeader, keterangan: e.target.value })}
+                placeholder="Contoh: Pekerjaan Pembangunan Tahap 1..."
+                className="h-14 text-base font-bold rounded-xl"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <label className="text-xs font-black text-text-muted uppercase tracking-widest block flex items-center gap-2 ml-1">
