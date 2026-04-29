@@ -15,7 +15,9 @@ import {
   Layers,
   ArrowLeft,
   Copy,
-  Search
+  Search,
+  Download,
+  Upload
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
@@ -23,6 +25,7 @@ import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { api } from '../lib/api';
 import { formatCurrency, formatNumber, cn, formatDate } from '../lib/utils';
+import * as XLSX from 'xlsx';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Project, Unit } from '../types';
@@ -298,6 +301,138 @@ const RABForm: React.FC = () => {
     } finally {
       setLoadingExisting(false);
     }
+  };
+
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Level': 0,
+        'Uraian': 'PEKERJAAN PERSIAPAN',
+        'Volume': '',
+        'Satuan': '',
+        'Koefisien': '',
+        'Harga Material': '',
+        'Harga Upah': '',
+        'Harga RAB (Manual)': '',
+        'Material ID': ''
+      },
+      {
+        'Level': 1,
+        'Uraian': 'Pembersihan Lahan',
+        'Volume': '',
+        'Satuan': '',
+        'Koefisien': '',
+        'Harga Material': '',
+        'Harga Upah': '',
+        'Harga RAB (Manual)': '',
+        'Material ID': ''
+      },
+      {
+        'Level': 2,
+        'Uraian': 'Pembersihan dan Perataan',
+        'Volume': 100,
+        'Satuan': 'm2',
+        'Koefisien': '',
+        'Harga Material': '',
+        'Harga Upah': '',
+        'Harga RAB (Manual)': '',
+        'Material ID': ''
+      },
+      {
+        'Level': 3,
+        'Uraian': 'Pekerja',
+        'Volume': 1,
+        'Satuan': 'OH',
+        'Koefisien': 0.1,
+        'Harga Material': 0,
+        'Harga Upah': 120000,
+        'Harga RAB (Manual)': '',
+        'Material ID': ''
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 8 }, { wch: 40 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template RAB");
+    XLSX.writeFile(wb, "Template_RAB.xlsx");
+  };
+
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (tree.length > 0 && !confirm('Mengimport Excel akan menghapus data yang ada di form. Lanjutkan?')) {
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws) as any[];
+
+        if (data.length === 0) {
+          alert('Excel kosong!');
+          return;
+        }
+
+        const newTree: RABNode[] = [];
+        const lastNodes: Record<number, RABNode> = {};
+
+        data.forEach((row: any) => {
+          const level = parseInt(row['Level']);
+          if (isNaN(level) || level < 0 || level > 3) return;
+
+          const node: RABNode = {
+            id: generateId(),
+            parent_id: level > 0 ? (lastNodes[level - 1]?.id || null) : null,
+            level: level as any,
+            uraian: row['Uraian'] || '',
+            volume: row['Volume'] != null && row['Volume'] !== '' ? Number(row['Volume']) : null,
+            satuan: row['Satuan'] || '',
+            koeff: row['Koefisien'] != null && row['Koefisien'] !== '' ? Number(row['Koefisien']) : null,
+            material_price: row['Harga Material'] != null && row['Harga Material'] !== '' ? Number(row['Harga Material']) : 0,
+            wage_price: row['Harga Upah'] != null && row['Harga Upah'] !== '' ? Number(row['Harga Upah']) : 0,
+            harga_rab: row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '' ? Number(row['Harga RAB (Manual)']) : null,
+            is_manual: row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '',
+            material_id: row['Material ID'] || null,
+            urutan: 0,
+            isExpanded: true,
+            children: []
+          };
+
+          lastNodes[level] = node;
+
+          if (level === 0) {
+            newTree.push(node);
+          } else {
+            const parent = lastNodes[level - 1];
+            if (parent) {
+              parent.children.push(node);
+            } else {
+              // Fallback if parent not found due to bad level sequence
+              newTree.push(node);
+            }
+          }
+        });
+
+        setTree(newTree);
+        alert('RAB berhasil diimport!');
+      } catch (err) {
+        console.error(err);
+        alert('Gagal mengimport Excel. Pastikan format kolom sesuai template.');
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = '';
   };
 
   // --- Tree Mutations ---
@@ -801,15 +936,39 @@ const RABForm: React.FC = () => {
             <p className="text-text-secondary font-medium">Buat rincian anggaran biaya konstruksi baru</p>
           </div>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setIsCopyModalOpen(true)} className="rounded-xl h-12 px-6 bg-white shadow-glass">
-            <Copy className="w-5 h-5 mr-2 text-accent-dark" /> Salin dari RAB Lain
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            onClick={handleDownloadTemplate}
+            className="h-12 px-6 rounded-xl bg-white border border-white/40 shadow-glass font-bold text-text-primary"
+          >
+            <Download className="w-4 h-4 mr-2 text-accent-dark" />
+            Template Excel
           </Button>
-          <Button variant="ghost" onClick={handleReset} className="rounded-xl h-12 px-6 glass-input">
-            <RotateCcw className="w-5 h-5 mr-2" /> Reset
+          <label className="cursor-pointer">
+            <input 
+              type="file" 
+              accept=".xlsx, .xls" 
+              className="hidden" 
+              onChange={handleImportExcel}
+            />
+            <div className="h-12 px-6 rounded-xl bg-white border border-white/40 shadow-glass font-bold text-text-primary flex items-center hover:bg-white/50 transition-all">
+              <Upload className="w-4 h-4 mr-2 text-emerald-600" />
+              Upload RAB
+            </div>
+          </label>
+          <Button variant="outline" onClick={() => setIsCopyModalOpen(true)} className="h-12 px-6 rounded-xl bg-white shadow-glass font-bold text-text-primary">
+            <Copy className="w-4 h-4 mr-2 text-accent-dark" /> Salin Dari RAB Lain
           </Button>
-          <Button onClick={handleSave} isLoading={submitting} className="rounded-xl h-12 px-8 shadow-glass shadow-glass">
-            <Save className="w-5 h-5 mr-2" /> Simpan RAB
+          <Button variant="ghost" onClick={handleReset} className="h-12 px-6 rounded-xl glass-input font-bold text-rose-500">
+            <RotateCcw className="w-4 h-4 mr-2" /> Reset
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            isLoading={submitting}
+            className="h-12 px-8 rounded-xl shadow-premium font-black text-xs uppercase tracking-widest"
+          >
+            <Save className="w-4 h-4 mr-2" /> {submitting ? 'Menyimpan...' : 'Simpan RAB'}
           </Button>
         </div>
       </div>
