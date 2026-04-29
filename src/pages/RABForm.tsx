@@ -627,9 +627,9 @@ const RABForm: React.FC = () => {
             if (node.volume !== null && node.volume !== 0) {
               jumlah_material = node.volume;
             } else {
-              jumlah_material = (node.koeff || 0) * (parentVolume || 1);
+              jumlah_material = (node.koeff || 0) * (parentVolume || 0);
             }
-            
+
             total_material = jumlah_material * unitTotal;
             subtotal = total_material;
           }
@@ -638,7 +638,7 @@ const RABForm: React.FC = () => {
           children = calc(node.children, node.volume);
         } else {
           children = calc(node.children, node.level === 2 ? node.volume : parentVolume);
-          subtotal = children.reduce((sum, child) => sum + child.subtotal, 0);
+          subtotal = children.reduce((sum, child) => sum + (child.subtotal || 0), 0);
         }
 
         return {
@@ -757,7 +757,9 @@ const RABForm: React.FC = () => {
             koeff: node.koeff,
             material_price: node.material_price,
             wage_price: node.wage_price,
-            harga_rab: (node.material_price || 0) + (node.wage_price || 0),
+            harga_rab: (node.level === 3 && node.is_manual)
+              ? (node.harga_rab || 0)
+              : (node.material_price || 0) + (node.wage_price || 0),
             harga_pasar: node.harga_pasar,
             is_manual: node.is_manual || false,
             urutan: i
