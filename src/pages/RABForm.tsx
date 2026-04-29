@@ -24,7 +24,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { api } from '../lib/api';
-import { formatCurrency, formatNumber, cn, formatDate } from '../lib/utils';
+import { formatCurrency, cn, formatDate } from '../lib/utils';
 import * as XLSX from 'xlsx';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -821,9 +821,9 @@ const RABForm: React.FC = () => {
               {isLevel3 && !node.is_manual && (
                 <input
                   type="number"
-                  step="0.001"
+                  step="any"
                   value={node.koeff ?? ''}
-                  onChange={(e) => updateNode(node.id, { koeff: Number(e.target.value) })}
+                  onChange={(e) => updateNode(node.id, { koeff: e.target.value === '' ? null : Number(e.target.value) })}
                   className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
                 />
               )}
@@ -837,18 +837,18 @@ const RABForm: React.FC = () => {
               {isLevel2 && (
                 <input
                   type="number"
-                  step="0.01"
+                  step="any"
                   value={node.volume ?? ''}
-                  onChange={(e) => updateNode(node.id, { volume: Number(e.target.value) })}
+                  onChange={(e) => updateNode(node.id, { volume: e.target.value === '' ? null : Number(e.target.value) })}
                   className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
                 />
               )}
               {isLevel3 && !node.is_manual && (
                 <input
                   type="number"
-                  step="0.01"
+                  step="any"
                   value={node.volume ?? ''}
-                  onChange={(e) => updateNode(node.id, { volume: Number(e.target.value) })}
+                  onChange={(e) => updateNode(node.id, { volume: e.target.value === '' ? null : Number(e.target.value) })}
                   placeholder="0"
                   className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
                 />
@@ -872,21 +872,14 @@ const RABForm: React.FC = () => {
             <TD className="px-4 py-3 border-r border-white/40 w-44">
               {((isLevel3 && !node.is_manual) || (isLevel2 && node.is_manual)) && (
                 <div className="flex flex-col items-end gap-0.5">
-                  <div className="flex items-center w-full">
-                    <span className="text-[10px] text-text-muted mr-1">Rp</span>
-                    <input
-                      type="text"
-                      value={node.material_price !== null ? formatNumber(node.material_price) : ''}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\./g, '');
-                        if (val === '' || /^\d+$/.test(val)) {
-                          updateNode(node.id, { material_price: val === '' ? null : Number(val) });
-                        }
-                      }}
-                      placeholder="0"
-                      className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
-                    />
-                  </div>
+                  <input
+                    type="number"
+                    step="any"
+                    value={node.material_price ?? ''}
+                    onChange={(e) => updateNode(node.id, { material_price: e.target.value === '' ? null : Number(e.target.value) })}
+                    placeholder="0"
+                    className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
+                  />
                   {isLevel2 && node.is_manual && (
                     <span className="text-[9px] text-text-muted">per {node.satuan || 'satuan'}</span>
                   )}
@@ -898,21 +891,14 @@ const RABForm: React.FC = () => {
             <TD className="px-4 py-3 border-r border-white/40 w-44">
               {((isLevel3 && !node.is_manual) || (isLevel2 && node.is_manual)) && (
                 <div className="flex flex-col items-end gap-0.5">
-                  <div className="flex items-center w-full">
-                    <span className="text-[10px] text-text-muted mr-1">Rp</span>
-                    <input
-                      type="text"
-                      value={node.wage_price !== null ? formatNumber(node.wage_price) : ''}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\./g, '');
-                        if (val === '' || /^\d+$/.test(val)) {
-                          updateNode(node.id, { wage_price: val === '' ? null : Number(val) });
-                        }
-                      }}
-                      placeholder="0"
-                      className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
-                    />
-                  </div>
+                  <input
+                    type="number"
+                    step="any"
+                    value={node.wage_price ?? ''}
+                    onChange={(e) => updateNode(node.id, { wage_price: e.target.value === '' ? null : Number(e.target.value) })}
+                    placeholder="0"
+                    className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
+                  />
                   {isLevel2 && node.is_manual && (
                     <span className="text-[9px] text-text-muted">per {node.satuan || 'satuan'}</span>
                   )}
@@ -924,16 +910,11 @@ const RABForm: React.FC = () => {
             <TD className="px-4 py-3 font-bold text-right w-52">
               {isLevel3 && node.is_manual ? (
                 <div className="flex items-center justify-end">
-                   <span className="text-[10px] text-emerald-700 mr-1">Rp</span>
                    <input
-                    type="text"
-                    value={node.harga_rab !== null ? formatNumber(node.harga_rab) : ''}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\./g, '');
-                      if (val === '' || /^\d+$/.test(val)) {
-                        updateNode(node.id, { harga_rab: val === '' ? null : Number(val) });
-                      }
-                    }}
+                    type="number"
+                    step="any"
+                    value={node.harga_rab ?? ''}
+                    onChange={(e) => updateNode(node.id, { harga_rab: e.target.value === '' ? null : Number(e.target.value) })}
                     placeholder="0"
                     className="bg-transparent border-none focus:ring-0 w-32 text-right p-0 font-bold text-emerald-700"
                   />
