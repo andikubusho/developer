@@ -385,6 +385,45 @@ const RABForm: React.FC = () => {
     XLSX.writeFile(wb, "Template_RAB.xlsx");
   };
 
+  const handleExportExcel = () => {
+    if (tree.length === 0) {
+      alert('Belum ada data untuk di-export!');
+      return;
+    }
+
+    const flatData: any[] = [];
+    
+    const flatten = (nodes: any[]) => {
+      nodes.forEach(node => {
+        flatData.push({
+          'Level': node.level,
+          'Uraian': node.uraian,
+          'Volume': node.volume,
+          'Satuan': node.satuan,
+          'Koefisien': node.koeff,
+          'Harga Material': node.material_price,
+          'Harga Upah': node.wage_price,
+          'Harga RAB (Manual)': node.is_manual ? node.harga_rab : '',
+          'Material ID': node.material_id
+        });
+        if (node.children && node.children.length > 0) {
+          flatten(node.children);
+        }
+      });
+    };
+    
+    flatten(computedTree);
+    
+    const ws = XLSX.utils.json_to_sheet(flatData);
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 8 }, { wch: 40 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "RAB Data");
+    XLSX.writeFile(wb, `RAB_${projectHeader.nama_proyek || 'Export'}.xlsx`);
+  };
+
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1019,7 +1058,15 @@ const RABForm: React.FC = () => {
             className="h-12 px-6 rounded-xl bg-white border border-white/40 shadow-glass font-bold text-text-primary"
           >
             <Download className="w-4 h-4 mr-2 text-accent-dark" />
-            Template Excel
+            Template
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleExportExcel}
+            className="h-12 px-6 rounded-xl bg-white border border-white/40 shadow-glass font-bold text-emerald-600"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Download Excel
           </Button>
           <label className="cursor-pointer">
             <input 

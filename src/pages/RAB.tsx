@@ -204,6 +204,58 @@ const RAB: React.FC = () => {
     e.target.value = '';
   };
 
+  const handleExportRAB = async (rabId: string, projectName: string) => {
+    try {
+      const { data: items, error } = await api.from('rab_items').select('*').eq('rab_project_id', rabId).order('urutan');
+      if (error) throw error;
+      if (!items) return;
+
+      const buildTree = (parentId: string | null = null): any[] => {
+        return items
+          .filter(i => i.parent_id === parentId)
+          .map(i => ({
+            ...i,
+            children: buildTree(i.id)
+          }));
+      };
+
+      const tree = buildTree(null);
+      const flatData: any[] = [];
+      
+      const flatten = (nodes: any[]) => {
+        nodes.forEach(node => {
+          flatData.push({
+            'Level': node.level,
+            'Uraian': node.uraian,
+            'Volume': node.volume,
+            'Satuan': node.satuan,
+            'Koefisien': node.koeff,
+            'Harga Material': node.material_price,
+            'Harga Upah': node.wage_price,
+            'Harga RAB (Manual)': node.is_manual ? (node.harga_rab || '') : '',
+            'Material ID': node.material_id
+          });
+          if (node.children && node.children.length > 0) {
+            flatten(node.children);
+          }
+        });
+      };
+      
+      flatten(tree);
+      
+      const ws = XLSX.utils.json_to_sheet(flatData);
+      ws['!cols'] = [
+        { wch: 8 }, { wch: 40 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "RAB Data");
+      XLSX.writeFile(wb, `RAB_${projectName}.xlsx`);
+    } catch (error: any) {
+      console.error(error);
+      alert(`Gagal mengekspor RAB: ${error.message}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -312,9 +364,18 @@ const RAB: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50"
+                        onClick={(e) => { e.stopPropagation(); handleExportRAB(r.id, r.nama_proyek); }}
+                        title="Download Excel"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50"
                         onClick={(e) => handleDelete(e, r.id)}
-                        title="Hapus RAB"
+                        title="Hapus"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
