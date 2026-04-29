@@ -294,8 +294,31 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           amount: inst.amount,
           status: 'unpaid',
         }));
-        
+
         await api.insert('installments', installmentPayload);
+      }
+
+      // Auto-create SPK kontraktor untuk setiap penjualan baru
+      if (!initialData && values.project_id) {
+        const customerName = rawCustomers.find((c: any) => c.id === finalCustomerId)?.full_name
+          || rawLeads.find((l: any) => l.id === finalCustomerId)?.name
+          || 'Konsumen';
+        const unitNumber = units.find((u: any) => u.id === values.unit_id)?.unit_number || '';
+        try {
+          await api.insert('spks', {
+            id: crypto.randomUUID(),
+            project_id: values.project_id,
+            unit_id: isValidUuid(values.unit_id) ? values.unit_id : null,
+            contractor_name: 'Belum Ditentukan',
+            work_description: `Pembangunan unit ${unitNumber} atas nama ${customerName}`,
+            contract_value: 0,
+            start_date: values.sale_date,
+            status: 'active',
+            created_at: new Date().toISOString(),
+          });
+        } catch (spkErr) {
+          console.error('Auto-create SPK gagal (tidak mempengaruhi penjualan):', spkErr);
+        }
       }
 
       onSuccess();
