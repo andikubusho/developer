@@ -26,7 +26,7 @@ import { Input } from '../components/ui/Input';
 import { api } from '../lib/api';
 import { formatCurrency, formatNumber, cn, formatDate } from '../lib/utils';
 import * as XLSX from 'xlsx';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Project, Unit } from '../types';
 
@@ -96,6 +96,7 @@ const calculateNodeTotal = (node: RABNode): number => {
 const RABForm: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const editId = searchParams.get('id');
   const { setDivision } = useAuth();
   const [submitting, setSubmitting] = useState(false);
@@ -114,6 +115,15 @@ const RABForm: React.FC = () => {
   const [existingRabs, setExistingRabs] = useState<any[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
   const [loadingExisting, setLoadingExisting] = useState(false);
+
+  // Handle imported tree from list page
+  useEffect(() => {
+    if (location.state?.importedTree) {
+      setTree(location.state.importedTree);
+      // Clear state to avoid re-importing on re-render if needed
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
   const [materialSearchNodeId, setMaterialSearchNodeId] = useState<string | null>(null);
   const [materialSearchTerm, setMaterialSearchTerm] = useState('');
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
