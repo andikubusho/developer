@@ -128,24 +128,55 @@ const RAB: React.FC = () => {
           return;
         }
 
+        const ROMANS = new Set(['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV']);
+
+        const resolveLevel = (rawLevel: any, rawUraian: any, row: any): number | null => {
+          const str = String(rawLevel ?? '').trim().toUpperCase();
+          if (str !== '') {
+            // Explicit zero → Level 0
+            if (str === '0') return 0;
+            // Romans MUST be checked before single-letter: "I" matches both /^[A-Z]$/ and Romans
+            if (ROMANS.has(str)) return 1;
+            // Single letter A-Z → Level 0 (section labels A, B, C)
+            if (/^[A-Z]$/.test(str)) return 0;
+            // Positive integers (1, 2, 3…) → Level 2 (item numbers under sub-sections)
+            if (/^\d+$/.test(str) && parseInt(str) >= 1) return 2;
+          }
+          // Blank Level: detect Level 3 by dash prefix or numeric data
+          const uraian = String(rawUraian || '').trim();
+          const hasData = row['Koefisien'] != null || row['Harga Material'] != null || row['Harga Upah'] != null;
+          if (uraian !== '' && (uraian.startsWith('-') || hasData)) return 3;
+          return null;
+        };
+
         const newTree: any[] = [];
         const lastNodes: Record<number, any> = {};
 
         data.forEach((row: any) => {
-          const level = parseInt(row['Level']);
-          if (isNaN(level) || level < 0 || level > 3) return;
+          const level = resolveLevel(row['Level'], row['Uraian'], row);
+          if (level === null) return;
+
+          // Helper to round floating point from Excel
+          const round = (val: any, dec = 4) => {
+            if (val == null || val === '') return null;
+            const num = Number(val);
+            return Math.round((num + Number.EPSILON) * Math.pow(10, dec)) / Math.pow(10, dec);
+          };
+
+          const rawUraian = String(row['Uraian'] || '');
+          const uraian = level === 3 ? rawUraian.replace(/^-\s*/, '').trim() : rawUraian;
 
           const node = {
             id: Math.random().toString(36).substring(2, 9),
             parent_id: level > 0 ? (lastNodes[level - 1]?.id || null) : null,
             level: level,
-            uraian: row['Uraian'] || '',
-            volume: row['Volume'] != null && row['Volume'] !== '' ? Number(row['Volume']) : null,
+            uraian,
+            volume: round(row['Volume'], 4),
             satuan: row['Satuan'] || '',
-            koeff: row['Koefisien'] != null && row['Koefisien'] !== '' ? Number(row['Koefisien']) : null,
-            material_price: row['Harga Material'] != null && row['Harga Material'] !== '' ? Number(row['Harga Material']) : 0,
-            wage_price: row['Harga Upah'] != null && row['Harga Upah'] !== '' ? Number(row['Harga Upah']) : 0,
-            harga_rab: row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '' ? Number(row['Harga RAB (Manual)']) : null,
+            koeff: round(row['Koefisien'], 4),
+            material_price: Math.round(Number(row['Harga Material']) || 0),
+            wage_price: Math.round(Number(row['Harga Upah']) || 0),
+            harga_rab: round(row['Harga RAB (Manual)'], 2),
             is_manual: row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '',
             material_id: row['Material ID'] || null,
             urutan: 0,

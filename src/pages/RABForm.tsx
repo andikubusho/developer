@@ -433,6 +433,13 @@ const RABForm: React.FC = () => {
           const level = resolveLevel(row['Level'], row['Uraian'], row);
           if (level === null) return;
 
+          // Helper to round floating point from Excel
+          const round = (val: any, dec = 4) => {
+            if (val == null || val === '') return null;
+            const num = Number(val);
+            return Math.round((num + Number.EPSILON) * Math.pow(10, dec)) / Math.pow(10, dec);
+          };
+
           const rawUraian = String(row['Uraian'] || '');
           const uraian = level === 3 ? rawUraian.replace(/^-\s*/, '').trim() : rawUraian;
 
@@ -441,15 +448,14 @@ const RABForm: React.FC = () => {
             parent_id: level > 0 ? (lastNodes[level - 1]?.id || null) : null,
             level: level as any,
             uraian,
-            volume: row['Volume'] != null && row['Volume'] !== '' ? Number(row['Volume']) : null,
+            volume: round(row['Volume'], 4),
             satuan: row['Satuan'] || '',
-            koeff: row['Koefisien'] != null && row['Koefisien'] !== '' ? Number(row['Koefisien']) : null,
-            material_price: row['Harga Material'] != null && row['Harga Material'] !== '' ? Number(row['Harga Material']) : 0,
-            wage_price: row['Harga Upah'] != null && row['Harga Upah'] !== '' ? Number(row['Harga Upah']) : 0,
-            harga_rab: row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '' ? Number(row['Harga RAB (Manual)']) : null,
-            harga_pasar: null,
-            is_manual: level === 3
-              ? (row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '')
+            koeff: round(row['Koefisien'], 4),
+            material_price: Math.round(Number(row['Harga Material']) || 0),
+            wage_price: Math.round(Number(row['Harga Upah']) || 0),
+            harga_rab: round(row['Harga RAB (Manual)'], 2),
+            is_manual: (row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '')
+              ? true
               : (level === 2 && (
                   (row['Harga Material'] != null && row['Harga Material'] !== '' && Number(row['Harga Material']) > 0) ||
                   (row['Harga Upah'] != null && row['Harga Upah'] !== '' && Number(row['Harga Upah']) > 0)
