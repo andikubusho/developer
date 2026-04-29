@@ -232,6 +232,7 @@ const Sales: React.FC = () => {
               <THead>
                 <TR className="bg-white/20 text-[9px] text-text-muted uppercase tracking-wider font-black">
                   <TH className="px-3 py-4">Konsumen & Unit</TH>
+                  <TH className="px-3 py-4 hidden md:table-cell">Tanggal</TH>
                   <TH className="px-3 py-4 text-center">Status</TH>
                   <TH className="px-3 py-4 text-right hidden sm:table-cell">Titipan</TH>
                   <TH className="px-3 py-4 text-right">Total Akhir</TH>
@@ -240,7 +241,7 @@ const Sales: React.FC = () => {
               </THead>
               <TBody>
                 {loading ? (
-                  <TR><TD colSpan={5} className="px-3 py-10 text-center text-text-muted font-bold uppercase tracking-widest text-[10px]">Sinkronisasi...</TD></TR>
+                  <TR><TD colSpan={6} className="px-3 py-10 text-center text-text-muted font-bold uppercase tracking-widest text-[10px]">Sinkronisasi...</TD></TR>
                 ) : sales.map((sale) => (
                   <TR key={sale.id} className="hover:bg-white/20 transition-all group">
                     <TD className="px-3 py-4">
@@ -251,6 +252,9 @@ const Sales: React.FC = () => {
                           <div className="text-[9px] font-bold text-accent-dark uppercase tracking-wider truncate">{sale.unit?.unit_number} • {sale.unit?.project?.name}</div>
                         </div>
                       </div>
+                    </TD>
+                    <TD className="px-3 py-4 hidden md:table-cell">
+                      <div className="text-[10px] font-bold text-text-secondary">{formatDate(sale.sale_date)}</div>
                     </TD>
                     <TD className="px-3 py-4 text-center">
                       <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider", sale.status === 'active' ? "bg-amber-50 text-amber-600 border border-amber-100" : sale.status === 'completed' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-white/40 text-text-muted border border-white/40")}>{sale.status}</span>
