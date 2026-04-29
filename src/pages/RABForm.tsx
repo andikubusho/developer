@@ -327,7 +327,7 @@ const RABForm: React.FC = () => {
         'Material ID': ''
       },
       {
-        'Level': 1,
+        'Level': 'I',
         'Uraian': 'Pembersihan Lahan',
         'Volume': '',
         'Satuan': '',
@@ -338,7 +338,7 @@ const RABForm: React.FC = () => {
         'Material ID': ''
       },
       {
-        'Level': 2,
+        'Level': 1,
         'Uraian': 'Pembersihan dan Perataan',
         'Volume': 100,
         'Satuan': 'm2',
@@ -349,8 +349,8 @@ const RABForm: React.FC = () => {
         'Material ID': ''
       },
       {
-        'Level': 3,
-        'Uraian': 'Pekerja',
+        'Level': '',
+        'Uraian': '- Pekerja',
         'Volume': 1,
         'Satuan': 'OH',
         'Koefisien': 0.1,
@@ -399,20 +399,19 @@ const RABForm: React.FC = () => {
         const resolveLevel = (rawLevel: any, rawUraian: any, row: any): number | null => {
           const str = String(rawLevel ?? '').trim().toUpperCase();
           if (str !== '') {
-            // Numeric 0-3 (template download format)
-            const num = parseInt(str);
-            if (!isNaN(num) && num >= 0 && num <= 3) return num;
-            // Single letter A-Z → Level 0
-            if (/^[A-Z]$/.test(str)) return 0;
-            // Roman numeral → Level 1
+            // Explicit zero → Level 0
+            if (str === '0') return 0;
+            // Romans MUST be checked before single-letter: "I" matches both /^[A-Z]$/ and Romans
             if (ROMANS.has(str)) return 1;
-            // Single digit ≥ 1 → Level 2
+            // Single letter A-Z → Level 0 (section labels A, B, C)
+            if (/^[A-Z]$/.test(str)) return 0;
+            // Positive integers (1, 2, 3…) → Level 2 (item numbers under sub-sections)
             if (/^\d+$/.test(str) && parseInt(str) >= 1) return 2;
           }
           // Blank Level: detect Level 3 by dash prefix or numeric data
           const uraian = String(rawUraian || '').trim();
           const hasData = row['Koefisien'] != null || row['Harga Material'] != null || row['Harga Upah'] != null;
-          if (uraian.startsWith('-') || hasData) return 3;
+          if (uraian !== '' && (uraian.startsWith('-') || hasData)) return 3;
           return null;
         };
 
