@@ -52,7 +52,6 @@ const menuItems = [
   { name: 'Antrian Verifikasi', icon: UserCheck, path: '/verification-queue', divisions: ['keuangan', 'audit'] },
   { name: 'Cash Flow', icon: ArrowLeftRight, path: '/cash-flow', divisions: ['keuangan', 'accounting', 'audit'] },
   { name: 'Pencairan KPR', icon: Banknote, path: '/kpr-disbursement', divisions: ['keuangan', 'audit'] },
-  { name: 'Pembayaran Konsumen', icon: CreditCard, path: '/payments', divisions: ['marketing', 'keuangan', 'accounting', 'audit'] },
   { name: 'Piutang Konsumen', icon: FileText, path: '/customer-receivables', divisions: ['keuangan', 'audit'] },
   { name: 'Master Bank', icon: Landmark, path: '/bank-master', divisions: ['keuangan', 'audit'] },
 
@@ -100,6 +99,7 @@ const menuItems = [
   // Shared Marketing/Audit
   { name: 'Data Konsumen', icon: Users, path: '/customers', divisions: ['marketing', 'audit'] },
   { name: 'Penjualan', icon: ShoppingCart, path: '/sales', divisions: ['marketing', 'audit'] },
+  { name: 'Pembayaran Konsumen', icon: CreditCard, path: '/payments', divisions: ['marketing', 'keuangan', 'accounting', 'audit'] },
   { name: 'Laporan', icon: BarChart3, path: '/financial-reports', divisions: ['marketing', 'accounting', 'audit'] },
   { name: 'Template Dokumen', icon: FileText, path: '/document-templates', divisions: ['marketing', 'audit'] },
   { name: 'Proyek', icon: Building2, path: '/projects', divisions: ['marketing', 'teknik', 'audit'] },

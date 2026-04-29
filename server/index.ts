@@ -101,6 +101,13 @@ app.use((req, res, next) => {
         
         ALTER TABLE IF EXISTS shipments ADD COLUMN IF NOT EXISTS merek_id INTEGER REFERENCES promo_brands(id);
         ALTER TABLE IF EXISTS orders ADD COLUMN IF NOT EXISTS merek_id INTEGER REFERENCES promo_brands(id);
+
+        ALTER TABLE IF EXISTS spks ADD COLUMN IF NOT EXISTS unit_id TEXT;
+        ALTER TABLE IF EXISTS spks ADD COLUMN IF NOT EXISTS contractor_name TEXT;
+        ALTER TABLE IF EXISTS spks ADD COLUMN IF NOT EXISTS work_description TEXT;
+        ALTER TABLE IF EXISTS spks ADD COLUMN IF NOT EXISTS contract_value NUMERIC DEFAULT 0;
+        ALTER TABLE IF EXISTS spks ADD COLUMN IF NOT EXISTS start_date TIMESTAMP;
+        ALTER TABLE IF EXISTS spks ADD COLUMN IF NOT EXISTS end_date TIMESTAMP;
       `);
 
       await db.execute(sql`
