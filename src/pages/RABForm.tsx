@@ -339,7 +339,7 @@ const RABForm: React.FC = () => {
       },
       {
         'Level': 1,
-        'Uraian': 'Pembersihan dan Perataan',
+        'Uraian': 'Pembersihan dan Perataan (Dengan Rincian)',
         'Volume': 100,
         'Satuan': 'm2',
         'Koefisien': '',
@@ -356,6 +356,17 @@ const RABForm: React.FC = () => {
         'Koefisien': 0.1,
         'Harga Material': 0,
         'Harga Upah': 120000,
+        'Harga RAB (Manual)': '',
+        'Material ID': ''
+      },
+      {
+        'Level': 1,
+        'Uraian': 'Pembersihan Lahan (Upah Borongan)',
+        'Volume': 50,
+        'Satuan': 'm2',
+        'Koefisien': '',
+        'Harga Material': 0,
+        'Harga Upah': 15000,
         'Harga RAB (Manual)': '',
         'Material ID': ''
       }
@@ -437,7 +448,12 @@ const RABForm: React.FC = () => {
             wage_price: row['Harga Upah'] != null && row['Harga Upah'] !== '' ? Number(row['Harga Upah']) : 0,
             harga_rab: row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '' ? Number(row['Harga RAB (Manual)']) : null,
             harga_pasar: null,
-            is_manual: row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '',
+            is_manual: level === 3
+              ? (row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '')
+              : (level === 2 && (
+                  (row['Harga Material'] != null && row['Harga Material'] !== '' && Number(row['Harga Material']) > 0) ||
+                  (row['Harga Upah'] != null && row['Harga Upah'] !== '' && Number(row['Harga Upah']) > 0)
+                )),
             material_id: row['Material ID'] || null,
             urutan: 0,
             isExpanded: true,
@@ -558,6 +574,9 @@ const RABForm: React.FC = () => {
             total_material = jumlah_material * unitTotal;
             subtotal = total_material;
           }
+        } else if (node.level === 2 && node.is_manual) {
+          subtotal = (node.volume || 0) * ((node.material_price || 0) + (node.wage_price || 0));
+          children = calc(node.children, node.volume);
         } else {
           children = calc(node.children, node.level === 2 ? node.volume : parentVolume);
           subtotal = children.reduce((sum, child) => sum + child.subtotal, 0);
@@ -849,44 +868,54 @@ const RABForm: React.FC = () => {
               )}
             </TD>
 
-            {/* HARGA MATERIAL — hanya mode koefisien */}
+            {/* HARGA MATERIAL */}
             <TD className="px-4 py-3 border-r border-white/40 w-44">
-              {isLevel3 && !node.is_manual && (
-                <div className="flex items-center">
-                  <span className="text-[10px] text-text-muted mr-1">Rp</span>
-                  <input
-                    type="text"
-                    value={node.material_price !== null ? formatNumber(node.material_price) : ''}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\./g, '');
-                      if (val === '' || /^\d+$/.test(val)) {
-                        updateNode(node.id, { material_price: val === '' ? null : Number(val) });
-                      }
-                    }}
-                    placeholder="0"
-                    className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
-                  />
+              {((isLevel3 && !node.is_manual) || (isLevel2 && node.is_manual)) && (
+                <div className="flex flex-col items-end gap-0.5">
+                  <div className="flex items-center w-full">
+                    <span className="text-[10px] text-text-muted mr-1">Rp</span>
+                    <input
+                      type="text"
+                      value={node.material_price !== null ? formatNumber(node.material_price) : ''}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\./g, '');
+                        if (val === '' || /^\d+$/.test(val)) {
+                          updateNode(node.id, { material_price: val === '' ? null : Number(val) });
+                        }
+                      }}
+                      placeholder="0"
+                      className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
+                    />
+                  </div>
+                  {isLevel2 && node.is_manual && (
+                    <span className="text-[9px] text-text-muted">per {node.satuan || 'satuan'}</span>
+                  )}
                 </div>
               )}
             </TD>
 
-            {/* HARGA UPAH — hanya mode koefisien */}
+            {/* HARGA UPAH */}
             <TD className="px-4 py-3 border-r border-white/40 w-44">
-              {isLevel3 && !node.is_manual && (
-                <div className="flex items-center">
-                  <span className="text-[10px] text-text-muted mr-1">Rp</span>
-                  <input
-                    type="text"
-                    value={node.wage_price !== null ? formatNumber(node.wage_price) : ''}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\./g, '');
-                      if (val === '' || /^\d+$/.test(val)) {
-                        updateNode(node.id, { wage_price: val === '' ? null : Number(val) });
-                      }
-                    }}
-                    placeholder="0"
-                    className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
-                  />
+              {((isLevel3 && !node.is_manual) || (isLevel2 && node.is_manual)) && (
+                <div className="flex flex-col items-end gap-0.5">
+                  <div className="flex items-center w-full">
+                    <span className="text-[10px] text-text-muted mr-1">Rp</span>
+                    <input
+                      type="text"
+                      value={node.wage_price !== null ? formatNumber(node.wage_price) : ''}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\./g, '');
+                        if (val === '' || /^\d+$/.test(val)) {
+                          updateNode(node.id, { wage_price: val === '' ? null : Number(val) });
+                        }
+                      }}
+                      placeholder="0"
+                      className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
+                    />
+                  </div>
+                  {isLevel2 && node.is_manual && (
+                    <span className="text-[9px] text-text-muted">per {node.satuan || 'satuan'}</span>
+                  )}
                 </div>
               )}
             </TD>
@@ -917,6 +946,20 @@ const RABForm: React.FC = () => {
             {/* ACTION */}
             <TD className="px-4 py-3 w-40">
                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {isLevel2 && (
+                    <button
+                      title={node.is_manual ? 'Ganti ke mode Rincian (Level 3)' : 'Input harga langsung (Upah/Opname)'}
+                      onClick={() => updateNode(node.id, { is_manual: !node.is_manual, material_price: 0, wage_price: 0 })}
+                      className={cn(
+                        'h-7 px-2 rounded text-[9px] font-black uppercase tracking-widest border transition-colors',
+                        node.is_manual
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
+                      )}
+                    >
+                      {node.is_manual ? 'LANGSUNG' : 'RINCIAN'}
+                    </button>
+                  )}
                   {isLevel3 && (
                     <button
                       title={node.is_manual ? 'Ganti ke mode Koefisien' : 'Ganti ke mode Manual'}
