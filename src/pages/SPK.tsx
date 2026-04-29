@@ -173,7 +173,6 @@ const SPK: React.FC = () => {
           <div class="description">${spk.work_description || 'Tidak ada deskripsi detail.'}</div>
           <div class="footer">
             <div class="sign-box"><div>Dibuat oleh,</div><div class="sign-line"></div><div>( Manajer Proyek )</div></div>
-            <div class="sign-box"><div>Penerima Kerja,</div><div class="sign-line"></div><div>( ${spk.contractor_name} )</div></div>
             <div class="sign-box"><div>Disetujui oleh,</div><div class="sign-line"></div><div>( Management )</div></div>
           </div>
           <script>window.onload = function() { window.print(); }</script>
