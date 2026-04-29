@@ -8,6 +8,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { MarketingDocument } from '../types';
 import { formatDate } from '../lib/utils';
 import { api } from '../lib/api';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const SitePlan: React.FC = () => {
   const navigate = useNavigate();
@@ -92,6 +94,24 @@ const SitePlan: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const handleExportPDF = () => {
+    if (docs.length === 0) return;
+    
+    const doc = new jsPDF();
+    doc.text('DAFTAR DOKUMEN SITE PLAN', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
+    
+    autoTable(doc, {
+      startY: 30,
+      head: [['Nama Dokumen', 'Tanggal Upload']],
+      body: docs.map(d => [d.name, formatDate(d.created_at)]),
+      headStyles: { fillColor: [79, 70, 229] }, // Indigo-600
+    });
+    
+    doc.save(`Daftar-Site-Plan-${new Date().toLocaleDateString('id-ID')}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -104,9 +124,14 @@ const SitePlan: React.FC = () => {
             <p className="text-text-secondary">Peta kavling dan area proyek</p>
           </div>
         </div>
-        <Button className="w-full sm:w-auto" onClick={() => setIsModalOpen(true)}>
-          <Upload className="w-4 h-4 mr-2" /> Upload PDF
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={handleExportPDF} disabled={docs.length === 0}>
+            <Printer className="w-4 h-4 mr-2" /> Export List (PDF)
+          </Button>
+          <Button className="w-full sm:w-auto" onClick={() => setIsModalOpen(true)}>
+            <Upload className="w-4 h-4 mr-2" /> Upload PDF
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

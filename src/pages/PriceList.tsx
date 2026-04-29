@@ -11,6 +11,7 @@ import { PriceListItem, Project } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { PriceItemForm } from '../components/forms/PriceItemForm';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import logoProyek from '../assets/logo-proyek.png';
 import logoPerusahaan from '../assets/logo-perusahaan.png';
 import { api } from '../lib/api';
@@ -116,13 +117,34 @@ const PriceList: React.FC = () => {
     };
   };
 
-  const generatePDF = () => {
-    const activeProject = projects.find(p => p.id === selectedProjectId);
-    const projectName = activeProject?.name || 'Proyek';
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    pdf.setFontSize(18);
-    pdf.text(`DAFTAR HARGA - ${projectName.toUpperCase()}`, 105, 20, { align: 'center' });
-    pdf.save(`Price-List-${projectName}.pdf`);
+  const handleExportPDF = async () => {
+    const element = document.getElementById('price-list-print-content');
+    if (!element) return;
+    
+    try {
+      setLoading(true);
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const projectName = projects.find(p => p.id === selectedProjectId)?.name || 'Proyek';
+      pdf.save(`Price-List-${projectName}-${new Date().toLocaleDateString('id-ID')}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Gagal membuat PDF. Silakan coba fitur Cetak (Print to PDF) sebagai alternatif.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getGroupedItems = () => {
@@ -253,6 +275,7 @@ const PriceList: React.FC = () => {
           <div className="flex items-center gap-1.5 w-full sm:w-auto">
             <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-[9px] sm:text-xs h-9 px-2" onClick={() => setIsUpdateModalOpen(true)}><Percent className="w-3 h-3 mr-1" />Update</Button>
             <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-[9px] sm:text-xs h-9 px-2" onClick={() => { setEditingItem(null); setIsItemModalOpen(true); }}><Plus className="w-3 h-3 mr-1" />Unit</Button>
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-[9px] sm:text-xs h-9 px-2" onClick={handleExportPDF}><FileText className="w-3 h-3 mr-1" />Export PDF</Button>
             <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-[9px] sm:text-xs h-9 px-2" onClick={() => window.print()}><Printer className="w-3 h-3 mr-1" />Cetak</Button>
           </div>
         </div>
@@ -357,7 +380,7 @@ const PriceList: React.FC = () => {
         }
       `}} />
 
-      <div className="hidden print-block">
+      <div id="price-list-print-content" className="hidden print-block bg-white p-8" style={{ width: '210mm' }}>
         {/* Header Section (Restored) */}
         <div className="doc-header">
           <div className="flex-1">
