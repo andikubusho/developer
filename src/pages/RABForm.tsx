@@ -450,7 +450,7 @@ const RABForm: React.FC = () => {
             uraian,
             volume: round(row['Volume'], 4),
             satuan: row['Satuan'] || '',
-            koeff: round(row['Koefisien'], 4),
+            koeff: round(row['Koefisien'], 4) ?? (level === 3 ? 1 : null),
             material_price: Math.round(Number(row['Harga Material']) || 0),
             wage_price: Math.round(Number(row['Harga Upah']) || 0),
             harga_rab: round(row['Harga RAB (Manual)'], 2),
@@ -576,7 +576,14 @@ const RABForm: React.FC = () => {
             const material = node.material_price || 0;
             const wage = node.wage_price || 0;
             const unitTotal = material + wage;
-            jumlah_material = (node.koeff || 0) * (node.volume || 0);
+            
+            // Prioritize Volume column if filled, otherwise fallback to Koeff * Parent Volume
+            if (node.volume !== null && node.volume !== 0) {
+              jumlah_material = node.volume;
+            } else {
+              jumlah_material = (node.koeff || 0) * (parentVolume || 1);
+            }
+            
             total_material = jumlah_material * unitTotal;
             subtotal = total_material;
           }

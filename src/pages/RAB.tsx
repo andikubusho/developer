@@ -173,7 +173,7 @@ const RAB: React.FC = () => {
             uraian,
             volume: round(row['Volume'], 4),
             satuan: row['Satuan'] || '',
-            koeff: round(row['Koefisien'], 4),
+            koeff: round(row['Koefisien'], 4) ?? (level === 3 ? 1 : null),
             material_price: Math.round(Number(row['Harga Material']) || 0),
             wage_price: Math.round(Number(row['Harga Upah']) || 0),
             harga_rab: round(row['Harga RAB (Manual)'], 2),
