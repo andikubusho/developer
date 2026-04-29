@@ -394,24 +394,50 @@ const RABForm: React.FC = () => {
           return;
         }
 
+        const ROMANS = new Set(['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV']);
+
+        const resolveLevel = (rawLevel: any, rawUraian: any, row: any): number | null => {
+          const str = String(rawLevel ?? '').trim().toUpperCase();
+          if (str !== '') {
+            // Numeric 0-3 (template download format)
+            const num = parseInt(str);
+            if (!isNaN(num) && num >= 0 && num <= 3) return num;
+            // Single letter A-Z → Level 0
+            if (/^[A-Z]$/.test(str)) return 0;
+            // Roman numeral → Level 1
+            if (ROMANS.has(str)) return 1;
+            // Single digit ≥ 1 → Level 2
+            if (/^\d+$/.test(str) && parseInt(str) >= 1) return 2;
+          }
+          // Blank Level: detect Level 3 by dash prefix or numeric data
+          const uraian = String(rawUraian || '').trim();
+          const hasData = row['Koefisien'] != null || row['Harga Material'] != null || row['Harga Upah'] != null;
+          if (uraian.startsWith('-') || hasData) return 3;
+          return null;
+        };
+
         const newTree: RABNode[] = [];
         const lastNodes: Record<number, RABNode> = {};
 
         data.forEach((row: any) => {
-          const level = parseInt(row['Level']);
-          if (isNaN(level) || level < 0 || level > 3) return;
+          const level = resolveLevel(row['Level'], row['Uraian'], row);
+          if (level === null) return;
+
+          const rawUraian = String(row['Uraian'] || '');
+          const uraian = level === 3 ? rawUraian.replace(/^-\s*/, '').trim() : rawUraian;
 
           const node: RABNode = {
             id: generateId(),
             parent_id: level > 0 ? (lastNodes[level - 1]?.id || null) : null,
             level: level as any,
-            uraian: row['Uraian'] || '',
+            uraian,
             volume: row['Volume'] != null && row['Volume'] !== '' ? Number(row['Volume']) : null,
             satuan: row['Satuan'] || '',
             koeff: row['Koefisien'] != null && row['Koefisien'] !== '' ? Number(row['Koefisien']) : null,
             material_price: row['Harga Material'] != null && row['Harga Material'] !== '' ? Number(row['Harga Material']) : 0,
             wage_price: row['Harga Upah'] != null && row['Harga Upah'] !== '' ? Number(row['Harga Upah']) : 0,
             harga_rab: row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '' ? Number(row['Harga RAB (Manual)']) : null,
+            harga_pasar: null,
             is_manual: row['Harga RAB (Manual)'] != null && row['Harga RAB (Manual)'] !== '',
             material_id: row['Material ID'] || null,
             urutan: 0,
