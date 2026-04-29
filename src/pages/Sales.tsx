@@ -275,6 +275,7 @@ const Sales: React.FC = () => {
                     <TD className="px-3 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="sm" onClick={() => handleViewClick(sale)} className="h-7 w-7 p-0 rounded-lg hover:text-accent-dark"><Eye className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="sm" title="Cetak Dokumen" onClick={() => handlePrintClick(sale)} className="h-7 w-7 p-0 rounded-lg hover:text-accent-dark"><FileText className="w-3.5 h-3.5" /></Button>
                         <Button variant="ghost" size="sm" onClick={() => handleEditClick(sale)} className="h-7 w-7 p-0 rounded-lg hover:text-emerald-600"><Edit className="w-3.5 h-3.5" /></Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDeleteSale(sale.id, sale.unit_id)} className="h-7 w-7 p-0 rounded-lg hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></Button>
                       </div>
