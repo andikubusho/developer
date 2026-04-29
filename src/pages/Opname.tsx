@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, ClipboardList, ArrowLeft, Trash2, CheckCircle2, Clock, Calculator, AlertCircle, Save } from 'lucide-react';
+import { Plus, Search, Filter, ClipboardList, ArrowLeft, Trash2, CheckCircle2, Clock, Calculator, AlertCircle, Save, Building2, Layers, Calendar, User } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -61,10 +61,15 @@ const OpnamePage: React.FC = () => {
     try {
       setLoading(true);
       const [opRes, projRes] = await Promise.all([
-        api.get('project_opnames', 'select=*,project:projects(name)&order=date.desc'),
+        api.get('project_opnames', 'select=*&order=date.desc'),
         api.get('projects', 'select=id,name')
       ]);
-      setOpnames(opRes || []);
+      const projMap: Record<string, any> = {};
+      (projRes || []).forEach((p: any) => { projMap[p.id] = p; });
+      setOpnames((opRes || []).map((o: any) => ({
+        ...o,
+        project: o.project_id ? (projMap[o.project_id] || null) : null,
+      })));
       setProjects(projRes || []);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -300,35 +305,60 @@ const OpnamePage: React.FC = () => {
         className="max-w-6xl"
       >
         <div className="space-y-8 p-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6 bg-white/40 p-6 rounded-[2rem] border border-white/60">
-            <Input label="Tanggal Opname" type="date" value={opnameDate} onChange={(e) => setOpnameDate(e.target.value)} className="h-12 rounded-xl border-white/60 shadow-sm" />
-            <div>
-              <label className="text-[11px] font-black text-text-muted uppercase tracking-widest mb-2 block">Pilih Proyek</label>
-              <select 
-                className="w-full h-12 rounded-xl glass-input px-4 text-sm font-bold focus:outline-none" 
-                value={selectedProjectId} 
-                onChange={(e) => {
-                  setSelectedProjectId(e.target.value);
-                  setSelectedUnitId('');
-                }}
-              >
-                <option value="">-- Pilih Proyek --</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+          {/* Header — gaya RABForm */}
+          <div className="bg-white/60 backdrop-blur-sm border border-white/60 shadow-premium rounded-[2rem] p-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-text-primary uppercase tracking-widest flex items-center gap-2 ml-1">
+                  <Calendar className="w-3 h-3 text-accent-dark" /> Tanggal Opname
+                </label>
+                <input
+                  type="date"
+                  value={opnameDate}
+                  onChange={(e) => setOpnameDate(e.target.value)}
+                  className="w-full h-14 glass-input border-none rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-text-primary uppercase tracking-widest flex items-center gap-2 ml-1">
+                  <Building2 className="w-3 h-3 text-accent-dark" /> Pilih Master Proyek
+                </label>
+                <select
+                  className="w-full h-14 glass-input border-none rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none"
+                  value={selectedProjectId}
+                  onChange={(e) => { setSelectedProjectId(e.target.value); setSelectedUnitId(''); }}
+                >
+                  <option value="">-- Pilih Proyek --</option>
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-text-primary uppercase tracking-widest flex items-center gap-2 ml-1">
+                  <Layers className="w-3 h-3 text-accent-dark" /> Pilih Unit <span className="text-text-muted font-normal normal-case">(opsional)</span>
+                </label>
+                <select
+                  className="w-full h-14 glass-input border-none rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none disabled:opacity-50"
+                  value={selectedUnitId}
+                  onChange={(e) => setSelectedUnitId(e.target.value)}
+                  disabled={!selectedProjectId}
+                >
+                  <option value="">{selectedProjectId ? '-- Tanpa Unit / Umum --' : 'Pilih Proyek Dulu'}</option>
+                  {units.map(u => <option key={u.id} value={u.id}>{u.unit_number} - {u.type}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-text-primary uppercase tracking-widest flex items-center gap-2 ml-1">
+                  <User className="w-3 h-3 text-accent-dark" /> Nama Pekerja / Kontraktor
+                </label>
+                <input
+                  type="text"
+                  value={workerName}
+                  onChange={(e) => setWorkerName(e.target.value)}
+                  placeholder="Contoh: Mandor Slamet..."
+                  className="w-full h-14 glass-input border-none rounded-xl px-6 text-base font-bold text-text-primary placeholder-text-muted focus:outline-none"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-[11px] font-black text-text-muted uppercase tracking-widest mb-2 block">Pilih Unit (Opsional)</label>
-              <select 
-                className="w-full h-12 rounded-xl glass-input px-4 text-sm font-bold focus:outline-none disabled:opacity-50" 
-                value={selectedUnitId} 
-                onChange={(e) => setSelectedUnitId(e.target.value)}
-                disabled={!selectedProjectId}
-              >
-                <option value="">-- Semua Unit / Umum --</option>
-                {units.map(u => <option key={u.id} value={u.id}>{u.unit_number} - {u.type}</option>)}
-              </select>
-            </div>
-            <Input label="Nama Pekerja / Kontraktor" placeholder="Contoh: Mandor Slamet..." value={workerName} onChange={(e) => setWorkerName(e.target.value)} className="h-12 rounded-xl border-white/60 shadow-sm" />
           </div>
 
           {selectedProjectId ? (
