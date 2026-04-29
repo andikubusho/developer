@@ -36,8 +36,16 @@ const Customers: React.FC = () => {
     try {
       setLoading(true);
       const filterParam = selectedConsultantId !== 'all' ? `&consultant_id=eq.${selectedConsultantId}` : '';
-      const data = await api.get('customers', `select=*,consultant:consultants(name)&order=full_name.asc&limit=50${filterParam}`);
-      setCustomers(data || []);
+      const [customerData, consultantData] = await Promise.all([
+        api.get('customers', `select=*&order=full_name.asc&limit=50${filterParam}`),
+        api.get('consultants', 'select=id,name'),
+      ]);
+      const consultantMap: Record<string, any> = {};
+      (consultantData || []).forEach((c: any) => { consultantMap[c.id] = c; });
+      setCustomers((customerData || []).map((c: any) => ({
+        ...c,
+        consultant: c.consultant_id ? (consultantMap[c.consultant_id] || null) : null,
+      })));
     } catch (error) {
       console.error('Error fetching customers:', error);
     } finally {
@@ -45,10 +53,10 @@ const Customers: React.FC = () => {
     }
   };
 
-  const filteredCustomers = customers.filter(c => 
-    c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.phone.includes(searchTerm)
+  const filteredCustomers = customers.filter(c =>
+    (c.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (c.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (c.phone || '').includes(searchTerm)
   );
 
   const handleAdd = () => {

@@ -56,16 +56,26 @@ const PurchaseRequests: React.FC = () => {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [projData, matData, reqData] = await Promise.all([
+      const [projData, matData, reqData, unitData] = await Promise.all([
         api.get('projects', 'select=id,name&order=name.asc'),
         api.get('materials', 'select=id,name,unit,unit_price&order=name.asc'),
-        api.get('purchase_requests', 'select=*,project:projects(name),unit:units(unit_number)&order=created_at.desc')
+        api.get('purchase_requests', 'select=*&order=created_at.desc'),
+        api.get('units', 'select=id,unit_number'),
       ]);
 
-      console.log('📦 Purchase Requests Response:', reqData);
+      const projectMap: Record<string, any> = {};
+      (projData || []).forEach((p: any) => { projectMap[p.id] = p; });
+      const unitMap: Record<string, any> = {};
+      (unitData || []).forEach((u: any) => { unitMap[u.id] = u; });
+      const enrichedReqs = (reqData || []).map((r: any) => ({
+        ...r,
+        project: r.project_id ? (projectMap[r.project_id] || null) : null,
+        unit: r.unit_id ? (unitMap[r.unit_id] || null) : null,
+      }));
+
       setProjects(projData);
       setMaterials(matData);
-      setRequests(reqData);
+      setRequests(enrichedReqs);
     } catch (err) {
       console.error('Error fetching initial data:', err);
     } finally {

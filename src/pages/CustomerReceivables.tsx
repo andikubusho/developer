@@ -51,14 +51,29 @@ const CustomerReceivables: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [salesData, paymentsData, installmentsData, kprData] = await Promise.all([
-        api.get('sales', 'select=*,customer:customers(full_name),unit:units(unit_number,project:projects(name))&status=neq.cancelled&order=sale_date.desc'),
+      const [salesRaw, paymentsData, installmentsData, kprData, customersData, unitsData, projectsData] = await Promise.all([
+        api.get('sales', 'select=*&status=neq.cancelled&order=sale_date.desc'),
         api.get('payments', 'select=*&status=eq.verified'),
         api.get('installments', 'select=*&order=due_date.asc'),
         api.get('kpr_disbursement', 'select=*'),
+        api.get('customers', 'select=id,full_name'),
+        api.get('units', 'select=id,unit_number,project_id'),
+        api.get('projects', 'select=id,name'),
       ]);
 
-      const sales = salesData || [];
+      const customerMap: Record<string, any> = {};
+      (customersData || []).forEach((c: any) => { customerMap[c.id] = c; });
+      const projectMap: Record<string, any> = {};
+      (projectsData || []).forEach((p: any) => { projectMap[p.id] = p; });
+      const unitMap: Record<string, any> = {};
+      (unitsData || []).forEach((u: any) => {
+        unitMap[u.id] = { ...u, project: u.project_id ? (projectMap[u.project_id] || null) : null };
+      });
+      const sales = (salesRaw || []).map((s: any) => ({
+        ...s,
+        customer: s.customer_id ? (customerMap[s.customer_id] || null) : null,
+        unit: s.unit_id ? (unitMap[s.unit_id] || null) : null,
+      }));
       const payments = paymentsData || [];
       const installments = installmentsData || [];
       const kprs = kprData || [];

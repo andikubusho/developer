@@ -23,13 +23,27 @@ const Payments: React.FC = () => {
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const data = await api.get(
-        'payments',
-        'select=*,sale:sales(customer:customers(full_name),unit:units(unit_number))&order=payment_date.desc'
-      );
-      setPayments(data || []);
+      const [payData, salesData, customersData, unitsData] = await Promise.all([
+        api.get('payments', 'select=*&order=payment_date.desc'),
+        api.get('sales', 'select=id,customer_id,unit_id'),
+        api.get('customers', 'select=id,full_name'),
+        api.get('units', 'select=id,unit_number'),
+      ]);
+      const customerMap: Record<string, any> = {};
+      (customersData || []).forEach((c: any) => { customerMap[c.id] = c; });
+      const unitMap: Record<string, any> = {};
+      (unitsData || []).forEach((u: any) => { unitMap[u.id] = u; });
+      const saleMap: Record<string, any> = {};
+      (salesData || []).forEach((s: any) => {
+        saleMap[s.id] = { ...s, customer: customerMap[s.customer_id] || null, unit: unitMap[s.unit_id] || null };
+      });
+      setPayments((payData || []).map((p: any) => ({
+        ...p,
+        sale: p.sale_id ? (saleMap[p.sale_id] || null) : null,
+      })));
     } catch (error) {
       console.error('Error fetching payments:', error);
+      setPayments([]);
     } finally {
       setLoading(false);
     }

@@ -36,9 +36,24 @@ const KPRDisbursementPage: React.FC = () => {
   const fetchDisbursements = async () => {
     try {
       setLoading(true);
-      const data = await api.get('kpr_disbursement', 'select=*,sale:sales(customer:customers(full_name),unit:units(unit_number))&order=created_at.desc');
-      console.log('🔍 KPR DATA STRUCTURE:', data?.[0]);
-      setDisbursements(data || []);
+      const [disbData, salesRaw, customersData, unitsData] = await Promise.all([
+        api.get('kpr_disbursement', 'select=*&order=created_at.desc'),
+        api.get('sales', 'select=id,customer_id,unit_id'),
+        api.get('customers', 'select=id,full_name'),
+        api.get('units', 'select=id,unit_number'),
+      ]);
+      const customerMap: Record<string, any> = {};
+      (customersData || []).forEach((c: any) => { customerMap[c.id] = c; });
+      const unitMap: Record<string, any> = {};
+      (unitsData || []).forEach((u: any) => { unitMap[u.id] = u; });
+      const saleMap: Record<string, any> = {};
+      (salesRaw || []).forEach((s: any) => {
+        saleMap[s.id] = { ...s, customer: customerMap[s.customer_id] || null, unit: unitMap[s.unit_id] || null };
+      });
+      setDisbursements((disbData || []).map((d: any) => ({
+        ...d,
+        sale: d.sale_id ? (saleMap[d.sale_id] || null) : null,
+      })));
     } catch (error) {
       console.error('Error fetching disbursements:', error);
     } finally {
@@ -48,8 +63,20 @@ const KPRDisbursementPage: React.FC = () => {
 
   const fetchSales = async () => {
     try {
-      const data = await api.get('sales', 'select=*,customer:customers(full_name),unit:units(unit_number)&payment_method=eq.kpr');
-      setSales(data || []);
+      const [salesRaw, customersData, unitsData] = await Promise.all([
+        api.get('sales', 'select=*&payment_method=eq.kpr'),
+        api.get('customers', 'select=id,full_name'),
+        api.get('units', 'select=id,unit_number'),
+      ]);
+      const customerMap: Record<string, any> = {};
+      (customersData || []).forEach((c: any) => { customerMap[c.id] = c; });
+      const unitMap: Record<string, any> = {};
+      (unitsData || []).forEach((u: any) => { unitMap[u.id] = u; });
+      setSales((salesRaw || []).map((s: any) => ({
+        ...s,
+        customer: s.customer_id ? (customerMap[s.customer_id] || null) : null,
+        unit: s.unit_id ? (unitMap[s.unit_id] || null) : null,
+      })));
     } catch (error) {
       console.error('Error fetching sales:', error);
     }

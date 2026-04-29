@@ -67,31 +67,39 @@ const VerificationQueue: React.FC = () => {
       ]);
       const rawItems: CashFlowItem[] = cfData || [];
 
-      // Enrich each item with payment/deposit detail
-      const enriched = await Promise.all(rawItems.map(async (item) => {
-        const bank = item.bank_account_id
-          ? (bankData || []).find((b: any) => b.id === item.bank_account_id) || null
-          : null;
+      // Batch fetch — avoid N+1 queries per item
+      const paymentIds = rawItems.filter(i => i.reference_type === 'payment' && i.reference_id).map(i => i.reference_id);
+      const depositIds = rawItems.filter(i => i.reference_type === 'deposit' && i.reference_id).map(i => i.reference_id);
 
-        if (item.reference_type === 'payment' && item.reference_id) {
-          try {
-            const payData = await api.get(
-              'payments',
-              `id=eq.${item.reference_id}&select=id,payment_method,installment_id,sale:sales(customer:customers(full_name),unit:units(unit_number))`
-            );
-            return { ...item, bank, payment: payData?.[0] || null, deposit: null };
-          } catch { return { ...item, bank, payment: null, deposit: null }; }
-        }
+      const [paymentsRaw, depositsRaw, salesRaw, customersRaw, unitsRaw] = await Promise.all([
+        paymentIds.length > 0 ? api.get('payments', `select=id,payment_method,installment_id,sale_id&id=in.(${paymentIds.join(',')})`) : Promise.resolve([]),
+        depositIds.length > 0 ? api.get('deposits', `select=id,name,phone&id=in.(${depositIds.join(',')})`) : Promise.resolve([]),
+        api.get('sales', 'select=id,customer_id,unit_id'),
+        api.get('customers', 'select=id,full_name'),
+        api.get('units', 'select=id,unit_number'),
+      ]);
 
-        if (item.reference_type === 'deposit' && item.reference_id) {
-          try {
-            const depData = await api.get('deposits', `id=eq.${item.reference_id}&select=id,name,phone`);
-            return { ...item, bank, payment: null, deposit: depData?.[0] || null };
-          } catch { return { ...item, bank, payment: null, deposit: null }; }
-        }
+      const customerMap: Record<string, any> = {};
+      (customersRaw || []).forEach((c: any) => { customerMap[c.id] = c; });
+      const unitMap: Record<string, any> = {};
+      (unitsRaw || []).forEach((u: any) => { unitMap[u.id] = u; });
+      const saleMap: Record<string, any> = {};
+      (salesRaw || []).forEach((s: any) => {
+        saleMap[s.id] = { ...s, customer: customerMap[s.customer_id] || null, unit: unitMap[s.unit_id] || null };
+      });
+      const paymentMap: Record<string, any> = {};
+      (paymentsRaw || []).forEach((p: any) => {
+        paymentMap[p.id] = { ...p, sale: p.sale_id ? (saleMap[p.sale_id] || null) : null };
+      });
+      const depositMap: Record<string, any> = {};
+      (depositsRaw || []).forEach((d: any) => { depositMap[d.id] = d; });
 
-        return { ...item, bank, payment: null, deposit: null };
-      }));
+      const enriched = rawItems.map((item: any) => {
+        const bank = item.bank_account_id ? (bankData || []).find((b: any) => b.id === item.bank_account_id) || null : null;
+        const payment = item.reference_type === 'payment' ? (paymentMap[item.reference_id] || null) : null;
+        const deposit = item.reference_type === 'deposit' ? (depositMap[item.reference_id] || null) : null;
+        return { ...item, bank, payment, deposit };
+      });
 
       // Deduplicate by reference_id — keep only first occurrence per payment/deposit
       const seen = new Set<string>();

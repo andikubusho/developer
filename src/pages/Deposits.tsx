@@ -119,8 +119,20 @@ const Deposits: React.FC = () => {
   const fetchDeposits = async () => {
     try {
       const filterParam = selectedConsultantId !== 'all' ? `&consultant_id=eq.${selectedConsultantId}` : '';
-      const data = await api.get('deposits', `select=*,consultant:consultants(name),bank:bank_accounts(bank_name,account_number)&order=created_at.desc${filterParam}`);
-      setDeposits(data || []);
+      const [depositData, consultantData, bankData] = await Promise.all([
+        api.get('deposits', `select=*&order=created_at.desc${filterParam}`),
+        api.get('consultants', 'select=id,name'),
+        api.get('bank_accounts', 'select=id,bank_name,account_number'),
+      ]);
+      const consultantMap: Record<string, any> = {};
+      (consultantData || []).forEach((c: any) => { consultantMap[c.id] = c; });
+      const bankMap: Record<string, any> = {};
+      (bankData || []).forEach((b: any) => { bankMap[b.id] = b; });
+      setDeposits((depositData || []).map((d: any) => ({
+        ...d,
+        consultant: d.consultant_id ? (consultantMap[d.consultant_id] || null) : null,
+        bank: d.bank_account_id ? (bankMap[d.bank_account_id] || null) : null,
+      })));
     } catch (error) {
       console.error('Error fetching deposits:', error);
     }
