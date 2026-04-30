@@ -206,9 +206,11 @@ const RAB: React.FC = () => {
 
   const handleExportRAB = async (rabId: string, projectName: string) => {
     try {
-      const { data: items, error } = await api.from('rab_items').select('*').eq('rab_project_id', rabId).order('urutan');
-      if (error) throw error;
-      if (!items) return;
+      const items = await api.get('rab_items', `rab_project_id=eq.${rabId}&select=*&order=urutan`);
+      if (!items || items.length === 0) {
+        alert('RAB tidak memiliki item untuk diekspor.');
+        return;
+      }
 
       const buildTree = (parentId: string | null = null): any[] => {
         return items

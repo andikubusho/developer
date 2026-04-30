@@ -17,6 +17,7 @@ const SupplierPaymentsPage: React.FC = () => {
   const [payments, setPayments] = useState<SupplierPayment[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [spks, setSpks] = useState<SPK[]>([]);
+  const [opnames, setOpnames] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,7 +29,8 @@ const SupplierPaymentsPage: React.FC = () => {
     payment_method: 'Transfer Bank',
     status: 'pending' as const,
     po_id: '',
-    spk_id: ''
+    spk_id: '',
+    opname_id: ''
   });
 
   useEffect(() => {
@@ -50,11 +52,15 @@ const SupplierPaymentsPage: React.FC = () => {
 
   const fetchReferences = async () => {
     try {
-      const poData = await api.get('purchase_orders', 'select=*');
-      const spkData = await api.get('spks', 'select=*');
+      const [poData, spkData, opData] = await Promise.all([
+        api.get('purchase_orders', 'select=*'),
+        api.get('spks', 'select=*'),
+        api.get('project_opnames', 'status=eq.approved')
+      ]);
       
       setPurchaseOrders(poData || []);
       setSpks(spkData || []);
+      setOpnames(opData || []);
     } catch (error) {
       console.error('Error fetching references:', error);
     }
@@ -69,6 +75,12 @@ const SupplierPaymentsPage: React.FC = () => {
       } else {
         await api.insert('supplier_payment', formData);
       }
+
+      // Sync Opname status if paid
+      if (formData.opname_id && formData.status === 'paid') {
+        await api.update('project_opnames', formData.opname_id, { status: 'paid' });
+      }
+
       await fetchPayments();
       setIsModalOpen(false);
       resetForm();
@@ -89,7 +101,8 @@ const SupplierPaymentsPage: React.FC = () => {
       payment_method: payment.payment_method,
       status: payment.status,
       po_id: payment.po_id || '',
-      spk_id: payment.spk_id || ''
+      spk_id: payment.spk_id || '',
+      opname_id: payment.opname_id || ''
     });
     setIsModalOpen(true);
   };
@@ -112,6 +125,13 @@ const SupplierPaymentsPage: React.FC = () => {
     try {
       setLoading(true);
       await api.update('supplier_payment', id, { status });
+      
+      // Find the payment to sync with opname
+      const payment = payments.find(p => p.id === id);
+      if (payment?.opname_id && status === 'paid') {
+        await api.update('project_opnames', payment.opname_id, { status: 'paid' });
+      }
+
       await fetchPayments();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -130,7 +150,8 @@ const SupplierPaymentsPage: React.FC = () => {
       payment_method: 'Transfer Bank',
       status: 'pending',
       po_id: '',
-      spk_id: ''
+      spk_id: '',
+      opname_id: ''
     });
   };
 
@@ -154,8 +175,8 @@ const SupplierPaymentsPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Pembayaran Supplier</h1>
-            <p className="text-text-secondary">Manajemen Hutang ke Supplier & Kontraktor</p>
+            <h1 className="text-2xl font-bold text-text-primary">Pembayaran Keuangan</h1>
+            <p className="text-text-secondary">Manajemen Pembayaran Supplier, SPK & Opname Upah</p>
           </div>
         </div>
         <Button className="w-full sm:w-auto" onClick={() => setIsModalOpen(true)}>
@@ -177,8 +198,8 @@ const SupplierPaymentsPage: React.FC = () => {
             <THead>
               <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
                 <TH className="px-6 py-3 font-semibold">Tanggal Bayar</TH>
-                <TH className="px-6 py-3 font-semibold">Supplier / Vendor</TH>
-                <TH className="px-6 py-3 font-semibold">Ref. PO/SPK</TH>
+                <TH className="px-6 py-3 font-semibold">Supplier / Sumber</TH>
+                <TH className="px-6 py-3 font-semibold">Ref. Tagihan</TH>
                 <TH className="px-6 py-3 font-semibold text-right">Nilai Bayar</TH>
                 <TH className="px-6 py-3 font-semibold">Metode</TH>
                 <TH className="px-6 py-3 font-semibold">Status</TH>
@@ -189,14 +210,14 @@ const SupplierPaymentsPage: React.FC = () => {
               {loading ? (
                 <TR><TD colSpan={7} className="px-6 py-10 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div></TD></TR>
               ) : filteredPayments.length === 0 ? (
-                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">Tidak ada data pembayaran supplier.</TD></TR>
+                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">Tidak ada data pembayaran.</TD></TR>
               ) : (
                 filteredPayments.map((item) => (
                   <TR key={item.id} className="hover:bg-white/30 transition-colors">
                     <TD className="px-6 py-4 text-sm text-text-secondary">{formatDate(item.payment_date)}</TD>
                     <TD className="px-6 py-4 text-sm font-medium text-text-primary">{item.supplier_name}</TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary">
-                      {item.po_id ? `PO #${item.po_id}` : `SPK #${item.spk_id}`}
+                    <TD className="px-6 py-4 text-sm text-text-secondary whitespace-nowrap">
+                      {item.po_id ? `PO #${item.po_id}` : item.spk_id ? `SPK #${item.spk_id}` : item.opname_id ? `OPNAME #${item.opname_id.substring(0, 6)}` : '-'}
                     </TD>
                     <TD className="px-6 py-4 text-sm font-bold text-text-primary text-right">{formatCurrency(item.amount)}</TD>
                     <TD className="px-6 py-4 text-sm text-text-secondary">{item.payment_method}</TD>
@@ -206,7 +227,7 @@ const SupplierPaymentsPage: React.FC = () => {
                     <TD className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {item.status === 'pending' && (
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-600" onClick={() => handleStatusUpdate(item.id, 'paid')}><CheckCircle className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-600" title="Set Paid" onClick={() => handleStatusUpdate(item.id, 'paid')}><CheckCircle className="w-4 h-4" /></Button>
                         )}
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(item)}><Edit className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(item.id)}><Trash2 className="w-4 h-4" /></Button>
@@ -219,22 +240,28 @@ const SupplierPaymentsPage: React.FC = () => {
           </Table>
       </Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); resetForm(); }} title={editingId ? "Edit Pembayaran Supplier" : "Input Pembayaran Supplier"}>
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); resetForm(); }} title={editingId ? "Edit Pembayaran" : "Input Pembayaran Baru"}>
         <form className="space-y-4" onSubmit={handleSave}>
           <div>
-            <label className="text-sm font-medium text-text-primary mb-1.5 block">Referensi Tagihan (PO/SPK)</label>
-            <select className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none" value={formData.po_id ? `po_${formData.po_id}` : formData.spk_id ? `spk_${formData.spk_id}` : ''} onChange={(e) => {
+            <label className="text-sm font-medium text-text-primary mb-1.5 block">Referensi Tagihan (PO/SPK/Opname)</label>
+            <select className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none" value={formData.po_id ? `po_${formData.po_id}` : formData.spk_id ? `spk_${formData.spk_id}` : formData.opname_id ? `op_${formData.opname_id}` : ''} onChange={(e) => {
               const val = e.target.value;
               if (val.startsWith('po_')) {
                 const id = val.replace('po_', '');
                 const po = purchaseOrders.find(p => p.id === id);
-                setFormData({ ...formData, po_id: id, spk_id: '', supplier_name: po?.supplier_name || '', amount: po?.total_amount || 0 });
+                setFormData({ ...formData, po_id: id, spk_id: '', opname_id: '', supplier_name: po?.supplier_name || '', amount: po?.total_amount || 0 });
               } else if (val.startsWith('spk_')) {
                 const id = val.replace('spk_', '');
                 const spk = spks.find(s => s.id === id);
-                setFormData({ ...formData, po_id: '', spk_id: id, supplier_name: spk?.contractor_name || '', amount: spk?.total_value || 0 });
+                setFormData({ ...formData, po_id: '', spk_id: id, opname_id: '', supplier_name: spk?.contractor_name || '', amount: spk?.total_value || 0 });
+              } else if (val.startsWith('op_')) {
+                const id = val.replace('op_', '');
+                const op = opnames.find(o => o.id === id);
+                // For opname, we might need to fetch the total amount from its items if not available in master
+                // ProjectOpname interface shows amount: number
+                setFormData({ ...formData, po_id: '', spk_id: '', opname_id: id, supplier_name: op?.worker_name || 'Mandor/Kontraktor', amount: op?.amount || 0 });
               } else {
-                setFormData({ ...formData, po_id: '', spk_id: '', supplier_name: '', amount: 0 });
+                setFormData({ ...formData, po_id: '', spk_id: '', opname_id: '', supplier_name: '', amount: 0 });
               }
             }} required>
               <option value="">-- Pilih Tagihan --</option>
@@ -248,9 +275,14 @@ const SupplierPaymentsPage: React.FC = () => {
                   <option key={spk.id} value={`spk_${spk.id}`}>SPK #{spk.spk_number} - {spk.contractor_name} ({formatCurrency(spk.total_value)})</option>
                 ))}
               </optgroup>
+              <optgroup label="Opname Upah (Approved)">
+                {opnames.map(op => (
+                  <option key={op.id} value={`op_${op.id}`}>OPNAME {formatDate(op.date)} - {op.worker_name} ({formatCurrency(op.amount || 0)})</option>
+                ))}
+              </optgroup>
             </select>
           </div>
-          <Input label="Nama Supplier / Vendor" placeholder="Terisi otomatis dari referensi" value={formData.supplier_name} disabled />
+          <Input label="Nama Supplier / Sumber" placeholder="Terisi otomatis" value={formData.supplier_name} disabled />
           <Input label="Nilai Pembayaran (Rp)" type="number" placeholder="Rp 0" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })} required />
           <div className="grid grid-cols-2 gap-4">
             <Input label="Tanggal Pembayaran" type="date" value={formData.payment_date} onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })} required />

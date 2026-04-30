@@ -323,6 +323,7 @@ export interface SupplierPayment {
   id: string;
   po_id?: string;
   spk_id?: string;
+  opname_id?: string;
   supplier_name: string;
   amount: number;
   payment_date: string;

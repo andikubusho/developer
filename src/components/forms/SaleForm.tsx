@@ -40,7 +40,7 @@ const saleSchema = z.object({
   installments: z.array(z.object({
     due_date: z.string(),
     amount: z.number().min(0),
-    status: z.string().default('unpaid'),
+    status: z.string(),
   })).optional().nullable(),
 });
 
@@ -70,9 +70,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
     resolver: zodResolver(saleSchema),
     defaultValues: initialData ? { ...initialData } : {
       sale_date: new Date().toISOString().split('T')[0],
-      real_payment_date: new Date().toISOString().split('T')[0],
       payment_method: 'cash',
-      payment_type: 'transfer',
       price: 0,
       discount: 0,
       total_price: 0,
