@@ -60,28 +60,39 @@ const PriceList: React.FC = () => {
         api.get('units', `select=unit_number,status,is_blocking&project_id=eq.${selectedProjectId}`)
       ]);
 
-      // Parse unit_number into [blok, unitNum] using the same logic as PriceItemForm
-      // Handles formats: "South - 09", "A-01", "GC - 01", "A1"
       const parseUnitNum = (raw: string): [string, string] => {
-        const parts = (raw || '').split(/[\s-]+/).filter(Boolean);
+        if (!raw) return ['', ''];
+        // Remove all spaces and dashes for normalized matching
+        const clean = raw.toLowerCase().replace(/[\s-]+/g, '');
+        const match = clean.match(/^([a-z]+)(\d+)$/);
+        if (match) return [match[1], match[2]];
+        
+        // Fallback to original split logic if not simple alphanumeric
+        const parts = raw.split(/[\s-]+/).filter(Boolean);
         if (parts.length >= 2) return [parts[0].toLowerCase(), parts[parts.length - 1].toLowerCase()];
-        const blokMatch = raw.match(/^[a-zA-Z]+/);
-        const numMatch = raw.match(/\d+$/);
-        return [blokMatch ? blokMatch[0].toLowerCase() : raw.toLowerCase(), numMatch ? numMatch[0].toLowerCase() : ''];
+        return [raw.toLowerCase(), ''];
       };
 
       const unitStatusMap: Record<string, { status: string; isBlocking: boolean }> = {};
       (unitsData || []).forEach((u: any) => {
         const [blok, unitNum] = parseUnitNum(u.unit_number || '');
-        if (blok && unitNum) unitStatusMap[`${blok}|${unitNum}`] = { 
-          status: u.status, 
-          isBlocking: u.is_blocking 
-        };
+        if (blok && unitNum) {
+          // Store both original and a "clean" version of the blok name
+          unitStatusMap[`${blok}|${unitNum}`] = { status: u.status, isBlocking: !!u.is_blocking };
+          // Handle common typos like "easth" instead of "east"
+          const fuzzyBlok = blok.replace(/h$/, ''); 
+          if (fuzzyBlok !== blok) {
+            unitStatusMap[`${fuzzyBlok}|${unitNum}`] = { status: u.status, isBlocking: !!u.is_blocking };
+          }
+        }
       });
 
       const itemsWithStatus = (items || []).map((item: PriceListItem) => {
-        const key = `${(item.blok || '').toLowerCase()}|${(item.unit || '').toLowerCase()}`;
+        const blok = (item.blok || '').toLowerCase();
+        const unit = (item.unit || '').toLowerCase();
+        const key = `${blok}|${unit}`;
         const unitData = unitStatusMap[key];
+        
         return {
           ...item,
           status: (unitData?.status === 'sold' || unitData?.isBlocking) ? 'sold' : 'available'
