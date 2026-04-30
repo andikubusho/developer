@@ -37,10 +37,30 @@ const Payments: React.FC = () => {
       (salesData || []).forEach((s: any) => {
         saleMap[s.id] = { ...s, customer: customerMap[s.customer_id] || null, unit: unitMap[s.unit_id] || null };
       });
-      setPayments((payData || []).map((p: any) => ({
+      const enriched = (payData || []).map((p: any) => ({
         ...p,
         sale: p.sale_id ? (saleMap[p.sale_id] || null) : null,
-      })));
+      }));
+
+      // Deduplicate: same sale + amount + date → keep verified first, else latest created_at
+      const deduped = Object.values(
+        enriched.reduce((acc: Record<string, any>, p: any) => {
+          const key = `${p.sale_id}|${p.amount}|${p.payment_date}`;
+          if (!acc[key]) {
+            acc[key] = p;
+          } else {
+            const cur = acc[key];
+            if (p.status === 'verified' && cur.status !== 'verified') {
+              acc[key] = p;
+            } else if (p.status === cur.status && (p.created_at || '') > (cur.created_at || '')) {
+              acc[key] = p;
+            }
+          }
+          return acc;
+        }, {})
+      );
+
+      setPayments(deduped as Payment[]);
     } catch (error) {
       console.error('Error fetching payments:', error);
       setPayments([]);
