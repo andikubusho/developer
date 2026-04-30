@@ -116,17 +116,27 @@ const PriceList: React.FC = () => {
             const [b, n] = parseUnitNum(u.unit_number || '');
             return b === blok && n === unitNum;
           });
+          // Inherit category from an existing item in the same blok, so the
+          // blocked unit merges into the correct section in the print view
+          const sameBlokItem = itemsWithStatus.find((i: any) =>
+            (i.blok || '').toUpperCase() === blok.toUpperCase()
+          );
+          const category = sameBlokItem?.category
+            || itemsWithStatus[0]?.category
+            || 'Rumah';
+          // Use the exact blok string from existing items for consistent grouping
+          const blokFormatted = sameBlokItem?.blok || blok.toUpperCase();
           return {
             id: `blocked-${blok}-${unitNum}`,
             project_id: selectedProjectId,
-            blok: blok.toUpperCase(),
+            blok: blokFormatted,
             unit: unitNum,
             tipe: unitEntry?.type || '',
             luas_tanah: unitEntry?.luas_tanah || 0,
             luas_bangunan: unitEntry?.luas_bangunan || 0,
             harga_jual: unitEntry?.price || 0,
             booking_fee: 0,
-            category: unitEntry?.category || 'RUMAH',
+            category,
             status: 'sold',
           };
         });
