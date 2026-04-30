@@ -113,9 +113,21 @@ const VerificationQueue: React.FC = () => {
 
       // Orphaned payments: pending payments with no cash_flow entry
       const cfReferenceIds = new Set(rawItems.map(i => i.reference_id));
-      const orphanItems: CashFlowItem[] = (allPendingPayments || [])
-        .filter((p: any) => !cfReferenceIds.has(p.id))
-        .map((p: any) => {
+
+      // Deduplicate orphans: same sale_id + amount + payment_date → keep latest created_at
+      const dedupedOrphans = Object.values(
+        (allPendingPayments || [])
+          .filter((p: any) => !cfReferenceIds.has(p.id))
+          .reduce((acc: Record<string, any>, p: any) => {
+            const key = `${p.sale_id}|${p.amount}|${p.payment_date}`;
+            if (!acc[key] || (p.created_at || '') > (acc[key].created_at || '')) {
+              acc[key] = p;
+            }
+            return acc;
+          }, {})
+      );
+
+      const orphanItems: CashFlowItem[] = dedupedOrphans.map((p: any) => {
           const sale = p.sale_id ? (saleMap[p.sale_id] || null) : null;
           return {
             id: p.id,
