@@ -17,6 +17,7 @@ const unitSchema = z.object({
   price: z.number().min(1000000, 'Harga minimal 1 juta'),
   status: z.enum(['available', 'booked', 'sold']),
   is_blocking: z.boolean().optional(),
+  category: z.string().optional(),
 });
 
 type UnitFormValues = z.infer<typeof unitSchema>;
@@ -115,6 +116,15 @@ export const UnitForm: React.FC<UnitFormProps> = ({ projects, onSuccess, onCance
         ]}
         {...register('status')}
         error={errors.status?.message}
+      />
+      <Select 
+        label="Kategori" 
+        options={[
+          { label: 'Rumah', value: 'Rumah' },
+          { label: 'Ruko', value: 'Ruko' },
+        ]}
+        {...register('category')}
+        error={errors.category?.message}
       />
 
       <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">

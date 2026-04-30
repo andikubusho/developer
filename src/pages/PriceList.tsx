@@ -162,7 +162,7 @@ const PriceList: React.FC = () => {
   };
 
   const getGroupedItems = () => {
-    const categories = ['Ruko', 'Rumah'];
+    const categories = Array.from(new Set(priceItems.map(i => i.category))).filter(Boolean);
     const result: any[] = [];
     categories.forEach(cat => {
       const catItems = priceItems.filter(i => i.category === cat);
@@ -321,7 +321,7 @@ const PriceList: React.FC = () => {
                 </TR>
               </THead>
               <TBody>
-                {['Ruko', 'Rumah'].map((cat) => {
+                {Array.from(new Set(priceItems.map(i => i.category))).filter(Boolean).map((cat) => {
                   const catItems = priceItems.filter(i => i.category === cat);
                   if (catItems.length === 0) return null;
                   return (
