@@ -65,6 +65,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const [verifiedDeposits, setVerifiedDeposits] = useState<any[]>([]);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
   const [hasLoadedMasterData, setHasLoadedMasterData] = useState(false);
+  const editCustomerSet = useRef(false);
 
   const { register, handleSubmit, watch, setValue, control, formState: { errors, isSubmitting } } = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
@@ -198,6 +199,21 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       }));
     } else { setCustomers([]); }
   }, [watchConsultantId, rawCustomers, rawLeads, verifiedDeposits, hasLoadedMasterData]);
+
+  // Edit mode: re-apply select values after async options finish loading
+  useEffect(() => {
+    if (!hasLoadedMasterData || !initialData) return;
+    setValue('consultant_id', initialData.consultant_id || '');
+    setValue('project_id', initialData.project_id || '');
+    setValue('unit_id', initialData.unit_id || '');
+  }, [hasLoadedMasterData]);
+
+  // Edit mode: re-apply customer_id once customers list is populated
+  useEffect(() => {
+    if (!initialData || !customers.length || editCustomerSet.current) return;
+    setValue('customer_id', initialData.customer_id || '');
+    editCustomerSet.current = true;
+  }, [customers]);
 
   const watchPaymentMethod = watch('payment_method');
   const watchInstallments = watch('installments') || [];
