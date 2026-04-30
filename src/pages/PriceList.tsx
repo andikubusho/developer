@@ -57,7 +57,7 @@ const PriceList: React.FC = () => {
       setLoading(true);
       const [items, unitsData] = await Promise.all([
         api.get('price_list_items', `select=*&project_id=eq.${selectedProjectId}&order=created_at.asc`),
-        api.get('units', `select=unit_number,status&project_id=eq.${selectedProjectId}`)
+        api.get('units', `select=unit_number,status,is_blocking&project_id=eq.${selectedProjectId}`)
       ]);
 
       // Parse unit_number into [blok, unitNum] using the same logic as PriceItemForm
@@ -332,7 +332,7 @@ const PriceList: React.FC = () => {
                             <TD className="px-1 py-2 text-center text-text-secondary border-r border-white/20 hidden md:table-cell">{item.luas_tanah}</TD>
                             <TD className="px-1 py-2 text-center text-text-secondary border-r border-white/20 hidden md:table-cell">{item.luas_bangunan}</TD>
                             {isSold ? (
-                              <TD colSpan={13} className="px-4 py-2 text-center bg-white/40/50"><span className="text-[8px] font-black uppercase tracking-[0.2em] text-text-muted">S O L D</span></TD>
+                              <TD colSpan={6} className="px-4 py-2 text-center bg-white/40"><span className="text-[8px] font-black uppercase tracking-[0.2em] text-text-muted">S O L D</span></TD>
                             ) : (
                               <>
                                 <TD className="px-2 py-2 text-text-secondary border-r border-white/20 whitespace-nowrap hidden lg:table-cell">{formatCurrency(item.booking_fee)}</TD>
