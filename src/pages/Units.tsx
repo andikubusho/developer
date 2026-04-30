@@ -208,8 +208,11 @@ const Units: React.FC = () => {
           <div><p className="text-[9px] sm:text-xs text-text-secondary font-black uppercase tracking-widest">Total</p><p className="text-sm sm:text-lg font-black text-text-primary">{units.length}</p></div>
         </Card>
         <Card className="p-3 sm:p-4 flex items-center gap-2 sm:gap-4">
-          <div className="p-1.5 sm:p-2 bg-emerald-50 rounded-lg sm:rounded-xl"><CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" /></div>
-          <div><p className="text-[9px] sm:text-xs text-text-secondary font-black uppercase tracking-widest">Ready</p><p className="text-sm sm:text-lg font-black text-text-primary">{units.filter(u => u.status === 'available').length}</p></div>
+          <div><p className="text-[9px] sm:text-xs text-text-secondary font-black uppercase tracking-widest">Ready</p><p className="text-sm sm:text-lg font-black text-text-primary">{units.filter(u => u.status === 'available' && !u.is_blocking).length}</p></div>
+        </Card>
+        <Card className="p-3 sm:p-4 flex items-center gap-2 sm:gap-4">
+          <div className="p-1.5 sm:p-2 bg-rose-50 rounded-lg sm:rounded-xl"><Filter className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600" /></div>
+          <div><p className="text-[9px] sm:text-xs text-text-secondary font-black uppercase tracking-widest">Blocked</p><p className="text-sm sm:text-lg font-black text-text-primary">{units.filter(u => u.is_blocking).length}</p></div>
         </Card>
         <Card className="p-3 sm:p-4 flex items-center gap-2 sm:gap-4">
           <div className="p-1.5 sm:p-2 bg-amber-50 rounded-lg sm:rounded-xl"><Clock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" /></div>
@@ -261,13 +264,20 @@ const Units: React.FC = () => {
                         {unit.luas_tanah ? `${unit.luas_tanah} / ${unit.luas_bangunan}` : '-'}
                       </TD>
                       <TD className="px-3 py-4">
-                        <span className={cn(
-                          'inline-flex items-center px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest',
-                          unit.status === 'available' ? 'bg-emerald-50 text-emerald-700' :
-                          unit.status === 'booked' ? 'bg-amber-50 text-amber-700' : 'bg-white/40 text-text-primary'
-                        )}>
-                          {unit.status === 'available' ? 'Ready' : unit.status === 'booked' ? 'Booked' : 'Sold'}
-                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          <span className={cn(
+                            'inline-flex items-center px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest',
+                            unit.status === 'available' ? 'bg-emerald-50 text-emerald-700' :
+                            unit.status === 'booked' ? 'bg-amber-50 text-amber-700' : 'bg-white/40 text-text-primary'
+                          )}>
+                            {unit.status === 'available' ? 'Ready' : unit.status === 'booked' ? 'Booked' : 'Sold'}
+                          </span>
+                          {unit.is_blocking && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest bg-rose-50 text-rose-700 border border-rose-100">
+                              Blocked
+                            </span>
+                          )}
+                        </div>
                       </TD>
                       <TD className="px-3 py-4 text-right">
                         <div className="flex justify-end gap-1">

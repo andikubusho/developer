@@ -16,6 +16,7 @@ const unitSchema = z.object({
   luas_bangunan: z.number().min(0).optional(),
   price: z.number().min(1000000, 'Harga minimal 1 juta'),
   status: z.enum(['available', 'booked', 'sold']),
+  is_blocking: z.boolean().optional(),
 });
 
 type UnitFormValues = z.infer<typeof unitSchema>;
@@ -115,6 +116,18 @@ export const UnitForm: React.FC<UnitFormProps> = ({ projects, onSuccess, onCance
         {...register('status')}
         error={errors.status?.message}
       />
+
+      <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
+        <input 
+          type="checkbox" 
+          id="is_blocking"
+          {...register('is_blocking')}
+          className="w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+        />
+        <label htmlFor="is_blocking" className="text-sm font-black text-amber-900 cursor-pointer uppercase tracking-tight">
+          Blocking Unit (Tampil sebagai Terjual di Price List)
+        </label>
+      </div>
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>Batal</Button>
         <Button type="submit" isLoading={loading}>Simpan Unit</Button>

@@ -140,7 +140,10 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
             status: p.status
           }));
         setProjects(p || []);
-        setUnits([...processedUnits, ...orphans].filter(unit => unit.status === 'available' || (initialData && unit.id === initialData.unit_id)));
+        setUnits([...processedUnits, ...orphans].filter(unit => 
+          ((unit.status === 'available' || !unit.status) && !unit.is_blocking) || 
+          (initialData && unit.id === initialData.unit_id)
+        ));
         setRawCustomers(c || []);
         setRawLeads(l || []);
         setVerifiedDeposits(d || []);

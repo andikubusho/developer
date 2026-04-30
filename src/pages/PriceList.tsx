@@ -70,18 +70,21 @@ const PriceList: React.FC = () => {
         return [blokMatch ? blokMatch[0].toLowerCase() : raw.toLowerCase(), numMatch ? numMatch[0].toLowerCase() : ''];
       };
 
-      const unitStatusMap: Record<string, string> = {};
+      const unitStatusMap: Record<string, { status: string; isBlocking: boolean }> = {};
       (unitsData || []).forEach((u: any) => {
         const [blok, unitNum] = parseUnitNum(u.unit_number || '');
-        if (blok && unitNum) unitStatusMap[`${blok}|${unitNum}`] = u.status;
+        if (blok && unitNum) unitStatusMap[`${blok}|${unitNum}`] = { 
+          status: u.status, 
+          isBlocking: u.is_blocking 
+        };
       });
 
       const itemsWithStatus = (items || []).map((item: PriceListItem) => {
         const key = `${(item.blok || '').toLowerCase()}|${(item.unit || '').toLowerCase()}`;
-        const unitStatus = unitStatusMap[key];
+        const unitData = unitStatusMap[key];
         return {
           ...item,
-          status: unitStatus === 'sold' ? 'sold' : 'available'
+          status: (unitData?.status === 'sold' || unitData?.isBlocking) ? 'sold' : 'available'
         };
       });
 

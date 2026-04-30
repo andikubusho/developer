@@ -1533,6 +1533,7 @@ export const propertyUnits = pgTable("units", {
   type: text("type"),
   price: numeric("price").default("0"),
   status: text("status").default("available"),
+  isBlocking: boolean("is_blocking").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
