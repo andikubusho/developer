@@ -57,7 +57,7 @@ const PriceList: React.FC = () => {
       setLoading(true);
       const [items, unitsData] = await Promise.all([
         api.get('price_list_items', `select=*&project_id=eq.${selectedProjectId}&order=created_at.asc`),
-        api.get('units', `select=unit_number,status,is_blocking&project_id=eq.${selectedProjectId}`)
+        api.get('units', `select=unit_number,type,luas_tanah,luas_bangunan,price,status,is_blocking&project_id=eq.${selectedProjectId}`)
       ]);
 
       const parseUnitNum = (raw: string): [string, string] => {
