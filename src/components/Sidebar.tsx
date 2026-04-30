@@ -45,72 +45,82 @@ interface SidebarProps {
 const menuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/', divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'] },
   
-  // Finance Section (Reordered per user request)
-  { name: 'Petty Cash', icon: Wallet, path: '/petty-cash', divisions: ['keuangan', 'audit'] },
-  { name: 'Hutang Supplier', icon: Truck, path: '/supplier-payables', divisions: ['keuangan', 'audit'] },
-  { name: 'Pembayaran Supplier', icon: Truck, path: '/supplier-payments', divisions: ['keuangan', 'audit'] },
-  { name: 'Antrian Verifikasi', icon: UserCheck, path: '/verification-queue', divisions: ['keuangan', 'audit'] },
-  { name: 'Cash Flow', icon: ArrowLeftRight, path: '/cash-flow', divisions: ['keuangan', 'accounting', 'audit'] },
-  { name: 'Pencairan KPR', icon: Banknote, path: '/kpr-disbursement', divisions: ['keuangan', 'audit'] },
-  { name: 'Piutang Konsumen', icon: FileText, path: '/customer-receivables', divisions: ['keuangan', 'audit'] },
-  { name: 'Master Bank', icon: Landmark, path: '/bank-master', divisions: ['keuangan', 'audit'] },
+  // Finance Section
+  { name: 'Petty Cash', icon: Wallet, path: '/petty-cash', divisions: ['keuangan', 'audit'], category: 'MANAJEMEN KAS' },
+  { name: 'Cash Flow', icon: ArrowLeftRight, path: '/cash-flow', divisions: ['keuangan', 'accounting', 'audit'], category: 'MANAJEMEN KAS' },
+  { name: 'Master Bank', icon: Landmark, path: '/bank-master', divisions: ['keuangan', 'audit'], category: 'MANAJEMEN KAS' },
 
-  // HRD Section
-  { name: 'Rekrutmen', icon: Briefcase, path: '/recruitment', divisions: ['hrd', 'audit'] },
-  { name: 'Data Karyawan', icon: Users, path: '/employees', divisions: ['hrd', 'audit'] },
-  { name: 'Absensi & Cuti', icon: Clock, path: '/attendance', divisions: ['hrd', 'audit'] },
-  { name: 'Payroll', icon: Banknote, path: '/payroll', divisions: ['hrd', 'audit'] },
+  { name: 'Hutang Supplier', icon: Truck, path: '/supplier-payables', divisions: ['keuangan', 'audit'], category: 'HUTANG PIUTANG' },
+  { name: 'Piutang Konsumen', icon: FileText, path: '/customer-receivables', divisions: ['keuangan', 'audit'], category: 'HUTANG PIUTANG' },
+  { name: 'Pencairan KPR', icon: Banknote, path: '/kpr-disbursement', divisions: ['keuangan', 'audit'], category: 'HUTANG PIUTANG' },
 
-  // Accounting Section
-  { name: 'Jurnal Umum', icon: History, path: '/general-journal', divisions: ['accounting', 'audit'] },
-  { name: 'Buku Besar', icon: FileSpreadsheet, path: '/ledger', divisions: ['accounting', 'audit'] },
-  { name: 'Perpajakan', icon: Receipt, path: '/taxation', divisions: ['accounting', 'audit'] },
+  { name: 'Pembayaran Supplier', icon: Truck, path: '/supplier-payments', divisions: ['keuangan', 'audit'], category: 'VERIFIKASI & BAYAR' },
+  { name: 'Antrian Verifikasi', icon: UserCheck, path: '/verification-queue', divisions: ['keuangan', 'audit'], category: 'VERIFIKASI & BAYAR' },
 
-  // Teknik Section
-  { name: 'Purchase Request', icon: ClipboardList, path: '/purchase-requests', divisions: ['teknik', 'audit'] },
-  { name: 'Approval Manager', icon: ShieldCheck, path: '/approval-manager', divisions: ['teknik', 'audit'] },
-  { name: 'Purchase Order', icon: ShoppingCart, path: '/purchase-orders', divisions: ['teknik', 'audit'] },
-  { name: 'Penerimaan Barang', icon: Truck, path: '/goods-receipt', divisions: ['teknik', 'audit'] },
-  { name: 'Pemakaian Material', icon: HardHat, path: '/material-usage', divisions: ['teknik', 'audit'] },
-  { name: 'Stok Material', icon: Package, path: '/materials', divisions: ['teknik', 'audit'] },
-  { name: 'Kartu Stok', icon: History, path: '/stock-card', divisions: ['teknik', 'audit'] },
-  { name: 'RAB Proyek', icon: Calculator, path: '/rab', divisions: ['teknik', 'audit'] },
-  { name: 'Opname/Upah', icon: ClipboardList, path: '/opname', divisions: ['teknik', 'audit'] },
-  { name: 'SPK Kontraktor', icon: FileText, path: '/spk', divisions: ['teknik', 'audit'] },
-  { name: 'Real Cost', icon: BarChart3, path: '/real-cost', divisions: ['teknik', 'audit'] },
-  { name: 'Master Material', icon: Package, path: '/master-material', divisions: ['teknik', 'audit'] },
-  { name: 'Master Supplier', icon: Users, path: '/material-suppliers', divisions: ['teknik', 'audit'] },
+  // HRD & Payroll
+  { name: 'Rekrutmen', icon: Briefcase, path: '/recruitment', divisions: ['hrd', 'audit'], category: 'HRD & PAYROLL' },
+  { name: 'Data Karyawan', icon: Users, path: '/employees', divisions: ['hrd', 'audit'], category: 'HRD & PAYROLL' },
+  { name: 'Absensi & Cuti', icon: Clock, path: '/attendance', divisions: ['hrd', 'audit'], category: 'HRD & PAYROLL' },
+  { name: 'Payroll', icon: Banknote, path: '/payroll', divisions: ['hrd', 'audit'], category: 'HRD & PAYROLL' },
 
-  // Marketing Section
-  { name: 'Calon Konsumen', icon: UserPlus, path: '/leads', divisions: ['marketing'] },
-  { name: 'Follow Up', icon: MessageSquare, path: '/follow-ups', divisions: ['marketing'] },
-  { name: 'Titipan', icon: Wallet, path: '/deposits', divisions: ['marketing'] },
-  { name: 'Jadwal Konsultan', icon: Calendar, path: '/marketing-schedule', divisions: ['marketing'] },
-  { name: 'Master Konsultan', icon: Users, path: '/marketing-master', divisions: ['marketing'] },
-  { name: 'Master Promo', icon: Tag, path: '/promos', divisions: ['marketing'] },
-  { name: 'Price List', icon: FileText, path: '/price-list', divisions: ['marketing'] },
-  { name: 'Siteplan', icon: Map, path: '/site-plan', divisions: ['marketing'] },
-  { name: 'Denah', icon: Layout, path: '/floor-plan', divisions: ['marketing'] },
+  // Accounting
+  { name: 'Jurnal Umum', icon: History, path: '/general-journal', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
+  { name: 'Buku Besar', icon: FileSpreadsheet, path: '/ledger', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
+  { name: 'Perpajakan', icon: Receipt, path: '/taxation', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
+
+  // Teknik - PERENCANAAN
+  { name: 'RAB Proyek', icon: Calculator, path: '/rab', divisions: ['teknik', 'audit'], category: 'TEKNIK: PERENCANAAN' },
+  { name: 'Proyek', icon: Building2, path: '/projects', divisions: ['marketing', 'teknik', 'audit'], category: 'TEKNIK: PERENCANAAN' },
+  { name: 'Unit Properti', icon: Home, path: '/units', divisions: ['marketing', 'teknik', 'audit'], category: 'TEKNIK: PERENCANAAN' },
   
-  // Shared Marketing/Teknik
-  { name: 'Unit Properti', icon: Home, path: '/units', divisions: ['marketing', 'teknik', 'audit'] },
-  { name: 'Progress Bangun', icon: HardHat, path: '/construction-progress', divisions: ['marketing', 'teknik', 'audit'] },
+  // Teknik - LOGISTIK & STOK
+  { name: 'Purchase Request', icon: ClipboardList, path: '/purchase-requests', divisions: ['teknik', 'audit'], category: 'TEKNIK: LOGISTIK' },
+  { name: 'Approval Manager', icon: ShieldCheck, path: '/approval-manager', divisions: ['teknik', 'audit'], category: 'TEKNIK: LOGISTIK' },
+  { name: 'Purchase Order', icon: ShoppingCart, path: '/purchase-orders', divisions: ['teknik', 'audit'], category: 'TEKNIK: LOGISTIK' },
+  { name: 'Penerimaan Barang', icon: Truck, path: '/goods-receipt', divisions: ['teknik', 'audit'], category: 'TEKNIK: LOGISTIK' },
+  { name: 'Pemakaian Material', icon: HardHat, path: '/material-usage', divisions: ['teknik', 'audit'], category: 'TEKNIK: LOGISTIK' },
+  { name: 'Stok Material', icon: Package, path: '/materials', divisions: ['teknik', 'audit'], category: 'TEKNIK: LOGISTIK' },
+  { name: 'Kartu Stok', icon: History, path: '/stock-card', divisions: ['teknik', 'audit'], category: 'TEKNIK: LOGISTIK' },
   
-  // Shared Marketing/Audit
-  { name: 'Data Konsumen', icon: Users, path: '/customers', divisions: ['marketing', 'audit'] },
-  { name: 'Penjualan', icon: ShoppingCart, path: '/sales', divisions: ['marketing', 'audit'] },
-  { name: 'Pembayaran Konsumen', icon: CreditCard, path: '/payments', divisions: ['marketing', 'keuangan', 'accounting', 'audit'] },
-  { name: 'Laporan', icon: BarChart3, path: '/financial-reports', divisions: ['marketing', 'accounting', 'audit'] },
-  { name: 'Template Dokumen', icon: FileText, path: '/document-templates', divisions: ['marketing', 'audit'] },
-  { name: 'Proyek', icon: Building2, path: '/projects', divisions: ['marketing', 'teknik', 'audit'] },
+  // Teknik - PELAKSANAAN & BIAYA
+  { name: 'SPK Kontraktor', icon: FileText, path: '/spk', divisions: ['teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },
+  { name: 'Opname/Upah', icon: ClipboardList, path: '/opname', divisions: ['teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },
+  { name: 'Progress Bangun', icon: HardHat, path: '/construction-progress', divisions: ['marketing', 'teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },
+  { name: 'Real Cost', icon: BarChart3, path: '/real-cost', divisions: ['teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },
+
+  // Teknik - DATA MASTER
+  { name: 'Master Material', icon: Package, path: '/master-material', divisions: ['teknik', 'audit'], category: 'TEKNIK: MASTER' },
+  { name: 'Master Supplier', icon: Users, path: '/material-suppliers', divisions: ['teknik', 'audit'], category: 'TEKNIK: MASTER' },
+
+  // Marketing - PROSPEK & PENJUALAN
+  { name: 'Calon Konsumen', icon: UserPlus, path: '/leads', divisions: ['marketing'], category: 'MKT: PROSPEK & SALES' },
+  { name: 'Follow Up', icon: MessageSquare, path: '/follow-ups', divisions: ['marketing'], category: 'MKT: PROSPEK & SALES' },
+  { name: 'Titipan', icon: Wallet, path: '/deposits', divisions: ['marketing'], category: 'MKT: PROSPEK & SALES' },
+  { name: 'Penjualan', icon: ShoppingCart, path: '/sales', divisions: ['marketing', 'audit'], category: 'MKT: PROSPEK & SALES' },
+  { name: 'Pembayaran Konsumen', icon: CreditCard, path: '/payments', divisions: ['marketing', 'keuangan', 'accounting', 'audit'], category: 'MKT: PROSPEK & SALES' },
+
+  // Marketing - MANAJEMEN KONSUMEN
+  { name: 'Data Konsumen', icon: Users, path: '/customers', divisions: ['marketing', 'audit'], category: 'MKT: KONSUMEN' },
+  { name: 'Template Dokumen', icon: FileText, path: '/document-templates', divisions: ['marketing', 'audit'], category: 'MKT: KONSUMEN' },
+
+  // Marketing - INVENTORI & VISUAL
+  { name: 'Siteplan', icon: Map, path: '/site-plan', divisions: ['marketing'], category: 'MKT: PRODUK & VISUAL' },
+  { name: 'Denah', icon: Layout, path: '/floor-plan', divisions: ['marketing'], category: 'MKT: PRODUK & VISUAL' },
+
+  // Marketing - TOOLS
+  { name: 'Price List', icon: FileText, path: '/price-list', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
+  { name: 'Master Promo', icon: Tag, path: '/promos', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
+  { name: 'Master Konsultan', icon: Users, path: '/marketing-master', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
+  { name: 'Jadwal Konsultan', icon: Calendar, path: '/marketing-schedule', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
+  { name: 'Laporan', icon: BarChart3, path: '/financial-reports', divisions: ['marketing', 'accounting', 'audit'], category: 'MKT: TOOLS & LAPORAN' },
   
   // System
-  { name: 'User & Role', icon: ShieldCheck, path: '/user-management', divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'] },
+  { name: 'User & Role', icon: ShieldCheck, path: '/user-management', divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'], category: 'SISTEM' },
 
   // Audit Specific
-  { name: 'Audit Transaksi', icon: ShieldCheck, path: '/audit-transactions', divisions: ['audit'] },
-  { name: 'Audit Stok', icon: Package, path: '/audit-stock', divisions: ['audit'] },
-  { name: 'Audit Biaya', icon: Calculator, path: '/audit-costs', divisions: ['audit'] },
+  { name: 'Audit Transaksi', icon: ShieldCheck, path: '/audit-transactions', divisions: ['audit'], category: 'AUDIT' },
+  { name: 'Audit Stok', icon: Package, path: '/audit-stock', divisions: ['audit'], category: 'AUDIT' },
+  { name: 'Audit Biaya', icon: Calculator, path: '/audit-costs', divisions: ['audit'], category: 'AUDIT' },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
@@ -138,29 +148,40 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         <div className="px-4 mb-4">
           <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-2">Menu Utama</p>
         </div>
-        {filteredMenu.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            onClick={() => onClose?.()}
-            className={({ isActive }) => cn(
-              'flex items-center gap-4 px-5 py-3 rounded-pill transition-all duration-300 group relative overflow-hidden',
-              isActive 
-                ? 'glass-convex text-text-primary after:absolute after:left-1 after:top-1/4 after:bottom-1/4 after:w-1 after:bg-accent-lavender after:rounded-full' 
-                : 'text-text-secondary hover:bg-glass/50 hover:text-text-primary'
-            )}
-          >
-            {({ isActive }) => (
-              <>
-                <item.icon className={cn(
-                  "w-5 h-5 transition-transform group-hover:scale-110",
-                  isActive ? "text-accent-dark" : "text-text-muted group-hover:text-text-primary"
-                )} />
-                <span className="font-bold text-[13px] tracking-tight">{item.name}</span>
-              </>
-            )}
-          </NavLink>
-        ))}
+        {filteredMenu.map((item, index) => {
+          const prevItem = index > 0 ? filteredMenu[index - 1] : null;
+          const showCategory = item.category && item.category !== prevItem?.category;
+
+          return (
+            <React.Fragment key={item.path}>
+              {showCategory && (
+                <div className="px-4 pt-6 pb-2 animate-in fade-in slide-in-from-left-4 duration-500">
+                  <p className="text-[9px] font-black text-accent-dark uppercase tracking-[0.2em] opacity-50">{item.category}</p>
+                </div>
+              )}
+              <NavLink
+                to={item.path}
+                onClick={() => onClose?.()}
+                className={({ isActive }) => cn(
+                  'flex items-center gap-4 px-5 py-3 rounded-pill transition-all duration-300 group relative overflow-hidden',
+                  isActive 
+                    ? 'glass-convex text-text-primary after:absolute after:left-1 after:top-1/4 after:bottom-1/4 after:w-1 after:bg-accent-lavender after:rounded-full' 
+                    : 'text-text-secondary hover:bg-glass/50 hover:text-text-primary'
+                )}
+              >
+                {({ isActive }) => (
+                  <>
+                    <item.icon className={cn(
+                      "w-5 h-5 transition-transform group-hover:scale-110",
+                      isActive ? "text-accent-dark" : "text-text-muted group-hover:text-text-primary"
+                    )} />
+                    <span className="font-bold text-[13px] tracking-tight">{item.name}</span>
+                  </>
+                )}
+              </NavLink>
+            </React.Fragment>
+          );
+        })}
       </nav>
 
       <div className="p-5 m-4 mt-auto rounded-xl bg-glass-deep/50 border border-white/40 shadow-inset">

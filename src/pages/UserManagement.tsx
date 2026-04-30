@@ -745,27 +745,40 @@ const UserManagement: React.FC = () => {
                   </TR>
                 </THead>
                 <TBody>
-                  {MENU_KEYS.map(menu => (
-                    <TR key={menu.key} className="hover:bg-white/20">
-                      <TD className="py-3 px-4">
-                        <p className="text-sm font-bold text-text-primary">{menu.label}</p>
-                        <p className="text-[10px] text-text-muted uppercase">{menu.group}</p>
-                      </TD>
-                      {(['view', 'create', 'edit', 'delete', 'print', 'viewAll'] as const).map(cap => {
-                        const isAvail = (menu.capabilities as any)[cap];
-                        return (
-                          <TD key={cap} className="py-3 px-1 text-center">
-                            <PermissionToggle
-                              isAvail={isAvail}
-                              hasAccess={!!roleForm.permissions[menu.key]?.[cap]}
-                              onToggle={() => updateRolePermission(menu.key, cap, !roleForm.permissions[menu.key]?.[cap])}
-                              label={`${cap} ${menu.label}`}
-                            />
+                  {MENU_KEYS.map((menu, index) => {
+                    const prevMenu = index > 0 ? MENU_KEYS[index - 1] : null;
+                    const showCategory = menu.category && menu.category !== prevMenu?.category;
+                    return (
+                      <React.Fragment key={menu.key}>
+                        {showCategory && (
+                          <TR className="bg-slate-50/80">
+                            <TD colSpan={7} className="py-2.5 px-4 border-y border-slate-100">
+                              <p className="text-[9px] font-black text-accent-dark uppercase tracking-[0.2em]">{menu.category}</p>
+                            </TD>
+                          </TR>
+                        )}
+                        <TR className="hover:bg-white/20">
+                          <TD className="py-3 px-4">
+                            <p className="text-sm font-bold text-text-primary">{menu.label}</p>
+                            <p className="text-[10px] text-text-muted uppercase">{menu.group}</p>
                           </TD>
-                        );
-                      })}
-                    </TR>
-                  ))}
+                          {(['view', 'create', 'edit', 'delete', 'print', 'viewAll'] as const).map(cap => {
+                            const isAvail = (menu.capabilities as any)[cap];
+                            return (
+                              <TD key={cap} className="py-3 px-1 text-center">
+                                <PermissionToggle
+                                  isAvail={isAvail}
+                                  hasAccess={!!roleForm.permissions[menu.key]?.[cap]}
+                                  onToggle={() => updateRolePermission(menu.key, cap, !roleForm.permissions[menu.key]?.[cap])}
+                                  label={`${cap} ${menu.label}`}
+                                />
+                              </TD>
+                            );
+                          })}
+                        </TR>
+                      </React.Fragment>
+                    );
+                  })}
                 </TBody>
               </Table>
             </div>
@@ -781,10 +794,10 @@ const UserManagement: React.FC = () => {
         title={`Custom Hak Akses: ${selectedProfile?.full_name}`}
         size="3xl"
       >
-        <div className="max-h-[70vh] overflow-y-auto">
+        <div className="max-h-[70vh] overflow-y-auto rounded-xl border border-white/40">
           <Table className="w-full text-left border-collapse">
             <THead>
-              <TR className="text-[10px] uppercase font-black text-text-muted tracking-widest">
+              <TR className="text-[10px] uppercase font-black text-text-muted tracking-widest bg-white/40">
                 <TH className="py-4 px-4 w-1/2">Modul</TH>
                 <TH className="py-4 px-1 text-center w-[60px]">View</TH>
                 <TH className="py-4 px-1 text-center w-[60px]">Input</TH>
@@ -795,27 +808,40 @@ const UserManagement: React.FC = () => {
               </TR>
             </THead>
             <TBody>
-              {MENU_KEYS.map(menu => (
-                <TR key={menu.key} className="hover:bg-white/20">
-                  <TD className="py-4 px-4">
-                    <p className="text-sm font-bold text-text-primary">{menu.label}</p>
-                    <p className="text-[10px] text-text-muted uppercase tracking-widest">{menu.group}</p>
-                  </TD>
-                  {(['view', 'create', 'edit', 'delete', 'print', 'viewAll'] as const).map(cap => {
-                    const isAvail = (menu.capabilities as any)[cap];
-                    return (
-                      <TD key={cap} className="py-4 px-1 text-center">
-                        <PermissionToggle
-                          isAvail={isAvail}
-                          hasAccess={!!selectedProfile?.permissions?.[menu.key]?.[cap]}
-                          onToggle={() => handleUpdateUserPermissions(menu.key, cap, !selectedProfile?.permissions?.[menu.key]?.[cap])}
-                          label={`${cap} ${menu.label}`}
-                        />
+              {MENU_KEYS.map((menu, index) => {
+                const prevMenu = index > 0 ? MENU_KEYS[index - 1] : null;
+                const showCategory = menu.category && menu.category !== prevMenu?.category;
+                return (
+                  <React.Fragment key={menu.key}>
+                    {showCategory && (
+                      <TR className="bg-slate-50/80">
+                        <TD colSpan={7} className="py-2.5 px-4 border-y border-slate-100">
+                          <p className="text-[9px] font-black text-accent-dark uppercase tracking-[0.2em]">{menu.category}</p>
+                        </TD>
+                      </TR>
+                    )}
+                    <TR className="hover:bg-white/20">
+                      <TD className="py-4 px-4">
+                        <p className="text-sm font-bold text-text-primary">{menu.label}</p>
+                        <p className="text-[10px] text-text-muted uppercase tracking-widest">{menu.group}</p>
                       </TD>
-                    );
-                  })}
-                </TR>
-              ))}
+                      {(['view', 'create', 'edit', 'delete', 'print', 'viewAll'] as const).map(cap => {
+                        const isAvail = (menu.capabilities as any)[cap];
+                        return (
+                          <TD key={cap} className="py-4 px-1 text-center">
+                            <PermissionToggle
+                              isAvail={isAvail}
+                              hasAccess={!!selectedProfile?.permissions?.[menu.key]?.[cap]}
+                              onToggle={() => handleUpdateUserPermissions(menu.key, cap, !selectedProfile?.permissions?.[menu.key]?.[cap])}
+                              label={`${cap} ${menu.label}`}
+                            />
+                          </TD>
+                        );
+                      })}
+                    </TR>
+                  </React.Fragment>
+                );
+              })}
             </TBody>
           </Table>
         </div>

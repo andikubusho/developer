@@ -33,30 +33,35 @@ interface MasterMaterial {
 const PurchaseRequests: React.FC = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState<any[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [masters, setMasters] = useState<MasterMaterial[]>([]);
-  const [units, setUnits] = useState<{ id: string; unit_number: string }[]>([]);
+  const [rabs, setRabs] = useState<any[]>([]);
+  const [selectedRab, setSelectedRab] = useState<any | null>(null);
+  const [budgetItems, setBudgetItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [budgetStatus, setBudgetStatus] = useState<any[]>([]);
   const [loadingBudget, setLoadingBudget] = useState(false);
 
   const [form, setForm] = useState({
-    project_id: '',
-    unit_id: '',
     material_id: '',
     quantity: 1,
     description: ''
   });
 
+  const [selectedBudgetInfo, setSelectedBudgetInfo] = useState<{
+    quota: number;
+    used: number;
+    remaining: number;
+    unit: string;
+  } | null>(null);
+
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [projData, masterData, reqData, unitData] = await Promise.all([
-        api.get('projects', 'select=id,name&order=name.asc'),
-        api.get('materials', 'select=id,name,unit,code&order=name.asc'),
+      const [rabData, reqData, projData, masterData, unitData] = await Promise.all([
+        api.get('rab_projects', 'select=*&order=created_at.desc'),
         api.get('purchase_requests', 'select=*&order=created_at.desc'),
+        api.get('projects', 'select=id,name'),
+        api.get('materials', 'select=id,name,unit,code'),
         api.get('units', 'select=id,unit_number'),
       ]);
 
@@ -74,8 +79,7 @@ const PurchaseRequests: React.FC = () => {
         master: r.material_id ? (masterMap[r.material_id] || null) : null,
       }));
 
-      setProjects(projData);
-      setMasters(masterData);
+      setRabs(rabData || []);
       setRequests(enrichedReqs);
     } catch (err) {
       console.error('Error fetching initial data:', err);
@@ -88,47 +92,89 @@ const PurchaseRequests: React.FC = () => {
     fetchInitialData();
   }, []);
 
-  const fetchUnitsForProject = async (projectId: string) => {
-    if (!projectId) {
-      setUnits([]);
-      return;
+  // Fetch material budget when RAB is selected
+  useEffect(() => {
+    if (selectedRab) {
+      fetchBudgetStatus();
+    } else {
+      setBudgetItems([]);
+      setSelectedBudgetInfo(null);
     }
-    const data = await api.get('units', `project_id=eq.${projectId}&select=id,unit_number&order=unit_number.asc`);
-    setUnits(data);
+  }, [selectedRab]);
+
+  const fetchBudgetStatus = async () => {
+    if (!selectedRab) return;
+    try {
+      setLoadingBudget(true);
+      const status = await api.getBudgetStatus(selectedRab.project_id, selectedRab.unit_id);
+      setBudgetItems(status || []);
+    } catch (err) {
+      console.error('Error fetching budget status:', err);
+    } finally {
+      setLoadingBudget(false);
+    }
   };
 
+  // Update specific material info when selected
   useEffect(() => {
-    fetchUnitsForProject(form.project_id);
-    // Budget check logic will need update to use master material mapping in the future
-  }, [form.project_id, form.unit_id]);
+    if (form.material_id && budgetItems.length > 0) {
+      const item = budgetItems.find(i => i.material_id === form.material_id);
+      if (item) {
+        setSelectedBudgetInfo({
+          quota: item.quota,
+          used: item.used,
+          remaining: Math.max(0, item.quota - item.used),
+          unit: item.unit
+        });
+      } else {
+        setSelectedBudgetInfo(null);
+      }
+    } else {
+      setSelectedBudgetInfo(null);
+    }
+  }, [form.material_id, budgetItems]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedRab) return;
+
+    if (selectedBudgetInfo && form.quantity > selectedBudgetInfo.remaining) {
+      alert('Kuantitas melebihi sisa anggaran RAB!');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await api.insert('purchase_requests', {
-        project_id: form.project_id,
-        unit_id: form.unit_id,
+        project_id: selectedRab.project_id,
+        unit_id: selectedRab.unit_id,
         material_id: form.material_id,
         items: [{ material_id: form.material_id, quantity: form.quantity }], 
         description: form.description,
         status: 'PENDING'
       });
       setIsModalOpen(false);
+      resetForm();
       fetchInitialData();
-      setForm({
-        project_id: '',
-        unit_id: '',
-        material_id: '',
-        quantity: 1,
-        description: ''
-      });
     } catch (err) {
       console.error('Error submitting PR:', err);
+      alert('Gagal menyimpan PR');
     } finally {
       setSubmitting(false);
     }
   };
+
+  const resetForm = () => {
+    setSelectedRab(null);
+    setForm({
+      material_id: '',
+      quantity: 1,
+      description: ''
+    });
+    setSelectedBudgetInfo(null);
+  };
+
+  const isExceeding = selectedBudgetInfo && form.quantity > selectedBudgetInfo.remaining;
 
   return (
     <div className="space-y-6 pb-10">
@@ -139,12 +185,12 @@ const PurchaseRequests: React.FC = () => {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-text-primary tracking-tight">Purchase Requests</h1>
-            <p className="text-text-secondary">Permintaan pengadaan Master Material</p>
+            <p className="text-text-secondary">Permintaan pengadaan berbasis Anggaran Proyek (RAB)</p>
           </div>
         </div>
         <Button onClick={() => setIsModalOpen(true)} className="rounded-xl h-11 px-6 shadow-premium">
           <Plus className="w-4 h-4 mr-2" />
-          PR Baru
+          PR Baru (Dari RAB)
         </Button>
       </div>
 
@@ -213,75 +259,113 @@ const PurchaseRequests: React.FC = () => {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Buat Permintaan Pembelian (PR)"
+        onClose={() => { setIsModalOpen(false); resetForm(); }}
+        title="Buat Purchase Request (Budget Controlled)"
         size="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Proyek</label>
-              <select 
-                className="w-full h-12 glass-input rounded-xl px-4 text-sm font-bold focus:outline-none"
-                value={form.project_id}
-                onChange={(e) => setForm({ ...form, project_id: e.target.value })}
-                required
-              >
-                <option value="">Pilih Proyek</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Unit</label>
-              <select 
-                className="w-full h-12 glass-input rounded-xl px-4 text-sm font-bold focus:outline-none"
-                value={form.unit_id}
-                onChange={(e) => setForm({ ...form, unit_id: e.target.value })}
-                required
-              >
-                <option value="">Pilih Unit</option>
-                {units.map(u => <option key={u.id} value={u.id}>{u.unit_number}</option>)}
-              </select>
-            </div>
-          </div>
-
+          {/* Step 1: Pilih RAB */}
           <div className="space-y-2">
-            <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Pilih Master Material</label>
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Pilih Referensi RAB Proyek</label>
             <select 
               className="w-full h-12 glass-input rounded-xl px-4 text-sm font-bold focus:outline-none"
+              value={selectedRab?.id || ''}
+              onChange={(e) => {
+                const rab = rabs.find(r => r.id === e.target.value);
+                setSelectedRab(rab || null);
+                setForm({ ...form, material_id: '' });
+              }}
+              required
+            >
+              <option value="">-- Pilih RAB Proyek & Unit --</option>
+              {rabs.map(r => (
+                <option key={r.id} value={r.id}>
+                  {r.nama_proyek} {r.unit_id ? `(${r.unit_id})` : ''} - {formatDate(r.created_at)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedRab && (
+            <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-in fade-in slide-in-from-top-2">
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Proyek Terpilih</p>
+                <p className="text-sm font-black text-slate-700">{selectedRab.nama_proyek}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unit</p>
+                <p className="text-sm font-black text-slate-700">{selectedRab.unit_id || 'Seluruh Proyek'}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Pilih Material dari RAB */}
+          <div className="space-y-2">
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Pilih Material dari RAB</label>
+            <select 
+              className="w-full h-12 glass-input rounded-xl px-4 text-sm font-bold focus:outline-none disabled:opacity-50"
               value={form.material_id}
               onChange={(e) => setForm({ ...form, material_id: e.target.value })}
               required
+              disabled={!selectedRab || loadingBudget}
             >
-              <option value="">-- Pilih Material --</option>
-              {masters.map(m => (
-                <option key={m.id} value={m.id}>
-                  {m.code ? `[${m.code}] ` : ''}{m.name} ({m.unit})
+              <option value="">{loadingBudget ? 'Menghitung sisa anggaran...' : '-- Pilih Material --'}</option>
+              {budgetItems.map(m => (
+                <option key={m.material_id} value={m.material_id} disabled={m.quota <= m.used}>
+                  {m.name} {m.quota <= m.used ? '(Budget Habis)' : `(Sisa: ${formatNumber(m.quota - m.used)} ${m.unit})`}
                 </option>
               ))}
             </select>
             <div className="px-2 py-1 bg-blue-50 rounded-lg flex items-center gap-2">
               <Info className="w-3 h-3 text-blue-600" />
-              <p className="text-[10px] text-blue-600 font-bold uppercase tracking-tight">PR hanya boleh memilih Master Material (Bukan Merk)</p>
+              <p className="text-[10px] text-blue-600 font-bold uppercase tracking-tight">Hanya material yang terdaftar di RAB terpilih yang muncul.</p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Kuantitas Permintaan</label>
-            <div className="relative">
-              <Input 
-                type="number"
-                className="h-12 glass-input rounded-xl px-4 font-black text-lg"
-                value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: parseInt(e.target.value) || 0 })}
-                min="1"
-                required
-              />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-text-muted uppercase tracking-widest">
-                {masters.find(m => m.id === form.material_id)?.unit}
-              </div>
+          {/* Step 3: Budget Info & Qty */}
+          {selectedBudgetInfo && (
+            <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4 animate-in zoom-in-95">
+               <div className="grid grid-cols-3 gap-4 border-b border-slate-100 pb-4">
+                  <div className="text-center">
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Kuota RAB</p>
+                    <p className="text-sm font-black text-slate-600">{formatNumber(selectedBudgetInfo.quota)} {selectedBudgetInfo.unit}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Sudah PR</p>
+                    <p className="text-sm font-black text-slate-600">{formatNumber(selectedBudgetInfo.used)} {selectedBudgetInfo.unit}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Sisa Anggaran</p>
+                    <p className={`text-sm font-black ${selectedBudgetInfo.remaining > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {formatNumber(selectedBudgetInfo.remaining)} {selectedBudgetInfo.unit}
+                    </p>
+                  </div>
+               </div>
+
+               <div className="space-y-2">
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Kuantitas Permintaan</label>
+                  <div className="relative">
+                    <Input 
+                      type="number"
+                      className={`h-14 rounded-xl px-4 font-black text-xl border-2 transition-all ${isExceeding ? 'border-rose-400 bg-rose-50' : 'border-slate-200 bg-slate-50'}`}
+                      value={form.quantity}
+                      onChange={(e) => setForm({ ...form, quantity: parseFloat(e.target.value) || 0 })}
+                      min="0.1"
+                      step="0.1"
+                      required
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-text-muted uppercase tracking-widest">
+                      {selectedBudgetInfo.unit}
+                    </div>
+                  </div>
+                  {isExceeding && (
+                    <p className="text-[10px] font-black text-rose-600 uppercase tracking-tight flex items-center gap-1.5 ml-1">
+                      ⚠️ Permintaan melebihi sisa anggaran RAB!
+                    </p>
+                  )}
+               </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Keterangan / Alasan</label>
@@ -295,8 +379,13 @@ const PurchaseRequests: React.FC = () => {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="ghost" className="h-12 rounded-xl" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button type="submit" className="h-12 rounded-xl px-8 font-black shadow-premium" isLoading={submitting}>
+            <Button type="button" variant="ghost" className="h-12 rounded-xl" onClick={() => { setIsModalOpen(false); resetForm(); }}>Batal</Button>
+            <Button 
+              type="submit" 
+              className="h-12 rounded-xl px-8 font-black shadow-premium disabled:opacity-50" 
+              isLoading={submitting}
+              disabled={isExceeding || !form.material_id || form.quantity <= 0}
+            >
               Simpan Permintaan
             </Button>
           </div>
@@ -308,7 +397,6 @@ const PurchaseRequests: React.FC = () => {
 
 export default PurchaseRequests;
 
-// Adding formatNumber if not imported
 const formatNumber = (num: number) => {
   return new Intl.NumberFormat('id-ID').format(num);
 };
