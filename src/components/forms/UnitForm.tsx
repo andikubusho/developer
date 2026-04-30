@@ -42,14 +42,17 @@ export const UnitForm: React.FC<UnitFormProps> = ({ projects, onSuccess, onCance
   const onSubmit = async (values: UnitFormValues) => {
     setLoading(true);
     try {
+      // category belongs to price_list_items, not units table
+      const { category: _cat, ...unitPayload } = values;
+
       // Check if the id is a valid UUID before updating
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(initialData?.id || '');
 
       if (initialData?.id && isUUID) {
-        await api.update('units', initialData.id, values);
+        await api.update('units', initialData.id, unitPayload);
       } else {
         // If no ID or ID is not a UUID (e.g. from Price List merge), we Insert
-        await api.insert('units', values);
+        await api.insert('units', unitPayload);
       }
       onSuccess();
     } catch (error: any) {
