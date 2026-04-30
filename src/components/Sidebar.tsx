@@ -68,6 +68,28 @@ const menuItems = [
   { name: 'Buku Besar', icon: FileSpreadsheet, path: '/ledger', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
   { name: 'Perpajakan', icon: Receipt, path: '/taxation', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
 
+  // Marketing - PROSPEK & PENJUALAN
+  { name: 'Calon Konsumen', icon: UserPlus, path: '/leads', divisions: ['marketing'], category: 'MKT: PROSPEK & SALES' },
+  { name: 'Follow Up', icon: MessageSquare, path: '/follow-ups', divisions: ['marketing'], category: 'MKT: PROSPEK & SALES' },
+  { name: 'Titipan', icon: Wallet, path: '/deposits', divisions: ['marketing'], category: 'MKT: PROSPEK & SALES' },
+  { name: 'Penjualan', icon: ShoppingCart, path: '/sales', divisions: ['marketing', 'audit'], category: 'MKT: PROSPEK & SALES' },
+  { name: 'Pembayaran Konsumen', icon: CreditCard, path: '/payments', divisions: ['marketing', 'keuangan', 'accounting', 'audit'], category: 'MKT: PROSPEK & SALES' },
+
+  // Marketing - MANAJEMEN KONSUMEN
+  { name: 'Data Konsumen', icon: Users, path: '/customers', divisions: ['marketing', 'audit'], category: 'MKT: KONSUMEN' },
+  { name: 'Template Dokumen', icon: FileText, path: '/document-templates', divisions: ['marketing', 'audit'], category: 'MKT: KONSUMEN' },
+
+  // Marketing - INVENTORI & VISUAL
+  { name: 'Siteplan', icon: Map, path: '/site-plan', divisions: ['marketing'], category: 'MKT: PRODUK & VISUAL' },
+  { name: 'Denah', icon: Layout, path: '/floor-plan', divisions: ['marketing'], category: 'MKT: PRODUK & VISUAL' },
+
+  // Marketing - TOOLS
+  { name: 'Price List', icon: FileText, path: '/price-list', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
+  { name: 'Master Promo', icon: Tag, path: '/promos', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
+  { name: 'Master Konsultan', icon: Users, path: '/marketing-master', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
+  { name: 'Jadwal Konsultan', icon: Calendar, path: '/marketing-schedule', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
+  { name: 'Laporan', icon: BarChart3, path: '/financial-reports', divisions: ['marketing', 'accounting', 'audit'], category: 'MKT: TOOLS & LAPORAN' },
+  
   // Teknik - PERENCANAAN
   { name: 'RAB Proyek', icon: Calculator, path: '/rab', divisions: ['teknik', 'audit'], category: 'TEKNIK: PERENCANAAN' },
   { name: 'Proyek', icon: Building2, path: '/projects', divisions: ['marketing', 'teknik', 'audit'], category: 'TEKNIK: PERENCANAAN' },
@@ -91,28 +113,6 @@ const menuItems = [
   // Teknik - DATA MASTER
   { name: 'Master Material', icon: Package, path: '/master-material', divisions: ['teknik', 'audit'], category: 'TEKNIK: MASTER' },
   { name: 'Master Supplier', icon: Users, path: '/material-suppliers', divisions: ['teknik', 'audit'], category: 'TEKNIK: MASTER' },
-
-  // Marketing - PROSPEK & PENJUALAN
-  { name: 'Calon Konsumen', icon: UserPlus, path: '/leads', divisions: ['marketing'], category: 'MKT: PROSPEK & SALES' },
-  { name: 'Follow Up', icon: MessageSquare, path: '/follow-ups', divisions: ['marketing'], category: 'MKT: PROSPEK & SALES' },
-  { name: 'Titipan', icon: Wallet, path: '/deposits', divisions: ['marketing'], category: 'MKT: PROSPEK & SALES' },
-  { name: 'Penjualan', icon: ShoppingCart, path: '/sales', divisions: ['marketing', 'audit'], category: 'MKT: PROSPEK & SALES' },
-  { name: 'Pembayaran Konsumen', icon: CreditCard, path: '/payments', divisions: ['marketing', 'keuangan', 'accounting', 'audit'], category: 'MKT: PROSPEK & SALES' },
-
-  // Marketing - MANAJEMEN KONSUMEN
-  { name: 'Data Konsumen', icon: Users, path: '/customers', divisions: ['marketing', 'audit'], category: 'MKT: KONSUMEN' },
-  { name: 'Template Dokumen', icon: FileText, path: '/document-templates', divisions: ['marketing', 'audit'], category: 'MKT: KONSUMEN' },
-
-  // Marketing - INVENTORI & VISUAL
-  { name: 'Siteplan', icon: Map, path: '/site-plan', divisions: ['marketing'], category: 'MKT: PRODUK & VISUAL' },
-  { name: 'Denah', icon: Layout, path: '/floor-plan', divisions: ['marketing'], category: 'MKT: PRODUK & VISUAL' },
-
-  // Marketing - TOOLS
-  { name: 'Price List', icon: FileText, path: '/price-list', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
-  { name: 'Master Promo', icon: Tag, path: '/promos', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
-  { name: 'Master Konsultan', icon: Users, path: '/marketing-master', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
-  { name: 'Jadwal Konsultan', icon: Calendar, path: '/marketing-schedule', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
-  { name: 'Laporan', icon: BarChart3, path: '/financial-reports', divisions: ['marketing', 'accounting', 'audit'], category: 'MKT: TOOLS & LAPORAN' },
   
   // System
   { name: 'User & Role', icon: ShieldCheck, path: '/user-management', divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'], category: 'SISTEM' },
