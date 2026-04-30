@@ -130,7 +130,7 @@ const FollowUps: React.FC = () => {
 
   const fetchLeads = async () => {
     try {
-      const filterParam = selectedConsultantId !== 'all' ? `&consultant_id=eq.${selectedConsultantId}` : '';
+      const filterParam = selectedConsultantId !== 'all' && selectedConsultantId !== 'none' ? `&consultant_id=eq.${selectedConsultantId}` : '';
       const data = await api.get('leads', `select=id,name,phone,consultant_id&order=name.asc${filterParam}`);
       setLeads(data || []);
     } catch (error) {

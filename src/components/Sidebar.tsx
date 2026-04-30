@@ -88,7 +88,8 @@ const menuItems = [
   { name: 'Master Promo', icon: Tag, path: '/promos', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
   { name: 'Master Konsultan', icon: Users, path: '/marketing-master', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
   { name: 'Jadwal Konsultan', icon: Calendar, path: '/marketing-schedule', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
-  { name: 'Laporan', icon: BarChart3, path: '/financial-reports', divisions: ['marketing', 'accounting', 'audit'], category: 'MKT: TOOLS & LAPORAN' },
+  { name: 'Laporan', icon: BarChart3, path: '/reports', divisions: ['marketing'], category: 'MKT: TOOLS & LAPORAN' },
+  { name: 'Laporan', icon: BarChart3, path: '/financial-reports', divisions: ['accounting', 'audit'], category: 'MKT: TOOLS & LAPORAN' },
   
   // Teknik - PERENCANAAN
   { name: 'RAB Proyek', icon: Calculator, path: '/rab', divisions: ['teknik', 'audit'], category: 'TEKNIK: PERENCANAAN' },

@@ -187,17 +187,23 @@ const Dashboard: React.FC = () => {
       const isMarketingOnly = profile?.role === 'marketing';
       const marketingFilter = isMarketingOnly && profile?.consultant_id ? `&consultant_id=eq.${profile.consultant_id}` : '';
       
-      const [leads, followUps, deposits, sales] = await Promise.all([
+      const [leads, followUpsRaw, deposits, sales] = await Promise.all([
         api.get('leads', `select=id${marketingFilter}`),
-        api.get('follow_ups', `select=id,lead:leads!inner(consultant_id)&lead.consultant_id=eq.${profile?.consultant_id || ''}`),
+        api.get('follow_ups', 'select=id,lead_id'),
         api.get('deposits', `select=amount${marketingFilter}`),
         api.get('sales', `select=id${marketingFilter}`)
       ]);
 
+      let followUps = followUpsRaw || [];
+      if (isMarketingOnly && profile?.consultant_id) {
+        const leadIds = new Set((leads || []).map((l: any) => l.id));
+        followUps = followUps.filter((f: any) => leadIds.has(f.lead_id));
+      }
+
       setStats(prev => ({
         ...prev,
         totalLeads: leads?.length || 0,
-        pendingFollowUps: followUps?.length || 0,
+        pendingFollowUps: followUps.length,
         totalDeposits: deposits?.reduce((acc: number, curr: any) => acc + curr.amount, 0) || 0,
         totalSales: sales?.length || 0
       }));
