@@ -21,6 +21,7 @@ interface CashFlowItem {
   status: CfStatus;
   reference_id: string;
   reference_type: 'deposit' | 'payment';
+  isOrphan?: boolean;
   // joined
   bank?: { bank_name: string; account_number: string } | null;
   payment?: {
@@ -61,9 +62,10 @@ const VerificationQueue: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [cfData, bankData] = await Promise.all([
+      const [cfData, bankData, allPendingPayments] = await Promise.all([
         api.get('cash_flow', `status=eq.${activeTab}&order=date.desc`),
         api.get('bank_accounts', 'select=id,bank_name,account_number'),
+        activeTab === 'pending' ? api.get('payments', 'select=*&status=eq.pending&order=payment_date.desc') : Promise.resolve([]),
       ]);
       const rawItems: CashFlowItem[] = cfData || [];
 
@@ -109,7 +111,31 @@ const VerificationQueue: React.FC = () => {
         return true;
       });
 
-      setItems(unique);
+      // Orphaned payments: pending payments with no cash_flow entry
+      const cfReferenceIds = new Set(rawItems.map(i => i.reference_id));
+      const orphanItems: CashFlowItem[] = (allPendingPayments || [])
+        .filter((p: any) => !cfReferenceIds.has(p.id))
+        .map((p: any) => {
+          const sale = p.sale_id ? (saleMap[p.sale_id] || null) : null;
+          return {
+            id: p.id,
+            date: p.payment_date,
+            description: 'Pembayaran konsumen (belum ada entri kas)',
+            amount: p.amount,
+            type: 'in' as const,
+            category: 'Pembayaran Unit',
+            bank_account_id: null,
+            status: 'pending' as CfStatus,
+            reference_id: p.id,
+            reference_type: 'payment' as const,
+            isOrphan: true,
+            bank: null,
+            payment: { id: p.id, payment_method: p.payment_method, installment_id: p.installment_id || null, sale },
+            deposit: null,
+          };
+        });
+
+      setItems([...unique, ...orphanItems]);
     } catch (error) {
       console.error('Error fetching verification queue:', error);
     } finally {
@@ -123,24 +149,41 @@ const VerificationQueue: React.FC = () => {
     try {
       setLoading(true);
 
-      // Update source table
-      const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
-      await api.update(table, item.reference_id, { status: 'verified' });
-
-      // If payment has installment, mark it paid
-      if (item.reference_type === 'payment' && item.payment?.installment_id) {
-        await api.update('installments', item.payment.installment_id, {
-          status: 'paid',
-          paid_at: new Date().toISOString(),
+      if (item.isOrphan) {
+        // Orphaned payment — create cash_flow entry then mark verified
+        await api.update('payments', item.reference_id, { status: 'verified' });
+        if (item.payment?.installment_id) {
+          await api.update('installments', item.payment.installment_id, { status: 'paid', paid_at: new Date().toISOString() });
+        }
+        await api.insert('cash_flow', {
+          date: item.date,
+          description: item.description,
+          amount: item.amount,
+          type: 'in',
+          category: item.category,
+          status: 'verified',
+          reference_id: item.reference_id,
+          reference_type: 'payment',
+          bank_account_id: null,
         });
-      }
-
-      // Update ALL cash_flow entries with this reference_id (handles duplicates)
-      const relatedCf = await api.get('cash_flow', `reference_id=eq.${item.reference_id}&status=eq.pending`);
-      if (relatedCf && relatedCf.length > 0) {
-        await Promise.all(relatedCf.map((cf: any) => api.update('cash_flow', cf.id, { status: 'verified' })));
       } else {
-        await api.update('cash_flow', item.id, { status: 'verified' });
+        // Normal cash_flow item
+        const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
+        await api.update(table, item.reference_id, { status: 'verified' });
+
+        if (item.reference_type === 'payment' && item.payment?.installment_id) {
+          await api.update('installments', item.payment.installment_id, {
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+          });
+        }
+
+        const relatedCf = await api.get('cash_flow', `reference_id=eq.${item.reference_id}&status=eq.pending`);
+        if (relatedCf && relatedCf.length > 0) {
+          await Promise.all(relatedCf.map((cf: any) => api.update('cash_flow', cf.id, { status: 'verified' })));
+        } else {
+          await api.update('cash_flow', item.id, { status: 'verified' });
+        }
       }
 
       await fetchData();
@@ -156,15 +199,20 @@ const VerificationQueue: React.FC = () => {
     if (!confirm('Tolak & hapus transaksi ini? Status di modul asal akan kembali ke pending.')) return;
     try {
       setLoading(true);
-      const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
-      await api.update(table, item.reference_id, { status: 'pending' });
 
-      // Delete ALL cash_flow entries with this reference_id (handles duplicates)
-      const relatedCf = await api.get('cash_flow', `reference_id=eq.${item.reference_id}`);
-      if (relatedCf && relatedCf.length > 0) {
-        await Promise.all(relatedCf.map((cf: any) => api.delete('cash_flow', cf.id)));
+      if (item.isOrphan) {
+        // No cash_flow entry exists — just delete the payment record
+        await api.delete('payments', item.reference_id);
       } else {
-        await api.delete('cash_flow', item.id);
+        const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
+        await api.update(table, item.reference_id, { status: 'pending' });
+
+        const relatedCf = await api.get('cash_flow', `reference_id=eq.${item.reference_id}`);
+        if (relatedCf && relatedCf.length > 0) {
+          await Promise.all(relatedCf.map((cf: any) => api.delete('cash_flow', cf.id)));
+        } else {
+          await api.delete('cash_flow', item.id);
+        }
       }
 
       await fetchData();
