@@ -18,7 +18,9 @@ const RealCostPage: React.FC = () => {
   const navigate = useNavigate();
   const { isMockMode, setDivision } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [units, setUnits] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedUnitId, setSelectedUnitId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   
   const [data, setData] = useState({
@@ -29,6 +31,8 @@ const RealCostPage: React.FC = () => {
     wageActual: 0,
     totalActual: 0,
     variance: 0,
+    materialVariance: 0,
+    wageVariance: 0,
     rabItems: [] as any[],
     materialOrders: [] as PurchaseOrder[],
     wageOpnames: [] as ProjectOpname[]
@@ -40,9 +44,22 @@ const RealCostPage: React.FC = () => {
 
   useEffect(() => {
     if (selectedProjectId) {
+      fetchUnits(selectedProjectId);
       fetchRealCostData();
     }
-  }, [selectedProjectId]);
+  }, [selectedProjectId, selectedUnitId]);
+
+  const fetchUnits = async (projectId: string) => {
+    if (isMockMode) {
+      setUnits([
+        { id: 'u1', unit_number: 'South - 09' },
+        { id: 'u2', unit_number: 'North - 12' }
+      ]);
+      return;
+    }
+    const data = await api.get('units', `project_id=eq.${projectId}&order=unit_number.asc`);
+    setUnits(data || []);
+  };
 
   const fetchProjects = async () => {
     if (isMockMode) {
@@ -102,14 +119,38 @@ const RealCostPage: React.FC = () => {
     }
 
     try {
-      // 1. Get RAB Project ID
-      const rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}`);
-      const rabProjectId = rabs?.[0]?.id;
+      // 1. Get RAB Project IDs for the filter
+      let rabProjIdsQuery = `project_id=eq.${selectedProjectId}`;
+      if (selectedUnitId) {
+        rabProjIdsQuery += `&unit_id=eq.${selectedUnitId}`;
+      }
+      const rabs = await api.get('rab_projects', rabProjIdsQuery);
+      const rabProjectIds = (rabs || []).map((r: any) => r.id);
+
+      // 2. Fetch Material PRs for unit filtering (since PO doesn't have unit_id directly)
+      let poQuery = `select=*,project:projects(name),supplier:suppliers(name)&status=eq.received&project_id=eq.${selectedProjectId}`;
+      if (selectedUnitId) {
+        // We need to find PRs for this unit first
+        const prs = await api.get('purchase_requests', `project_id=eq.${selectedProjectId}&unit_id=eq.${selectedUnitId}&select=id`);
+        const prIds = (prs || []).map((p: any) => p.id);
+        if (prIds.length > 0) {
+          poQuery += `&pr_id=in.(${prIds.join(',')})`;
+        } else {
+          // If no PRs for this unit, then no unit-specific material cost
+          poQuery += `&id=eq.00000000-0000-0000-0000-000000000000`; // Force empty
+        }
+      }
+
+      // 3. Wage Opname query
+      let opnameQuery = `select=id&project_id=eq.${selectedProjectId}&status=in.(approved,paid)`;
+      if (selectedUnitId) {
+        opnameQuery += `&unit_id=eq.${selectedUnitId}`;
+      }
 
       const [rabItems, orderData, opnameMasterData] = await Promise.all([
-        rabProjectId ? api.get('rab_items', `rab_project_id=eq.${rabProjectId}`) : Promise.resolve([]),
-        api.get('purchase_orders', `select=*&project_id=eq.${selectedProjectId}&status=eq.received`),
-        api.get('project_opnames', `select=id&project_id=eq.${selectedProjectId}&status=in.(approved,paid)`)
+        rabProjectIds.length > 0 ? api.get('rab_items', `rab_project_id=in.(${rabProjectIds.join(',')})`) : Promise.resolve([]),
+        api.get('purchase_orders', poQuery),
+        api.get('project_opnames', opnameQuery)
       ]);
 
       const opnameIds = (opnameMasterData || []).map((o: any) => o.id);
@@ -121,7 +162,7 @@ const RealCostPage: React.FC = () => {
       const rabWage = (rabItems || []).reduce((sum: number, r: any) => sum + ((r.wage_price || 0) * (r.volume || 1) * (r.koeff || 1)), 0);
       const rabTotal = rabMaterial + rabWage;
 
-      const materialActual = orderData?.reduce((sum: number, o: any) => sum + o.total_price, 0) || 0;
+      const materialActual = orderData?.reduce((sum: number, o: any) => sum + Number(o.total_price), 0) || 0;
       const wageActual = (opnameItemData || [])?.reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0) || 0;
       const totalActual = materialActual + wageActual;
 
@@ -133,6 +174,8 @@ const RealCostPage: React.FC = () => {
         wageActual,
         totalActual,
         variance: rabTotal - totalActual,
+        materialVariance: rabMaterial - materialActual,
+        wageVariance: rabWage - wageActual,
         rabItems: rabItems || [],
         materialOrders: orderData || [],
         wageOpnames: opnameItemData || []
@@ -175,9 +218,24 @@ const RealCostPage: React.FC = () => {
             <select 
               className="pl-11 pr-10 py-3 glass-input rounded-xl text-sm font-black text-text-primary focus:ring-2 focus:ring-primary appearance-none cursor-pointer shadow-glass hover:border-primary transition-all uppercase tracking-tight"
               value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
+              onChange={(e) => {
+                setSelectedProjectId(e.target.value);
+                setSelectedUnitId('');
+              }}
             >
               {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+
+          <div className="relative">
+            <Package className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600" />
+            <select 
+              className="pl-11 pr-10 py-3 glass-input rounded-xl text-sm font-black text-text-primary focus:ring-2 focus:ring-emerald-500 appearance-none cursor-pointer shadow-glass hover:border-emerald-500 transition-all uppercase tracking-tight"
+              value={selectedUnitId}
+              onChange={(e) => setSelectedUnitId(e.target.value)}
+            >
+              <option value="">Semua Unit / Global</option>
+              {units.map(u => <option key={u.id} value={u.id}>{u.unit_number}</option>)}
             </select>
           </div>
           <Button variant="primary" className="rounded-xl h-12 px-6 shadow-premium">
@@ -191,10 +249,12 @@ const RealCostPage: React.FC = () => {
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
             <Wallet className="w-20 h-20 text-accent-dark" />
           </div>
-          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Total RAB (Plan)</p>
+          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Total RAB {selectedUnitId ? '(Unit)' : '(Proyek)'}</p>
           <p className="text-2xl font-black text-text-primary tracking-tighter">{formatCurrency(data.rabTotal)}</p>
           <div className="mt-4 flex items-center gap-2">
-            <div className="px-2 py-1 rounded-xl bg-accent-lavender/20 text-accent-dark text-[10px] font-black">BUDGETED</div>
+            <div className="px-2 py-1 rounded-xl bg-accent-lavender/20 text-accent-dark text-[10px] font-black uppercase">
+              Material: {formatCurrency(data.rabMaterial)}
+            </div>
           </div>
         </Card>
 
@@ -202,30 +262,40 @@ const RealCostPage: React.FC = () => {
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
             <TrendingUp className="w-20 h-20 text-emerald-600" />
           </div>
-          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Total Real Cost (Actual)</p>
-          <p className="text-2xl font-black text-text-primary tracking-tighter">{formatCurrency(data.totalActual)}</p>
-          <div className="mt-4 flex items-center gap-2">
-            <div className="px-2 py-1 rounded-xl bg-emerald-50 text-emerald-600 text-[10px] font-black">SPENT</div>
-          </div>
-        </Card>
-
-        <Card className="p-6 border-none bg-white shadow-premium relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
-            {data.variance >= 0 ? <TrendingDown className="w-20 h-20 text-emerald-600" /> : <TrendingUp className="w-20 h-20 text-rose-600" />}
-          </div>
-          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Variance (Savings/Loss)</p>
+          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Performa Material</p>
           <p className={cn(
             "text-2xl font-black tracking-tighter",
-            data.variance >= 0 ? "text-emerald-600" : "text-rose-600"
+            data.materialVariance >= 0 ? "text-emerald-600" : "text-rose-600"
           )}>
-            {data.variance >= 0 ? '+' : ''}{formatCurrency(data.variance)}
+            {formatCurrency(data.materialActual)}
           </p>
           <div className="mt-4 flex items-center gap-2">
             <div className={cn(
-              "px-2 py-1 rounded-xl text-[10px] font-black",
-              data.variance >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+              "px-2 py-1 rounded-xl text-[10px] font-black uppercase",
+              data.materialVariance >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
             )}>
-              {data.variance >= 0 ? 'UNDER BUDGET' : 'OVER BUDGET'}
+              {data.materialVariance >= 0 ? `Hemat ${formatCurrency(data.materialVariance)}` : `Over ${formatCurrency(Math.abs(data.materialVariance))}`}
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 border-none bg-white shadow-premium relative overflow-hidden group border-l-4 border-primary">
+          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
+            <HardHat className="w-20 h-20 text-primary" />
+          </div>
+          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Performa Upah (Opname)</p>
+          <p className={cn(
+            "text-2xl font-black tracking-tighter",
+            data.wageVariance >= 0 ? "text-emerald-600" : "text-rose-600"
+          )}>
+            {formatCurrency(data.wageActual)}
+          </p>
+          <div className="mt-4 flex items-center gap-2">
+            <div className={cn(
+              "px-2 py-1 rounded-xl text-[10px] font-black uppercase",
+              data.wageVariance >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+            )}>
+              {data.wageVariance >= 0 ? `Hemat ${formatCurrency(data.wageVariance)}` : `Over ${formatCurrency(Math.abs(data.wageVariance))}`}
             </div>
           </div>
         </Card>
@@ -234,18 +304,18 @@ const RealCostPage: React.FC = () => {
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
             <BarChart3 className="w-20 h-20 text-amber-600" />
           </div>
-          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">% Budget Utilization</p>
+          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Total Real Cost</p>
           <p className="text-2xl font-black text-text-primary tracking-tighter">
-            {data.rabTotal > 0 ? ((data.totalActual / data.rabTotal) * 100).toFixed(1) : 0}%
+            {formatCurrency(data.totalActual)}
           </p>
-          <div className="mt-4 w-full bg-white/40 rounded-full h-2">
-            <div 
-              className={cn(
-                "h-2 rounded-full transition-all duration-1000",
-                (data.totalActual / data.rabTotal) > 1 ? "bg-rose-500" : "bg-primary"
-              )} 
-              style={{ width: `${Math.min((data.totalActual / data.rabTotal) * 100, 100)}%` }}
-            ></div>
+          <div className="mt-4 flex items-center justify-between">
+             <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Utilisasi: {data.rabTotal > 0 ? ((data.totalActual / data.rabTotal) * 100).toFixed(1) : 0}%</span>
+             <div className="flex-1 ml-4 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div 
+                  className={cn("h-full", (data.totalActual / data.rabTotal) > 1 ? "bg-rose-500" : "bg-primary")}
+                  style={{ width: `${Math.min((data.totalActual / data.rabTotal) * 100, 100)}%` }}
+                />
+             </div>
           </div>
         </Card>
       </div>
@@ -279,7 +349,10 @@ const RealCostPage: React.FC = () => {
 
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-xl font-black text-text-primary uppercase tracking-tight italic">Detail <span className="text-primary tracking-tighter not-italic">Pengeluaran</span></h2>
+          <h2 className="text-xl font-black text-text-primary uppercase tracking-tight italic">
+            Detail <span className="text-primary tracking-tighter not-italic">Pengeluaran</span>
+            {selectedUnitId && <span className="text-emerald-600 ml-2"> - Unit {units.find(u => u.id === selectedUnitId)?.unit_number}</span>}
+          </h2>
           <div className="flex items-center gap-4 bg-white/40/50 p-1.5 rounded-xl border border-white/40">
             <Button variant="ghost" size="sm" className="rounded-xl px-4 font-black text-[10px] h-9 bg-white shadow-glass text-primary uppercase tracking-widest">Wages/Opname</Button>
             <Button variant="ghost" size="sm" className="rounded-xl px-4 font-black text-[10px] h-9 text-text-muted hover:text-text-secondary transition-colors uppercase tracking-widest">Material Orders</Button>

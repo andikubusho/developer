@@ -27,6 +27,7 @@ const OpnamePage: React.FC = () => {
   const [opnames, setOpnames] = useState<any[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [units, setUnits] = useState<any[]>([]);
+  const [unitsWithRAB, setUnitsWithRAB] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -66,8 +67,14 @@ const OpnamePage: React.FC = () => {
 
   const loadUnits = async () => {
     try {
-      const data = await api.get('units', `project_id=eq.${selectedProjectId}&order=unit_number.asc`);
-      setUnits(data || []);
+      const [unitsData, rabData] = await Promise.all([
+        api.get('units', `project_id=eq.${selectedProjectId}&order=unit_number.asc`),
+        api.get('rab_projects', `project_id=eq.${selectedProjectId}&select=unit_id`)
+      ]);
+      
+      setUnits(unitsData || []);
+      const rabSet = new Set((rabData || []).map((r: any) => r.unit_id));
+      setUnitsWithRAB(rabSet);
     } catch (err) {
       console.error('Error fetching units:', err);
     }
@@ -281,7 +288,11 @@ const OpnamePage: React.FC = () => {
               disabled={!selectedProjectId}
             >
               <option value="">{selectedProjectId ? '-- Semua Unit --' : 'Pilih Proyek Dulu'}</option>
-              {units.map(u => <option key={u.id} value={u.id}>{u.unit_number} - {u.type}</option>)}
+              {units.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.unit_number} - {u.type} {unitsWithRAB.has(u.id) ? ' ✅' : ''}
+                </option>
+              ))}
             </select>
           </div>
 
