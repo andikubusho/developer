@@ -40,6 +40,7 @@ const ConstructionProgress = lazy(() => import('./pages/ConstructionProgress'));
 const PurchaseRequests = lazy(() => import('./pages/PurchaseRequests'));
 const SPK = lazy(() => import('./pages/SPK'));
 const Opname = lazy(() => import('./pages/Opname'));
+const OpnameForm = lazy(() => import('./pages/OpnameForm.tsx'));
 const RealCost = lazy(() => import('./pages/RealCost'));
 const MaterialSuppliers = lazy(() => import('./pages/Suppliers'));
 const GoodsReceipt = lazy(() => import('./pages/GoodsReceipt.tsx'));
@@ -141,6 +142,7 @@ export default function App() {
               <Route path="purchase-requests" element={<PurchaseRequests />} />
               <Route path="spk" element={<SPK />} />
               <Route path="opname" element={<Opname />} />
+              <Route path="opname/new" element={<OpnameForm />} />
               <Route path="real-cost" element={<RealCost />} />
               <Route path="material-suppliers" element={<MaterialSuppliers />} />
               <Route path="goods-receipt" element={<GoodsReceipt />} />
