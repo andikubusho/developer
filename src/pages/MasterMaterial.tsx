@@ -27,6 +27,10 @@ interface MasterMaterialData {
   name: string;
   unit: string;
   code?: string;
+  kategori?: string;
+  spesifikasi?: string;
+  harga_satuan?: number;
+  min_stok?: number;
   created_at?: string;
 }
 
@@ -41,7 +45,11 @@ const MasterMaterial: React.FC = () => {
   const [form, setForm] = useState({
     code: '',
     name: '',
-    unit: ''
+    unit: '',
+    kategori: '',
+    spesifikasi: '',
+    harga_satuan: 0,
+    min_stok: 0
   });
   const [error, setError] = useState('');
 
@@ -71,17 +79,29 @@ const MasterMaterial: React.FC = () => {
       {
         'Kode Material': 'SMN001',
         'Nama Material': 'Semen Portland',
-        'Satuan': 'Sak'
+        'Kategori': 'semen',
+        'Spesifikasi': '-',
+        'Satuan': 'Sak',
+        'Harga Satuan': 65000,
+        'Min Stok': 10
       },
       {
         'Kode Material': 'BSI001',
         'Nama Material': 'Besi Beton 10mm',
-        'Satuan': 'Batang'
+        'Kategori': 'besi',
+        'Spesifikasi': '-',
+        'Satuan': 'Batang',
+        'Harga Satuan': 85000,
+        'Min Stok': 5
       },
       {
         'Kode Material': 'PSR001',
         'Nama Material': 'Pasir Pasang',
-        'Satuan': 'm3'
+        'Kategori': 'pasir',
+        'Spesifikasi': '-',
+        'Satuan': 'm3',
+        'Harga Satuan': 250000,
+        'Min Stok': 2
       }
     ];
 
@@ -118,13 +138,17 @@ const MasterMaterial: React.FC = () => {
           const kode = String(row['Kode Material'] || row['Kode'] || '').trim().toUpperCase();
           const nama = String(row['Nama Material'] || '').trim();
           const satuan = String(row['Satuan'] || '').trim();
+          const kategori = String(row['Kategori'] || '').trim();
+          const spesifikasi = String(row['Spesifikasi'] || '').trim();
+          const harga_satuan = Number(row['Harga Satuan'] || 0);
+          const min_stok = Number(row['Min Stok'] || 0);
 
           if (!kode || !nama || !satuan) {
             errors.push(`Baris ${i + 2}: Data tidak lengkap`);
             continue;
           }
 
-          validMaterials.push({ code: kode, name: nama, unit: satuan });
+          validMaterials.push({ code: kode, name: nama, unit: satuan, kategori, spesifikasi, harga_satuan, min_stok });
         }
 
         if (errors.length > 0) {
@@ -151,7 +175,7 @@ const MasterMaterial: React.FC = () => {
         for (const mat of validMaterials) {
           const existingId = codeToId[mat.code];
           if (existingId) {
-            await api.update('materials', existingId, { name: mat.name, unit: mat.unit });
+            await api.update('materials', existingId, { name: mat.name, unit: mat.unit, kategori: mat.kategori, spesifikasi: mat.spesifikasi, harga_satuan: mat.harga_satuan, min_stok: mat.min_stok });
             updated++;
           } else {
             await api.insert('materials', mat);
@@ -291,14 +315,17 @@ const MasterMaterial: React.FC = () => {
               <TR isHoverable={false}>
                 <TH className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Kode</TH>
                 <TH className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Nama Material</TH>
-                <TH className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Satuan Standar</TH>
+                <TH className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Kategori</TH>
+                <TH className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Satuan</TH>
+                <TH className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest">Harga Satuan</TH>
+                <TH className="px-6 py-4 text-center text-[10px] font-black uppercase tracking-widest">Min Stok</TH>
                 <TH className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest">Aksi</TH>
               </TR>
             </THead>
             <TBody>
               {loading && materials.length === 0 ? (
                 <TR isHoverable={false}>
-                  <TD colSpan={4} className="text-center py-20">
+                  <TD colSpan={7} className="text-center py-20">
                     <RefreshCw className="w-8 h-8 text-accent-dark animate-spin mx-auto mb-4" />
                     <p className="text-text-muted font-bold uppercase text-[10px] tracking-widest">Memuat Data Master...</p>
                   </TD>
@@ -312,13 +339,26 @@ const MasterMaterial: React.FC = () => {
                   </TD>
                   <TD className="px-6 py-4 font-black text-text-primary text-base">{m.name}</TD>
                   <TD className="px-6 py-4">
+                    {m.kategori ? (
+                      <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-widest">
+                        {m.kategori}
+                      </span>
+                    ) : <span className="text-text-muted text-xs">-</span>}
+                  </TD>
+                  <TD className="px-6 py-4">
                     <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest">
                       {m.unit}
                     </span>
                   </TD>
+                  <TD className="px-6 py-4 text-right font-bold text-text-primary">
+                    {m.harga_satuan ? `Rp ${m.harga_satuan.toLocaleString('id-ID')}` : '-'}
+                  </TD>
+                  <TD className="px-6 py-4 text-center font-bold text-text-primary">
+                    {m.min_stok ?? '-'}
+                  </TD>
                   <TD className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => { setEditingMaterial(m); setForm({ code: m.code || '', name: m.name, unit: m.unit }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-slate-100">
+                      <Button variant="ghost" size="sm" onClick={() => { setEditingMaterial(m); setForm({ code: m.code || '', name: m.name, unit: m.unit, kategori: m.kategori || '', spesifikasi: m.spesifikasi || '', harga_satuan: m.harga_satuan || 0, min_stok: m.min_stok || 0 }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-slate-100">
                         <Pencil className="w-4 h-4 text-slate-600" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDelete(m.id)} className="h-9 w-9 p-0 rounded-xl hover:bg-rose-50">
@@ -370,7 +410,7 @@ const MasterMaterial: React.FC = () => {
 
           <div className="space-y-2">
             <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Satuan Standar</label>
-            <Input 
+            <Input
               placeholder="Contoh: Sak, m3, Batang, kg"
               value={form.unit}
               onChange={(e) => setForm({ ...form, unit: e.target.value })}
@@ -378,7 +418,50 @@ const MasterMaterial: React.FC = () => {
               required
             />
           </div>
-          
+
+          <div className="space-y-2">
+            <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Kategori</label>
+            <Input
+              placeholder="Contoh: semen, besi, kayu"
+              value={form.kategori}
+              onChange={(e) => setForm({ ...form, kategori: e.target.value })}
+              className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Spesifikasi</label>
+            <Input
+              placeholder="Contoh: diameter 10mm, kelas III"
+              value={form.spesifikasi}
+              onChange={(e) => setForm({ ...form, spesifikasi: e.target.value })}
+              className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Harga Satuan (Rp)</label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={form.harga_satuan || ''}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, harga_satuan: Number(e.target.value) })}
+                className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Min Stok</label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={form.min_stok || ''}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, min_stok: Number(e.target.value) })}
+                className="h-14 text-base font-bold rounded-xl border-white/40 focus:border-primary shadow-glass"
+              />
+            </div>
+          </div>
+
           <div className="pt-6 flex gap-4">
             <Button type="button" variant="ghost" className="flex-1 h-12 rounded-xl" onClick={() => setIsModalOpen(false)}>Batal</Button>
             <Button type="submit" className="flex-1 h-12 rounded-xl text-base font-extrabold shadow-glass" isLoading={loading}>
