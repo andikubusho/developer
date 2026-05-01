@@ -130,6 +130,11 @@ const MasterMaterial: React.FC = () => {
           return;
         }
 
+        // Debug: show column names and first row values
+        const cols = Object.keys(data[0]);
+        const firstRow = data[0];
+        alert(`Kolom ditemukan: ${cols.join(', ')}\n\nBaris 1 - Harga Satuan: "${firstRow['Harga Satuan']}" | Min Stok: "${firstRow['Min Stok']}"`);
+
         const validMaterials: any[] = [];
         const errors: string[] = [];
 
