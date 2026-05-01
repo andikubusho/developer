@@ -19,18 +19,17 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const variants = {
-    primary: 'glass-mint text-accent-dark hover:brightness-105 active:shadow-pressed active:scale-[0.98]',
-    secondary: 'glass-convex text-text-primary active:scale-[0.98]',
-    outline: 'border border-white/40 bg-transparent hover:bg-white/20 text-text-primary shadow-convex active:shadow-pressed active:scale-[0.98]',
-    ghost: 'bg-transparent hover:bg-white/20 text-text-secondary hover:text-text-primary active:scale-[0.98]',
-    danger: 'glass-peach text-accent-dark hover:brightness-105 active:shadow-pressed active:scale-[0.98]',
-    dark: 'glass-lavender text-accent-dark hover:brightness-105 active:shadow-pressed active:scale-[0.98]',
+    primary: 'btn-3d bg-accent-lavender text-white filter brightness-110 shadow-glow-lavender',
+    secondary: 'btn-3d bg-white/40 text-text-primary',
+    outline: 'btn-3d border-white/60 bg-transparent text-text-primary hover:bg-white/20',
+    ghost: 'hover:bg-white/40 text-text-secondary hover:text-text-primary transition-all duration-300',
+    danger: 'btn-3d bg-rose-500 text-white shadow-glow-peach',
   };
 
   const sizes = {
-    sm: 'px-4 py-1.5 text-xs',
-    md: 'px-6 py-2.5 text-sm',
-    lg: 'px-8 py-3.5 text-base',
+    sm: 'px-5 py-2.5 text-[10px] uppercase tracking-widest font-black',
+    md: 'px-8 py-3.5 text-xs uppercase tracking-widest font-black',
+    lg: 'px-10 py-4.5 text-sm uppercase tracking-widest font-black',
   };
 
   const Component = as as any;
@@ -38,7 +37,7 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <Component
       className={cn(
-        'inline-flex items-center justify-center rounded-pill font-bold transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-lavender/70 focus-visible:ring-offset-1 disabled:opacity-50 disabled:pointer-events-none',
+        'inline-flex items-center justify-center rounded-2xl font-black transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-lavender/70 focus-visible:ring-offset-1 disabled:opacity-50 disabled:pointer-events-none',
         variants[variant],
         sizes[size],
         className

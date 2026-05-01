@@ -202,21 +202,24 @@ const RealCostPage: React.FC = () => {
   return (
     <div className="space-y-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto text-text-muted hover:text-primary transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={() => navigate('/')} 
+            className="w-14 h-14 glass-card flex items-center justify-center text-text-muted hover:text-accent-lavender transition-all hover:scale-110 active:shadow-3d-inset"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
           <div>
-            <h1 className="text-3xl font-black text-text-primary tracking-tight italic uppercase">Real Cost <span className="text-primary tracking-tighter not-italic">Analysis</span></h1>
-            <p className="text-text-secondary font-bold text-sm">Budget vs Actual Comparison & Variance Report</p>
+            <h1 className="text-3xl font-black text-text-primary tracking-tighter uppercase italic italic">Real Cost <span className="text-accent-lavender not-italic">Analysis</span></h1>
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] opacity-70">Budget vs Actual Comparison & Variance Report</p>
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <div className="relative">
-            <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+            <Target className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-accent-lavender" />
             <select 
-              className="pl-11 pr-10 py-3 glass-input rounded-xl text-sm font-black text-text-primary focus:ring-2 focus:ring-primary appearance-none cursor-pointer shadow-glass hover:border-primary transition-all uppercase tracking-tight"
+              className="pl-14 pr-10 py-4 glass-input-3d text-xs font-black appearance-none cursor-pointer tracking-tight uppercase"
               value={selectedProjectId}
               onChange={(e) => {
                 setSelectedProjectId(e.target.value);
@@ -228,9 +231,9 @@ const RealCostPage: React.FC = () => {
           </div>
 
           <div className="relative">
-            <Package className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600" />
+            <Package className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
             <select 
-              className="pl-11 pr-10 py-3 glass-input rounded-xl text-sm font-black text-text-primary focus:ring-2 focus:ring-emerald-500 appearance-none cursor-pointer shadow-glass hover:border-emerald-500 transition-all uppercase tracking-tight"
+              className="pl-14 pr-10 py-4 glass-input-3d text-xs font-black appearance-none cursor-pointer tracking-tight uppercase"
               value={selectedUnitId}
               onChange={(e) => setSelectedUnitId(e.target.value)}
             >
@@ -238,40 +241,34 @@ const RealCostPage: React.FC = () => {
               {units.map(u => <option key={u.id} value={u.id}>{u.unit_number}</option>)}
             </select>
           </div>
-          <Button variant="primary" className="rounded-xl h-12 px-6 shadow-premium">
-            Ekspor Laporan
-          </Button>
+          <button className="btn-3d bg-accent-lavender text-white px-8 h-[52px]">
+            Ekspor
+          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        <Card className="p-6 border-none bg-white shadow-premium relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
-            <Wallet className="w-20 h-20 text-accent-dark" />
-          </div>
-          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Total RAB {selectedUnitId ? '(Unit)' : '(Proyek)'}</p>
-          <p className="text-2xl font-black text-text-primary tracking-tighter">{formatCurrency(data.rabTotal)}</p>
-          <div className="mt-4 flex items-center gap-2">
-            <div className="px-2 py-1 rounded-xl bg-accent-lavender/20 text-accent-dark text-[10px] font-black uppercase">
+        <Card>
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Total RAB</p>
+            <p className="text-2xl font-black text-text-primary tracking-tighter italic">{formatCurrency(data.rabTotal)}</p>
+            <div className="mt-4 px-3 py-1.5 rounded-lg shadow-3d-inset bg-white/50 text-[9px] font-black uppercase text-accent-lavender">
               Material: {formatCurrency(data.rabMaterial)}
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border-none bg-white shadow-premium relative overflow-hidden group border-l-4 border-emerald-500">
-          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
-            <TrendingUp className="w-20 h-20 text-emerald-600" />
-          </div>
-          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Performa Material</p>
-          <p className={cn(
-            "text-2xl font-black tracking-tighter",
-            data.materialVariance >= 0 ? "text-emerald-600" : "text-rose-600"
-          )}>
-            {formatCurrency(data.materialActual)}
-          </p>
-          <div className="mt-4 flex items-center gap-2">
+        <Card className="border-l-4 border-emerald-500">
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Actual Material</p>
+            <p className={cn(
+              "text-2xl font-black tracking-tighter italic",
+              data.materialVariance >= 0 ? "text-emerald-600" : "text-rose-600"
+            )}>
+              {formatCurrency(data.materialActual)}
+            </p>
             <div className={cn(
-              "px-2 py-1 rounded-xl text-[10px] font-black uppercase",
+              "mt-4 px-3 py-1.5 rounded-lg shadow-3d-inset text-[9px] font-black uppercase",
               data.materialVariance >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
             )}>
               {data.materialVariance >= 0 ? `Hemat ${formatCurrency(data.materialVariance)}` : `Over ${formatCurrency(Math.abs(data.materialVariance))}`}
@@ -279,20 +276,17 @@ const RealCostPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6 border-none bg-white shadow-premium relative overflow-hidden group border-l-4 border-primary">
-          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
-            <HardHat className="w-20 h-20 text-primary" />
-          </div>
-          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Performa Upah (Opname)</p>
-          <p className={cn(
-            "text-2xl font-black tracking-tighter",
-            data.wageVariance >= 0 ? "text-emerald-600" : "text-rose-600"
-          )}>
-            {formatCurrency(data.wageActual)}
-          </p>
-          <div className="mt-4 flex items-center gap-2">
+        <Card className="border-l-4 border-accent-lavender">
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Actual Wages</p>
+            <p className={cn(
+              "text-2xl font-black tracking-tighter italic",
+              data.wageVariance >= 0 ? "text-emerald-600" : "text-rose-600"
+            )}>
+              {formatCurrency(data.wageActual)}
+            </p>
             <div className={cn(
-              "px-2 py-1 rounded-xl text-[10px] font-black uppercase",
+              "mt-4 px-3 py-1.5 rounded-lg shadow-3d-inset text-[9px] font-black uppercase",
               data.wageVariance >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
             )}>
               {data.wageVariance >= 0 ? `Hemat ${formatCurrency(data.wageVariance)}` : `Over ${formatCurrency(Math.abs(data.wageVariance))}`}
@@ -300,22 +294,19 @@ const RealCostPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6 border-none bg-white shadow-premium relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
-            <BarChart3 className="w-20 h-20 text-amber-600" />
-          </div>
-          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Total Real Cost</p>
-          <p className="text-2xl font-black text-text-primary tracking-tighter">
-            {formatCurrency(data.totalActual)}
-          </p>
-          <div className="mt-4 flex items-center justify-between">
-             <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Utilisasi: {data.rabTotal > 0 ? ((data.totalActual / data.rabTotal) * 100).toFixed(1) : 0}%</span>
-             <div className="flex-1 ml-4 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+        <Card>
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Total Real Cost</p>
+            <p className="text-2xl font-black text-text-primary tracking-tighter italic">{formatCurrency(data.totalActual)}</p>
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-[9px] font-black text-text-muted uppercase tracking-widest italic">{data.rabTotal > 0 ? ((data.totalActual / data.rabTotal) * 100).toFixed(1) : 0}%</span>
+              <div className="flex-1 ml-4 bg-white/50 shadow-3d-inset rounded-full h-2 overflow-hidden">
                 <div 
-                  className={cn("h-full", (data.totalActual / data.rabTotal) > 1 ? "bg-rose-500" : "bg-primary")}
+                  className={cn("h-full", (data.totalActual / data.rabTotal) > 1 ? "bg-rose-500" : "bg-accent-lavender shadow-glow-lavender")}
                   style={{ width: `${Math.min((data.totalActual / data.rabTotal) * 100, 100)}%` }}
                 />
-             </div>
+              </div>
+            </div>
           </div>
         </Card>
       </div>
@@ -348,14 +339,15 @@ const RealCostPage: React.FC = () => {
       </div>
 
       <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-xl font-black text-text-primary uppercase tracking-tight italic">
-            Detail <span className="text-primary tracking-tighter not-italic">Pengeluaran</span>
-            {selectedUnitId && <span className="text-emerald-600 ml-2"> - Unit {units.find(u => u.id === selectedUnitId)?.unit_number}</span>}
-          </h2>
-          <div className="flex items-center gap-4 bg-white/40/50 p-1.5 rounded-xl border border-white/40">
-            <Button variant="ghost" size="sm" className="rounded-xl px-4 font-black text-[10px] h-9 bg-white shadow-glass text-primary uppercase tracking-widest">Wages/Opname</Button>
-            <Button variant="ghost" size="sm" className="rounded-xl px-4 font-black text-[10px] h-9 text-text-muted hover:text-text-secondary transition-colors uppercase tracking-widest">Material Orders</Button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/20 pb-4">
+          <div className="flex items-center gap-10">
+            <button className="tab-underline active uppercase tracking-widest text-[11px] italic">Wages / Opname</button>
+            <button className="tab-underline uppercase tracking-widest text-[11px] italic">Material Orders</button>
+          </div>
+          <div className="tab-pill-container">
+            <button className="tab-pill active">Mingguan</button>
+            <button className="tab-pill">Bulanan</button>
+            <button className="tab-pill">Semua</button>
           </div>
         </div>
 

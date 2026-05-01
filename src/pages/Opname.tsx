@@ -98,23 +98,23 @@ const OpnamePage: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-20">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto text-text-muted hover:text-primary transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-6">
+          <div className="w-16 h-16 glass-card flex items-center justify-center text-accent-lavender shadow-3d">
+            <ClipboardList className="w-8 h-8" />
+          </div>
           <div>
-            <h1 className="text-3xl font-black text-text-primary tracking-tight italic uppercase">Opname <span className="text-primary tracking-tighter not-italic">Upah Proyek</span></h1>
-            <p className="text-text-secondary font-bold text-sm">Histori dan Monitoring Progress Pembayaran Upah</p>
+            <h1 className="text-3xl font-black text-text-primary uppercase tracking-tighter italic italic">Histori <span className="text-accent-lavender not-italic">Opname</span></h1>
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] opacity-70">Monitor progress upah dan pelaporan harian</p>
           </div>
         </div>
-        <Button 
-          variant="primary" 
-          className="rounded-xl h-12 px-8 shadow-premium"
+        <button 
           onClick={() => navigate('/opname/new')}
+          className="btn-3d bg-accent-lavender text-white px-10 h-14 flex items-center gap-3"
         >
-          <Plus className="w-4 h-4 mr-2" /> Buat Opname Baru
-        </Button>
+          <Plus className="w-5 h-5" />
+          Buat Baru
+        </button>
       </div>
 
       <Card className="p-6 bg-white border-none shadow-premium">

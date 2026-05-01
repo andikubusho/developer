@@ -482,47 +482,48 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6 sm:space-y-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
         <div>
-          <h1 className="text-xl sm:text-3xl font-black text-text-primary tracking-tight">Ringkasan Bisnis</h1>
-          <p className="text-xs sm:text-base text-text-secondary font-medium">Performa perusahaan Anda.</p>
+          <h1 className="text-2xl sm:text-4xl font-black text-text-primary tracking-tighter uppercase italic">Ringkasan <span className="text-accent-lavender not-italic">Bisnis</span></h1>
+          <p className="text-xs sm:text-base text-text-muted font-bold uppercase tracking-widest opacity-70">Performa perusahaan Anda secara real-time</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => {
-              setDivision(null);
-            }}
-            className="rounded-xl border-white/40/60 text-[10px] sm:text-sm px-2 sm:px-4"
+          <button 
+            onClick={() => setDivision(null)}
+            className="btn-3d px-6 py-3 text-[10px] flex items-center gap-2"
           >
-            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+            <ArrowLeft className="w-3 h-3" />
             Ganti Divisi
-          </Button>
-          <Button variant="primary" size="sm" className="rounded-xl text-[10px] sm:text-sm px-2 sm:px-4">
+          </button>
+          <button className="btn-3d bg-accent-lavender text-white filter brightness-110 shadow-glow-lavender px-8 py-3 text-[10px] flex items-center gap-2">
             Laporan
-            <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
-          </Button>
+            <ChevronRight className="w-3 h-3" />
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-10">
         {statCards.map((card, idx) => (
-          <Card key={idx} className="group p-0.5 transition-all duration-500 hover:-translate-y-1">
-            <div className="p-3 sm:p-8 cursor-pointer" onClick={() => card.path && navigate(card.path)}>
-              <div className="flex items-center justify-between gap-2 mb-3 sm:mb-6">
-                <div className={cn('p-2 sm:p-4 rounded-pill glass-convex transition-transform group-hover:scale-110 duration-300')}>
-                  <card.icon className={cn('w-4 h-4 sm:w-7 sm:h-7', card.color)} />
+          <div 
+            key={idx} 
+            className="glass-card cursor-pointer hover:scale-[1.02] transition-transform duration-500"
+            onClick={() => card.path && navigate(card.path)}
+          >
+            <div className="stabilized-plate p-6 sm:p-10 flex flex-col items-center text-center gap-4">
+                <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center shadow-3d mb-2', card.bg)}>
+                  <card.icon className={cn('w-8 h-8', card.color)} />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">{card.title}</h3>
+                  <p className="text-xl sm:text-4xl font-black text-text-primary tracking-tighter">{card.value}</p>
                 </div>
                 <div className={cn(
-                  'flex items-center text-[8px] sm:text-[10px] font-black px-2 py-1 rounded-pill uppercase tracking-widest glass-input border-none',
+                  'text-[9px] font-black px-4 py-1.5 rounded-pill uppercase tracking-widest shadow-3d-inset flex items-center gap-2',
                   card.isUp ? 'text-emerald-600' : 'text-rose-600'
                 )}>
+                  {card.isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                   {card.trend}
                 </div>
-              </div>
-              <h3 className="text-[9px] sm:text-sm font-bold text-text-secondary uppercase tracking-widest truncate">{card.title}</h3>
-              <p className="text-lg sm:text-3xl font-black text-text-primary mt-1 sm:mt-2 tracking-tight truncate">{card.value}</p>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 

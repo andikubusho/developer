@@ -136,18 +136,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   });
 
   return (
-    <aside id="sidebar-nav" className="w-72 bg-glass/40 backdrop-blur-glass border-r border-white/40 flex flex-col h-screen sticky top-0 z-40 print:hidden shadow-glass">
-      <div className="px-6 pt-8 pb-4">
+    <aside id="sidebar-nav" className="w-72 glass-card m-4 mr-0 flex flex-col h-[calc(100vh-2rem)] sticky top-4 z-40 print:hidden">
+      <div className="px-8 pt-10 pb-4">
         <img 
           src="/logo-perusahaan.png" 
           alt="Company Logo" 
-          className="w-[120%] -ml-4 h-32 object-contain object-left mix-blend-multiply scale-[1.3] origin-left transition-transform duration-300"
+          className="w-full h-auto object-contain mix-blend-multiply transition-transform duration-500 hover:scale-105"
         />
       </div>
 
       <nav aria-label="Navigasi utama" className="flex-1 px-4 space-y-1 mt-8 overflow-y-auto scrollbar-hide">
-        <div className="px-4 mb-4">
-          <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-2">Menu Utama</p>
+        <div className="px-6 mb-4">
+          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] mt-2 opacity-50">Menu Utama</p>
         </div>
         {filteredMenu.map((item, index) => {
           const prevItem = index > 0 ? filteredMenu[index - 1] : null;
@@ -156,25 +156,25 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           return (
             <React.Fragment key={item.path}>
               {showCategory && (
-                <div className="px-4 pt-6 pb-2 animate-in fade-in slide-in-from-left-4 duration-500">
-                  <p className="text-[9px] font-black text-accent-dark uppercase tracking-[0.2em] opacity-50">{item.category}</p>
+                <div className="px-6 pt-8 pb-3 animate-in fade-in slide-in-from-left-4 duration-500">
+                  <p className="text-[9px] font-black text-accent-lavender uppercase tracking-[0.25em]">{item.category}</p>
                 </div>
               )}
               <NavLink
                 to={item.path}
                 onClick={() => onClose?.()}
                 className={({ isActive }) => cn(
-                  'flex items-center gap-4 px-5 py-3 rounded-pill transition-all duration-300 group relative overflow-hidden',
+                  'flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group relative overflow-hidden',
                   isActive 
-                    ? 'glass-convex text-text-primary after:absolute after:left-1 after:top-1/4 after:bottom-1/4 after:w-1 after:bg-accent-lavender after:rounded-full' 
-                    : 'text-text-secondary hover:bg-glass/50 hover:text-text-primary'
+                    ? 'bg-accent-lavender text-white filter brightness-110 shadow-glow-lavender' 
+                    : 'text-text-secondary hover:bg-white/40 hover:text-text-primary'
                 )}
               >
                 {({ isActive }) => (
                   <>
                     <item.icon className={cn(
                       "w-5 h-5 transition-transform group-hover:scale-110",
-                      isActive ? "text-accent-dark" : "text-text-muted group-hover:text-text-primary"
+                      isActive ? "text-white" : "text-text-muted group-hover:text-text-primary"
                     )} />
                     <span className="font-bold text-[13px] tracking-tight">{item.name}</span>
                   </>
@@ -185,18 +185,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         })}
       </nav>
 
-      <div className="p-5 m-4 mt-auto rounded-xl bg-glass-deep/50 border border-white/40 shadow-inset">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-11 h-11 rounded-full bg-white border border-white/60 flex items-center justify-center text-accent-dark font-black text-lg shadow-glass">
+      <div className="p-6 m-4 mt-auto rounded-3xl shadow-3d-inset bg-white/30 backdrop-blur-sm border border-white/40">
+        <div className="flex items-center gap-4 mb-5">
+          <div className="w-12 h-12 rounded-2xl bg-white border border-white/60 flex items-center justify-center text-accent-lavender font-black text-xl shadow-3d">
             {profile?.full_name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-[13px] font-black text-text-primary truncate leading-tight tracking-tight">{profile?.full_name}</p>
-            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mt-1 opacity-70">{division}</p>
+            <p className="text-[14px] font-black text-text-primary truncate leading-tight tracking-tight italic uppercase">{profile?.full_name}</p>
+            <p className="text-[9px] font-black text-accent-lavender uppercase tracking-[0.2em] mt-1 opacity-80">{division}</p>
           </div>
         </div>
         
-        <div className="space-y-1">
+        <div className="space-y-2">
           {((profile?.role_data?.authorized_divisions?.length || 0) > 1 || profile?.role === 'admin') && (
             <button
               onClick={() => {
@@ -204,10 +204,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                 setDivision(null);
                 onClose?.();
               }}
-              className="flex items-center gap-3 w-full px-3 py-2 rounded-pill hover:bg-white/40 text-text-secondary hover:text-text-primary transition-all duration-200 group"
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-white/60 text-text-secondary hover:text-text-primary transition-all duration-300 group shadow-sm hover:shadow-3d"
             >
               <ArrowLeftRight className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
-              <span className="font-bold text-[11px] uppercase tracking-wider">Ganti Divisi</span>
+              <span className="font-bold text-[11px] uppercase tracking-widest">Ganti Divisi</span>
             </button>
           )}
           
@@ -216,10 +216,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
               signOut();
               onClose?.();
             }}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-pill hover:bg-red-400/20 text-text-secondary hover:text-red-500 transition-all duration-200 group"
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-rose-500 text-text-secondary hover:text-white transition-all duration-300 group shadow-sm hover:shadow-3d"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span className="font-bold text-[11px] uppercase tracking-wider">Keluar</span>
+            <span className="font-bold text-[11px] uppercase tracking-widest">Keluar</span>
           </button>
         </div>
       </div>
