@@ -130,16 +130,16 @@ const MasterMaterial: React.FC = () => {
           return;
         }
 
-        // Debug: show column names and first row values
-        const cols = Object.keys(data[0]);
-        const firstRow = data[0];
-        alert(`Kolom ditemukan: ${cols.join(', ')}\n\nBaris 1 - Harga Satuan: "${firstRow['Harga Satuan']}" | Min Stok: "${firstRow['Min Stok']}"`);
-
         const validMaterials: any[] = [];
         const errors: string[] = [];
 
         for (let i = 0; i < data.length; i++) {
-          const row = data[i];
+          // Normalize column names by trimming whitespace
+          const rawRow = data[i];
+          const row: any = {};
+          for (const key of Object.keys(rawRow)) {
+            row[key.trim()] = rawRow[key];
+          }
           const kode = String(row['Kode Material'] || row['Kode'] || '').trim().toUpperCase();
           const nama = String(row['Nama Material'] || '').trim();
           const satuan = String(row['Satuan'] || '').trim();
