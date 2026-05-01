@@ -117,8 +117,15 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    color: var(--color-text-primary) !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-3d svg {
+    color: var(--color-text-primary) !important;
   }
   .btn-3d:hover {
     filter: brightness(1.1);

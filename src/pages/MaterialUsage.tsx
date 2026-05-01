@@ -106,40 +106,75 @@ const MaterialUsage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 pb-10 max-w-4xl mx-auto">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/materials')} className="p-2 h-auto">
-          <ArrowLeft className="w-5 h-5" />
+    <div className="space-y-8 pb-10 max-w-6xl mx-auto px-4">
+      {/* Header Section */}
+      <div className="flex items-center gap-6">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/materials')} 
+          className="p-3 h-auto bg-white/50 shadow-sm border border-white/40 rounded-xl"
+        >
+          <ArrowLeft className="w-5 h-5 text-text-primary" />
         </Button>
         <div>
-          <h1 className="text-3xl font-black text-text-primary tracking-tight">Catat Pemakaian Material</h1>
-          <p className="text-text-secondary font-medium">Rekam pengambilan material untuk operasional proyek</p>
+          <h1 className="text-3xl font-black text-text-primary tracking-tight italic uppercase">
+            Catat <span className="not-italic text-accent-lavender tracking-tighter">Pemakaian Material</span>
+          </h1>
+          <p className="text-text-secondary font-bold text-sm">Rekam pengambilan material untuk operasional proyek</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="p-8 bg-white border-none shadow-premium">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Tanggal Pemakaian</label>
-                <div className="relative">
-                   <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                   <Input 
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Main Form Section */}
+        <div className="lg:col-span-8">
+          <Card className="p-10 bg-white/80 backdrop-blur-md border-white/60 shadow-premium rounded-[2.5rem]">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Tanggal */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+                    <Calendar className="w-3.5 h-3.5 text-accent-lavender" /> Tanggal Pemakaian
+                  </label>
+                  <Input 
                     type="date"
                     value={form.tanggal}
                     onChange={(e) => setForm({ ...form, tanggal: e.target.value })}
-                    className="h-14 pl-12 glass-input rounded-xl px-4 font-bold"
+                    className="h-14 glass-input rounded-2xl px-6 font-bold"
                     required
                   />
                 </div>
+
+                {/* Jumlah */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+                    <Package className="w-3.5 h-3.5 text-accent-lavender" /> Jumlah Pemakaian
+                  </label>
+                  <div className="relative">
+                    <Input 
+                      type="number"
+                      value={form.qty}
+                      onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })}
+                      className="h-14 glass-input rounded-2xl px-6 font-black text-2xl"
+                      required
+                      min="0.01"
+                      step="0.01"
+                    />
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-text-muted uppercase tracking-widest">
+                      {masters.find(m => m.id === form.material_id)?.unit || 'Unit'}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Master Material</label>
+              {/* Selection Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+                    <Info className="w-3.5 h-3.5 text-accent-lavender" /> Master Material
+                  </label>
                   <select 
-                    className="w-full h-14 glass-input rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none shadow-glass"
+                    className="w-full h-14 glass-input rounded-2xl px-6 text-sm font-bold text-text-primary focus:outline-none shadow-3d-inset"
                     value={form.material_id}
                     onChange={(e) => setForm({ ...form, material_id: e.target.value })}
                     required
@@ -151,10 +186,12 @@ const MaterialUsage: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Pilih Merk / Variant</label>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+                    <Info className="w-3.5 h-3.5 text-accent-lavender" /> Pilih Merk / Variant
+                  </label>
                   <select 
-                    className="w-full h-14 glass-input rounded-xl px-6 text-base font-bold text-text-primary focus:outline-none shadow-glass"
+                    className="w-full h-14 glass-input rounded-2xl px-6 text-sm font-bold text-text-primary focus:outline-none shadow-3d-inset disabled:opacity-40"
                     value={form.id_variant}
                     onChange={(e) => setForm({ ...form, id_variant: e.target.value })}
                     required
@@ -168,36 +205,13 @@ const MaterialUsage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Jumlah Pemakaian</label>
-                <div className="relative">
-                  <Input 
-                    type="number"
-                    value={form.qty}
-                    onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })}
-                    className="h-14 glass-input rounded-xl px-6 font-black text-2xl"
-                    required
-                    min="0.01"
-                    step="0.01"
-                  />
-                  <div className="absolute right-6 top-1/2 -translate-y-1/2 text-sm font-black text-text-muted uppercase tracking-widest">
-                    {masters.find(m => m.id === form.material_id)?.unit}
-                  </div>
-                </div>
-                {selectedVariant && (
-                  <p className={cn(
-                    "text-[10px] font-bold px-2 uppercase",
-                    form.qty > selectedVariant.stok ? "text-rose-600" : "text-emerald-600"
-                  )}>
-                    {form.qty > selectedVariant.stok ? "❌ Melebihi stok tersedia" : `✅ Saldo tersisa: ${formatNumber(selectedVariant.stok - form.qty)}`}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Keperluan / Keterangan</label>
+              {/* Keterangan */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+                  <Info className="w-3.5 h-3.5 text-accent-lavender" /> Keperluan / Keterangan
+                </label>
                 <textarea 
-                  className="w-full p-6 glass-input rounded-xl text-base font-medium focus:outline-none min-h-[120px]"
+                  className="w-full p-6 glass-input rounded-2xl text-sm font-bold text-text-primary focus:outline-none min-h-[120px] shadow-3d-inset"
                   value={form.keterangan}
                   onChange={(e) => setForm({ ...form, keterangan: e.target.value })}
                   placeholder="Contoh: Pekerjaan Cor Sloof Blok A-12..."
@@ -205,57 +219,92 @@ const MaterialUsage: React.FC = () => {
                 />
               </div>
 
-              <Button type="submit" className="w-full h-16 rounded-2xl font-black text-lg bg-accent-dark shadow-premium" isLoading={submitting}>
-                Simpan & Update Stok
-              </Button>
+              <div className="pt-4">
+                <Button 
+                  type="submit" 
+                  className="w-full h-16 rounded-2xl font-black text-lg shadow-premium" 
+                  isLoading={submitting}
+                  disabled={!form.id_variant || form.qty <= 0}
+                >
+                  <RefreshCw className={cn("w-5 h-5 mr-3", submitting && "animate-spin")} />
+                  Simpan & Update Stok
+                </Button>
+              </div>
             </form>
           </Card>
         </div>
 
-        <div className="space-y-6">
-          <Card className="p-6 bg-white/50 text-text-primary border border-white/40 shadow-3d-inset">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-accent-lavender/20 rounded-lg">
-                <Info className="w-5 h-5 text-accent-lavender" />
+        {/* Info Sidebar Section */}
+        <div className="lg:col-span-4 space-y-8">
+          <Card className="p-8 bg-white/60 backdrop-blur-md border-white/60 shadow-premium rounded-[2.5rem]">
+            <div className="space-y-8">
+              <div className="flex items-center gap-4 border-b border-white/40 pb-4">
+                <div className="p-3 bg-accent-lavender/20 rounded-2xl">
+                  <Info className="w-6 h-6 text-accent-lavender" />
+                </div>
+                <h3 className="font-black text-sm uppercase tracking-widest text-text-primary">Status Stok</h3>
               </div>
-              <h3 className="font-black text-sm uppercase tracking-widest text-text-primary">Informasi Stok</h3>
-            </div>
-            
-            {selectedVariant ? (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Item Aktif</p>
-                  <p className="text-lg font-black leading-tight text-text-primary">{masters.find(m => m.id === form.material_id)?.name}</p>
+              
+              {selectedVariant ? (
+                <div className="space-y-6">
+                  <div className="bg-white/40 p-5 rounded-2xl border border-white/60">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Item Terpilih</p>
+                    <p className="text-base font-black text-text-primary leading-tight">
+                      {masters.find(m => m.id === form.material_id)?.name} - {selectedVariant.merk}
+                    </p>
+                  </div>
+
+                  <div className="bg-white/40 p-6 rounded-2xl border border-white/60 shadow-3d-inset">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Saldo Gudang</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-black tracking-tighter text-accent-lavender">
+                        {formatNumber(selectedVariant.stok)}
+                      </span>
+                      <span className="text-xs font-black text-text-muted uppercase">
+                        {masters.find(m => m.id === form.material_id)?.unit}
+                      </span>
+                    </div>
+                  </div>
+
+                  {form.qty > 0 && (
+                    <div className={cn(
+                      "p-5 rounded-2xl border flex items-center gap-4 transition-all duration-500",
+                      form.qty > selectedVariant.stok 
+                        ? "bg-rose-50 border-rose-200 text-rose-700 animate-pulse" 
+                        : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                    )}>
+                      {form.qty > selectedVariant.stok ? <AlertTriangle className="w-6 h-6" /> : <Package className="w-6 h-6" />}
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest opacity-70">
+                          {form.qty > selectedVariant.stok ? "Stok Kurang" : "Estimasi Sisa"}
+                        </p>
+                        <p className="text-lg font-black">
+                          {formatNumber(selectedVariant.stok - form.qty)} {masters.find(m => m.id === form.material_id)?.unit}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Varian Merk</p>
-                  <p className="text-lg font-black text-text-primary">{selectedVariant.merk}</p>
-                </div>
-                <div className="pt-4 border-t border-white/40">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Saldo Gudang Saat Ini</p>
-                  <p className="text-4xl font-black tracking-tight text-accent-lavender">
-                    {formatNumber(selectedVariant.stok)}
-                    <span className="text-xs ml-2 text-text-muted uppercase">{masters.find(m => m.id === form.material_id)?.unit}</span>
+              ) : (
+                <div className="py-20 text-center space-y-4">
+                  <div className="w-16 h-16 bg-white/40 rounded-full flex items-center justify-center mx-auto shadow-3d-inset">
+                    <Package className="w-8 h-8 text-text-muted opacity-30" />
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted max-w-[150px] mx-auto leading-relaxed">
+                    Pilih material dan variant untuk melihat saldo stok
                   </p>
                 </div>
-              </div>
-            ) : (
-              <div className="py-10 text-center opacity-40">
-                <Package className="w-12 h-12 mx-auto mb-4 text-text-muted" />
-                <p className="text-xs font-bold uppercase tracking-widest text-text-muted">Pilih variant untuk melihat stok</p>
-              </div>
-            )}
+              )}
+            </div>
           </Card>
 
-          <Card className="p-6 bg-rose-50 border-none shadow-sm">
-             <div className="flex gap-4">
-               <AlertTriangle className="w-6 h-6 text-rose-600 shrink-0" />
-               <div className="space-y-1">
-                 <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Penting</p>
-                 <p className="text-[11px] font-medium text-rose-800 leading-relaxed">
-                   Setiap pencatatan pemakaian akan langsung memotong saldo stok. Pastikan kuantitas yang diinput sudah benar sesuai fisik yang keluar.
-                 </p>
-               </div>
+          <Card className="p-6 bg-rose-50/50 border-rose-100 shadow-sm rounded-[2rem] flex gap-4">
+             <AlertTriangle className="w-6 h-6 text-rose-500 shrink-0" />
+             <div className="space-y-1">
+               <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Penting</p>
+               <p className="text-[11px] font-medium text-rose-800 leading-relaxed">
+                 Data pemakaian bersifat final dan akan langsung memotong saldo stok material di gudang secara otomatis.
+               </p>
              </div>
           </Card>
         </div>
