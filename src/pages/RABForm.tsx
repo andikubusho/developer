@@ -129,6 +129,12 @@ const RABForm: React.FC = () => {
   const [materialSearchNodeId, setMaterialSearchNodeId] = useState<string | null>(null);
   const [materialSearchTerm, setMaterialSearchTerm] = useState('');
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  const fmtIDR = (val: number | null | undefined) => {
+    if (val == null || val === 0) return '0';
+    return val.toLocaleString('id-ID');
+  };
 
   // Fetch units when project changes
   useEffect(() => {
@@ -937,10 +943,12 @@ const RABForm: React.FC = () => {
               {((isLevel3 && !node.is_manual) || (isLevel2 && node.is_manual)) && (
                 <div className="flex flex-col items-end gap-0.5">
                   <input
-                    type="number"
-                    step="any"
-                    value={node.material_price ?? ''}
-                    onChange={(e) => updateNode(node.id, { material_price: e.target.value === '' ? null : Number(e.target.value) })}
+                    type="text"
+                    inputMode="numeric"
+                    value={focusedField === `mat_${node.id}` ? (node.material_price ?? '') : fmtIDR(node.material_price)}
+                    onFocus={() => setFocusedField(`mat_${node.id}`)}
+                    onBlur={() => setFocusedField(null)}
+                    onChange={(e) => updateNode(node.id, { material_price: e.target.value === '' ? null : Number(e.target.value.replace(/\./g, '')) })}
                     placeholder="0"
                     className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
                   />
@@ -956,10 +964,12 @@ const RABForm: React.FC = () => {
               {((isLevel3 && !node.is_manual) || (isLevel2 && node.is_manual)) && (
                 <div className="flex flex-col items-end gap-0.5">
                   <input
-                    type="number"
-                    step="any"
-                    value={node.wage_price ?? ''}
-                    onChange={(e) => updateNode(node.id, { wage_price: e.target.value === '' ? null : Number(e.target.value) })}
+                    type="text"
+                    inputMode="numeric"
+                    value={focusedField === `upah_${node.id}` ? (node.wage_price ?? '') : fmtIDR(node.wage_price)}
+                    onFocus={() => setFocusedField(`upah_${node.id}`)}
+                    onBlur={() => setFocusedField(null)}
+                    onChange={(e) => updateNode(node.id, { wage_price: e.target.value === '' ? null : Number(e.target.value.replace(/\./g, '')) })}
                     placeholder="0"
                     className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
                   />
