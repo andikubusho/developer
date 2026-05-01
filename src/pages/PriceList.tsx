@@ -341,25 +341,25 @@ const PriceList: React.FC = () => {
         <div className="overflow-x-auto scrollbar-hide">
           <Table className="min-w-full">
               <THead>
-                <TR className="bg-accent-dark text-white text-[8px] uppercase tracking-wider font-black">
-                  <TH rowSpan={2} className="px-1 py-3 text-center border-r border-white/40 w-6">
-                    <input type="checkbox" className="rounded bg-accent-dark/80 border-white/40 w-3 h-3" checked={selectedItems.length === priceItems.length && priceItems.length > 0} onChange={(e) => setSelectedItems(e.target.checked ? priceItems.map(i => i.id) : [])} />
+                <TR className="bg-white/80 text-text-primary text-[8px] uppercase tracking-wider font-black border-b border-white/40">
+                  <TH rowSpan={2} className="px-1 py-3 text-center border-r border-white/20 w-6">
+                    <input type="checkbox" className="rounded bg-white/50 border-white/40 w-3 h-3" checked={selectedItems.length === priceItems.length && priceItems.length > 0} onChange={(e) => setSelectedItems(e.target.checked ? priceItems.map(i => i.id) : [])} />
                   </TH>
-                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/40">Unit</TH>
-                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/40 hidden sm:table-cell">Tipe</TH>
-                  <TH colSpan={2} className="px-1 py-1.5 text-center border-b border-r border-white/40 hidden md:table-cell">Luas</TH>
-                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/40 hidden lg:table-cell">Booking</TH>
-                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/40 text-center hidden md:table-cell">DP</TH>
-                  <TH colSpan={3} className="px-1 py-1.5 text-center border-b border-r border-white/40 hidden xl:table-cell">KPR</TH>
-                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/40 text-right">Harga Jual</TH>
+                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/20">Unit</TH>
+                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/20 hidden sm:table-cell">Tipe</TH>
+                  <TH colSpan={2} className="px-1 py-1.5 text-center border-b border-r border-white/20 hidden md:table-cell">Luas</TH>
+                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/20 hidden lg:table-cell">Booking</TH>
+                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/20 text-center hidden md:table-cell">DP</TH>
+                  <TH colSpan={3} className="px-1 py-1.5 text-center border-b border-r border-white/20 hidden xl:table-cell">KPR</TH>
+                  <TH rowSpan={2} className="px-2 py-3 border-r border-white/20 text-right">Harga Jual</TH>
                   <TH rowSpan={2} className="px-1 py-3 text-center w-8">Aksi</TH>
                 </TR>
-                <TR className="bg-accent-dark/80 text-text-muted text-[7px] uppercase tracking-tighter font-bold">
-                  <TH className="px-1 py-1.5 text-center border-r border-white/40 hidden md:table-cell">Tnh</TH>
-                  <TH className="px-1 py-1.5 text-center border-r border-white/40 hidden md:table-cell">Bgn</TH>
-                  <TH className="px-1 py-1.5 text-center border-r border-white/40 hidden xl:table-cell">5 Th</TH>
-                  <TH className="px-1 py-1.5 text-center border-r border-white/40 hidden xl:table-cell">10 Th</TH>
-                  <TH className="px-1 py-1.5 text-center border-r border-white/40 hidden xl:table-cell">15 Th</TH>
+                <TR className="bg-white/40 text-text-muted text-[7px] uppercase tracking-tighter font-bold">
+                  <TH className="px-1 py-1.5 text-center border-r border-white/20 hidden md:table-cell">Tnh</TH>
+                  <TH className="px-1 py-1.5 text-center border-r border-white/20 hidden md:table-cell">Bgn</TH>
+                  <TH className="px-1 py-1.5 text-center border-r border-white/20 hidden xl:table-cell">5 Th</TH>
+                  <TH className="px-1 py-1.5 text-center border-r border-white/20 hidden xl:table-cell">10 Th</TH>
+                  <TH className="px-1 py-1.5 text-center border-r border-white/20 hidden xl:table-cell">15 Th</TH>
                 </TR>
               </THead>
               <TBody>

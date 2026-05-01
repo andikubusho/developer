@@ -1202,14 +1202,14 @@ const RABForm: React.FC = () => {
       <Card className="p-0 border-none shadow-premium bg-white overflow-hidden rounded-[2rem]">
         <Table>
             <THead>
-              <TR className="bg-accent-dark text-white text-[10px] font-black uppercase tracking-[0.2em] sticky top-0 z-10">
-                <TH className="px-4 py-5 border-r border-white/40 w-16">No</TH>
-                <TH className="px-4 py-5 border-r border-white/40">Uraian Pekerjaan</TH>
-                <TH className="px-4 py-5 border-r border-white/40 w-24">Koeff</TH>
-                <TH className="px-4 py-5 border-r border-white/40 w-32">Volume</TH>
-                <TH className="px-4 py-5 border-r border-white/40 w-24">Satuan</TH>
-                <TH className="px-4 py-5 border-r border-white/40 w-32 text-center text-[8px]">H. Material</TH>
-                <TH className="px-4 py-5 border-r border-white/40 w-32 text-center text-[8px]">H. Upah</TH>
+              <TR className="bg-white/60 text-text-primary text-[10px] font-black uppercase tracking-[0.2em] sticky top-0 z-10 border-b border-white/40">
+                <TH className="px-4 py-5 border-r border-white/20 w-16">No</TH>
+                <TH className="px-4 py-5 border-r border-white/20">Uraian Pekerjaan</TH>
+                <TH className="px-4 py-5 border-r border-white/20 w-24">Koeff</TH>
+                <TH className="px-4 py-5 border-r border-white/20 w-32">Volume</TH>
+                <TH className="px-4 py-5 border-r border-white/20 w-24">Satuan</TH>
+                <TH className="px-4 py-5 border-r border-white/20 w-32 text-center text-[8px]">H. Material</TH>
+                <TH className="px-4 py-5 border-r border-white/20 w-32 text-center text-[8px]">H. Upah</TH>
                 <TH className="px-4 py-5 w-44 text-right">Total Biaya</TH>
                 <TH className="px-4 py-5 w-40">Aksi</TH>
               </TR>
@@ -1248,9 +1248,9 @@ const RABForm: React.FC = () => {
                       <span className="text-sm font-black text-text-primary">{formatCurrency(node.subtotal)}</span>
                    </div>
                  ))}
-                 <div className="flex items-center justify-between p-6 bg-accent-dark rounded-xl text-white shadow-glass mt-8">
+                 <div className="flex items-center justify-between p-6 bg-white/50 rounded-xl text-text-primary shadow-3d-inset border border-white/40 mt-8">
                     <span className="text-xs font-black uppercase tracking-[0.2em]">Total Seluruh Anggaran</span>
-                    <span className="text-2xl font-black text-emerald-400">{formatCurrency(grandTotal)}</span>
+                    <span className="text-2xl font-black text-accent-lavender">{formatCurrency(grandTotal)}</span>
                  </div>
               </div>
            </Card>
@@ -1304,7 +1304,7 @@ const RABForm: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <Button size="sm" variant="ghost" className="text-accent-dark font-black text-[10px] uppercase tracking-wider group-hover:bg-accent-dark group-hover:text-white rounded-lg">
+                  <Button size="sm" variant="ghost" className="text-accent-dark font-black text-[10px] uppercase tracking-wider hover:bg-accent-lavender/20 rounded-lg">
                     Pilih & Salin
                   </Button>
                 </div>

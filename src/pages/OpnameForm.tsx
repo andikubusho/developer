@@ -400,7 +400,7 @@ const OpnameForm: React.FC = () => {
       <Card className="p-0 overflow-hidden border-white/40 shadow-premium bg-white/20 backdrop-blur-sm rounded-[2rem]">
         <Table className="min-w-[1200px]">
           <THead>
-            <TR className="bg-accent-dark text-white text-[10px] font-black uppercase tracking-[0.2em]">
+            <TR className="bg-white/60 text-text-primary text-[10px] font-black uppercase tracking-[0.2em] border-b border-white/40">
               <TH className="px-4 py-5">Uraian Pekerjaan</TH>
               <TH className="px-4 py-5 text-right">Pagu RAB Upah</TH>
               <TH className="px-4 py-5 text-center">Progress Lalu</TH>

@@ -19,11 +19,11 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const variants = {
-    primary: 'btn-3d bg-accent-lavender text-white filter brightness-110 shadow-glow-lavender',
+    primary: 'btn-3d bg-accent-lavender text-text-primary filter brightness-110 shadow-glow-lavender',
     secondary: 'btn-3d bg-white/40 text-text-primary',
     outline: 'btn-3d border-white/60 bg-transparent text-text-primary hover:bg-white/20',
     ghost: 'hover:bg-white/40 text-text-secondary hover:text-text-primary transition-all duration-300',
-    danger: 'btn-3d bg-rose-500 text-white shadow-glow-peach',
+    danger: 'btn-3d bg-rose-500/20 text-rose-700 shadow-glow-peach',
   };
 
   const sizes = {

@@ -488,12 +488,12 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center gap-2 sm:gap-3">
           <button 
             onClick={() => setDivision(null)}
-            className="btn-3d px-6 py-3 text-[10px] flex items-center gap-2 text-white"
+            className="btn-3d px-6 py-3 text-[10px] flex items-center gap-2 text-text-primary"
           >
             <ArrowLeft className="w-3 h-3" />
             Ganti Divisi
           </button>
-          <button className="btn-3d bg-accent-lavender text-white px-8 py-3 text-[10px] flex items-center gap-2">
+          <button className="btn-3d bg-accent-lavender text-text-primary px-8 py-3 text-[10px] flex items-center gap-2">
             Laporan
             <ChevronRight className="w-3 h-3" />
           </button>

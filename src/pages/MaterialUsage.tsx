@@ -213,36 +213,36 @@ const MaterialUsage: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          <Card className="p-6 bg-accent-dark text-white border-none shadow-premium">
+          <Card className="p-6 bg-white/50 text-text-primary border border-white/40 shadow-3d-inset">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-white/10 rounded-lg">
+              <div className="p-2 bg-accent-lavender/20 rounded-lg">
                 <Info className="w-5 h-5 text-accent-lavender" />
               </div>
-              <h3 className="font-black text-sm uppercase tracking-widest">Informasi Stok</h3>
+              <h3 className="font-black text-sm uppercase tracking-widest text-text-primary">Informasi Stok</h3>
             </div>
             
             {selectedVariant ? (
               <div className="space-y-4">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white/50">Item Aktif</p>
-                  <p className="text-lg font-black leading-tight">{masters.find(m => m.id === form.material_id)?.name}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Item Aktif</p>
+                  <p className="text-lg font-black leading-tight text-text-primary">{masters.find(m => m.id === form.material_id)?.name}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white/50">Varian Merk</p>
-                  <p className="text-lg font-black">{selectedVariant.merk}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Varian Merk</p>
+                  <p className="text-lg font-black text-text-primary">{selectedVariant.merk}</p>
                 </div>
-                <div className="pt-4 border-t border-white/10">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-1">Saldo Gudang Saat Ini</p>
+                <div className="pt-4 border-t border-white/40">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Saldo Gudang Saat Ini</p>
                   <p className="text-4xl font-black tracking-tight text-accent-lavender">
                     {formatNumber(selectedVariant.stok)}
-                    <span className="text-xs ml-2 opacity-50 uppercase">{masters.find(m => m.id === form.material_id)?.unit}</span>
+                    <span className="text-xs ml-2 text-text-muted uppercase">{masters.find(m => m.id === form.material_id)?.unit}</span>
                   </p>
                 </div>
               </div>
             ) : (
               <div className="py-10 text-center opacity-40">
-                <Package className="w-12 h-12 mx-auto mb-4" />
-                <p className="text-xs font-bold uppercase tracking-widest">Pilih variant untuk melihat stok</p>
+                <Package className="w-12 h-12 mx-auto mb-4 text-text-muted" />
+                <p className="text-xs font-bold uppercase tracking-widest text-text-muted">Pilih variant untuk melihat stok</p>
               </div>
             )}
           </Card>
