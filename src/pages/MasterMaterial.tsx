@@ -69,7 +69,7 @@ const MasterMaterial: React.FC = () => {
   const handleDownloadTemplate = () => {
     const templateData = [
       {
-        'Kode': 'SMN001',
+        'Kode Material': 'SMN001',
         'Nama Material': 'Semen Portland',
         'Satuan': 'Sak'
       },
@@ -115,7 +115,7 @@ const MasterMaterial: React.FC = () => {
 
         for (let i = 0; i < data.length; i++) {
           const row = data[i];
-          const kode = String(row['Kode'] || '').trim().toUpperCase();
+          const kode = String(row['Kode Material'] || row['Kode'] || '').trim().toUpperCase();
           const nama = String(row['Nama Material'] || '').trim();
           const satuan = String(row['Satuan'] || '').trim();
 
