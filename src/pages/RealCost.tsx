@@ -241,7 +241,7 @@ const RealCostPage: React.FC = () => {
               {units.map(u => <option key={u.id} value={u.id}>{u.unit_number}</option>)}
             </select>
           </div>
-          <button className="btn-3d bg-accent-lavender text-white px-8 h-[52px]">
+          <button className="btn-3d bg-accent-lavender text-text-primary px-8 h-[52px]">
             Ekspor
           </button>
         </div>

@@ -493,7 +493,7 @@ const Dashboard: React.FC = () => {
             <ArrowLeft className="w-3 h-3" />
             Ganti Divisi
           </button>
-          <button className="btn-3d bg-accent-lavender text-white filter brightness-110 shadow-glow-lavender px-8 py-3 text-[10px] flex items-center gap-2">
+          <button className="btn-3d bg-accent-lavender text-text-primary filter brightness-110 shadow-glow-lavender px-8 py-3 text-[10px] flex items-center gap-2">
             Laporan
             <ChevronRight className="w-3 h-3" />
           </button>

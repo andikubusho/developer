@@ -166,7 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                 className={({ isActive }) => cn(
                   'flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group relative overflow-hidden',
                   isActive 
-                    ? 'bg-accent-lavender text-white filter brightness-110 shadow-glow-lavender' 
+                    ? 'bg-accent-lavender text-text-primary filter brightness-110 shadow-glow-lavender' 
                     : 'text-text-secondary hover:bg-white/40 hover:text-text-primary'
                 )}
               >
@@ -174,7 +174,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                   <>
                     <item.icon className={cn(
                       "w-5 h-5 transition-transform group-hover:scale-110",
-                      isActive ? "text-white" : "text-text-muted group-hover:text-text-primary"
+                      isActive ? "text-text-primary" : "text-text-muted group-hover:text-text-primary"
                     )} />
                     <span className="font-bold text-[13px] tracking-tight">{item.name}</span>
                   </>
@@ -216,7 +216,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
               signOut();
               onClose?.();
             }}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-rose-500 text-text-secondary hover:text-white transition-all duration-300 group shadow-sm hover:shadow-3d"
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-rose-500/20 text-text-secondary hover:text-rose-600 transition-all duration-300 group shadow-sm hover:shadow-3d"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span className="font-bold text-[11px] uppercase tracking-widest">Keluar</span>

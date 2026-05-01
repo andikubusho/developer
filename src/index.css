@@ -175,7 +175,7 @@
   }
   .tab-pill.active {
     background: var(--color-accent-lavender);
-    color: white;
+    color: var(--color-text-primary);
     filter: brightness(1.2);
     box-shadow: var(--shadow-glow-lavender);
   }
