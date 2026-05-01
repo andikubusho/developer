@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
@@ -6,6 +6,7 @@ import DivisionSelection from './pages/DivisionSelection';
 import Login from './pages/Login';
 import AppointmentReminder from './components/AppointmentReminder';
 import ManagerNotificationListener from './components/ManagerNotificationListener';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -102,7 +103,7 @@ export default function App() {
       <AppointmentReminder />
       <ManagerNotificationListener />
       <Router>
-        <Suspense fallback={<LoadingFallback />}>
+        <ErrorBoundary>
           <Routes>
             <Route path="/login" element={<Login />} />
             
@@ -180,7 +181,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
-        </Suspense>
+        </ErrorBoundary>
       </Router>
     </AuthProvider>
   );

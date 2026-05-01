@@ -1,11 +1,19 @@
-import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useState, Suspense } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import { Menu, X } from 'lucide-react';
+import ErrorBoundary from './ErrorBoundary';
+import { Menu, X, RefreshCw } from 'lucide-react';
 import { Button } from './ui/Button';
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center py-32">
+    <RefreshCw className="w-8 h-8 animate-spin text-accent-dark/40" />
+  </div>
+);
 
 const Layout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <div className="flex min-h-screen bg-page relative font-sans selection:bg-accent-lavender/30 selection:text-accent-dark overflow-hidden">
@@ -51,7 +59,11 @@ const Layout: React.FC = () => {
 
         <div id="main-content" className="flex-1 px-4 py-8 md:px-10 md:py-12 overflow-y-auto overflow-x-hidden transition-all duration-300 print:p-0 print:overflow-visible scrollbar-hide">
           <div className="max-w-[1600px] mx-auto space-y-8 md:space-y-12 print:max-w-none print:space-y-0">
-            <Outlet />
+            <ErrorBoundary key={location.pathname}>
+              <Suspense fallback={<PageLoader />}>
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
       </main>
