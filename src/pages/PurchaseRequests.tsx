@@ -34,6 +34,7 @@ const PurchaseRequests: React.FC = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState<any[]>([]);
   const [rabs, setRabs] = useState<any[]>([]);
+  const [unitMap, setUnitMap] = useState<Record<string, any>>({});
   const [selectedRab, setSelectedRab] = useState<any | null>(null);
   const [budgetItems, setBudgetItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +70,7 @@ const PurchaseRequests: React.FC = () => {
       (projData || []).forEach((p: any) => { projectMap[p.id] = p; });
       const unitMap: Record<string, any> = {};
       (unitData || []).forEach((u: any) => { unitMap[u.id] = u; });
+      setUnitMap(unitMap);
       const masterMap: Record<string, any> = {};
       (masterData || []).forEach((m: any) => { masterMap[m.id] = m; });
 
@@ -280,7 +282,7 @@ const PurchaseRequests: React.FC = () => {
               <option value="">-- Pilih RAB Proyek & Unit --</option>
               {rabs.map(r => (
                 <option key={r.id} value={r.id}>
-                  {r.nama_proyek} {r.unit_id ? `(${r.unit_id})` : ''} - {formatDate(r.created_at)}
+                  {r.nama_proyek}{r.unit_id ? ` - Unit ${unitMap[r.unit_id]?.unit_number || r.unit_id}` : ''} - {formatDate(r.created_at)}
                 </option>
               ))}
             </select>
