@@ -110,7 +110,7 @@ const OpnamePage: React.FC = () => {
         </div>
         <button 
           onClick={() => navigate('/opname/new')}
-          className="btn-3d bg-accent-lavender text-text-primary px-10 h-14 flex items-center gap-3"
+          className="btn-3d bg-accent-lavender text-white px-10 h-14 flex items-center gap-3"
         >
           <Plus className="w-5 h-5" />
           Buat Baru

@@ -3,44 +3,43 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   
-  /* Color Tokens - Perfect Liquid Glass */
-  --color-page: #F0F2F5;
-  --color-glass-base: rgba(255, 255, 255, 0.35);
-  --color-glass-plate: rgba(255, 255, 255, 0.85); /* Stabilized plate for content */
-  --color-glass-border: rgba(255, 255, 255, 0.5);
+  /* Color Tokens - Enhanced Liquid Glass 3D */
+  --color-page: #E0E5EC; /* Deeper soft gray for better glass contrast */
+  --color-glass-base: rgba(255, 255, 255, 0.45);
+  --color-glass-plate: rgba(255, 255, 255, 0.92);
+  --color-glass-border: rgba(255, 255, 255, 0.6);
   
   --color-accent-peach: #FF8F70;
-  --color-accent-peach-glow: rgba(255, 143, 112, 0.4);
+  --color-accent-peach-glow: rgba(255, 143, 112, 0.6);
   --color-accent-lavender: #8B77FF;
-  --color-accent-lavender-glow: rgba(139, 119, 255, 0.4);
-  --color-accent-mint: #4CD9C0;
+  --color-accent-lavender-glow: rgba(139, 119, 255, 0.6);
   
-  --color-text-primary: #1F1F2F;
-  --color-text-secondary: #4A4A5F;
-  --color-text-muted: #8E8E9F;
+  --color-text-primary: #2D3436;
+  --color-text-secondary: #636E72;
+  --color-text-muted: #B2BEC3;
   
-  /* Border Radius - Super Rounded for Liquid Glass */
+  /* Border Radius */
   --radius-sm: 12px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
-  --radius-pill: 999px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
   
-  /* Liquid Glass 3D Shadows (Claymorphism) */
+  /* Deep 3D Shadows (Neu-Glassmorphism) */
   --shadow-3d-out: 
-    12px 12px 24px rgba(30, 30, 50, 0.08),
-    -12px -12px 24px rgba(255, 255, 255, 0.9);
+    9px 9px 16px rgba(163, 177, 198, 0.6),
+    -9px -9px 16px rgba(255, 255, 255, 0.8);
     
   --shadow-3d-in:
-    inset 8px 8px 16px rgba(30, 30, 50, 0.05),
-    inset -8px -8px 16px rgba(255, 255, 255, 0.8);
+    inset 6px 6px 12px rgba(163, 177, 198, 0.5),
+    inset -6px -6px 12px rgba(255, 255, 255, 0.8);
     
-  --shadow-glow-peach: 0 0 20px var(--color-accent-peach-glow);
-  --shadow-glow-lavender: 0 0 20px var(--color-accent-lavender-glow);
+  --shadow-glow-lavender: 
+    0 10px 20px rgba(139, 119, 255, 0.3),
+    0 0 0 1px rgba(139, 119, 255, 0.1);
   
-  /* Blur Tier */
-  --blur-glass: 32px;
-  --blur-glass-sm: 16px;
+  /* Blur */
+  --blur-glass: 40px;
+  --blur-glass-sm: 20px;
 }
 
 @layer base {
@@ -78,22 +77,23 @@
     background: var(--color-glass-base);
     backdrop-filter: blur(var(--blur-glass));
     -webkit-backdrop-filter: blur(var(--blur-glass));
-    border: 1px solid var(--color-glass-border);
+    border: 1.5px solid rgba(255, 255, 255, 0.6);
     box-shadow: var(--shadow-3d-out);
     border-radius: var(--radius-xl);
     position: relative;
     overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
   
-  /* Highlight Band at the top edge */
+  /* Highlight Edge for "Thickness" */
   .glass-card::before {
     content: '';
     position: absolute;
-    inset: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none;
     border-radius: inherit;
-    background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 40%);
+    background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, transparent 50%);
+    box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.8);
     z-index: 1;
   }
 
@@ -158,26 +158,31 @@
 
   /* Tab Pill Pattern (For Small Sets) */
   .tab-pill-container {
-    background: var(--color-glass-plate);
+    background: var(--color-page);
     border-radius: var(--radius-pill);
-    padding: 4px;
+    padding: 6px;
     display: inline-flex;
-    gap: 4px;
+    gap: 6px;
     box-shadow: var(--shadow-3d-in);
+    border: 1px solid rgba(255,255,255,0.4);
   }
   .tab-pill {
-    padding: 8px 24px;
+    padding: 10px 28px;
     border-radius: var(--radius-pill);
-    font-weight: 800;
-    font-size: 0.75rem;
+    font-weight: 900;
+    font-size: 0.7rem;
     color: var(--color-text-muted);
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
   .tab-pill.active {
     background: var(--color-accent-lavender);
-    color: var(--color-text-primary);
-    filter: brightness(1.2);
-    box-shadow: var(--shadow-glow-lavender);
+    color: white;
+    filter: brightness(1.1);
+    box-shadow: 
+      0 10px 20px rgba(139, 119, 255, 0.4),
+      inset 0 4px 6px rgba(255, 255, 255, 0.3);
   }
 
   /* 3D Input (Recessed) */
@@ -196,6 +201,12 @@
     box-shadow: 
       inset 4px 4px 8px rgba(30, 30, 50, 0.05),
       0 0 0 4px var(--color-accent-lavender-glow);
+  }
+
+  /* 3D Etched Line */
+  .etched-line {
+    border-bottom: 1px solid rgba(163, 177, 198, 0.3);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   .shadow-3d { box-shadow: var(--shadow-3d-out); }

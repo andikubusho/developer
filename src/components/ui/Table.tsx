@@ -28,7 +28,7 @@ export const THead: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> = ({
 
 export const TBody: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> = ({ children, className, ...props }) => {
   return (
-    <tbody className={cn('divide-y divide-white/10', className)} {...props}>
+    <tbody className={cn('divide-y divide-transparent', className)} {...props}>
       {children}
     </tbody>
   );
@@ -37,7 +37,7 @@ export const TBody: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> = ({
 export const TR: React.FC<React.HTMLAttributes<HTMLTableRowElement> & { isHoverable?: boolean }> = ({ children, className, isHoverable = true, ...props }) => {
   return (
     <tr className={cn(
-      'transition-all duration-300',
+      'transition-all duration-300 etched-line',
       isHoverable && 'hover:bg-white/40 hover:shadow-3d-inset',
       className
     )} {...props}>

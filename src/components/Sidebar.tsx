@@ -164,9 +164,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                 to={item.path}
                 onClick={() => onClose?.()}
                 className={({ isActive }) => cn(
-                  'flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group relative overflow-hidden',
+                  'flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden',
                   isActive 
-                    ? 'bg-accent-lavender text-text-primary filter brightness-110 shadow-glow-lavender' 
+                    ? 'bg-accent-lavender text-white shadow-[0_10px_20px_-5px_rgba(139,119,255,0.5),inset_0_4px_6px_rgba(255,255,255,0.3)] border border-white/30' 
                     : 'text-text-secondary hover:bg-white/40 hover:text-text-primary'
                 )}
               >
@@ -174,7 +174,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                   <>
                     <item.icon className={cn(
                       "w-5 h-5 transition-transform group-hover:scale-110",
-                      isActive ? "text-text-primary" : "text-text-muted group-hover:text-text-primary"
+                      isActive ? "text-white" : "text-text-muted group-hover:text-text-primary"
                     )} />
                     <span className="font-bold text-[13px] tracking-tight">{item.name}</span>
                   </>
