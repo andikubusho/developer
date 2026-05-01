@@ -140,8 +140,8 @@ const MasterMaterial: React.FC = () => {
           const satuan = String(row['Satuan'] || '').trim();
           const kategori = String(row['Kategori'] || '').trim();
           const spesifikasi = String(row['Spesifikasi'] || '').trim();
-          const harga_satuan = Number(row['Harga Satuan'] || 0);
-          const min_stok = Number(row['Min Stok'] || 0);
+          const harga_satuan = Number(String(row['Harga Satuan'] || '0').replace(/\./g, '').replace(',', '.')) || 0;
+          const min_stok = Number(String(row['Min Stok'] || '0').replace(/\./g, '').replace(',', '.')) || 0;
 
           if (!kode || !nama || !satuan) {
             errors.push(`Baris ${i + 2}: Data tidak lengkap`);
@@ -351,7 +351,7 @@ const MasterMaterial: React.FC = () => {
                     </span>
                   </TD>
                   <TD className="px-6 py-4 text-right font-bold text-text-primary">
-                    {m.harga_satuan ? `Rp ${m.harga_satuan.toLocaleString('id-ID')}` : '-'}
+                    {m.harga_satuan != null && m.harga_satuan > 0 ? `Rp ${m.harga_satuan.toLocaleString('id-ID')}` : '-'}
                   </TD>
                   <TD className="px-6 py-4 text-center font-bold text-text-primary">
                     {m.min_stok ?? '-'}
