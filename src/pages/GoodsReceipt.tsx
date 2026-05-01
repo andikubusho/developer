@@ -121,9 +121,9 @@ const GoodsReceipt: React.FC = () => {
         <Card className="md:col-span-3 p-6 bg-white border-none shadow-premium">
           <div className="relative mb-6">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <Input 
-              placeholder="Cari No. PO, Proyek, atau Supplier..." 
-              className="pl-12 h-12 glass-input border-none rounded-xl w-full"
+            <Input
+              placeholder="Cari No. PO, Proyek, atau Supplier..."
+              className="pl-12 h-12 rounded-xl w-full border border-slate-200 bg-slate-50"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />

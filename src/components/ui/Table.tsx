@@ -9,7 +9,7 @@ interface TableProps {
 export const Table: React.FC<React.HTMLAttributes<HTMLTableElement>> = ({ children, className, ...props }) => {
   return (
     <div className={cn('w-full overflow-x-auto scrollbar-hide glass-card', className)}>
-      <table className="w-full text-left border-collapse" {...props}>
+      <table className="w-full text-left border-collapse relative z-[1]" {...props}>
         {children}
       </table>
     </div>
@@ -18,7 +18,7 @@ export const Table: React.FC<React.HTMLAttributes<HTMLTableElement>> = ({ childr
 
 export const THead: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> = ({ children, className, ...props }) => {
   return (
-    <thead className={cn('bg-white/30 border-b border-white/40 backdrop-blur-glass-sm', className)} {...props}>
+    <thead className={cn('bg-slate-50/80 border-b border-slate-200/60 backdrop-blur-glass-sm', className)} {...props}>
       {children}
     </thead>
   );
