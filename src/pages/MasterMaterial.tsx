@@ -139,12 +139,27 @@ const MasterMaterial: React.FC = () => {
           }
         }
 
-        // Import process (Upsert)
-        for (const mat of validMaterials) {
-          await api.upsert('materials', mat, 'code'); // Upsert based on code if available
+        // Fetch existing materials to decide insert vs update
+        const existing = await api.get('materials', 'select=id,code');
+        const codeToId: Record<string, string> = {};
+        for (const m of existing) {
+          if (m.code) codeToId[String(m.code).toUpperCase()] = m.id;
         }
 
-        alert(`Berhasil mengimpor ${validMaterials.length} data master material.`);
+        let inserted = 0;
+        let updated = 0;
+        for (const mat of validMaterials) {
+          const existingId = codeToId[mat.code];
+          if (existingId) {
+            await api.update('materials', existingId, { name: mat.name, unit: mat.unit });
+            updated++;
+          } else {
+            await api.insert('materials', mat);
+            inserted++;
+          }
+        }
+
+        alert(`Berhasil mengimpor: ${inserted} data baru ditambahkan, ${updated} data diperbarui.`);
         fetchMaterials();
       } catch (err) {
         console.error('Error importing excel:', err);
