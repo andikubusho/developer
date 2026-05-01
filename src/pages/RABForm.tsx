@@ -132,7 +132,8 @@ const RABForm: React.FC = () => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const fmtIDR = (val: number | null | undefined) => {
-    if (val == null || val === 0) return '0';
+    if (val == null) return '';
+    if (val === 0) return '0';
     return val.toLocaleString('id-ID');
   };
 
@@ -945,10 +946,11 @@ const RABForm: React.FC = () => {
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={focusedField === `mat_${node.id}` ? (node.material_price ?? '') : fmtIDR(node.material_price)}
-                    onFocus={() => setFocusedField(`mat_${node.id}`)}
-                    onBlur={() => setFocusedField(null)}
-                    onChange={(e) => updateNode(node.id, { material_price: e.target.value === '' ? null : Number(e.target.value.replace(/\./g, '')) })}
+                    value={fmtIDR(node.material_price)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                      updateNode(node.id, { material_price: val === '' ? null : Number(val) });
+                    }}
                     placeholder="0"
                     className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
                   />
@@ -966,10 +968,11 @@ const RABForm: React.FC = () => {
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={focusedField === `upah_${node.id}` ? (node.wage_price ?? '') : fmtIDR(node.wage_price)}
-                    onFocus={() => setFocusedField(`upah_${node.id}`)}
-                    onBlur={() => setFocusedField(null)}
-                    onChange={(e) => updateNode(node.id, { wage_price: e.target.value === '' ? null : Number(e.target.value.replace(/\./g, '')) })}
+                    value={fmtIDR(node.wage_price)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                      updateNode(node.id, { wage_price: val === '' ? null : Number(val) });
+                    }}
                     placeholder="0"
                     className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
                   />
@@ -985,10 +988,13 @@ const RABForm: React.FC = () => {
               {isLevel3 && node.is_manual ? (
                 <div className="flex items-center justify-end">
                    <input
-                    type="number"
-                    step="any"
-                    value={node.harga_rab ?? ''}
-                    onChange={(e) => updateNode(node.id, { harga_rab: e.target.value === '' ? null : Number(e.target.value) })}
+                    type="text"
+                    inputMode="numeric"
+                    value={fmtIDR(node.harga_rab)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, '');
+                      updateNode(node.id, { harga_rab: val === '' ? null : Number(val) });
+                    }}
                     placeholder="0"
                     className="bg-transparent border-none focus:ring-0 w-32 text-right p-0 font-bold text-emerald-700"
                   />

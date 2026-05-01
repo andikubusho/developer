@@ -296,7 +296,7 @@ const PurchaseRequests: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unit</p>
-                <p className="text-sm font-black text-slate-700">{selectedRab.unit_id || 'Seluruh Proyek'}</p>
+                <p className="text-sm font-black text-slate-700">{selectedRab.unit_id ? (unitMap[selectedRab.unit_id]?.unit_number || selectedRab.unit_id) : 'Seluruh Proyek'}</p>
               </div>
             </div>
           )}

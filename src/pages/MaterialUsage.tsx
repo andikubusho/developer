@@ -14,7 +14,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { api } from '../lib/api';
-import { formatNumber } from '../lib/utils';
+import { formatNumber, cn } from '../lib/utils';
 
 const MaterialUsage: React.FC = () => {
   const navigate = useNavigate();
