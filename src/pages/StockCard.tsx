@@ -79,7 +79,7 @@ const StockCard: React.FC = () => {
       setLoading(true);
       // 1. Ambil Data Mutasi dalam Range (Ascending agar mudah hitung saldo berjalan)
       const moveData = await api.get('stock_movements', 
-        `id_variant=eq.${id}&tanggal=gte.${dateRange.start}T00:00:00&tanggal=lte.${dateRange.end}T23:59:59&order=tanggal.asc`
+        `id_variant=eq.${id}&select=*,worker:worker_masters(name)&tanggal=gte.${dateRange.start}T00:00:00&tanggal=lte.${dateRange.end}T23:59:59&order=tanggal.asc`
       );
 
       // 2. Ambil Info Varian
@@ -134,7 +134,7 @@ const StockCard: React.FC = () => {
       rows.push([
         formatDate(m.tanggal),
         m.tipe === 'IN' ? 'MASUK' : m.tipe === 'OUT' ? 'KELUAR' : 'PENYESUAIAN',
-        m.keterangan || m.sumber,
+        `${m.keterangan || m.sumber}${m.worker?.name ? ` (Mandor: ${m.worker.name})` : ''}`,
         m.tipe === 'IN' ? m.qty : 0,
         m.tipe === 'OUT' ? m.qty : 0,
         runningBalance
@@ -346,6 +346,11 @@ const StockCard: React.FC = () => {
                           <span className="text-xs font-bold text-text-primary uppercase leading-tight">
                             {m.keterangan || m.reference_id?.slice(0, 8)}
                           </span>
+                          {m.worker?.name && (
+                            <span className="text-[9px] font-black text-accent-lavender uppercase mt-1">
+                               Mandor: {m.worker.name}
+                            </span>
+                          )}
                         </div>
                       </TD>
                       <TD className="px-6 py-4 text-right font-black text-emerald-600">
