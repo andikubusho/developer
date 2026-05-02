@@ -879,7 +879,7 @@ const RABForm: React.FC = () => {
                     value={node.uraian}
                     onChange={(e) => updateNode(node.id, { uraian: e.target.value })}
                     placeholder={isLevel0 ? "Nama Lantai / Bagian..." : isLevel1 ? "Kelompok Pekerjaan..." : "Deskripsi..."}
-                    className="bg-transparent border-none focus:ring-0 w-full p-0 font-inherit text-inherit placeholder-text-muted"
+                    className="bg-transparent border-none focus:ring-0 w-full p-0 text-gray-900 placeholder-text-muted"
                   />
                 )}
               </div>
@@ -893,7 +893,7 @@ const RABForm: React.FC = () => {
                   step="any"
                   value={node.koeff ?? ''}
                   onChange={(e) => updateNode(node.id, { koeff: e.target.value === '' ? null : Number(e.target.value) })}
-                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
+                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0 text-gray-900"
                 />
               )}
               {isLevel3 && node.is_manual && (
@@ -909,7 +909,7 @@ const RABForm: React.FC = () => {
                   step="any"
                   value={node.volume ?? ''}
                   onChange={(e) => updateNode(node.id, { volume: e.target.value === '' ? null : Number(e.target.value) })}
-                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
+                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0 text-gray-900"
                 />
               )}
               {isLevel3 && !node.is_manual && (
@@ -919,7 +919,7 @@ const RABForm: React.FC = () => {
                   value={node.volume ?? ''}
                   onChange={(e) => updateNode(node.id, { volume: e.target.value === '' ? null : Number(e.target.value) })}
                   placeholder="0"
-                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0"
+                  className="bg-transparent border-none focus:ring-0 w-full text-right p-0 text-gray-900"
                 />
               )}
             </TD>
@@ -932,7 +932,7 @@ const RABForm: React.FC = () => {
                   value={node.satuan}
                   onChange={(e) => updateNode(node.id, { satuan: e.target.value })}
                   placeholder="m2, zak..."
-                  className="bg-transparent border-none focus:ring-0 w-full text-center p-0"
+                  className="bg-transparent border-none focus:ring-0 w-full text-center p-0 text-gray-900"
                 />
               )}
             </TD>
@@ -950,7 +950,7 @@ const RABForm: React.FC = () => {
                       updateNode(node.id, { material_price: val === '' ? null : Number(val) });
                     }}
                     placeholder="0"
-                    className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
+                    className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold text-gray-900"
                   />
                   {isLevel2 && node.is_manual && (
                     <span className="text-[9px] text-text-muted">per {node.satuan || 'satuan'}</span>
@@ -972,7 +972,7 @@ const RABForm: React.FC = () => {
                       updateNode(node.id, { wage_price: val === '' ? null : Number(val) });
                     }}
                     placeholder="0"
-                    className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold"
+                    className="bg-transparent border-none focus:ring-0 w-full text-right p-0 font-bold text-gray-900"
                   />
                   {isLevel2 && node.is_manual && (
                     <span className="text-[9px] text-text-muted">per {node.satuan || 'satuan'}</span>
