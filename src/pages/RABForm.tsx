@@ -1114,7 +1114,7 @@ const RABForm: React.FC = () => {
                 {formatCurrency(sectionTotals[node.id]?.wage || 0)}
               </td>
               <td className="px-4 py-2.5 text-right text-sm font-black text-slate-700">
-                {formatCurrency(node.subtotal)}
+                {formatCurrency((sectionTotals[node.id]?.mat || 0) + (sectionTotals[node.id]?.wage || 0))}
               </td>
               <td />
             </tr>
