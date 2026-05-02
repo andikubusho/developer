@@ -186,9 +186,17 @@ const GoodsReceipt: React.FC = () => {
                       <div className="text-xs text-text-secondary">{o.supplier?.name}</div>
                     </TD>
                     <TD>
-                      <div className="flex flex-col">
+                      <div className="flex flex-col gap-1.5">
                         {Array.isArray(o.items) ? (
-                          <span className="text-sm font-black text-accent-dark">{o.items.length} Item Material</span>
+                          o.items.map((it: any, idx: number) => (
+                            <div key={idx} className="flex flex-col border-l-2 border-accent-dark/20 pl-2 py-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-black text-text-primary leading-tight">{it.material_name}</span>
+                                <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-black text-slate-500">{it.quantity} {it.unit}</span>
+                              </div>
+                              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">Merk: {it.variant_name || it.merk}</span>
+                            </div>
+                          ))
                         ) : (
                           <>
                             <span className="text-sm font-black text-text-primary">{o.master?.name}</span>
