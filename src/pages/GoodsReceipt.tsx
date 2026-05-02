@@ -11,7 +11,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Eye,
-  Trash2
+  Trash2,
+  UserCheck
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
