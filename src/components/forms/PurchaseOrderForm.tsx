@@ -13,7 +13,7 @@ import { Info, Lock } from 'lucide-react';
 const poSchema = z.object({
   project_id: z.string().min(1, 'Proyek harus dipilih'),
   material_id: z.string().min(1, 'Master Material harus dipilih'),
-  id_variant: z.number().optional(),
+  id_variant: z.preprocess((val: unknown) => (typeof val === 'number' && isNaN(val)) ? undefined : val, z.number().optional()),
   supplier_id: z.string().min(1, 'Supplier harus dipilih'),
   quantity: z.number().min(1, 'Jumlah minimal 1'),
   unit_price: z.number().min(0, 'Harga harus positif'),
@@ -84,7 +84,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       if (initialPR) {
         setValue('project_id', initialPR.project_id);
         setValue('material_id', initialPR.material_id);
-        setValue('quantity', initialPR.quantity);
+        setValue('quantity', Number(initialPR.quantity));
         if (initialPR.prId) setValue('pr_id', initialPR.prId);
       }
     } catch (err) {
