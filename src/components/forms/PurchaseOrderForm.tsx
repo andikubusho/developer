@@ -8,7 +8,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { NumberInput } from '../ui/NumberInput';
-import { Info } from 'lucide-react';
+import { Info, Lock } from 'lucide-react';
 
 const poSchema = z.object({
   project_id: z.string().min(1, 'Proyek harus dipilih'),
