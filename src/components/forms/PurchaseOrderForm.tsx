@@ -8,7 +8,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { NumberInput } from '../ui/NumberInput';
-import { Info, Lock } from 'lucide-react';
+import { Info, Lock, Trash2 } from 'lucide-react';
 import { SearchableSelect } from '../ui/SearchableSelect';
 
 const poSchema = z.object({
@@ -155,6 +155,39 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       setVariants(data);
     } catch (err) {
       console.error('Error fetching variants:', err);
+    }
+  };
+
+  const handleDeleteVariant = async (variantId: number, idx?: number) => {
+    const variant = idx !== undefined 
+      ? itemDetails[idx].variants.find(v => v.id === variantId)
+      : variants.find(v => v.id === variantId);
+
+    if (!variant) return;
+    
+    if (Number(variant.stok) > 0) {
+      alert(`Tidak bisa menghapus varian "${variant.merk}" karena sudah memiliki stok (${variant.stok}).`);
+      return;
+    }
+
+    if (!confirm(`Hapus varian "${variant.merk}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+
+    try {
+      await api.delete('material_variants', variantId);
+      
+      // Refresh list
+      if (idx !== undefined) {
+        const newDetails = [...itemDetails];
+        newDetails[idx].variants = newDetails[idx].variants.filter(v => v.id !== variantId);
+        newDetails[idx].variantId = undefined;
+        setItemDetails(newDetails);
+      } else {
+        setVariants(prev => prev.filter(v => v.id !== variantId));
+        setValue('id_variant', undefined);
+      }
+    } catch (err) {
+      console.error('Error deleting variant:', err);
+      alert('Gagal menghapus varian. Mungkin sudah ada transaksi terkait.');
     }
   };
 
@@ -412,16 +445,28 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
                         />
                       </div>
                     ) : (
-                      <select
-                        value={detail.variantId ?? ''}
-                        onChange={e => updateItemDetail(i, { variantId: e.target.value ? Number(e.target.value) : undefined })}
-                        className="w-full h-12 rounded-xl bg-white border-2 border-slate-100 px-4 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender appearance-none cursor-pointer"
-                      >
-                        <option value="">Pilih Variant / Merk</option>
-                        {(detail.variants || []).map(v => (
-                          <option key={v.id} value={v.id}>{v.merk}{v.spesifikasi ? ` (${v.spesifikasi})` : ''}</option>
-                        ))}
-                      </select>
+                      <div className="flex gap-2">
+                        <select
+                          value={detail.variantId ?? ''}
+                          onChange={e => updateItemDetail(i, { variantId: e.target.value ? Number(e.target.value) : undefined })}
+                          className="flex-1 h-12 rounded-xl bg-white border-2 border-slate-100 px-4 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender appearance-none cursor-pointer"
+                        >
+                          <option value="">Pilih Variant / Merk</option>
+                          {(detail.variants || []).map(v => (
+                            <option key={v.id} value={v.id}>{v.merk}{v.spesifikasi ? ` (${v.spesifikasi})` : ''}</option>
+                          ))}
+                        </select>
+                        {detail.variantId && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteVariant(detail.variantId!, i)}
+                            className="w-12 h-12 flex items-center justify-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors border-2 border-rose-100"
+                            title="Hapus Varian"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -612,16 +657,27 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
                 />
               </div>
             ) : (
-              <select
-                {...register('id_variant', { valueAsNumber: true })}
-                disabled={!selectedMaterialId}
-                className="w-full h-14 rounded-2xl bg-white border-2 border-slate-100 px-5 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender shadow-sm transition-all disabled:opacity-50 appearance-none cursor-pointer"
-              >
-                <option value="">Pilih Variant / Merk</option>
-                {variants.map(v => (
-                  <option key={v.id} value={v.id}>{v.merk} {v.spesifikasi ? `(${v.spesifikasi})` : ''}</option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  {...register('id_variant')}
+                  className="flex-1 h-14 rounded-2xl bg-white border-2 border-slate-100 px-5 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender appearance-none cursor-pointer shadow-sm transition-all"
+                >
+                  <option value="">Pilih Variant / Merk</option>
+                  {variants.map(v => (
+                    <option key={v.id} value={v.id}>{v.merk}{v.spesifikasi ? ` (${v.spesifikasi})` : ''}</option>
+                  ))}
+                </select>
+                {watch('id_variant') && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteVariant(Number(watch('id_variant')))}
+                    className="w-14 h-14 flex items-center justify-center rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors border-2 border-rose-100 shadow-sm"
+                    title="Hapus Varian"
+                  >
+                    <Trash2 className="w-6 h-6" />
+                  </button>
+                )}
+              </div>
             )}
             {errors.id_variant && !isNewVariant && <p className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.id_variant.message}</p>}
           </div>
