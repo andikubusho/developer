@@ -227,7 +227,7 @@ const MaterialUsage: React.FC = () => {
                 <div className={cn("md:col-span-2 transition-all duration-500", !form.rab_project_id && "opacity-30 pointer-events-none")}>
                   <SearchableSelect 
                     label="2. Pilih Pekerjaan (Sesuai RAB)"
-                    options={rabItems.map(it => ({ 
+                    options={rabItems.filter(it => (Number(it.material?.stock) || 0) > 0).map(it => ({ 
                       label: `${it.parentUraian} → ${it.uraian} [Budget: ${Number(it.volume).toFixed(2)} ${it.satuan}]`, 
                       value: it.id 
                     }))}
