@@ -177,36 +177,63 @@ const StockCard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Selector Card */}
-        <Card className="p-6 bg-accent-dark text-white border-none shadow-premium lg:col-span-1">
+        <Card className="lg:col-span-1">
           <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Filter className="w-4 h-4 text-accent-lavender" />
-              <h3 className="font-black uppercase text-xs tracking-widest">Pilih Varian</h3>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-accent-lavender" />
+                <h3 className="font-black uppercase text-[10px] tracking-widest text-slate-400">Pilih Varian</h3>
+              </div>
+              <button onClick={fetchVariants} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
+                <RefreshCw className={cn("w-3 h-3 text-slate-400", loading && "animate-spin")} />
+              </button>
             </div>
-            <select 
-              className="w-full h-12 bg-white/10 border border-white/20 rounded-xl px-4 text-sm font-bold focus:outline-none focus:bg-white/20 transition-all text-white"
-              value={selectedVariantId}
-              onChange={(e) => setSelectedVariantId(e.target.value)}
-            >
-              <option value="" className="text-gray-900">-- Pilih Varian --</option>
-              {variants.map(v => (
-                <option key={v.id} value={v.id} className="text-gray-900">
-                  {v.master?.code ? `[${v.master.code}] ` : ''}{v.master?.name} - {v.merk}
-                </option>
+            
+            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {loading && variants.length === 0 ? (
+                <div className="py-10 text-center text-xs font-bold text-slate-300 animate-pulse italic">
+                  Memuat varian...
+                </div>
+              ) : variants.length === 0 ? (
+                <div className="py-10 text-center text-xs font-bold text-slate-300 italic">
+                  Varian tidak ditemukan.
+                </div>
+              ) : variants.map(v => (
+                <button
+                  key={v.id}
+                  onClick={() => setSelectedVariantId(v.id.toString())}
+                  className={cn(
+                    "w-full text-left p-4 rounded-2xl transition-all duration-300 border-2 group",
+                    selectedVariantId === v.id.toString()
+                      ? "bg-accent-lavender border-accent-lavender shadow-glow-lavender text-white"
+                      : "bg-slate-50 border-transparent hover:border-slate-200 text-text-primary"
+                  )}
+                >
+                  <p className={cn(
+                    "text-[10px] font-black uppercase tracking-tighter mb-1",
+                    selectedVariantId === v.id.toString() ? "text-white/70" : "text-emerald-600"
+                  )}>
+                    {v.master?.code || 'NO CODE'}
+                  </p>
+                  <p className="font-black text-xs leading-tight">{v.merk}</p>
+                  <p className={cn(
+                    "text-[10px] font-bold mt-1",
+                    selectedVariantId === v.id.toString() ? "text-white/60" : "text-slate-400"
+                  )}>
+                    {v.master?.name}
+                  </p>
+                </button>
               ))}
-            </select>
+            </div>
             
             {variantInfo && (
-              <div className="pt-6 space-y-4 border-t border-white/10">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Merk / Spesifikasi</p>
-                  <p className="font-black text-accent-lavender">{variantInfo.merk}</p>
-                  <p className="text-sm font-bold text-white/80 leading-tight mb-1">{variantInfo.master?.name}</p>
-                  <p className="text-xs opacity-70 italic">{variantInfo.spesifikasi || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Stok Akhir</p>
-                  <p className="text-3xl font-black">{formatNumber(variantInfo.stok)} <span className="text-xs font-bold opacity-60 uppercase">{variantInfo.master?.unit}</span></p>
+              <div className="pt-6 space-y-4 border-t border-slate-100">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-3d-inset">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Stok Akhir Saat Ini</p>
+                  <p className="text-3xl font-black text-text-primary">
+                    {formatNumber(variantInfo.stok)} 
+                    <span className="text-xs font-bold text-slate-400 uppercase ml-2">{variantInfo.master?.unit}</span>
+                  </p>
                 </div>
               </div>
             )}
