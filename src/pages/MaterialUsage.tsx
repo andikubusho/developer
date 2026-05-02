@@ -8,7 +8,8 @@ import {
   Package,
   AlertTriangle,
   RefreshCw,
-  Trash2
+  Trash2,
+  UserCheck
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -25,6 +26,7 @@ const MaterialUsage: React.FC = () => {
   const [rabItems, setRabItems] = useState<any[]>([]);
   const [masters, setMasters] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
+  const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   
@@ -35,6 +37,7 @@ const MaterialUsage: React.FC = () => {
     material_id: '',
     id_variant: '',
     qty: 0,
+    worker_id: '',
     keterangan: ''
   });
 
@@ -49,10 +52,11 @@ const MaterialUsage: React.FC = () => {
     try {
       setLoading(true);
       // Fetch RAB Projects, Recent Usage History, and Unit Info
-      const [rabData, historyData, unitsData] = await Promise.all([
+      const [rabData, historyData, unitsData, workersData] = await Promise.all([
         api.get('rab_projects', 'select=*&order=nama_proyek.asc'),
         api.get('material_usages', 'select=*,rab:rab_projects(nama_proyek),material:materials(name,unit),variant:material_variants(merk)&order=tanggal.desc&limit=10'),
-        api.get('units', 'select=id,unit_number,type')
+        api.get('units', 'select=id,unit_number,type'),
+        api.get('worker_masters', 'select=id,name,type&status=eq.active&order=name.asc')
       ]);
 
       const unitsMap: Record<string, any> = {};
@@ -67,6 +71,7 @@ const MaterialUsage: React.FC = () => {
 
       setProjects(enriched);
       setHistory(Array.isArray(historyData) ? historyData : []);
+      setWorkers(workersData || []);
     } catch (err) {
       console.error('Error fetching initial data:', err);
     } finally {
@@ -184,6 +189,7 @@ const MaterialUsage: React.FC = () => {
         material_id: form.material_id,
         id_variant: parseInt(form.id_variant),
         qty: form.qty,
+        worker_id: form.worker_id || null,
         keterangan: form.keterangan
       });
 
@@ -338,6 +344,24 @@ const MaterialUsage: React.FC = () => {
               </div>
 
               <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-8 transition-all duration-500", !form.id_variant && "opacity-30 pointer-events-none")}>
+                 {/* Penerima / Mandor */}
+                 <div className="space-y-3">
+                  <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+                    <UserCheck className="w-3.5 h-3.5 text-accent-lavender" /> Penerima / Mandor
+                  </label>
+                  <select 
+                    className="w-full h-14 glass-input rounded-2xl px-6 text-sm font-bold text-text-primary focus:outline-none shadow-3d-inset disabled:opacity-40"
+                    value={form.worker_id}
+                    onChange={(e) => setForm({ ...form, worker_id: e.target.value })}
+                    required
+                  >
+                    <option value="">-- Pilih Mandor --</option>
+                    {workers.map(w => (
+                      <option key={w.id} value={w.id}>{w.name} ({w.type})</option>
+                    ))}
+                  </select>
+                </div>
+
                  {/* Tanggal */}
                  <div className="space-y-3">
                   <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1">

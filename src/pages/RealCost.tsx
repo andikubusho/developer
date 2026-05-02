@@ -16,7 +16,8 @@ import {
   Filter, 
   BarChart3, 
   ArrowLeft, 
-  Info 
+  Info,
+  UserCheck
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -38,6 +39,8 @@ const RealCostPage: React.FC = () => {
   const [units, setUnits] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedUnitId, setSelectedUnitId] = useState<string>('');
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
+  const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [data, setData] = useState({
@@ -61,14 +64,24 @@ const RealCostPage: React.FC = () => {
 
   useEffect(() => {
     fetchProjects();
+    fetchWorkers();
   }, []);
+
+  const fetchWorkers = async () => {
+    try {
+      const data = await api.get('worker_masters', 'select=id,name,type&status=eq.active&order=name.asc');
+      setWorkers(data || []);
+    } catch (err) {
+      console.error('Error fetching workers:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedProjectId) {
       fetchUnits(selectedProjectId);
       fetchRealCostData();
     }
-  }, [selectedProjectId, selectedUnitId]);
+  }, [selectedProjectId, selectedUnitId, selectedWorkerId]);
 
   const fetchUnits = async (projectId: string) => {
     if (isMockMode) {
@@ -160,6 +173,10 @@ const RealCostPage: React.FC = () => {
       let opnameQuery = `select=id&project_id=eq.${selectedProjectId}&status=in.(approved,paid)`;
       if (selectedUnitId) {
         opnameQuery += `&unit_id=eq.${selectedUnitId}`;
+      }
+      if (selectedWorkerId) {
+        opnameQuery += `&worker_id=eq.${selectedWorkerId}`;
+        usageQuery += `&worker_id=eq.${selectedWorkerId}`;
       }
 
       const [rabItems, usageData, opnameMasterData] = await Promise.all([
@@ -312,6 +329,19 @@ const RealCostPage: React.FC = () => {
               {units.map(u => <option key={u.id} value={u.id}>{u.unit_number}</option>)}
             </select>
           </div>
+          
+          <div className="relative">
+            <UserCheck className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-accent-lavender" />
+            <select 
+              className="pl-14 pr-10 py-4 glass-input-3d text-xs font-black appearance-none cursor-pointer tracking-tight uppercase min-w-[200px]"
+              value={selectedWorkerId}
+              onChange={(e) => setSelectedWorkerId(e.target.value)}
+            >
+              <option value="">SEMUA MANDOR</option>
+              {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+          </div>
+
           <button className="btn-3d bg-accent-lavender text-text-primary px-8 h-[52px]">
             Ekspor
           </button>

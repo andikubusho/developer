@@ -10,7 +10,11 @@ import {
   ChevronRight,
   ChevronDown,
   Calculator,
-  AlertCircle
+  AlertCircle,
+  UserCheck,
+  CheckSquare,
+  Square,
+  Search
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -36,6 +40,8 @@ interface RABNode {
   paid_amount: number;
   input_percentage: number;
   calculated_amount: number;
+  worker_id?: string;
+  worker_name?: string;
 }
 
 const OpnameForm: React.FC = () => {
@@ -54,10 +60,23 @@ const OpnameForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [workers, setWorkers] = useState<any[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkWorker, setBulkWorker] = useState<{id: string, name: string} | null>(null);
 
   useEffect(() => {
     fetchProjects();
+    fetchWorkers();
   }, []);
+
+  const fetchWorkers = async () => {
+    try {
+      const data = await api.get('worker_masters', 'select=id,name,type&status=eq.active&order=name.asc');
+      setWorkers(data || []);
+    } catch (err) {
+      console.error('Error fetching workers:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -179,7 +198,9 @@ const OpnameForm: React.FC = () => {
               paid_percentage: paidPct,
               paid_amount: paidAmt,
               input_percentage: 0,
-              calculated_amount: 0
+              calculated_amount: 0,
+              worker_id: '',
+              worker_name: ''
             };
           })
           .filter(Boolean) as RABNode[];
@@ -216,25 +237,60 @@ const OpnameForm: React.FC = () => {
     setTree(prev => updateTreeNode(prev, id, { input_percentage: pct }));
   };
 
-  const handleSaveBatch = async () => {
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const applyBulkWorker = () => {
+    if (!bulkWorker) return;
+    
+    const updateRecursive = (nodes: RABNode[]): RABNode[] => {
+      return nodes.map(node => {
+        let updatedNode = node;
+        if (selectedIds.has(node.id)) {
+          updatedNode = { ...node, worker_id: bulkWorker.id, worker_name: bulkWorker.name };
+        }
+        if (node.children.length > 0) {
+          updatedNode = { ...updatedNode, children: updateRecursive(node.children) };
+        }
+        return updatedNode;
+      });
+    };
+
+    setTree(prev => updateRecursive(prev));
+    setSelectedIds(new Set());
+    setBulkWorker(null);
+  };
+
+   const handleSaveBatch = async () => {
     if (!selectedProjectId || !selectedUnitId) {
       alert('Pilih Proyek dan Unit terlebih dahulu');
       return;
     }
 
-    // Collect all items with input_percentage > 0
     const itemsToSave: any[] = [];
     const traverse = (nodes: RABNode[]) => {
       nodes.forEach(node => {
         if (node.input_percentage > 0) {
-          // Validation: Total progress cannot exceed 100%
           if (node.paid_percentage + node.input_percentage > 100.01) {
-             throw new Error(`Item "${node.uraian}" melebihi 100% (Total: ${(node.paid_percentage + node.input_percentage).toFixed(1)}%)`);
+             throw new Error(`Item "${node.uraian}" melebihi 100%`);
           }
+          
+          // Use item-level worker or fallback to header worker
+          const finalWorkerId = node.worker_id || '';
+          const finalWorkerName = node.worker_name || workerName || 'Umum';
+
           itemsToSave.push({
             rab_item_id: node.id,
             percentage_opname: node.input_percentage,
-            amount_opname: node.calculated_amount
+            amount_opname: node.calculated_amount,
+            worker_id: finalWorkerId || null,
+            worker_name: finalWorkerName
           });
         }
         if (node.children.length > 0) traverse(node.children);
@@ -248,28 +304,51 @@ const OpnameForm: React.FC = () => {
         return;
       }
 
+      // Check if all items have a worker if no header worker is set
+      if (!workerName && itemsToSave.some(i => !i.worker_name || i.worker_name === 'Umum')) {
+         if (!confirm('Beberapa item belum memiliki nama mandor spesifik. Lanjutkan dengan nama "Umum"?')) return;
+      }
+
       setSubmitting(true);
-      // 1. Create Master
-      const master = await api.insert('project_opnames', {
-        date: opnameDate,
-        project_id: selectedProjectId,
-        unit_id: selectedUnitId,
-        worker_name: workerName || 'Umum',
-        status: 'approved',
-        created_by: profile?.id
-      });
       
-      const masterId = master[0].id;
+      // GROUP BY worker_id + worker_name to split documents
+      const groups: { [key: string]: any[] } = {};
+      itemsToSave.forEach(item => {
+        const key = `${item.worker_id || 'NULL'}-${item.worker_name}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(item);
+      });
 
-      // 2. Create Details in batch
-      await Promise.all(itemsToSave.map(item => 
-        api.insert('project_opname_items', {
-          ...item,
-          opname_id: masterId
-        })
-      ));
+      // Insert each group as a separate Opname document
+      for (const key in groups) {
+        const groupItems = groups[key];
+        const firstItem = groupItems[0];
+        
+        // 1. Create Master
+        const master = await api.insert('project_opnames', {
+          date: opnameDate,
+          project_id: selectedProjectId,
+          unit_id: selectedUnitId === 'GLOBAL' ? null : selectedUnitId,
+          worker_id: firstItem.worker_id,
+          worker_name: firstItem.worker_name,
+          status: 'approved',
+          created_by: profile?.id
+        });
+        
+        const masterId = master[0].id;
 
-      alert('Batch Opname berhasil disimpan');
+        // 2. Create Details
+        await Promise.all(groupItems.map(item => 
+          api.insert('project_opname_items', {
+            rab_item_id: item.rab_item_id,
+            opname_id: masterId,
+            percentage_opname: item.percentage_opname,
+            amount_opname: item.amount_opname
+          })
+        ));
+      }
+
+      alert(`Batch Opname berhasil disimpan (${Object.keys(groups).length} dokumen dibuat)`);
       navigate('/opname');
     } catch (err: any) {
       alert(err.message);
@@ -290,8 +369,16 @@ const OpnameForm: React.FC = () => {
         <React.Fragment key={node.id}>
           <TR className={cn(
             "hover:bg-white/40 transition-all border-b border-white/20",
-            node.level === 0 ? "bg-accent-dark/5" : node.level === 1 ? "bg-accent-lavender/5" : ""
+            node.level === 0 ? "bg-accent-dark/5" : node.level === 1 ? "bg-accent-lavender/5" : "",
+            selectedIds.has(node.id) && "bg-primary/5"
           )}>
+            <TD className="px-6 py-3 w-10">
+              {canInput && (
+                <button onClick={() => toggleSelection(node.id)} className="text-primary hover:scale-110 transition-transform">
+                  {selectedIds.has(node.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5 opacity-20" />}
+                </button>
+              )}
+            </TD>
             <TD className="px-4 py-3">
               <div className="flex items-center gap-2" style={{ paddingLeft: `${depth * 24}px` }}>
                 {node.children.length > 0 ? (
@@ -339,6 +426,24 @@ const OpnameForm: React.FC = () => {
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-text-muted">%</span>
                   </div>
                 </div>
+              )}
+            </TD>
+            <TD className="px-4 py-3">
+              {canInput && (
+                <select
+                  className="w-full h-10 rounded-xl border border-white/60 bg-white/80 px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-accent-lavender/50 transition-all"
+                  value={node.worker_id || ''}
+                  onChange={(e) => {
+                    const w = workers.find(w => w.id === e.target.value);
+                    setTree(prev => updateTreeNode(prev, node.id, { 
+                      worker_id: e.target.value,
+                      worker_name: w?.name || ''
+                    }));
+                  }}
+                >
+                  <option value="">-- Gunakan Utama --</option>
+                  {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                </select>
               )}
             </TD>
             <TD className="px-4 py-3 text-right font-black text-primary text-sm">
@@ -434,24 +539,25 @@ const OpnameForm: React.FC = () => {
             </select>
           </div>
 
-          {/* Nama Pekerja */}
+          {/* Mandor Utama */}
           <div className="space-y-3">
             <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1 opacity-70">
-              <User className="w-3.5 h-3.5 text-accent-dark" /> Nama Mandor
+              <UserCheck className="w-3.5 h-3.5 text-accent-dark" /> Mandor Utama
             </label>
-            <input 
-              type="text" 
-              placeholder="Contoh: Budi" 
+            <select
+              className="w-full h-12 bg-white/50 border-none rounded-2xl px-5 text-sm font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-lavender/50 transition-all"
               value={workerName}
               onChange={(e) => setWorkerName(e.target.value)}
-              className="w-full h-12 bg-white/50 border-none rounded-2xl px-5 text-sm font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-lavender/50 transition-all"
-            />
+            >
+              <option value="">-- Pilih Mandor --</option>
+              {workers.map(w => <option key={w.id} value={w.name}>{w.name} ({w.type})</option>)}
+            </select>
           </div>
         </div>
       </Card>
 
       <Card className="p-0 overflow-hidden border-white/40 shadow-premium bg-white/20 backdrop-blur-sm rounded-[2rem]">
-        <div className="p-6 border-b border-white/40 bg-white/40 flex items-center gap-4">
+        <div className="p-6 border-b border-white/40 bg-white/40 flex flex-col md:flex-row items-center gap-6">
            <div className="relative flex-1 max-w-md">
              <input 
                type="text"
@@ -461,31 +567,53 @@ const OpnameForm: React.FC = () => {
                className="w-full h-12 bg-white/80 border-none rounded-2xl pl-12 pr-5 text-sm font-bold shadow-3d-inset focus:ring-2 focus:ring-primary/20 transition-all"
              />
              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
-               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+               <Search className="w-4.5 h-4.5" />
              </div>
            </div>
-           {searchTerm && (
+           
+           {selectedIds.size > 0 && (
+             <div className="flex items-center gap-3 p-2 px-4 bg-primary/10 rounded-2xl border border-primary/20 animate-in zoom-in duration-300">
+               <span className="text-[10px] font-black text-primary uppercase whitespace-nowrap">{selectedIds.size} Item Terpilih</span>
+               <div className="h-8 w-[1px] bg-primary/20 mx-2" />
+               <select 
+                 className="h-10 bg-white border-none rounded-xl px-3 text-xs font-bold focus:ring-2 focus:ring-primary/20"
+                 onChange={(e) => {
+                   const w = workers.find(w => w.id === e.target.value);
+                   if (w) setBulkWorker({ id: w.id, name: w.name });
+                 }}
+                 value={bulkWorker?.id || ''}
+               >
+                 <option value="">-- Pilih Mandor --</option>
+                 {workers.map(w => <option key={w.id} value={w.id}>{w.name} ({w.type})</option>)}
+               </select>
+               <Button size="sm" className="h-10 rounded-xl" onClick={applyBulkWorker} disabled={!bulkWorker}>Terapkan</Button>
+             </div>
+           )}
+
+           {searchTerm && !selectedIds.size && (
              <Button variant="ghost" size="sm" onClick={() => setSearchTerm('')} className="text-rose-500 font-black text-xs uppercase">Reset</Button>
            )}
         </div>
-        <Table className="min-w-[1200px]">
+        <Table className="min-w-[1300px]">
           <THead>
             <TR className="bg-white/60 text-text-primary text-[10px] font-black uppercase tracking-[0.2em] border-b border-white/40">
-              <TH className="px-4 py-5">Uraian Pekerjaan</TH>
-              <TH className="px-4 py-5 text-right">Pagu RAB Upah</TH>
-              <TH className="px-4 py-5 text-center">Progress Lalu</TH>
-              <TH className="px-4 py-5 text-right">Sisa Pagu</TH>
-              <TH className="px-4 py-5 text-center w-40">Progress Baru (%)</TH>
-              <TH className="px-4 py-5 text-right">Nilai Opname</TH>
+              <TH className="px-6 py-4 w-10">
+                <Square className="w-4 h-4 opacity-30" />
+              </TH>
+              <TH className="px-6 py-4">Uraian Pekerjaan</TH>
+              <TH className="px-6 py-4 text-right">Pagu RAB Upah</TH>
+              <TH className="px-6 py-4 text-center">Progress Lalu</TH>
+              <TH className="px-6 py-4 text-right">Sisa Pagu</TH>
+              <TH className="px-6 py-4 text-center">Progress Baru (%)</TH>
+              <TH className="px-6 py-4">Mandor / Subkon</TH>
+              <TH className="px-6 py-4 text-right">Nilai Opname</TH>
             </TR>
           </THead>
           <TBody>
             {loading ? (
-              <TR><TD colSpan={6} className="px-6 py-12 text-center text-text-muted italic">Membangun hierarki RAB...</TD></TR>
-            ) : !selectedUnitId ? (
-              <TR><TD colSpan={6} className="px-6 py-20 text-center text-text-muted font-bold uppercase tracking-widest text-xs">Pilih Proyek & Unit untuk memuat data</TD></TR>
+              <TR><TD colSpan={8} className="px-6 py-20 text-center"><div className="animate-spin rounded-full h-10 w-10 border-b-4 border-primary mx-auto"></div></TD></TR>
             ) : tree.length === 0 ? (
-              <TR><TD colSpan={6} className="px-6 py-20 text-center text-text-muted font-bold uppercase tracking-widest text-xs">Tidak ada item upah pada unit ini</TD></TR>
+              <TR><TD colSpan={8} className="px-6 py-20 text-center text-text-secondary font-bold italic">Pilih Proyek & Unit untuk memuat data</TD></TR>
             ) : (
               renderRows(tree)
             )}

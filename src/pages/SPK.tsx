@@ -10,6 +10,7 @@ import { formatCurrency, formatDate, cn } from '../lib/utils';
 const EMPTY_FORM = {
   project_id: '',
   unit_id: '',
+  worker_id: '',
   contractor_name: '',
   work_description: '',
   contract_value: 0,
@@ -33,11 +34,22 @@ const SPK: React.FC = () => {
   const [editingSpk, setEditingSpk] = useState<any | null>(null);
   const [viewingSpk, setViewingSpk] = useState<any | null>(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [workers, setWorkers] = useState<any[]>([]);
 
   useEffect(() => {
     fetchSpks();
     fetchProjects();
+    fetchWorkers();
   }, []);
+
+  const fetchWorkers = async () => {
+    try {
+      const data = await api.get('worker_masters', 'select=id,name,type&status=eq.active&order=name.asc');
+      setWorkers(data || []);
+    } catch (err) {
+      console.error('Error fetching workers:', err);
+    }
+  };
 
   useEffect(() => {
     if (formData.project_id) fetchUnits(formData.project_id);
@@ -90,6 +102,7 @@ const SPK: React.FC = () => {
     setFormData({
       project_id: spk.project_id || '',
       unit_id: spk.unit_id || '',
+      worker_id: spk.worker_id || '',
       contractor_name: spk.contractor_name || '',
       work_description: spk.work_description || '',
       contract_value: spk.contract_value || 0,
@@ -351,11 +364,19 @@ const SPK: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className={labelCls}>Nama Penerima (Kontraktor/Mandor) *</label>
-                  <input type="text" className={inputCls}
-                    placeholder="Contoh: Bpk. Slamet / PT. Bangun Jaya"
-                    value={formData.contractor_name}
-                    onChange={(e) => setFormData({ ...formData, contractor_name: e.target.value })} required />
+                  <label className={labelCls}>Penerima (Kontraktor/Mandor) *</label>
+                  <select 
+                    className={inputCls}
+                    value={formData.worker_id}
+                    onChange={(e) => {
+                      const w = workers.find(w => w.id === e.target.value);
+                      setFormData({ ...formData, worker_id: e.target.value, contractor_name: w?.name || '' });
+                    }}
+                    required
+                  >
+                    <option value="">-- Pilih Penerima --</option>
+                    {workers.map(w => <option key={w.id} value={w.id}>{w.name} ({w.type})</option>)}
+                  </select>
                 </div>
 
                 <div className="space-y-2">
