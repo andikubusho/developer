@@ -29,12 +29,14 @@ const MaterialUsage: React.FC = () => {
   const [form, setForm] = useState({
     tanggal: new Date().toISOString().split('T')[0],
     rab_project_id: '',
+    rab_item_id: '', // New: ID of the specific RAB item (job)
     material_id: '',
     id_variant: '',
     qty: 0,
     keterangan: ''
   });
 
+  const [selectedRabItem, setSelectedRabItem] = useState<any | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<any | null>(null);
 
   useEffect(() => {
@@ -73,6 +75,19 @@ const MaterialUsage: React.FC = () => {
   }, [form.material_id]);
 
   useEffect(() => {
+    if (form.rab_item_id) {
+      const item = rabItems.find(it => it.id === form.rab_item_id);
+      setSelectedRabItem(item || null);
+      if (item?.material_id) {
+        setForm(f => ({ ...f, material_id: item.material_id }));
+      }
+    } else {
+      setSelectedRabItem(null);
+      setForm(f => ({ ...f, material_id: '', id_variant: '' }));
+    }
+  }, [form.rab_item_id, rabItems]);
+
+  useEffect(() => {
     if (form.id_variant) {
       const v = variants.find(v => v.id.toString() === form.id_variant);
       setSelectedVariant(v || null);
@@ -84,22 +99,9 @@ const MaterialUsage: React.FC = () => {
   const fetchRabMaterials = async (rabId: string) => {
     try {
       setLoading(true);
-      // Get level 3 items (materials) from this RAB
+      // Get level 3 items (materials/jobs) from this RAB
       const items = await api.get('rab_items', `rab_project_id=eq.${rabId}&level=eq.3&select=*,material:materials(*)`);
-      
-      // Filter out items without material_id and deduplicate
-      const uniqueMaterials: any[] = [];
-      const seen = new Set();
-      
-      items.forEach((item: any) => {
-        if (item.material && !seen.has(item.material_id)) {
-          uniqueMaterials.push(item.material);
-          seen.add(item.material_id);
-        }
-      });
-
       setRabItems(items || []);
-      setMasters(uniqueMaterials);
     } catch (err) {
       console.error('Error fetching RAB materials:', err);
     } finally {
@@ -172,8 +174,69 @@ const MaterialUsage: React.FC = () => {
           <Card className="p-10 bg-white/80 backdrop-blur-md border-white/60 shadow-premium rounded-[2.5rem]">
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Tanggal */}
+                {/* RAB Selection */}
+                <div className="md:col-span-2 p-1 bg-accent-lavender/5 rounded-[2rem] border-2 border-accent-lavender/10">
+                  <SearchableSelect 
+                    label="1. Pilih Proyek / Unit (RAB)"
+                    options={projects.map(p => ({ 
+                      label: `${p.project?.name || 'N/A'} - ${p.unit?.code || 'Umum'}`, 
+                      value: p.id 
+                    }))}
+                    value={form.rab_project_id}
+                    onChange={(val) => setForm({ ...form, rab_project_id: val, rab_item_id: '', material_id: '', id_variant: '' })}
+                    placeholder="Cari Proyek atau Unit..."
+                  />
+                </div>
+
+                {/* Job / RAB Item Selection */}
+                <div className={cn("md:col-span-2 transition-all duration-500", !form.rab_project_id && "opacity-30 pointer-events-none")}>
+                  <SearchableSelect 
+                    label="2. Pilih Pekerjaan (Sesuai RAB)"
+                    options={rabItems.map(it => ({ 
+                      label: `${it.uraian} [Budget: ${it.volume} ${it.satuan}]`, 
+                      value: it.id 
+                    }))}
+                    value={form.rab_item_id}
+                    onChange={(val) => setForm({ ...form, rab_item_id: val, id_variant: '' })}
+                    placeholder={form.rab_project_id ? "Cari uraian pekerjaan..." : "Pilih RAB terlebih dahulu"}
+                    disabled={!form.rab_project_id}
+                  />
+                </div>
+              </div>
+
+              <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-8 transition-all duration-500", !form.rab_item_id && "opacity-30 pointer-events-none")}>
+                {/* Material (Auto-filled from job) */}
                 <div className="space-y-3">
+                   <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+                    <Package className="w-3.5 h-3.5 text-accent-lavender" /> Master Material
+                  </label>
+                  <div className="h-14 glass-input rounded-2xl px-6 flex items-center font-black text-slate-700 bg-slate-50/50">
+                    {selectedRabItem?.material?.name || '--'}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+                    <Info className="w-3.5 h-3.5 text-accent-lavender" /> Pilih Merk / Variant
+                  </label>
+                  <select 
+                    className="w-full h-14 glass-input rounded-2xl px-6 text-sm font-bold text-text-primary focus:outline-none shadow-3d-inset disabled:opacity-40"
+                    value={form.id_variant}
+                    onChange={(e) => setForm({ ...form, id_variant: e.target.value })}
+                    required
+                    disabled={!form.material_id}
+                  >
+                    <option value="">-- Pilih Variant --</option>
+                    {variants.map(v => (
+                      <option key={v.id} value={v.id}>{v.merk} (Stok: {formatNumber(v.stok)})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-8 transition-all duration-500", !form.id_variant && "opacity-30 pointer-events-none")}>
+                 {/* Tanggal */}
+                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
                     <Calendar className="w-3.5 h-3.5 text-accent-lavender" /> Tanggal Pemakaian
                   </label>
@@ -202,53 +265,9 @@ const MaterialUsage: React.FC = () => {
                       step="0.01"
                     />
                     <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-text-muted uppercase tracking-widest">
-                      {masters.find(m => m.id === form.material_id)?.unit || 'Unit'}
+                      {selectedRabItem?.satuan || 'Unit'}
                     </div>
                   </div>
-                </div>
-              </div>
-
-                {/* RAB Project */}
-                <div className="space-y-3 md:col-span-2">
-                  <SearchableSelect 
-                    label="Pilih Proyek / Unit (RAB)"
-                    options={projects.map(p => ({ 
-                      label: `${p.project?.name || 'N/A'} - ${p.unit?.code || 'Umum'}`, 
-                      value: p.id 
-                    }))}
-                    value={form.rab_project_id}
-                    onChange={(val) => setForm({ ...form, rab_project_id: val, material_id: '', id_variant: '' })}
-                    placeholder="Cari Proyek atau Unit..."
-                  />
-                </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <SearchableSelect 
-                    label="Master Material (Dari RAB)"
-                    options={masters.map(m => ({ label: m.name, value: m.id }))}
-                    value={form.material_id}
-                    onChange={(val) => setForm({ ...form, material_id: val, id_variant: '' })}
-                    placeholder={form.rab_project_id ? "Pilih material..." : "Pilih RAB terlebih dahulu"}
-                    disabled={!form.rab_project_id}
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
-                    <Info className="w-3.5 h-3.5 text-accent-lavender" /> Pilih Merk / Variant
-                  </label>
-                  <select 
-                    className="w-full h-14 glass-input rounded-2xl px-6 text-sm font-bold text-text-primary focus:outline-none shadow-3d-inset disabled:opacity-40"
-                    value={form.id_variant}
-                    onChange={(e) => setForm({ ...form, id_variant: e.target.value })}
-                    required
-                    disabled={!form.material_id}
-                  >
-                    <option value="">-- Pilih Variant --</option>
-                    {variants.map(v => (
-                      <option key={v.id} value={v.id}>{v.merk} (Stok: {formatNumber(v.stok)})</option>
-                    ))}
-                  </select>
                 </div>
               </div>
 
@@ -308,7 +327,7 @@ const MaterialUsage: React.FC = () => {
                         <div className="text-right">
                           <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Kuota RAB</p>
                           <p className="text-xs font-black text-emerald-700">
-                            {formatNumber(rabItems.find(it => it.material_id === form.material_id)?.volume || 0)} {masters.find(m => m.id === form.material_id)?.unit}
+                            {formatNumber(selectedRabItem?.volume || 0)} {selectedRabItem?.satuan}
                           </p>
                         </div>
                       )}
