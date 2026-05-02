@@ -179,7 +179,7 @@ const RABForm: React.FC = () => {
         const [projData, rabData, matData] = await Promise.all([
           api.get('projects', 'select=id,name,location&order=name.asc'),
           api.get('rab_projects', 'select=id,nama_proyek,lokasi,created_at&order=created_at.desc'),
-          api.get('materials', 'select=id,name,unit,unit_price&order=name.asc')
+          api.get('materials', 'select=id,name,unit,harga_satuan&order=name.asc')
         ]);
         setProjects(projData || []);
         setExistingRabs(rabData || []);
@@ -1343,7 +1343,7 @@ const RABForm: React.FC = () => {
                         material_id: m.id,
                         uraian: m.name,
                         satuan: m.unit,
-                        material_price: Number(m.unitPrice || m.unit_price || 0)
+                        material_price: Number(m.harga_satuan || 0)
                       });
                       setMaterialSearchNodeId(null);
                       setMaterialSearchTerm('');
@@ -1351,7 +1351,7 @@ const RABForm: React.FC = () => {
                     className="w-full text-left px-3 py-2 rounded-lg hover:bg-accent-lavender/10 transition-colors"
                   >
                     <div className="text-xs font-bold text-text-primary">{m.name}</div>
-                    <div className="text-[10px] text-text-muted">{m.unit}</div>
+                    <div className="text-[10px] text-text-muted">{m.unit} · {m.harga_satuan ? `Rp ${Number(m.harga_satuan).toLocaleString('id-ID')}` : '-'}</div>
                   </button>
                 ))
               }
