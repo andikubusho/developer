@@ -53,6 +53,8 @@ const PurchaseOrders: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | undefined>();
   const [viewingOrder, setViewingOrder] = useState<any | null>(null);
+  const [receivedData, setReceivedData] = useState<Record<string, number>>({});
+  const [loadingReceived, setLoadingReceived] = useState(false);
   const [selectedPR, setSelectedPR] = useState<any | null>(null);
   const [selectedPRItems, setSelectedPRItems] = useState<PRItemForPO[] | undefined>();
   const [selectedItemKeys, setSelectedItemKeys] = useState<Set<string>>(new Set());
@@ -385,7 +387,7 @@ const PurchaseOrders: React.FC = () => {
                     </TD>
                     <TD className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button title="Detail" onClick={() => setViewingOrder(order)} className="p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 transition-colors">
+                        <button title="Detail" onClick={() => handleViewDetail(order)} className="p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 transition-colors">
                           <Eye className="w-4 h-4" />
                         </button>
                         <button title="Edit" onClick={() => { setSelectedOrder(order); setIsModalOpen(true); }} className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors">
@@ -560,24 +562,52 @@ const PurchaseOrders: React.FC = () => {
                   <TR className="bg-slate-50">
                     <TH className="text-[10px] font-black uppercase tracking-widest">Material</TH>
                     <TH className="text-right text-[10px] font-black uppercase tracking-widest">Qty</TH>
+                    <TH className="text-right text-[10px] font-black uppercase tracking-widest">Diterima</TH>
+                    <TH className="text-right text-[10px] font-black uppercase tracking-widest">Status</TH>
                     <TH className="text-right text-[10px] font-black uppercase tracking-widest">Harga</TH>
                     <TH className="text-right text-[10px] font-black uppercase tracking-widest">Subtotal</TH>
                   </TR>
                 </THead>
                 <TBody>
-                  {Array.isArray(viewingOrder.items) ? viewingOrder.items.map((item: any, i: number) => (
-                    <TR key={i}>
-                      <TD className="py-4">
-                        <p className="font-bold text-slate-800">{item.material_name}</p>
-                        <p className="text-[10px] text-slate-400">Ref PR: {item.pr_id?.slice(0, 8).toUpperCase()}</p>
-                      </TD>
-                      <TD className="text-right font-bold">{item.quantity}</TD>
-                      <TD className="text-right font-medium">{formatCurrency(item.unit_price)}</TD>
-                      <TD className="text-right font-black text-slate-800">{formatCurrency(item.subtotal)}</TD>
-                    </TR>
-                  )) : (
+                  {Array.isArray(viewingOrder.items) ? viewingOrder.items.map((item: any, i: number) => {
+                    const key = `${item.material_id}_${item.id_variant}`;
+                    const received = receivedData[key] || 0;
+                    const isFullyReceived = received >= Number(item.quantity);
+                    
+                    return (
+                      <TR key={i}>
+                        <TD className="py-4">
+                          <div className="font-bold text-slate-800">{item.material_name}</div>
+                          <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">Merk: {item.variant_name || item.merk}</div>
+                        </TD>
+                        <TD className="text-right font-black text-slate-700">{item.quantity}</TD>
+                        <TD className="text-right font-black text-emerald-600">
+                          {loadingReceived ? '...' : received}
+                        </TD>
+                        <TD className="text-right">
+                          {loadingReceived ? (
+                            <span className="w-2 h-2 rounded-full bg-slate-200 animate-pulse inline-block"></span>
+                          ) : isFullyReceived ? (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase">Diterima</span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[10px] font-black uppercase">Pending</span>
+                          )}
+                        </TD>
+                        <TD className="text-right font-bold text-slate-700">{formatCurrency(item.price)}</TD>
+                        <TD className="text-right font-black text-slate-900">{formatCurrency(item.price * item.quantity)}</TD>
+                      </TR>
+                    );
+                  }) : (
                     <TR>
-                      <TD colSpan={4} className="text-center py-8 text-slate-400 italic">Data item tidak tersedia atau format lama.</TD>
+                      <TD className="py-4">
+                        <div className="font-bold text-slate-800">{viewingOrder.master?.name}</div>
+                        <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">Merk: {viewingOrder.variant?.merk}</div>
+                      </TD>
+                      <TD className="text-right font-black text-slate-700">{viewingOrder.quantity}</TD>
+                      <TD className="text-right font-black text-emerald-600">-</TD>
+                      <TD className="text-right">-</TD>
+                      <TD className="text-right font-bold text-slate-700">{formatCurrency(viewingOrder.total_price / viewingOrder.quantity)}</TD>
+                      <TD className="text-right font-black text-slate-900">{formatCurrency(viewingOrder.total_price)}</TD>
                     </TR>
                   )}
                 </TBody>
