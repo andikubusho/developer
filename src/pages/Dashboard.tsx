@@ -223,7 +223,25 @@ const Dashboard: React.FC = () => {
       }));
       return;
     }
-    // Real Supabase fetching for teknik
+
+    try {
+      const [projects, units, prs, materials] = await Promise.all([
+        api.get('projects', 'select=id'),
+        api.get('units', 'select=id,status'),
+        api.get('purchase_requests', 'select=id,status'),
+        api.get('materials', 'select=id,stock,min_stock'),
+      ]);
+
+      setStats(prev => ({
+        ...prev,
+        activeProjects: projects?.length || 0,
+        ongoingConstruction: units?.filter((u: any) => u.status === 'construction').length || 0,
+        lowStockMaterials: materials?.filter((m: any) => m.stock < (m.min_stock || 0)).length || 0,
+        pendingPRs: prs?.filter((p: any) => p.status === 'PENDING').length || 0,
+      }));
+    } catch (e) {
+      console.error('Error fetching Teknik stats:', e);
+    }
   };
 
   const fetchTeknikSpecifics = async () => {
@@ -247,6 +265,47 @@ const Dashboard: React.FC = () => {
         { id: '2', contractor: 'Bpk. Sumarno', work: 'Plester Dinding B-05', value: 12000000 },
       ]);
       return;
+    }
+
+    try {
+      const [cpRaw, stockRaw, prRaw, spkRaw] = await Promise.all([
+        api.get('construction_progress', 'select=*,unit:units(unit_number),project:projects(name)&limit=5&order=created_at.desc'),
+        api.get('materials', 'select=*&limit=5'),
+        api.get('purchase_requests', 'status=eq.PENDING&limit=5&order=created_at.desc'),
+        api.get('spk', 'select=*,contractor:suppliers(name)&limit=5&order=created_at.desc'),
+      ]);
+
+      setConstructionProgress((cpRaw || []).map((cp: any) => ({
+        id: cp.id,
+        unit: cp.unit?.unit_number || '-',
+        project: cp.project?.name || '-',
+        percentage: cp.percentage || 0,
+        status: cp.status || 'Active',
+      })));
+
+      setMaterialStock((stockRaw || []).map((m: any) => ({
+        id: m.id,
+        name: m.name,
+        stock: m.stock,
+        unit: m.unit,
+        min: m.min_stock || 0,
+      })));
+
+      setPendingRequests((prRaw || []).map((pr: any) => ({
+        id: pr.id,
+        item: pr.item_name,
+        qty: pr.items?.[0]?.quantity || pr.quantity || 0,
+        date: pr.created_at,
+      })));
+
+      setActiveSpks((spkRaw || []).map((s: any) => ({
+        id: s.id,
+        contractor: s.contractor?.name || s.supplier_id || '-',
+        work: s.title || 'Pekerjaan Borongan',
+        value: s.total_amount || 0,
+      })));
+    } catch (e) {
+      console.error('Error fetching Teknik specifics:', e);
     }
   };
 
