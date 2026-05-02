@@ -178,7 +178,27 @@ const RealCostPage: React.FC = () => {
         variance: rabTotal - totalActual,
         materialVariance: rabMaterial - materialActual,
         wageVariance: rabWage - wageActual,
-        rabItems: rabItems || [],
+        rabItems: (rabItems || []).map((ri: any) => {
+          // Hitung pemakaian material untuk item ini
+          const itemMaterialActual = (usageData || [])
+            .filter((u: any) => u.rab_item_id === ri.id)
+            .reduce((sum: number, u: any) => sum + (Number(u.qty) * (u.variant?.harga_terakhir || 0)), 0);
+          
+          // Hitung pemakaian upah untuk item ini
+          const itemWageActual = (opnameItemData || [])
+            .filter((o: any) => o.rab_item_id === ri.id)
+            .reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0);
+          
+          const totalItemBudget = ((ri.material_price || 0) + (ri.wage_price || 0)) * (ri.volume || 1) * (ri.koeff || 1);
+          const totalItemActual = itemMaterialActual + itemWageActual;
+          
+          return {
+            ...ri,
+            totalBudget: totalItemBudget,
+            totalActual: totalItemActual,
+            usagePercentage: totalItemBudget > 0 ? (totalItemActual / totalItemBudget) * 100 : 0
+          };
+        }),
         materialUsages: usageData || [],
         wageOpnames: opnameItemData || []
       });
@@ -336,6 +356,50 @@ const RealCostPage: React.FC = () => {
                 <Bar name="Actual Spent" dataKey="actual" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={40} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card title="RAB Usage Breakdown" subtitle="Detail pemakaian budget per item pekerjaan">
+          <div className="mt-6 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+            <table className="w-full">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr className="text-left border-b border-slate-100">
+                  <th className="pb-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Item Pekerjaan</th>
+                  <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">Budget</th>
+                  <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">Aktual</th>
+                  <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">%</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {data.rabItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-10 text-center text-xs font-bold text-slate-300 italic">Data RAB tidak tersedia.</td>
+                  </tr>
+                ) : data.rabItems.map((item: any) => (
+                  <tr key={item.id} className="group hover:bg-slate-50/50 transition-colors">
+                    <td className="py-4 pr-4">
+                      <p className="text-[11px] font-black text-text-primary uppercase leading-tight">{item.uraian}</p>
+                      <div className="mt-2 w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className={cn("h-full transition-all duration-1000", item.usagePercentage > 100 ? "bg-rose-500" : "bg-accent-lavender")}
+                          style={{ width: `${Math.min(item.usagePercentage, 100)}%` }}
+                        />
+                      </div>
+                    </td>
+                    <td className="py-4 text-right text-[11px] font-bold text-slate-400">{formatNumber(item.totalBudget)}</td>
+                    <td className="py-4 text-right text-[11px] font-black text-text-primary">{formatNumber(item.totalActual)}</td>
+                    <td className="py-4 text-right">
+                      <span className={cn(
+                        "text-[10px] font-black px-2 py-1 rounded-lg shadow-3d-inset",
+                        item.usagePercentage > 100 ? "text-rose-600 bg-rose-50" : "text-emerald-600 bg-emerald-50"
+                      )}>
+                        {item.usagePercentage.toFixed(1)}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </Card>
       </div>
