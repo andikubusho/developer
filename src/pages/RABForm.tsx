@@ -987,6 +987,15 @@ const RABForm: React.FC = () => {
               )}
             </TD>
 
+            {/* TOTAL MATERIAL */}
+            <TD className="px-4 py-3 border-r border-white/40 w-36 text-right font-bold text-blue-700 text-sm">
+              {isLevel3 && !node.is_manual && (node.jumlah_material || 0) * (node.material_price || 0) > 0
+                ? formatCurrency((node.jumlah_material || 0) * (node.material_price || 0))
+                : isLevel2 && node.is_manual && (node.volume || 0) * (node.material_price || 0) > 0
+                  ? formatCurrency((node.volume || 0) * (node.material_price || 0))
+                  : null}
+            </TD>
+
             {/* HARGA UPAH */}
             <TD className="px-4 py-3 border-r border-white/40 w-44">
               {((isLevel3 && !node.is_manual) || (isLevel2 && node.is_manual)) && (
@@ -1085,13 +1094,13 @@ const RABForm: React.FC = () => {
           {node.isExpanded && node.children.length > 0 && renderRows(node.children, depth + 1)}
           {isLevel0 && (
             <tr className="bg-slate-50 border-t border-b-2 border-slate-300">
-              <td colSpan={6} className="px-4 py-2.5 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest pr-6">
+              <td colSpan={8} className="px-4 py-2.5 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest pr-6">
                 Subtotal {node.uraian || 'Bagian'}
               </td>
-              <td className="px-4 py-2.5 text-right text-xs font-black text-slate-700">
+              <td className="px-4 py-2.5 text-right text-sm font-black text-slate-700">
                 {formatCurrency(node.subtotal)}
               </td>
-              <td colSpan={2} />
+              <td />
             </tr>
           )}
         </React.Fragment>
@@ -1246,6 +1255,7 @@ const RABForm: React.FC = () => {
                 <TH className="px-4 py-5 border-r border-white/20 w-32">Volume</TH>
                 <TH className="px-4 py-5 border-r border-white/20 w-24">Satuan</TH>
                 <TH className="px-4 py-5 border-r border-white/20 w-32 text-center text-[8px]">H. Material</TH>
+                <TH className="px-4 py-5 border-r border-white/20 w-36 text-right text-[8px]">Total Material</TH>
                 <TH className="px-4 py-5 border-r border-white/20 w-32 text-center text-[8px]">H. Upah</TH>
                 <TH className="px-4 py-5 w-44 text-right">Total Biaya</TH>
                 <TH className="px-4 py-5 w-40">Aksi</TH>
@@ -1255,7 +1265,7 @@ const RABForm: React.FC = () => {
               {renderRows(computedTree)}
               {tree.length === 0 && (
                 <TR>
-                  <TD colSpan={8} className="py-20 text-center text-text-muted italic">
+                  <TD colSpan={9} className="py-20 text-center text-text-muted italic">
                     Belum ada item. Klik tombol di bawah untuk menambah Lantai.
                   </TD>
                 </TR>
@@ -1264,6 +1274,7 @@ const RABForm: React.FC = () => {
                 <>
                   <tr className="border-t-2 border-gray-300 bg-gray-50">
                     <td colSpan={5} className="px-4 py-3 text-xs font-black text-gray-600 uppercase tracking-widest">Rekapitulasi</td>
+                    <td className="px-4 py-3" />
                     <td className="px-4 py-3 text-right text-xs font-black text-blue-700">{formatCurrency(totalMaterial)}</td>
                     <td className="px-4 py-3 text-right text-xs font-black text-orange-600">{formatCurrency(totalWage)}</td>
                     <td className="px-4 py-3 text-right text-sm font-black text-accent-dark">{formatCurrency(grandTotal)}</td>
@@ -1276,7 +1287,7 @@ const RABForm: React.FC = () => {
                         <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" />Upah</span>
                       </span>
                     </td>
-                    <td colSpan={4} className="px-4 py-2 text-right text-[10px] text-gray-500">
+                    <td colSpan={5} className="px-4 py-2 text-right text-[10px] text-gray-500">
                       {grandTotal > 0 && (
                         <span>Material {Math.round(totalMaterial / grandTotal * 100)}% · Upah {Math.round(totalWage / grandTotal * 100)}%</span>
                       )}
