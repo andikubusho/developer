@@ -37,6 +37,9 @@ const RealCostPage: React.FC = () => {
     materialUsages: [] as any[],
     wageOpnames: [] as ProjectOpname[]
   });
+  
+  const [activeTab, setActiveTab] = useState<'wages' | 'usage'>('wages');
+  const [filterPeriod, setFilterPeriod] = useState<'weekly' | 'monthly' | 'all'>('all');
 
   useEffect(() => {
     fetchProjects();
@@ -340,87 +343,118 @@ const RealCostPage: React.FC = () => {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/20 pb-4">
           <div className="flex items-center gap-10">
-            <button className="tab-underline active uppercase tracking-widest text-[11px] italic">Wages / Opname</button>
-            <button className="tab-underline uppercase tracking-widest text-[11px] italic">Usage History</button>
+            <button 
+              onClick={() => setActiveTab('wages')}
+              className={cn("tab-underline uppercase tracking-widest text-[11px] italic", activeTab === 'wages' && "active")}
+            >
+              Wages / Opname
+            </button>
+            <button 
+              onClick={() => setActiveTab('usage')}
+              className={cn("tab-underline uppercase tracking-widest text-[11px] italic", activeTab === 'usage' && "active")}
+            >
+              Usage History
+            </button>
           </div>
           <div className="tab-pill-container">
-            <button className="tab-pill active">Mingguan</button>
-            <button className="tab-pill">Bulanan</button>
-            <button className="tab-pill">Semua</button>
+            <button 
+              onClick={() => setFilterPeriod('weekly')}
+              className={cn("tab-pill", filterPeriod === 'weekly' && "active")}
+            >
+              Mingguan
+            </button>
+            <button 
+              onClick={() => setFilterPeriod('monthly')}
+              className={cn("tab-pill", filterPeriod === 'monthly' && "active")}
+            >
+              Bulanan
+            </button>
+            <button 
+              onClick={() => setFilterPeriod('all')}
+              className={cn("tab-pill", filterPeriod === 'all' && "active")}
+            >
+              Semua
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="p-0 border-none shadow-premium overflow-hidden">
-            <div className="p-6 border-b border-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-accent-lavender/20 rounded-xl text-primary">
-                  <HardHat className="w-5 h-5" />
+        <div className="grid grid-cols-1 gap-8">
+          {activeTab === 'wages' ? (
+            <Card className="p-0 border-none shadow-premium overflow-hidden">
+              <div className="p-6 border-b border-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-accent-lavender/20 rounded-xl text-primary">
+                    <HardHat className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-text-primary uppercase tracking-tight text-sm">Update Pembayaran Upah</h3>
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Total: {data.wageOpnames.length} Records</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-black text-text-primary uppercase tracking-tight text-sm">Update Pembayaran Upah</h3>
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Total: {data.wageOpnames.length} Records</p>
-                </div>
+                <Button variant="ghost" size="sm" className="text-primary font-black text-[10px] uppercase tracking-widest bg-white/30 border border-white/40 rounded-xl px-4 py-2 hover:bg-white transition-all">View All</Button>
               </div>
-              <Button variant="ghost" size="sm" className="text-primary font-black text-[10px] uppercase tracking-widest bg-white/30 border border-white/40 rounded-xl px-4 py-2 hover:bg-white transition-all">View All</Button>
-            </div>
-            <div className="divide-y divide-white/20">
-              {data.wageOpnames.map((op) => (
-                <div key={op.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/20 transition-colors group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-1.5 h-10 rounded-full bg-primary/20 group-hover:bg-primary transition-colors"></div>
-                    <div>
-                      <p className="text-[13px] font-black text-text-primary uppercase tracking-tight">{op.worker_name}</p>
-                      <p className="text-[10px] font-medium text-text-muted mt-0.5">{op.work_description}</p>
+              <div className="divide-y divide-white/20">
+                {data.wageOpnames.length === 0 ? (
+                  <div className="p-10 text-center text-xs font-bold text-slate-400 italic">Belum ada data opname upah.</div>
+                ) : data.wageOpnames.map((op) => (
+                  <div key={op.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/20 transition-colors group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-1.5 h-10 rounded-full bg-primary/20 group-hover:bg-primary transition-colors"></div>
+                      <div>
+                        <p className="text-[13px] font-black text-text-primary uppercase tracking-tight">{op.worker_name}</p>
+                        <p className="text-[10px] font-medium text-text-muted mt-0.5">{op.work_description}</p>
+                      </div>
+                    </div>
+                    <div className="text-right pl-4">
+                      <p className="text-[13px] font-black text-text-primary tracking-tight">{formatCurrency(op.amount)}</p>
+                      <div className="flex items-center justify-end gap-1.5 mt-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                        <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Approved</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right pl-4">
-                    <p className="text-[13px] font-black text-text-primary tracking-tight">{formatCurrency(op.amount)}</p>
-                    <div className="flex items-center justify-end gap-1.5 mt-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                      <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Approved</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="p-0 border-none shadow-premium overflow-hidden">
-            <div className="p-6 border-b border-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
-                  <Package className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-black text-text-primary uppercase tracking-tight text-sm">Material Dipakai</h3>
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Total: {data.materialUsages.length} Records</p>
-                </div>
+                ))}
               </div>
-              <Button variant="ghost" size="sm" className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50/50 border border-emerald-100 rounded-xl px-4 py-2 hover:bg-white transition-all">View All</Button>
-            </div>
-            <div className="divide-y divide-white/20">
-              {data.materialUsages.map((usage) => (
-                <div key={usage.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/20 transition-colors group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-1.5 h-10 rounded-full bg-emerald-200 group-hover:bg-emerald-500 transition-colors"></div>
-                    <div>
-                      <p className="text-[13px] font-black text-text-primary uppercase tracking-tight">{usage.material?.name}</p>
-                      <p className="text-[10px] font-medium text-text-muted mt-0.5">{usage.variant?.merk} | {formatDate(usage.tanggal)}</p>
-                    </div>
+            </Card>
+          ) : (
+            <Card className="p-0 border-none shadow-premium overflow-hidden">
+              <div className="p-6 border-b border-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
+                    <Package className="w-5 h-5" />
                   </div>
-                  <div className="text-right pl-4">
-                    <p className="text-[13px] font-black text-text-primary tracking-tight">{formatCurrency(Number(usage.qty) * (usage.variant?.harga_terakhir || 0))}</p>
-                    <div className="flex items-center justify-end gap-1.5 mt-1">
-                      <span className="text-[9px] font-bold text-text-muted">{usage.qty} {usage.material?.unit}</span>
-                      <div className="w-1 h-1 rounded-full bg-slate-300"></div>
-                      <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Used</p>
-                    </div>
+                  <div>
+                    <h3 className="font-black text-text-primary uppercase tracking-tight text-sm">Material Dipakai</h3>
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Total: {data.materialUsages.length} Records</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </Card>
+                <Button variant="ghost" size="sm" className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50/50 border border-emerald-100 rounded-xl px-4 py-2 hover:bg-white transition-all">View All</Button>
+              </div>
+              <div className="divide-y divide-white/20">
+                {data.materialUsages.length === 0 ? (
+                  <div className="p-10 text-center text-xs font-bold text-slate-400 italic">Belum ada data pemakaian material.</div>
+                ) : data.materialUsages.map((usage) => (
+                  <div key={usage.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/20 transition-colors group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-1.5 h-10 rounded-full bg-emerald-200 group-hover:bg-emerald-500 transition-colors"></div>
+                      <div>
+                        <p className="text-[13px] font-black text-text-primary uppercase tracking-tight">{usage.material?.name}</p>
+                        <p className="text-[10px] font-medium text-text-muted mt-0.5">{usage.variant?.merk} | {formatDate(usage.tanggal)}</p>
+                      </div>
+                    </div>
+                    <div className="text-right pl-4">
+                      <p className="text-[13px] font-black text-text-primary tracking-tight">{formatCurrency(Number(usage.qty) * (usage.variant?.harga_terakhir || 0))}</p>
+                      <div className="flex items-center justify-end gap-1.5 mt-1">
+                        <span className="text-[9px] font-bold text-text-muted">{usage.qty} {usage.material?.unit}</span>
+                        <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                        <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Used</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
         </div>
       </div>
     </div>
