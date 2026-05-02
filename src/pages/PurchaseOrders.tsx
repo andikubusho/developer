@@ -83,26 +83,52 @@ const PurchaseOrders: React.FC = () => {
         return;
       }
 
-      // Use the standardized api utility
-      const poData = await api.get('purchase_orders', 'select=*,project:projects(name),supplier:suppliers(name)&order=created_at.desc');
-      const prData = await api.get('purchase_requests', 'select=*,project:projects(name),unit:units(unit_number),master:materials(name,code)&order=created_at.desc');
+      // Fetch all necessary data for enrichment
+      const [poData, prData, projData, supplierData, materialData, unitData] = await Promise.all([
+        api.get('purchase_orders', 'select=*&order=created_at.desc'),
+        api.get('purchase_requests', 'select=*&order=created_at.desc'),
+        api.get('projects', 'select=id,name'),
+        api.get('suppliers', 'select=id,name'),
+        api.get('materials', 'select=id,name,unit,code'),
+        api.get('units', 'select=id,unit_number'),
+      ]);
+
+      const projMap: Record<string, string> = {};
+      (projData || []).forEach((p: any) => { projMap[p.id] = p.name; });
+
+      const supplierMap: Record<string, string> = {};
+      (supplierData || []).forEach((s: any) => { supplierMap[s.id] = s.name; });
+
+      const matMap: Record<string, any> = {};
+      (materialData || []).forEach((m: any) => { matMap[m.id] = m; });
+
+      const unitMap: Record<string, string> = {};
+      (unitData || []).forEach((u: any) => { unitMap[u.id] = u.unit_number; });
+
+      // Enrich POs
+      const enrichedPOs = (poData || []).map((po: any) => ({
+        ...po,
+        project: { name: projMap[po.project_id] || '-' },
+        supplier: { name: supplierMap[po.supplier_id] || '-' },
+      }));
+      setOrders(enrichedPOs);
       
-      console.log('📦 Purchase Orders Response:', poData);
-      setOrders(poData);
-      
-      // Flatten items from APPROVED PRs
+      // Flatten items from APPROVED/ordered PRs that don't have POs yet
+      // (Actually showing only APPROVED for PO creation)
       const approvedItems: any[] = [];
-      prData.forEach((pr: any) => {
-        if (pr.status === 'APPROVED') {
+      (prData || []).forEach((pr: any) => {
+        const prStatus = (pr.status || '').toUpperCase();
+        if (prStatus === 'APPROVED') {
           (pr.items || []).forEach((item: any) => {
+            const mat = matMap[item.material_id] || null;
             approvedItems.push({
-               ...item,
+              ...item,
               prId: pr.id,
-              projectName: pr.project?.name || 'Unknown',
-              unitNumber: pr.unit?.unit_number || '-',
-              material_id: pr.material_id,
-              master: pr.master,
-              createdAt: pr.createdAt
+              projectName: projMap[pr.project_id] || 'Unknown',
+              unitNumber: unitMap[pr.unit_id] || '-',
+              material_id: item.material_id,
+              master: mat,
+              createdAt: pr.created_at
             });
           });
         }
