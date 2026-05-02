@@ -197,7 +197,7 @@ const MaterialUsage: React.FC = () => {
                   <SearchableSelect 
                     label="1. Pilih Dokumen RAB"
                     options={projects.map(p => ({ 
-                      label: `RAB: ${p.nama_proyek} - ${p.lokasi || 'Lokasi Umum'}`, 
+                      label: `RAB: ${p.nama_proyek} - ${p.lokasi || 'Lokasi Umum'}${p.keterangan ? ` (${p.keterangan})` : ''}`, 
                       value: p.id 
                     }))}
                     value={form.rab_project_id}
