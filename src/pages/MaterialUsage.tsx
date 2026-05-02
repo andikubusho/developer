@@ -46,8 +46,8 @@ const MaterialUsage: React.FC = () => {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      // Fetch RAB Projects with Project Names
-      const data = await api.get('rab_projects', 'select=*,project:projects(name),unit:property_units(code)');
+      // In this schema, rab_projects has its own nama_proyek field
+      const data = await api.get('rab_projects', 'select=*&order=nama_proyek.asc');
       setProjects(data || []);
     } catch (err) {
       console.error('Error fetching initial data:', err);
@@ -179,7 +179,7 @@ const MaterialUsage: React.FC = () => {
                   <SearchableSelect 
                     label="1. Pilih Proyek / Unit (RAB)"
                     options={projects.map(p => ({ 
-                      label: `${p.project?.name || 'N/A'} - ${p.unit?.code || 'Umum'}`, 
+                      label: p.nama_proyek || 'Tanpa Nama', 
                       value: p.id 
                     }))}
                     value={form.rab_project_id}
