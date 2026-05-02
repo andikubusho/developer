@@ -74,8 +74,23 @@ const OpnameForm: React.FC = () => {
   };
 
   const loadUnits = async () => {
-    const data = await api.get('units', `project_id=eq.${selectedProjectId}&order=unit_number.asc`);
-    setUnits(data || []);
+    try {
+      const [unitsData, rabsData] = await Promise.all([
+        api.get('units', `project_id=eq.${selectedProjectId}&order=unit_number.asc`),
+        api.get('rab_projects', `project_id=eq.${selectedProjectId}&select=unit_id`)
+      ]);
+      
+      const rabUnitIds = new Set((rabsData || []).map((r: any) => r.unit_id).filter(Boolean));
+      
+      const enrichedUnits = (unitsData || []).map((u: any) => ({
+        ...u,
+        hasRAB: rabUnitIds.has(u.id)
+      }));
+      
+      setUnits(enrichedUnits);
+    } catch (err) {
+      console.error('Error loading units:', err);
+    }
   };
 
   const loadRABTree = async () => {
@@ -377,7 +392,15 @@ const OpnameForm: React.FC = () => {
               disabled={!selectedProjectId}
             >
               <option value="">-- Pilih Unit --</option>
-              {units.map(u => <option key={u.id} value={u.id}>{u.unit_number} - {u.type}</option>)}
+              {units.map(u => (
+                <option 
+                  key={u.id} 
+                  value={u.id}
+                  style={u.hasRAB ? { color: '#059669', fontWeight: 'bold' } : {}}
+                >
+                  {u.hasRAB ? '✅ ' : ''}{u.unit_number} - {u.type}
+                </option>
+              ))}
             </select>
           </div>
 
