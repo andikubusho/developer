@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, Plus, ArrowLeft, MapPin, Eye, Edit, Trash2, Home, BarChart3, Download, Upload } from 'lucide-react';
+import { Calculator, Plus, ArrowLeft, MapPin, Eye, Edit, Trash2, Home, BarChart3, Download, Upload, Printer } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { api } from '../lib/api';
@@ -258,6 +258,171 @@ const RAB: React.FC = () => {
     }
   };
 
+  const handlePrintRAB = async (rab: any) => {
+    try {
+      const items = await api.get('rab_items', `rab_project_id=eq.${rab.id}&select=*&order=urutan`);
+      if (!items || items.length === 0) { alert('RAB tidak memiliki item.'); return; }
+
+      const buildTree = (parentId: string | null = null): any[] =>
+        items.filter((i: any) => i.parent_id === parentId).map((i: any) => ({ ...i, children: buildTree(i.id) }));
+
+      const injectQty = (nodes: any[], parentVolume: number | null = null) => {
+        nodes.forEach((node: any) => {
+          node._parentVolume = parentVolume;
+          if (node.level === 3 && !node.is_manual) {
+            node._qty = (node.volume && node.volume !== 0) ? node.volume : (node.koeff || 0) * (parentVolume || 0);
+            node._matTotal = node._qty * (node.material_price || 0);
+            node._wageTotal = node._qty * (node.wage_price || 0);
+          }
+          injectQty(node.children, node.level === 2 ? node.volume : parentVolume);
+        });
+      };
+
+      const calcMat = (node: any): number => {
+        if (node.level === 3 && !node.is_manual) return node._matTotal || 0;
+        if (node.level === 3 && node.is_manual) return node.harga_rab || 0;
+        return node.children.reduce((s: number, c: any) => s + calcMat(c), 0);
+      };
+      const calcWage = (node: any): number => {
+        if (node.level === 3 && !node.is_manual) return node._wageTotal || 0;
+        if (node.level === 3 && node.is_manual) return 0;
+        if (node.level === 2 && node.is_manual) return (node.volume || 0) * (node.wage_price || 0);
+        return node.children.reduce((s: number, c: any) => s + calcWage(c), 0);
+      };
+
+      const tree = buildTree(null);
+      injectQty(tree);
+
+      const fmt = (n: number) => n > 0 ? `Rp ${Math.round(n).toLocaleString('id-ID')}` : '-';
+      const labels = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T'];
+
+      let rowsHtml = '';
+      const renderRows = (nodes: any[], depth = 0, parentIdx = '') => {
+        nodes.forEach((node: any, idx: number) => {
+          const label = node.level === 0 ? labels[idx] || String(idx + 1)
+            : node.level === 1 ? `${parentIdx}.${idx + 1}`
+            : node.level === 2 ? `${parentIdx}.${idx + 1}`
+            : '-';
+
+          const sectionMat = calcMat(node);
+          const sectionWage = calcWage(node);
+          const sectionTotal = sectionMat + sectionWage;
+
+          if (node.level === 0) {
+            rowsHtml += `<tr style="background:#1A1A2E;color:white;font-weight:900">
+              <td style="padding:8px 12px;text-align:center">${label}</td>
+              <td colspan="6" style="padding:8px 12px;text-transform:uppercase;letter-spacing:1px">${node.uraian || ''}</td>
+              <td style="padding:8px 12px;text-align:right">${fmt(sectionTotal)}</td>
+            </tr>`;
+          } else if (node.level === 1) {
+            rowsHtml += `<tr style="background:#f0f0f5;font-weight:700">
+              <td style="padding:6px 12px;text-align:center">${label}</td>
+              <td colspan="6" style="padding:6px 12px;padding-left:${16 + depth * 16}px">${node.uraian || ''}</td>
+              <td style="padding:6px 12px;text-align:right">${fmt(sectionTotal)}</td>
+            </tr>`;
+          } else if (node.level === 2) {
+            const matLabel = node.is_manual ? fmt((node.volume||0)*(node.material_price||0)) : '';
+            const wageLabel = node.is_manual ? fmt((node.volume||0)*(node.wage_price||0)) : '';
+            rowsHtml += `<tr style="background:#fafafa;font-weight:600">
+              <td style="padding:5px 12px;text-align:center">${label}</td>
+              <td style="padding:5px 12px;padding-left:${20 + depth * 16}px">${node.uraian || ''}</td>
+              <td style="padding:5px 12px;text-align:center">${node.volume || ''}</td>
+              <td style="padding:5px 12px;text-align:center">${node.satuan || ''}</td>
+              <td style="padding:5px 12px;text-align:right">${matLabel}</td>
+              <td style="padding:5px 12px;text-align:right">${wageLabel}</td>
+              <td style="padding:5px 12px;text-align:right">${fmt(sectionTotal)}</td>
+              <td style="padding:5px 12px;text-align:right;font-weight:900">${fmt(sectionTotal)}</td>
+            </tr>`;
+          } else {
+            const qty = node._qty || 0;
+            rowsHtml += `<tr style="background:white">
+              <td style="padding:4px 12px;text-align:center;color:#888">-</td>
+              <td style="padding:4px 12px;padding-left:${24 + depth * 16}px;font-style:italic;color:#444">${node.uraian || ''}</td>
+              <td style="padding:4px 12px;text-align:center">${node.is_manual ? '' : (node.koeff ?? '')}${!node.is_manual && node._qty ? ` × ${node._qty}` : ''}</td>
+              <td style="padding:4px 12px;text-align:center">${node.satuan || ''}</td>
+              <td style="padding:4px 12px;text-align:right;color:#1d4ed8">${node.is_manual ? fmt(node.harga_rab||0) : fmt(node._matTotal||0)}</td>
+              <td style="padding:4px 12px;text-align:right;color:#ea580c">${node.is_manual ? '-' : fmt(node._wageTotal||0)}</td>
+              <td style="padding:4px 12px;text-align:right">${fmt((node._matTotal||0)+(node._wageTotal||0))}</td>
+              <td style="padding:4px 12px;text-align:right;font-weight:700">${fmt((node._matTotal||0)+(node._wageTotal||0))}</td>
+            </tr>`;
+          }
+
+          if (node.children.length > 0) renderRows(node.children, depth + 1, label);
+
+          if (node.level === 0) {
+            rowsHtml += `<tr style="background:#e8e8f0;border-top:2px solid #1A1A2E">
+              <td colspan="4" style="padding:6px 12px;text-align:right;font-weight:700;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px">Subtotal ${node.uraian || ''}</td>
+              <td style="padding:6px 12px;text-align:right;font-weight:900;color:#1d4ed8">${fmt(sectionMat)}</td>
+              <td style="padding:6px 12px;text-align:right;font-weight:900;color:#ea580c">${fmt(sectionWage)}</td>
+              <td style="padding:6px 12px;text-align:right;font-weight:900">${fmt(sectionTotal)}</td>
+              <td style="padding:6px 12px;text-align:right;font-weight:900">${fmt(sectionTotal)}</td>
+            </tr><tr><td colspan="8" style="height:8px;background:#f5f5fa"></td></tr>`;
+          }
+        });
+      };
+      renderRows(tree);
+
+      const totalMat = tree.reduce((s: number, n: any) => s + calcMat(n), 0);
+      const totalWage = tree.reduce((s: number, n: any) => s + calcWage(n), 0);
+      const grandTotal = totalMat + totalWage;
+
+      const unitLabel = rab.unit ? `${rab.unit.unit_number}${rab.unit.type ? ' - ' + rab.unit.type : ''}` : '-';
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+        <title>RAB - ${rab.nama_proyek}</title>
+        <style>
+          body { font-family: Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 20px; }
+          @media print { body { padding: 0; } @page { size: A4 landscape; margin: 12mm; } }
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #1A1A2E; color: white; padding: 8px 12px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+          td { border-bottom: 1px solid #e5e5e5; }
+          .header-box { border: 1px solid #ccc; padding: 16px 20px; margin-bottom: 16px; display: flex; justify-content: space-between; }
+          .header-title { font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
+        </style>
+      </head><body>
+        <div class="header-box">
+          <div>
+            <div class="header-title">Rencana Anggaran Biaya (RAB)</div>
+            <div style="margin-top:8px;font-size:12px;color:#555">
+              <strong>Proyek:</strong> ${rab.nama_proyek} &nbsp;|&nbsp;
+              <strong>Unit:</strong> ${unitLabel} &nbsp;|&nbsp;
+              <strong>Lokasi:</strong> ${rab.lokasi || '-'} &nbsp;|&nbsp;
+              <strong>Tanggal:</strong> ${new Date(rab.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}
+            </div>
+          </div>
+        </div>
+        <table>
+          <thead><tr>
+            <th style="width:50px;text-align:center">No</th>
+            <th>Uraian Pekerjaan</th>
+            <th style="width:70px;text-align:center">Koeff</th>
+            <th style="width:70px;text-align:center">Satuan</th>
+            <th style="width:110px;text-align:right">Total Material</th>
+            <th style="width:110px;text-align:right">Total Upah</th>
+            <th style="width:110px;text-align:right">Sub Total</th>
+            <th style="width:120px;text-align:right">Total Biaya</th>
+          </tr></thead>
+          <tbody>${rowsHtml}</tbody>
+          <tfoot>
+            <tr style="background:#1A1A2E;color:white">
+              <td colspan="4" style="padding:10px 12px;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:1px">REKAPITULASI</td>
+              <td style="padding:10px 12px;text-align:right;font-weight:900;color:#93c5fd">${fmt(totalMat)}</td>
+              <td style="padding:10px 12px;text-align:right;font-weight:900;color:#fdba74">${fmt(totalWage)}</td>
+              <td style="padding:10px 12px;text-align:right;font-weight:900">${fmt(grandTotal)}</td>
+              <td style="padding:10px 12px;text-align:right;font-weight:900;font-size:13px">${fmt(grandTotal)}</td>
+            </tr>
+          </tfoot>
+        </table>
+        <script>window.onload=()=>{window.print();}</script>
+      </body></html>`;
+
+      const win = window.open('', '_blank', 'width=1100,height=800');
+      if (win) { win.document.write(html); win.document.close(); }
+    } catch (error: any) {
+      console.error(error);
+      alert(`Gagal mencetak RAB: ${error.message}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -371,6 +536,15 @@ const RAB: React.FC = () => {
                         title="Download Excel"
                       >
                         <Download className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-violet-600 hover:bg-violet-50"
+                        onClick={(e) => { e.stopPropagation(); handlePrintRAB(r); }}
+                        title="Cetak RAB"
+                      >
+                        <Printer className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
