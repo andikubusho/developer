@@ -125,9 +125,10 @@ const GoodsReceipt: React.FC = () => {
       setLoading(true);
       await api.delete('goods_receipts', gr.id);
       
-      // Jika PO sudah COMPLETED, kita bisa pertimbangkan untuk mengembalikannya ke PENDING
-      // Namun untuk keamanan stok, yang terpenting adalah catatan GR terhapus
-      // dan trigger DB mengurus saldo stok.
+      // Kembalikan status PO ke PENDING agar muncul lagi di antrean terima
+      if (gr.po_id) {
+        await api.update('purchase_orders', gr.po_id, { status: 'PENDING' });
+      }
       
       await fetchData();
     } catch (err) {
