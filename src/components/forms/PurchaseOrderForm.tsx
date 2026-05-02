@@ -41,11 +41,14 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
   const fromPR = !!initialPR;
   const isEditMode = !!initialOrder;
 
+  const toDateStr = (v: any) => v ? String(v).split('T')[0] : '';
+
   const { register, handleSubmit, watch, control, setValue, formState: { errors } } = useForm<POFormValues>({
     resolver: zodResolver(poSchema),
     defaultValues: {
-      order_date: initialOrder?.order_date || new Date().toISOString().split('T')[0],
-      due_date: initialOrder?.due_date || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      order_date: initialOrder?.order_date ? toDateStr(initialOrder.order_date) : new Date().toISOString().split('T')[0],
+      due_date: initialOrder?.due_date ? toDateStr(initialOrder.due_date) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      unit_price: Number(initialOrder?.unit_price) || 0,
       quantity: Number(initialOrder?.quantity) || Number(initialPR?.quantity) || 1,
       project_id: initialOrder?.project_id || initialPR?.project_id || '',
       material_id: initialOrder?.material_id || initialPR?.material_id || '',
@@ -72,6 +75,13 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
     }
   }, [selectedMaterialId]);
 
+  // Setelah variants dimuat, pastikan id_variant terpilih di mode edit
+  useEffect(() => {
+    if (initialOrder?.id_variant && variants.length > 0) {
+      setValue('id_variant', Number(initialOrder.id_variant));
+    }
+  }, [variants]);
+
   const fetchInitialData = async () => {
     try {
       const [masterData, supplierData, projectData] = await Promise.all([
@@ -84,19 +94,15 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       setProjects(projectData);
 
       if (initialOrder) {
-        setValue('project_id', initialOrder.project_id);
-        setValue('material_id', initialOrder.material_id);
-        setValue('supplier_id', String(initialOrder.supplier_id));
-        setValue('quantity', Number(initialOrder.quantity));
-        setValue('unit_price', Number(initialOrder.unit_price));
-        setValue('order_date', initialOrder.order_date || '');
-        setValue('due_date', initialOrder.due_date || '');
+        setValue('project_id', initialOrder.project_id || '');
+        setValue('material_id', initialOrder.material_id || '');
+        setValue('supplier_id', String(initialOrder.supplier_id || ''));
+        setValue('quantity', Number(initialOrder.quantity) || 0);
+        setValue('unit_price', Number(initialOrder.unit_price) || 0);
+        setValue('order_date', toDateStr(initialOrder.order_date));
+        setValue('due_date', toDateStr(initialOrder.due_date));
         if (initialOrder.pr_id) setValue('pr_id', initialOrder.pr_id);
-        if (initialOrder.material_id) {
-          const variantData = await api.get('material_variants', `material_id=eq.${initialOrder.material_id}&select=*&order=merk.asc`);
-          setVariants(variantData);
-          if (initialOrder.id_variant) setValue('id_variant', Number(initialOrder.id_variant));
-        }
+        // id_variant diset oleh useEffect setelah variants dimuat
       } else if (initialPR) {
         setValue('project_id', initialPR.project_id);
         setValue('material_id', initialPR.material_id);
