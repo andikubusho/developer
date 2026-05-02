@@ -241,7 +241,8 @@ const MaterialUsage: React.FC = () => {
                     label="2. Pilih Pekerjaan (Sesuai RAB)"
                     options={(rabItems || []).map(it => ({ 
                       label: `${it.parentUraian} → ${it.uraian} [Budget: ${Number(it.volume).toFixed(2)} ${it.satuan} | Stok: ${formatNumber(it.totalStock)} ${it.satuan}]`, 
-                      value: it.id 
+                      value: it.id,
+                      className: (Number(it.totalStock) || 0) > 0 ? 'text-emerald-600 bg-emerald-50/50 hover:bg-emerald-100 hover:text-emerald-700' : ''
                     }))}
                     value={form.rab_item_id}
                     onChange={(val) => setForm({ ...form, rab_item_id: val, id_variant: '' })}

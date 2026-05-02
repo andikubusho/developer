@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 interface Option {
   label: string;
   value: string | number;
+  className?: string;
 }
 
 interface SearchableSelectProps {
@@ -125,7 +126,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                       'w-full text-left px-4 py-3 rounded-xl text-sm font-black transition-all flex items-center justify-between group',
                       option.value === value 
                         ? 'bg-accent-dark text-white' 
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-accent-dark'
+                        : cn('text-slate-600 hover:bg-slate-50 hover:text-accent-dark', option.className)
                     )}
                   >
                     {option.label}
