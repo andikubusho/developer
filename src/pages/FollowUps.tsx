@@ -138,9 +138,9 @@ const FollowUps: React.FC = () => {
     }
   };
 
-  const filteredFollowUps = followUps.filter(f => 
-    f.lead?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    f.description.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredFollowUps = followUps.filter(f =>
+    (f.lead?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (f.description || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAdd = () => {

@@ -96,7 +96,7 @@ const ApprovalManager: React.FC = () => {
   };
 
   const handlePrint = (pr: PR) => {
-    const total = pr.items.reduce((sum: number, i: any) => sum + (i.qty || i.quantity || 0) * (i.price || 0), 0);
+    const total = (pr.items || []).reduce((sum: number, i: any) => sum + (i.qty || i.quantity || 0) * (i.price || 0), 0);
     const html = `
       <!DOCTYPE html>
       <html>
@@ -156,7 +156,7 @@ const ApprovalManager: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              ${pr.items.map(item => `
+              ${(pr.items || []).map(item => `
                 <tr>
                   <td>${item.name || item.materialName || 'Material'}</td>
                   <td style="text-align: center;">${item.qty || item.quantity || 0} ${item.unit || ''}</td>
@@ -381,7 +381,7 @@ const ApprovalManager: React.FC = () => {
                   </TR>
                 </THead>
                 <TBody>
-                  {selectedPR.items.map((item: any, idx: number) => (
+                  {(selectedPR.items || []).map((item: any, idx: number) => (
                     <TR key={idx}>
                       <TD className="font-bold text-text-primary">{item.name || item.materialName}</TD>
                       <TD className="text-center font-black text-text-secondary">{item.qty || item.quantity || 0} {item.unit}</TD>
@@ -392,7 +392,7 @@ const ApprovalManager: React.FC = () => {
                   <TR className="bg-glass-deep/10">
                     <TD colSpan={3} className="text-right font-black uppercase text-[10px] tracking-widest">Total Anggaran PR</TD>
                     <TD className="text-right font-black text-xl text-primary">
-                      {formatCurrency(selectedPR.items.reduce((sum: number, i: any) => sum + ((i.qty || i.quantity || 0) * (i.price || 0)), 0))}
+                      {formatCurrency((selectedPR.items || []).reduce((sum: number, i: any) => sum + ((i.qty || i.quantity || 0) * (i.price || 0)), 0))}
                     </TD>
                   </TR>
                 </TBody>

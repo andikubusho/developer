@@ -6,19 +6,21 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number) {
+  if (amount == null || isNaN(Number(amount))) return 'Rp 0';
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(Number(amount));
 }
 
 export function formatNumber(value: number) {
+  if (value == null || isNaN(Number(value))) return '0';
   return new Intl.NumberFormat('id-ID', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(Number(value));
 }
 
 export function formatDate(date: string | Date) {
