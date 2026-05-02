@@ -8,7 +8,8 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { NumberInput } from '../ui/NumberInput';
-import { Info, Lock } from 'lucide-react';
+import { Info, Lock, Search } from 'lucide-react';
+import { SearchableSelect } from '../ui/SearchableSelect';
 
 const poSchema = z.object({
   project_id: z.string().min(1, 'Proyek harus dipilih'),
@@ -209,39 +210,51 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Proyek */}
         <div className="space-y-2">
-          <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-600">1</span>
-            Referensi Proyek
-          </label>
           {fromPR ? (
             <>
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-600">1</span>
+                Referensi Proyek
+              </label>
               <input type="hidden" {...register('project_id')} />
               <div className="w-full h-14 rounded-2xl bg-slate-50 border-2 border-slate-100 px-5 flex items-center text-sm font-black text-slate-800 select-none shadow-sm">
                 {projectLabel || '...'}
               </div>
             </>
           ) : (
-            <>
-              <select {...register('project_id')} className="w-full h-14 rounded-2xl bg-slate-50 border-2 border-slate-100 px-5 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender focus:bg-white transition-all appearance-none cursor-pointer">
-                <option value="">Pilih Proyek</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              {errors.project_id && <p className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.project_id.message}</p>}
-            </>
+            <Controller
+              name="project_id"
+              control={control}
+              render={({ field }) => (
+                <SearchableSelect
+                  label="Referensi Proyek"
+                  options={projects.map(p => ({ label: p.name, value: p.id }))}
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Cari proyek..."
+                  error={errors.project_id?.message}
+                />
+              )}
+            />
           )}
         </div>
 
-        {/* Supplier — selalu bisa dipilih */}
+        {/* Supplier — Searchable */}
         <div className="space-y-2">
-          <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-600">2</span>
-            Pilih Supplier / Vendor
-          </label>
-          <select {...register('supplier_id')} className="w-full h-14 rounded-2xl bg-slate-50 border-2 border-slate-100 px-5 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender focus:bg-white transition-all appearance-none cursor-pointer">
-            <option value="">Pilih Supplier</option>
-            {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-          {errors.supplier_id && <p className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.supplier_id.message}</p>}
+          <Controller
+            name="supplier_id"
+            control={control}
+            render={({ field }) => (
+              <SearchableSelect
+                label="Pilih Supplier / Vendor"
+                options={suppliers.map(s => ({ label: s.name, value: s.id }))}
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Cari & pilih supplier..."
+                error={errors.supplier_id?.message}
+              />
+            )}
+          />
         </div>
       </div>
 
@@ -256,24 +269,29 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Master Material */}
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Master Material</label>
             {fromPR ? (
               <>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Master Material</label>
                 <input type="hidden" {...register('material_id')} />
                 <div className="w-full h-14 rounded-2xl bg-white border-2 border-slate-100 px-5 flex items-center text-sm font-black text-slate-800 select-none shadow-sm">
                   {materialLabel || '...'}
                 </div>
               </>
             ) : (
-              <>
-                <select {...register('material_id')} className="w-full h-14 rounded-2xl bg-white border-2 border-slate-100 px-5 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender transition-all shadow-sm">
-                  <option value="">Pilih Master</option>
-                  {masters.map(m => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
-                {errors.material_id && <p className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.material_id.message}</p>}
-              </>
+              <Controller
+                name="material_id"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    label="Master Material"
+                    options={masters.map(m => ({ label: m.name, value: m.id }))}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Cari material..."
+                    error={errors.material_id?.message}
+                  />
+                )}
+              />
             )}
           </div>
 
