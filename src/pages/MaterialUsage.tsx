@@ -176,7 +176,7 @@ const MaterialUsage: React.FC = () => {
 
     setSubmitting(true);
     try {
-      await api.insert('material_usages', {
+      const usageResponse = await api.insert('material_usages', {
         tanggal: form.tanggal,
         rab_project_id: form.rab_project_id || null,
         rab_item_id: form.rab_item_id || null,
@@ -186,17 +186,66 @@ const MaterialUsage: React.FC = () => {
         keterangan: form.keterangan
       });
 
-      // Deduct stock from material_variants
-      const newStok = (selectedVariant?.stok || 0) - form.qty;
-      await api.update('material_variants', parseInt(form.id_variant), { stok: newStok });
+      // CATAT MUTASI STOK (Untuk Kartu Stok)
+      // Kita catat manual agar referensi lebih informatif (Nama Proyek & Unit)
+      const project = projects.find(p => p.id === form.rab_project_id);
+      const item = rabItems.find(it => it.id === form.rab_item_id);
+      const referenceLabel = `Proyek: ${project?.nama_proyek || 'Umum'}${project?.unit ? ` (${project.unit.unit_number})` : ''} - ${item?.uraian || 'Pemakaian'}`;
+
+      await api.insert('stock_movements', {
+        id_variant: parseInt(form.id_variant),
+        tanggal: new Date().toISOString(),
+        tipe: 'OUT',
+        qty: form.qty,
+        saldo_setelah: (selectedVariant?.stok || 0) - form.qty,
+        sumber: 'USAGE',
+        reference_id: usageResponse?.[0]?.id || 'Manual',
+        keterangan: referenceLabel
+      });
+
+      // Update stok akhir di tabel varian (jika trigger DB tidak melakukannya)
+      await api.update('material_variants', parseInt(form.id_variant), {
+        stok: (selectedVariant?.stok || 0) - form.qty
+      });
 
       alert('Pemakaian material berhasil dicatat!');
-      navigate('/materials');
-    } catch (err: any) {
+      setForm(f => ({ ...f, qty: 0, keterangan: '' })); // Reset form partial
+      fetchInitialData();
+      if (form.rab_project_id) fetchRabMaterials(form.rab_project_id);
+    } catch (err) {
       console.error('Error saving usage:', err);
-      alert(`Gagal mencatat pemakaian material:\n${err.message || err}`);
+      alert('Gagal mencatat pemakaian material');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteUsage = async (usage: any) => {
+    if (!confirm(`Batalkan pemakaian material "${usage.material?.name}"? Stok akan dikembalikan ke gudang.`)) return;
+
+    try {
+      setLoading(true);
+      // 1. Hapus Log Mutasi Terkait agar Kartu Stok sinkron
+      const movements = await api.get('stock_movements', `sumber=eq.USAGE&reference_id=eq.${usage.id}`);
+      if (movements && movements.length > 0) {
+        await api.delete('stock_movements', movements[0].id);
+      }
+
+      // 2. Kembalikan Saldo Stok di Material Variants (Ditambah lagi)
+      const vRows = await api.get('material_variants', `id=eq.${usage.id_variant}&select=stok`);
+      const currentStok = Number(vRows?.[0]?.stok) || 0;
+      const restoredStok = currentStok + Number(usage.qty);
+      await api.update('material_variants', usage.id_variant, { stok: restoredStok });
+
+      // 3. Hapus data Usage
+      await api.delete('material_usages', usage.id);
+      
+      await fetchInitialData();
+    } catch (err) {
+      console.error('Error deleting usage:', err);
+      alert('Gagal membatalkan pemakaian.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -454,12 +503,13 @@ const MaterialUsage: React.FC = () => {
                   <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal / RAB</th>
                   <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Material & Merk</th>
                   <th className="px-4 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty Keluar</th>
-                  <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Keterangan</th>
+                   <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Keterangan</th>
+                   <th className="px-4 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {history.length === 0 ? (
-                  <tr><td colSpan={4} className="py-20 text-center text-slate-300 italic font-medium">Belum ada riwayat pemakaian.</td></tr>
+                  <tr><td colSpan={5} className="py-20 text-center text-slate-300 italic font-medium">Belum ada riwayat pemakaian.</td></tr>
                 ) : history.map((h, i) => (
                   <tr key={i} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-4 py-4">
@@ -475,6 +525,15 @@ const MaterialUsage: React.FC = () => {
                     </td>
                     <td className="px-4 py-4 text-xs font-medium text-slate-500 max-w-[200px] truncate">
                       {h.keterangan}
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <button 
+                        onClick={() => handleDeleteUsage(h)}
+                        className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 transition-colors"
+                        title="Batalkan Pemakaian"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
                     </td>
                   </tr>
                 ))}

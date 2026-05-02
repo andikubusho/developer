@@ -43,7 +43,7 @@ const GoodsReceipt: React.FC = () => {
       setLoading(true);
       // Get PENDING POs
       const [orderData, historyData] = await Promise.all([
-        api.get('purchase_orders', 'select=*,project:projects(name),supplier:suppliers(name),master:materials(name,unit,code),variant:material_variants(merk)&status=eq.PENDING&order=created_at.desc'),
+        api.get('purchase_orders', 'select=*,project:projects(name),supplier:suppliers(name),master:materials(name,unit,code),variant:material_variants(merk,stok)&status=eq.PENDING&order=created_at.desc'),
         api.get('goods_receipts', 'select=*,po:purchase_orders(po_number),material:materials(name,unit),variant:material_variants(merk)&order=tanggal.desc&limit=20')
       ]);
       setOrders(orderData || []);
@@ -95,13 +95,33 @@ const GoodsReceipt: React.FC = () => {
     try {
       // Loop through selected items and insert GR
       for (const it of selectedItems) {
-        await api.insert('goods_receipts', {
+        const grResponse = await api.insert('goods_receipts', {
           tanggal: form.tanggal,
           po_id: selectedPO.id,
           material_id: it.material_id,
           id_variant: it.id_variant,
           qty: it.qty_received
         });
+
+        // Ambil stok terbaru varian ini untuk akurasi saldo (mencegah race condition sederhana)
+        const vRows = await api.get('material_variants', `id=eq.${it.id_variant}&select=stok`);
+        const currentStok = Number(vRows?.[0]?.stok) || 0;
+        const newStok = currentStok + it.qty_received;
+
+        // CATAT MUTASI STOK
+        await api.insert('stock_movements', {
+          id_variant: it.id_variant,
+          tanggal: new Date().toISOString(),
+          tipe: 'IN',
+          qty: it.qty_received,
+          saldo_setelah: newStok,
+          sumber: 'GR',
+          reference_id: grResponse?.[0]?.id || 'Manual',
+          keterangan: `Terima Barang dari PO: ${selectedPO.po_number}`
+        });
+
+        // UPDATE STOK FISIK
+        await api.update('material_variants', it.id_variant, { stok: newStok });
       }
 
       // Update PO status if all items received (simplified)
@@ -123,9 +143,22 @@ const GoodsReceipt: React.FC = () => {
 
     try {
       setLoading(true);
+      // 1. Hapus Log Mutasi Terkait agar Kartu Stok sinkron
+      const movements = await api.get('stock_movements', `sumber=eq.GR&reference_id=eq.${gr.id}`);
+      if (movements && movements.length > 0) {
+        await api.delete('stock_movements', movements[0].id);
+      }
+
+      // 2. Kembalikan Saldo Stok di Material Variants
+      const vRows = await api.get('material_variants', `id=eq.${gr.id_variant}&select=stok`);
+      const currentStok = Number(vRows?.[0]?.stok) || 0;
+      const restoredStok = currentStok - Number(gr.qty); // Kurangi lagi karena ini pembatalan penerimaan
+      await api.update('material_variants', gr.id_variant, { stok: restoredStok });
+
+      // 3. Hapus data GR
       await api.delete('goods_receipts', gr.id);
       
-      // Kembalikan status PO ke PENDING agar muncul lagi di antrean terima
+      // 4. Kembalikan status PO ke PENDING agar muncul lagi di antrean terima
       if (gr.po_id) {
         await api.update('purchase_orders', gr.po_id, { status: 'PENDING' });
       }
