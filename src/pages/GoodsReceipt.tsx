@@ -9,7 +9,8 @@ import {
   Calendar,
   RefreshCw,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -28,9 +29,11 @@ const GoodsReceipt: React.FC = () => {
   const [selectedPO, setSelectedPO] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
   
+  const [viewingOrder, setViewingOrder] = useState<any | null>(null);
+  const [receivingItems, setReceivingItems] = useState<any[]>([]);
+  
   const [form, setForm] = useState({
     tanggal: new Date().toISOString().split('T')[0],
-    qty_diterima: 0,
   });
 
   const fetchData = async () => {
@@ -52,9 +55,21 @@ const GoodsReceipt: React.FC = () => {
 
   const handleOpenGR = (po: any) => {
     setSelectedPO(po);
+    const items = Array.isArray(po.items) 
+      ? po.items.map((it: any) => ({ ...it, checked: true, qty_received: it.quantity }))
+      : [{ 
+          material_id: po.material_id, 
+          material_name: po.master?.name, 
+          id_variant: po.id_variant, 
+          variant_name: po.variant?.merk,
+          quantity: po.quantity,
+          qty_received: po.quantity,
+          unit: po.master?.unit,
+          checked: true 
+        }];
+    setReceivingItems(items);
     setForm({
       tanggal: new Date().toISOString().split('T')[0],
-      qty_diterima: po.quantity,
     });
     setIsModalOpen(true);
   };
@@ -64,18 +79,27 @@ const GoodsReceipt: React.FC = () => {
     if (!selectedPO) return;
     
     setSubmitting(true);
+    const selectedItems = receivingItems.filter(it => it.checked && it.qty_received > 0);
+    if (selectedItems.length === 0) {
+      alert('Pilih minimal satu item dengan kuantitas lebih dari 0');
+      setSubmitting(false);
+      return;
+    }
+    
     try {
-      // Insert into goods_receipts
-      // The DB Trigger will update material_variants.stok and insert into stock_movements
-      await api.insert('goods_receipts', {
-        tanggal: form.tanggal,
-        po_id: selectedPO.id,
-        material_id: selectedPO.material_id,
-        id_variant: selectedPO.id_variant,
-        qty: form.qty_diterima
-      });
+      // Loop through selected items and insert GR
+      for (const it of selectedItems) {
+        await api.insert('goods_receipts', {
+          tanggal: form.tanggal,
+          po_id: selectedPO.id,
+          material_id: it.material_id,
+          id_variant: it.id_variant,
+          qty: it.qty_received
+        });
+      }
 
-      // Update PO status to COMPLETED if fully received (simplified)
+      // Update PO status if all items received (simplified)
+      // For now, mark as COMPLETED if any receipt made
       await api.update('purchase_orders', selectedPO.id, { status: 'COMPLETED' });
 
       setIsModalOpen(false);
@@ -163,22 +187,38 @@ const GoodsReceipt: React.FC = () => {
                     </TD>
                     <TD>
                       <div className="flex flex-col">
-                        <span className="text-sm font-black text-text-primary">{o.master?.name}</span>
-                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">Merk: {o.variant?.merk}</span>
+                        {Array.isArray(o.items) ? (
+                          <span className="text-sm font-black text-accent-dark">{o.items.length} Item Material</span>
+                        ) : (
+                          <>
+                            <span className="text-sm font-black text-text-primary">{o.master?.name}</span>
+                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">Merk: {o.variant?.merk}</span>
+                          </>
+                        )}
                       </div>
                     </TD>
                     <TD className="text-right font-black text-text-primary">
-                      {formatNumber(o.quantity)}
-                      <span className="ml-1 text-[10px] text-text-muted uppercase">{o.master?.unit}</span>
+                      {Array.isArray(o.items) 
+                        ? o.items.reduce((sum: number, it: any) => sum + Number(it.quantity), 0)
+                        : formatNumber(o.quantity)
+                      }
+                      <span className="ml-1 text-[10px] text-text-muted uppercase">
+                        {Array.isArray(o.items) ? 'Total' : o.master?.unit}
+                      </span>
                     </TD>
                     <TD className="text-right">
-                      <Button 
-                        size="sm" 
-                        onClick={() => handleOpenGR(o)}
-                        className="rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100 shadow-none"
-                      >
-                        <Plus className="w-4 h-4 mr-2" /> Terima
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button title="Detail PO" onClick={() => setViewingOrder(o)} className="p-2 rounded-xl text-sky-500 hover:bg-sky-50 transition-colors">
+                          <Eye className="w-5 h-5" />
+                        </button>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleOpenGR(o)}
+                          className="rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100 shadow-none"
+                        >
+                          <Plus className="w-4 h-4 mr-1" /> Terima
+                        </Button>
+                      </div>
                     </TD>
                   </TR>
                 ))}
@@ -191,8 +231,8 @@ const GoodsReceipt: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Konfirmasi Penerimaan Barang"
-        size="lg"
+        title="Input Penerimaan Barang"
+        size="4xl"
       >
         {selectedPO && (
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -214,31 +254,69 @@ const GoodsReceipt: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-1">
                 <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Tanggal Terima</label>
-                <Input 
-                  type="date"
-                  value={form.tanggal}
-                  onChange={(e) => setForm({ ...form, tanggal: e.target.value })}
-                  className="h-12 glass-input rounded-xl px-4 font-bold"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Kuantitas Diterima</label>
-                <div className="relative">
+                <div className="w-48">
                   <Input 
-                    type="number"
-                    value={form.qty_diterima}
-                    onChange={(e) => setForm({ ...form, qty_diterima: Number(e.target.value) })}
-                    className="h-12 glass-input rounded-xl px-4 font-black text-lg"
+                    type="date"
+                    value={form.tanggal}
+                    onChange={(e) => setForm({ ...form, tanggal: e.target.value })}
+                    className="h-10 glass-input rounded-xl px-4 font-bold text-sm"
                     required
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-text-muted uppercase">
-                    {selectedPO.master?.unit}
-                  </div>
                 </div>
+              </div>
+
+              <div className="overflow-hidden border-2 border-slate-100 rounded-[24px]">
+                <Table>
+                  <THead>
+                    <TR className="bg-slate-50">
+                      <TH className="w-12"></TH>
+                      <TH className="text-[10px] font-black uppercase tracking-widest">Material</TH>
+                      <TH className="text-right text-[10px] font-black uppercase tracking-widest">Qty Order</TH>
+                      <TH className="text-right text-[10px] font-black uppercase tracking-widest">Qty Terima</TH>
+                    </TR>
+                  </THead>
+                  <TBody>
+                    {receivingItems.map((it, idx) => (
+                      <TR key={idx} className={it.checked ? 'bg-white' : 'bg-slate-50/50 opacity-60'}>
+                        <TD className="py-3">
+                          <input 
+                            type="checkbox" 
+                            checked={it.checked}
+                            onChange={(e) => {
+                              const newItems = [...receivingItems];
+                              newItems[idx].checked = e.target.checked;
+                              setReceivingItems(newItems);
+                            }}
+                            className="w-5 h-5 rounded-lg border-2 border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                          />
+                        </TD>
+                        <TD>
+                          <p className="font-bold text-slate-800">{it.material_name}</p>
+                          <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">Merk: {it.variant_name || it.merk}</p>
+                        </TD>
+                        <TD className="text-right font-black text-slate-500">
+                          {it.quantity} <span className="text-[10px] uppercase">{it.unit}</span>
+                        </TD>
+                        <TD className="text-right">
+                          <Input 
+                            type="number"
+                            disabled={!it.checked}
+                            value={it.qty_received}
+                            onChange={(e) => {
+                              const newItems = [...receivingItems];
+                              newItems[idx].qty_received = Number(e.target.value);
+                              setReceivingItems(newItems);
+                            }}
+                            className="h-10 w-24 text-right rounded-xl border-2 border-slate-100 font-black focus:border-emerald-500"
+                          />
+                        </TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
               </div>
             </div>
 
@@ -254,11 +332,68 @@ const GoodsReceipt: React.FC = () => {
 
             <div className="flex gap-4 pt-2">
               <Button type="button" variant="ghost" className="flex-1 h-12 rounded-xl" onClick={() => setIsModalOpen(false)}>Batal</Button>
-              <Button type="submit" className="flex-1 h-12 rounded-xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-premium" isLoading={submitting}>
-                Konfirmasi Terima
+              <Button type="submit" className="flex-1 h-12 rounded-xl font-black bg-accent-dark hover:bg-slate-800 text-white shadow-premium" isLoading={submitting}>
+                Konfirmasi Penerimaan
               </Button>
             </div>
           </form>
+        )}
+      </Modal>
+
+      {/* Modal Detail PO */}
+      <Modal
+        isOpen={!!viewingOrder}
+        onClose={() => setViewingOrder(null)}
+        title={`Detail Purchase Order: ${viewingOrder?.po_number}`}
+        size="4xl"
+      >
+        {viewingOrder && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 rounded-[24px] border-2 border-slate-100">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Supplier</p>
+                <p className="font-black text-slate-800">{viewingOrder.supplier?.name || '-'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Proyek</p>
+                <p className="font-black text-slate-800">{viewingOrder.project?.name || '-'}</p>
+              </div>
+            </div>
+
+            <div className="overflow-hidden border-2 border-slate-100 rounded-[24px]">
+              <Table>
+                <THead>
+                  <TR className="bg-slate-50">
+                    <TH className="text-[10px] font-black uppercase tracking-widest">Material</TH>
+                    <TH className="text-right text-[10px] font-black uppercase tracking-widest">Kuantitas Pesan</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {Array.isArray(viewingOrder.items) ? viewingOrder.items.map((item: any, i: number) => (
+                    <TR key={i}>
+                      <TD className="py-4">
+                        <p className="font-bold text-slate-800">{item.material_name}</p>
+                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">Merk: {item.variant_name || item.merk}</p>
+                      </TD>
+                      <TD className="text-right font-black text-slate-800">{item.quantity}</TD>
+                    </TR>
+                  )) : (
+                    <TR>
+                      <TD className="py-4">
+                        <p className="font-bold text-slate-800">{viewingOrder.master?.name}</p>
+                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">Merk: {viewingOrder.variant?.merk}</p>
+                      </TD>
+                      <TD className="text-right font-black text-slate-800">{viewingOrder.quantity}</TD>
+                    </TR>
+                  )}
+                </TBody>
+              </Table>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button onClick={() => setViewingOrder(null)} variant="ghost" className="rounded-xl font-black">Tutup</Button>
+            </div>
+          </div>
         )}
       </Modal>
     </div>
