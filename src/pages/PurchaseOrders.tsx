@@ -50,9 +50,27 @@ const PurchaseOrders: React.FC = () => {
   const [approvedPRItems, setApprovedPRItems] = useState<PRItemForPO[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-   const [isModalOpen, setIsModalOpen] = useState(false);
-   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | undefined>();
-   const [selectedPR, setSelectedPR] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | undefined>();
+  const [selectedPR, setSelectedPR] = useState<any | null>(null);
+  const [selectedItemKeys, setSelectedItemKeys] = useState<Set<string>>(new Set());
+  const [poQueue, setPoQueue] = useState<any[]>([]);
+
+  const toggleItem = (key: string) => {
+    setSelectedItemKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const handleBuatPOGroup = (group: any) => {
+    const selected = group.items.filter((_: any, idx: number) => selectedItemKeys.has(`${group.prId}-${idx}`));
+    if (selected.length === 0) return;
+    setPoQueue(selected.slice(1));
+    setSelectedPR(selected[0]);
+    setIsModalOpen(true);
+  };
 
   useEffect(() => {
     if (division === 'marketing' || division === 'teknik' || division === 'audit') {
@@ -380,29 +398,40 @@ const PurchaseOrders: React.FC = () => {
 
               {/* Items */}
               <div className="divide-y divide-slate-50">
-                {group.items.map((item: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between px-5 py-3.5 hover:bg-blue-50/40 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 flex-1">
+                {group.items.map((item: any, idx: number) => {
+                  const key = `${group.prId}-${idx}`;
+                  const checked = selectedItemKeys.has(key);
+                  return (
+                    <div
+                      key={idx}
+                      className={`flex items-center gap-4 px-5 py-3.5 cursor-pointer transition-colors ${checked ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                      onClick={() => toggleItem(key)}
+                    >
+                      {/* Checkbox */}
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${checked ? 'bg-accent-dark border-accent-dark' : 'border-slate-300'}`}>
+                        {checked && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
+                      </div>
                       <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-black text-slate-500 shrink-0">
                         {item.master?.code || '-'}
                       </span>
-                      <span className="font-semibold text-text-primary text-sm">{item.master?.name || '-'}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
+                      <span className="font-semibold text-text-primary text-sm flex-1">{item.master?.name || '-'}</span>
                       <span className="text-sm font-black text-text-primary w-12 text-right">{item.quantity}</span>
-                      <button
-                        className="px-4 py-2 rounded-xl bg-accent-dark text-white text-xs font-black uppercase tracking-wider hover:bg-slate-700 active:scale-95 transition-all shadow-sm"
-                        onClick={() => { setSelectedPR(item); setIsModalOpen(true); }}
-                      >
-                        Buat PO
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* Tombol Buat PO muncul jika ada item terpilih di grup ini */}
+              {group.items.some((_: any, idx: number) => selectedItemKeys.has(`${group.prId}-${idx}`)) && (
+                <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500">
+                    {group.items.filter((_: any, idx: number) => selectedItemKeys.has(`${group.prId}-${idx}`)).length} item dipilih
+                  </span>
+                  <Button size="sm" variant="outline" className="rounded-xl font-black" onClick={() => handleBuatPOGroup(group)}>
+                    Buat PO
+                  </Button>
+                </div>
+              )}
             </Card>
           ))
         )}
@@ -420,15 +449,23 @@ const PurchaseOrders: React.FC = () => {
       >
         <PurchaseOrderForm
           onSuccess={() => {
-            setIsModalOpen(false);
-            setSelectedPR(null);
-            setSelectedOrder(undefined);
-            fetchOrders();
+            if (poQueue.length > 0) {
+              setSelectedPR(poQueue[0]);
+              setPoQueue(prev => prev.slice(1));
+            } else {
+              setIsModalOpen(false);
+              setSelectedPR(null);
+              setSelectedOrder(undefined);
+              setSelectedItemKeys(new Set());
+              fetchOrders();
+            }
           }}
           onCancel={() => {
             setIsModalOpen(false);
             setSelectedPR(null);
             setSelectedOrder(undefined);
+            setPoQueue([]);
+            setSelectedItemKeys(new Set());
           }}
           initialPR={selectedPR}
           initialOrder={selectedOrder}
