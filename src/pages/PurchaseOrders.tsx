@@ -328,7 +328,7 @@ const PurchaseOrders: React.FC = () => {
           setSelectedPR(null);
         }}
         title={selectedOrder ? 'Edit Purchase Order' : 'Tambah Purchase Order'}
-        size="lg"
+        size="5xl"
       >
         <PurchaseOrderForm
           onSuccess={() => {
