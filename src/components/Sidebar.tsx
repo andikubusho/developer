@@ -114,6 +114,7 @@ const menuItems = [
   // Teknik - DATA MASTER
   { name: 'Master Material', icon: Package, path: '/master-material', divisions: ['teknik', 'audit'], category: 'TEKNIK: MASTER' },
   { name: 'Master Supplier', icon: Users, path: '/material-suppliers', divisions: ['teknik', 'audit'], category: 'TEKNIK: MASTER' },
+  { name: 'Master Penerima Upah', icon: UserCheck, path: '/worker-master', divisions: ['teknik', 'audit'], category: 'TEKNIK: MASTER' },
   
   // System
   { name: 'User & Role', icon: ShieldCheck, path: '/user-management', divisions: ['marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'], category: 'SISTEM' },
