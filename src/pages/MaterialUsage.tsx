@@ -20,6 +20,7 @@ import { formatNumber, cn } from '../lib/utils';
 const MaterialUsage: React.FC = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
   const [rabItems, setRabItems] = useState<any[]>([]);
   const [masters, setMasters] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
@@ -46,9 +47,13 @@ const MaterialUsage: React.FC = () => {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      // In this schema, rab_projects has its own nama_proyek field
-      const data = await api.get('rab_projects', 'select=*&order=nama_proyek.asc');
-      setProjects(data || []);
+      // Fetch RAB Projects and Recent Usage History
+      const [rabData, historyData] = await Promise.all([
+        api.get('rab_projects', 'select=*&order=nama_proyek.asc'),
+        api.get('material_usages', 'select=*,rab:rab_projects(nama_proyek),material:materials(name,unit),variant:material_variants(merk)&order=tanggal.desc&limit=10')
+      ]);
+      setProjects(rabData || []);
+      setHistory(historyData || []);
     } catch (err) {
       console.error('Error fetching initial data:', err);
     } finally {
@@ -177,9 +182,9 @@ const MaterialUsage: React.FC = () => {
                 {/* RAB Selection */}
                 <div className="md:col-span-2 p-1 bg-accent-lavender/5 rounded-[2rem] border-2 border-accent-lavender/10">
                   <SearchableSelect 
-                    label="1. Pilih Proyek / Unit (RAB)"
+                    label="1. Pilih Dokumen RAB"
                     options={projects.map(p => ({ 
-                      label: p.nama_proyek || 'Tanpa Nama', 
+                      label: `${p.nama_proyek} [ID: ${p.id.slice(0,5)}] - ${p.lokasi || 'Umum'}`, 
                       value: p.id 
                     }))}
                     value={form.rab_project_id}
@@ -384,6 +389,51 @@ const MaterialUsage: React.FC = () => {
              </div>
           </Card>
         </div>
+      </div>
+
+      {/* Riwayat Pemakaian */}
+      <div className="mt-12 space-y-4">
+        <div className="flex items-center gap-2 px-1">
+          <RefreshCw className="w-5 h-5 text-accent-lavender" />
+          <h2 className="text-xl font-black text-text-primary tracking-tight italic uppercase">Riwayat <span className="not-italic text-accent-lavender tracking-tighter">Pemakaian Terbaru</span></h2>
+        </div>
+        
+        <Card className="p-6 bg-white border-none shadow-premium overflow-hidden rounded-[2rem]">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50/50 border-b-2 border-slate-100">
+                  <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal / RAB</th>
+                  <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Material & Merk</th>
+                  <th className="px-4 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty Keluar</th>
+                  <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Keterangan</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {history.length === 0 ? (
+                  <tr><td colSpan={4} className="py-20 text-center text-slate-300 italic font-medium">Belum ada riwayat pemakaian.</td></tr>
+                ) : history.map((h, i) => (
+                  <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-4 py-4">
+                      <div className="font-black text-slate-700 uppercase text-xs">{h.rab?.nama_proyek}</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{new Date(h.tanggal).toLocaleDateString('id-ID')}</div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="font-bold text-slate-800">{h.material?.name}</div>
+                      <div className="text-[10px] font-black text-emerald-600 uppercase">Merk: {h.variant?.merk}</div>
+                    </td>
+                    <td className="px-4 py-4 text-right font-black text-rose-600">
+                      - {formatNumber(h.qty)} <span className="text-[10px] uppercase text-slate-400 font-bold">{h.material?.unit}</span>
+                    </td>
+                    <td className="px-4 py-4 text-xs font-medium text-slate-500 max-w-[200px] truncate">
+                      {h.keterangan}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
     </div>
   );
