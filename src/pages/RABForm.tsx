@@ -752,6 +752,7 @@ const RABForm: React.FC = () => {
           kategori: projectHeader.unit_id || null,
           nama_proyek: projectHeader.nama_proyek,
           lokasi: projectHeader.lokasi,
+          keterangan: projectHeader.keterangan,
           total_anggaran: totalMaterial + totalWage,
         });
         projectId = editId;
@@ -769,6 +770,7 @@ const RABForm: React.FC = () => {
           kategori: projectHeader.unit_id || null,
           nama_proyek: projectHeader.nama_proyek,
           lokasi: projectHeader.lokasi,
+          keterangan: projectHeader.keterangan,
           total_anggaran: totalMaterial + totalWage,
         });
         projectId = project[0].id;

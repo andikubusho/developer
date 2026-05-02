@@ -21,7 +21,7 @@ const RAB: React.FC = () => {
     try {
       setLoading(true);
       const [rabData, unitsData] = await Promise.all([
-        api.get('rab_projects', 'select=id,nama_proyek,lokasi,total_anggaran,created_at,unit_id&order=created_at.desc'),
+        api.get('rab_projects', 'select=id,nama_proyek,lokasi,keterangan,total_anggaran,created_at,unit_id&order=created_at.desc'),
         api.get('units', 'select=id,unit_number,type'),
       ]);
 
@@ -470,6 +470,7 @@ const RAB: React.FC = () => {
               <TH className="px-6 py-3 font-semibold">Nama Proyek</TH>
               <TH className="px-6 py-3 font-semibold">Unit</TH>
               <TH className="px-6 py-3 font-semibold">Lokasi</TH>
+              <TH className="px-6 py-3 font-semibold">Keterangan</TH>
               <TH className="px-6 py-3 font-semibold text-right">Total Anggaran</TH>
               <TH className="px-6 py-3 font-semibold">Tanggal Buat</TH>
               <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
@@ -503,6 +504,9 @@ const RAB: React.FC = () => {
                   </TD>
                   <TD className="px-6 py-4 text-sm text-text-secondary">
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.lokasi || '-'}</span>
+                  </TD>
+                  <TD className="px-6 py-4 text-sm text-text-secondary italic">
+                    {r.keterangan || '-'}
                   </TD>
                   <TD className="px-6 py-4 text-sm font-black text-accent-dark text-right">
                     {formatCurrency(Number(r.total_anggaran) || 0)}
