@@ -99,6 +99,11 @@ app.use((req, res, next) => {
         ALTER TABLE IF EXISTS user_permissions ADD COLUMN IF NOT EXISTS can_export BOOLEAN DEFAULT TRUE NOT NULL;
         ALTER TABLE IF EXISTS user_permissions ADD COLUMN IF NOT EXISTS can_print BOOLEAN DEFAULT TRUE NOT NULL;
         
+        -- Fix for existing purchase_orders table
+        ALTER TABLE IF EXISTS purchase_orders ADD COLUMN IF NOT EXISTS items JSONB;
+        ALTER TABLE IF EXISTS purchase_orders ADD COLUMN IF NOT EXISTS due_date TIMESTAMP;
+        ALTER TABLE IF EXISTS purchase_orders ADD COLUMN IF NOT EXISTS supplier_id INTEGER;
+        
         ALTER TABLE IF EXISTS shipments ADD COLUMN IF NOT EXISTS merek_id INTEGER REFERENCES promo_brands(id);
         ALTER TABLE IF EXISTS orders ADD COLUMN IF NOT EXISTS merek_id INTEGER REFERENCES promo_brands(id);
 
