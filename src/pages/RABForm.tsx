@@ -692,6 +692,26 @@ const RABForm: React.FC = () => {
     return { totalMaterial: mat, totalWage: wage };
   }, [computedTree]);
 
+  const sectionTotals = useMemo(() => {
+    const calcMat = (node: any): number => {
+      if (node.level === 3 && !node.is_manual) return (node.jumlah_material || 0) * (node.material_price || 0);
+      if (node.level === 3 && node.is_manual) return node.harga_rab || 0;
+      if (node.level === 2 && node.is_manual) return (node.volume || 0) * (node.material_price || 0);
+      return (node.children || []).reduce((s: number, c: any) => s + calcMat(c), 0);
+    };
+    const calcWage = (node: any): number => {
+      if (node.level === 3 && !node.is_manual) return (node.jumlah_material || 0) * (node.wage_price || 0);
+      if (node.level === 3 && node.is_manual) return 0;
+      if (node.level === 2 && node.is_manual) return (node.volume || 0) * (node.wage_price || 0);
+      return (node.children || []).reduce((s: number, c: any) => s + calcWage(c), 0);
+    };
+    const result: Record<string, { mat: number; wage: number }> = {};
+    computedTree.forEach((node: any) => {
+      result[node.id] = { mat: calcMat(node), wage: calcWage(node) };
+    });
+    return result;
+  }, [computedTree]);
+
   // --- Persistence ---
 
   const handleSave = async () => {
@@ -1094,8 +1114,14 @@ const RABForm: React.FC = () => {
           {node.isExpanded && node.children.length > 0 && renderRows(node.children, depth + 1)}
           {isLevel0 && (
             <tr className="bg-slate-50 border-t border-b-2 border-slate-300">
-              <td colSpan={8} className="px-4 py-2.5 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest pr-6">
+              <td colSpan={6} className="px-4 py-2.5 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest pr-6">
                 Subtotal {node.uraian || 'Bagian'}
+              </td>
+              <td className="px-4 py-2.5 text-right text-xs font-black text-blue-700">
+                {formatCurrency(sectionTotals[node.id]?.mat || 0)}
+              </td>
+              <td className="px-4 py-2.5 text-right text-xs font-black text-orange-600">
+                {formatCurrency(sectionTotals[node.id]?.wage || 0)}
               </td>
               <td className="px-4 py-2.5 text-right text-sm font-black text-slate-700">
                 {formatCurrency(node.subtotal)}
