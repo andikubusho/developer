@@ -15,7 +15,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { api } from '../lib/api';
-import { formatNumber, formatDate } from '../lib/utils';
+import { formatNumber, formatDate, cn } from '../lib/utils';
 import * as XLSX from 'xlsx';
 
 const StockCard: React.FC = () => {
