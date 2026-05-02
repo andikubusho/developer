@@ -34,6 +34,7 @@ interface POFormProps {
 
 export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, initialPR, initialOrder }) => {
   const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [masters, setMasters] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -103,7 +104,6 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         setValue('order_date', toDateStr(initialOrder.order_date));
         setValue('due_date', toDateStr(initialOrder.due_date));
         if (initialOrder.pr_id) setValue('pr_id', initialOrder.pr_id);
-        // id_variant diset oleh useEffect setelah variants dimuat
       } else if (initialPR) {
         setValue('project_id', initialPR.project_id);
         setValue('material_id', initialPR.material_id);
@@ -112,6 +112,8 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       }
     } catch (err) {
       console.error('Error fetching initial data:', err);
+    } finally {
+      setDataLoaded(true);
     }
   };
 
@@ -190,6 +192,14 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
     ? (masters.find(m => m.id === initialPR!.material_id)?.name || initialPR!.master?.name || initialPR!.material_id)
     : null;
 
+  if (!dataLoaded) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-8 h-8 border-4 border-accent-dark/20 border-t-accent-dark rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 px-2 pb-2">
 
@@ -247,8 +257,8 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
             render={({ field }) => (
               <SearchableSelect
                 label="Pilih Supplier / Vendor"
-                options={suppliers.map(s => ({ label: s.name, value: s.id }))}
-                value={field.value}
+                options={suppliers.map(s => ({ label: s.name, value: String(s.id) }))}
+                value={String(field.value || '')}
                 onChange={field.onChange}
                 placeholder="Cari & pilih supplier..."
                 error={errors.supplier_id?.message}
