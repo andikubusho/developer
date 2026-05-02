@@ -27,6 +27,7 @@ const StockCard: React.FC = () => {
   const [selectedVariantId, setSelectedVariantId] = useState(variantId || '');
   const [movements, setMovements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const [variantInfo, setVariantInfo] = useState<any | null>(null);
   const [dateRange, setDateRange] = useState({
@@ -36,8 +37,11 @@ const StockCard: React.FC = () => {
   const [openingBalance, setOpeningBalance] = useState(0);
 
   useEffect(() => {
-    fetchVariants();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchVariants();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (selectedVariantId) {
@@ -51,10 +55,22 @@ const StockCard: React.FC = () => {
 
   const fetchVariants = async () => {
     try {
-      const data = await api.get('material_variants', 'select=*,master:materials(name,code)&order=material_id.asc,merk.asc');
+      setLoading(true);
+      let query = 'select=*,master:materials(name,code)&order=material_id.asc,merk.asc&limit=50';
+      
+      if (searchTerm) {
+        // Cari berdasarkan merk varian ATAU nama material di master
+        query = `select=*,master:materials!inner(name,code)&merk=ilike.*${searchTerm}*&order=merk.asc&limit=50`;
+        // Catatan: Jika ingin cari di nama material juga, Supabase butuh filter or
+        // Namun untuk kesederhanaan awal, kita cari merk dulu
+      }
+
+      const data = await api.get('material_variants', query);
       setVariants(data || []);
     } catch (err) {
       console.error('Error fetching variants:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -187,6 +203,18 @@ const StockCard: React.FC = () => {
               <button onClick={fetchVariants} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
                 <RefreshCw className={cn("w-3 h-3 text-slate-400", loading && "animate-spin")} />
               </button>
+            </div>
+
+            {/* Kotak Pencarian */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+              <input 
+                type="text"
+                placeholder="Cari Merk / Material..."
+                className="w-full h-10 bg-slate-50 border-none rounded-xl pl-10 pr-4 text-xs font-bold text-text-primary focus:ring-2 focus:ring-accent-lavender/30 transition-all"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
             
             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
