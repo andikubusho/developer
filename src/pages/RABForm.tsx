@@ -670,15 +670,22 @@ const RABForm: React.FC = () => {
     const walk = (nodes: any[]) => {
       nodes.forEach(node => {
         if (node.level === 3 && !node.is_manual) {
+          // Coefficient mode — material and wage contribute separately
           const qty = node.jumlah_material || 0;
           mat += qty * (node.material_price || 0);
           wage += qty * (node.wage_price || 0);
+        } else if (node.level === 3 && node.is_manual) {
+          // Manual level 3 — combined harga_rab, treat as material
+          mat += node.harga_rab || 0;
         } else if (node.level === 2 && node.is_manual) {
+          // LANGSUNG mode — direct price on level 2, children are reference-only
           const qty = node.volume || 0;
           mat += qty * (node.material_price || 0);
           wage += qty * (node.wage_price || 0);
+          // Do NOT walk children — they don't contribute to grandTotal
+        } else if (node.children?.length) {
+          walk(node.children);
         }
-        if (node.children?.length) walk(node.children);
       });
     };
     walk(computedTree);
@@ -1076,6 +1083,17 @@ const RABForm: React.FC = () => {
             </TD>
           </TR>
           {node.isExpanded && node.children.length > 0 && renderRows(node.children, depth + 1)}
+          {isLevel0 && (
+            <tr className="bg-slate-50 border-t border-b-2 border-slate-300">
+              <td colSpan={6} className="px-4 py-2.5 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest pr-6">
+                Subtotal {node.uraian || 'Bagian'}
+              </td>
+              <td className="px-4 py-2.5 text-right text-xs font-black text-slate-700">
+                {formatCurrency(node.subtotal)}
+              </td>
+              <td colSpan={2} />
+            </tr>
+          )}
         </React.Fragment>
       );
     });
