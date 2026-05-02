@@ -131,7 +131,9 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       const total_price = values.quantity * values.unit_price;
 
       await api.insert('purchase_orders', {
+        id: crypto.randomUUID(),
         ...values,
+        supplier_id: Number(values.supplier_id),
         id_variant: finalVariantId,
         po_number,
         total_price,
@@ -139,9 +141,9 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       });
 
       onSuccess(values);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving PO:', error);
-      alert('Gagal menyimpan PO.');
+      alert(`Gagal menyimpan PO: ${error?.message || error}`);
     } finally {
       setLoading(false);
     }
