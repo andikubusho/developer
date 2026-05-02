@@ -228,10 +228,17 @@ const RealCostPage: React.FC = () => {
                 .filter((o: any) => o.rab_item_id === ri.id)
                 .reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0);
               
-              const iBudget = ((ri.material_price || 0) + (ri.wage_price || 0)) * (ri.volume || 1) * (ri.koeff || 1);
+              const iBudgetMat = (ri.material_price || 0) * (ri.volume || 1) * (ri.koeff || 1);
+              const iBudgetWage = (ri.wage_price || 0) * (ri.volume || 1) * (ri.koeff || 1);
+              const iBudget = iBudgetMat + iBudgetWage;
               const iActual = itemMatActual + itemWageActual;
+              
               return {
                 ...ri,
+                iBudgetMat,
+                iBudgetWage,
+                itemMatActual,
+                itemWageActual,
                 totalBudget: iBudget,
                 totalActual: iActual,
                 usagePercentage: iBudget > 0 ? (iActual / iBudget) * 100 : 0
@@ -474,7 +481,9 @@ const RealCostPage: React.FC = () => {
                   <tr className="text-left border-b border-slate-100">
                     <th className="pb-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Item Pekerjaan</th>
                     <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">Budget</th>
-                    <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">Aktual</th>
+                    <th className="pb-4 text-right text-[10px] font-black text-blue-600 uppercase tracking-widest">Aktual Mat</th>
+                    <th className="pb-4 text-right text-[10px] font-black text-orange-600 uppercase tracking-widest">Aktual Upah</th>
+                    <th className="pb-4 text-right text-[10px] font-black text-text-primary uppercase tracking-widest">Total</th>
                     <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">%</th>
                   </tr>
                 </thead>
@@ -483,22 +492,27 @@ const RealCostPage: React.FC = () => {
                     <tr key={item.id} className="group hover:bg-white transition-colors">
                       <td className="py-4 pr-4">
                         <p className="text-[11px] font-bold text-text-primary uppercase leading-tight">{item.uraian}</p>
-                        <div className="mt-2 w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                          <div 
-                            className={cn("h-full transition-all duration-1000", item.usagePercentage > 100 ? "bg-rose-500" : "bg-primary")}
-                            style={{ width: `${Math.min(item.usagePercentage, 100)}%` }}
-                          />
-                        </div>
+                        <p className="text-[9px] text-text-muted mt-1">Vol: {item.volume} {item.satuan}</p>
                       </td>
-                      <td className="py-4 text-right text-[11px] font-medium text-slate-500">{formatNumber(item.totalBudget)}</td>
+                      <td className="py-4 text-right text-[10px] font-medium text-slate-400">{formatNumber(item.totalBudget)}</td>
+                      <td className="py-4 text-right text-[11px] font-black text-blue-700">{formatNumber(item.itemMatActual)}</td>
+                      <td className="py-4 text-right text-[11px] font-black text-orange-600">{formatNumber(item.itemWageActual)}</td>
                       <td className="py-4 text-right text-[11px] font-black text-text-primary">{formatNumber(item.totalActual)}</td>
                       <td className="py-4 text-right">
-                        <span className={cn(
-                          "text-[10px] font-black",
-                          item.usagePercentage > 100 ? "text-rose-600" : "text-primary"
-                        )}>
-                          {item.usagePercentage.toFixed(1)}%
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className={cn(
+                            "text-[10px] font-black",
+                            item.usagePercentage > 100 ? "text-rose-600" : "text-primary"
+                          )}>
+                            {item.usagePercentage.toFixed(1)}%
+                          </span>
+                          <div className="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
+                            <div 
+                              className={cn("h-full", item.usagePercentage > 100 ? "bg-rose-500" : "bg-primary")}
+                              style={{ width: `${Math.min(item.usagePercentage, 100)}%` }}
+                            />
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ))}
