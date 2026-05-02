@@ -151,8 +151,8 @@ const PurchaseRequests: React.FC = () => {
         project_id: selectedRab.project_id,
         unit_id: selectedRab.unit_id,
         material_id: form.material_id,
-        items: [{ material_id: form.material_id, quantity: form.quantity }], 
-        description: form.description,
+        items: [{ material_id: form.material_id, quantity: form.quantity }],
+        item_name: form.description,
         status: 'PENDING'
       });
       setIsModalOpen(false);
