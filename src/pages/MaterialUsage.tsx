@@ -173,7 +173,7 @@ const MaterialUsage: React.FC = () => {
       alert(`Stok tidak mencukupi! Saldo saat ini: ${selectedVariant.stok}`);
       return;
     }
-    
+
     setSubmitting(true);
     try {
       await api.insert('material_usages', {
@@ -185,11 +185,15 @@ const MaterialUsage: React.FC = () => {
         keterangan: form.keterangan
       });
 
+      // Deduct stock from material_variants
+      const newStok = (selectedVariant?.stok || 0) - form.qty;
+      await api.update('material_variants', parseInt(form.id_variant), { stok: newStok });
+
       alert('Pemakaian material berhasil dicatat!');
       navigate('/materials');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving usage:', err);
-      alert('Gagal mencatat pemakaian material');
+      alert(`Gagal mencatat pemakaian material:\n${err.message || err}`);
     } finally {
       setSubmitting(false);
     }
