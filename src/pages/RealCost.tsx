@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, BarChart3, ArrowLeft, TrendingUp, TrendingDown, Target, Wallet, Package, HardHat, Info } from 'lucide-react';
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  DollarSign, 
+  Calendar, 
+  ArrowRight, 
+  Target, 
+  AlertCircle, 
+  HardHat, 
+  Package,
+  Eye,
+  X,
+  Search,
+  Filter, 
+  BarChart3, 
+  ArrowLeft, 
+  Info 
+} from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -40,6 +57,7 @@ const RealCostPage: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState<'wages' | 'usage'>('wages');
   const [filterPeriod, setFilterPeriod] = useState<'weekly' | 'monthly' | 'all'>('all');
+  const [selectedRabForDetail, setSelectedRabForDetail] = useState<any>(null);
 
   useEffect(() => {
     fetchProjects();
@@ -178,29 +196,49 @@ const RealCostPage: React.FC = () => {
         variance: rabTotal - totalActual,
         materialVariance: rabMaterial - materialActual,
         wageVariance: rabWage - wageActual,
-        rabItems: (rabItems || [])
-          .filter((ri: any) => (ri.material_price || 0) > 0 || (ri.wage_price || 0) > 0 || (ri.volume || 0) > 0)
-          .map((ri: any) => {
-            // Hitung pemakaian material untuk item ini
-            const itemMaterialActual = (usageData || [])
-              .filter((u: any) => u.rab_item_id === ri.id)
-              .reduce((sum: number, u: any) => sum + (Number(u.qty) * (u.variant?.harga_terakhir || 0)), 0);
-            
-            // Hitung pemakaian upah untuk item ini
-            const itemWageActual = (opnameItemData || [])
-              .filter((o: any) => o.rab_item_id === ri.id)
-              .reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0);
-            
-            const totalItemBudget = ((ri.material_price || 0) + (ri.wage_price || 0)) * (ri.volume || 1) * (ri.koeff || 1);
-            const totalItemActual = itemMaterialActual + itemWageActual;
-            
-            return {
-              ...ri,
-              totalBudget: totalItemBudget,
-              totalActual: totalItemActual,
-              usagePercentage: totalItemBudget > 0 ? (totalItemActual / totalItemBudget) * 100 : 0
-            };
-          }),
+        // Group Items by RAB Project
+        rabProjects: (rabs || []).map((rp: any) => {
+          const itemsForThisRab = (rabItems || []).filter((ri: any) => ri.rab_project_id === rp.id);
+          
+          const rabMatTotal = itemsForThisRab.reduce((sum: number, r: any) => sum + ((r.material_price || 0) * (r.volume || 1) * (r.koeff || 1)), 0);
+          const rabWageTotal = itemsForThisRab.reduce((sum: number, r: any) => sum + ((r.wage_price || 0) * (r.volume || 1) * (r.koeff || 1)), 0);
+          
+          // Actual for this RAB
+          const actualMat = (usageData || [])
+            .filter((u: any) => u.rab_item_id && itemsForThisRab.some(ri => ri.id === u.rab_item_id))
+            .reduce((sum: number, u: any) => sum + (Number(u.qty) * (u.variant?.harga_terakhir || 0)), 0);
+          
+          const actualWage = (opnameItemData || [])
+            .filter((o: any) => o.rab_item_id && itemsForThisRab.some(ri => ri.id === o.rab_item_id))
+            .reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0);
+
+          const totalBudget = rabMatTotal + rabWageTotal;
+          const totalActual = actualMat + actualWage;
+
+          return {
+            ...rp,
+            totalBudget,
+            totalActual,
+            usagePercentage: totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0,
+            items: itemsForThisRab.map(ri => {
+               const itemMatActual = (usageData || [])
+                .filter((u: any) => u.rab_item_id === ri.id)
+                .reduce((sum: number, u: any) => sum + (Number(u.qty) * (u.variant?.harga_terakhir || 0)), 0);
+              const itemWageActual = (opnameItemData || [])
+                .filter((o: any) => o.rab_item_id === ri.id)
+                .reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0);
+              
+              const iBudget = ((ri.material_price || 0) + (ri.wage_price || 0)) * (ri.volume || 1) * (ri.koeff || 1);
+              const iActual = itemMatActual + itemWageActual;
+              return {
+                ...ri,
+                totalBudget: iBudget,
+                totalActual: iActual,
+                usagePercentage: iBudget > 0 ? (iActual / iBudget) * 100 : 0
+              };
+            }).filter(ri => ri.totalBudget > 0)
+          };
+        }),
         materialUsages: usageData || [],
         wageOpnames: opnameItemData || []
       });
@@ -361,42 +399,44 @@ const RealCostPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card title="RAB Usage Breakdown" subtitle="Detail pemakaian budget per item pekerjaan">
+        <Card title="RAB Summary" subtitle="Ringkasan pemakaian anggaran per dokumen RAB">
           <div className="mt-6 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
             <table className="w-full">
               <thead className="sticky top-0 bg-white z-10">
                 <tr className="text-left border-b border-slate-100">
-                  <th className="pb-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Item Pekerjaan</th>
+                  <th className="pb-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Keterangan RAB</th>
                   <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">Budget</th>
-                  <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">Aktual</th>
                   <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">%</th>
+                  <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {data.rabItems.length === 0 ? (
+                {(data.rabProjects || []).length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="py-10 text-center text-xs font-bold text-slate-300 italic">Data RAB tidak tersedia.</td>
+                    <td colSpan={4} className="py-10 text-center text-xs font-bold text-slate-300 italic">Data RAB tidak ditemukan untuk proyek ini.</td>
                   </tr>
-                ) : data.rabItems.map((item: any) => (
-                  <tr key={item.id} className="group hover:bg-slate-50/50 transition-colors">
+                ) : data.rabProjects.map((rp: any) => (
+                  <tr key={rp.id} className="group hover:bg-slate-50/50 transition-colors">
                     <td className="py-4 pr-4">
-                      <p className="text-[11px] font-black text-text-primary uppercase leading-tight">{item.uraian}</p>
-                      <div className="mt-2 w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
-                        <div 
-                          className={cn("h-full transition-all duration-1000", item.usagePercentage > 100 ? "bg-rose-500" : "bg-accent-lavender")}
-                          style={{ width: `${Math.min(item.usagePercentage, 100)}%` }}
-                        />
-                      </div>
+                      <p className="text-[11px] font-black text-text-primary uppercase leading-tight">{rp.keterangan || rp.nama_proyek || 'RAB Proyek'}</p>
+                      <p className="text-[9px] font-medium text-text-muted mt-1">{formatDate(rp.created_at)}</p>
                     </td>
-                    <td className="py-4 text-right text-[11px] font-bold text-slate-400">{formatNumber(item.totalBudget)}</td>
-                    <td className="py-4 text-right text-[11px] font-black text-text-primary">{formatNumber(item.totalActual)}</td>
+                    <td className="py-4 text-right text-[11px] font-black text-text-primary">{formatNumber(rp.totalBudget)}</td>
                     <td className="py-4 text-right">
                       <span className={cn(
                         "text-[10px] font-black px-2 py-1 rounded-lg shadow-3d-inset",
-                        item.usagePercentage > 100 ? "text-rose-600 bg-rose-50" : "text-emerald-600 bg-emerald-50"
+                        rp.usagePercentage > 100 ? "text-rose-600 bg-rose-50" : "text-emerald-600 bg-emerald-50"
                       )}>
-                        {item.usagePercentage.toFixed(1)}%
+                        {rp.usagePercentage.toFixed(1)}%
                       </span>
+                    </td>
+                    <td className="py-4 text-right">
+                      <button 
+                        onClick={() => setSelectedRabForDetail(rp)}
+                        className="p-2 bg-accent-lavender/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all shadow-premium"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -405,6 +445,83 @@ const RealCostPage: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      {/* DETAIL MODAL */}
+      {selectedRabForDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 border-none shadow-premium animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
+                  <Target className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-text-primary uppercase tracking-tight text-sm">Detail Item RAB</h3>
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{selectedRabForDetail.keterangan || 'Rincian Pekerjaan'}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedRabForDetail(null)}
+                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30 custom-scrollbar">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-white/80 backdrop-blur-md z-10">
+                  <tr className="text-left border-b border-slate-100">
+                    <th className="pb-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Item Pekerjaan</th>
+                    <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">Budget</th>
+                    <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">Aktual</th>
+                    <th className="pb-4 text-right text-[10px] font-black text-text-muted uppercase tracking-widest">%</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {selectedRabForDetail.items.map((item: any) => (
+                    <tr key={item.id} className="group hover:bg-white transition-colors">
+                      <td className="py-4 pr-4">
+                        <p className="text-[11px] font-bold text-text-primary uppercase leading-tight">{item.uraian}</p>
+                        <div className="mt-2 w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                          <div 
+                            className={cn("h-full transition-all duration-1000", item.usagePercentage > 100 ? "bg-rose-500" : "bg-primary")}
+                            style={{ width: `${Math.min(item.usagePercentage, 100)}%` }}
+                          />
+                        </div>
+                      </td>
+                      <td className="py-4 text-right text-[11px] font-medium text-slate-500">{formatNumber(item.totalBudget)}</td>
+                      <td className="py-4 text-right text-[11px] font-black text-text-primary">{formatNumber(item.totalActual)}</td>
+                      <td className="py-4 text-right">
+                        <span className={cn(
+                          "text-[10px] font-black",
+                          item.usagePercentage > 100 ? "text-rose-600" : "text-primary"
+                        )}>
+                          {item.usagePercentage.toFixed(1)}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                 <div>
+                   <p className="text-[9px] font-black text-text-muted uppercase tracking-widest">Total Budget</p>
+                   <p className="text-sm font-black text-text-primary">{formatCurrency(selectedRabForDetail.totalBudget)}</p>
+                 </div>
+                 <div>
+                   <p className="text-[9px] font-black text-text-muted uppercase tracking-widest">Total Aktual</p>
+                   <p className="text-sm font-black text-emerald-600">{formatCurrency(selectedRabForDetail.totalActual)}</p>
+                 </div>
+              </div>
+              <Button onClick={() => setSelectedRabForDetail(null)} className="rounded-xl px-8 uppercase text-xs font-black tracking-widest">Tutup</Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/20 pb-4">
