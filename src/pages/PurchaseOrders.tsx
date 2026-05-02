@@ -52,6 +52,7 @@ const PurchaseOrders: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | undefined>();
+  const [viewingOrder, setViewingOrder] = useState<any | null>(null);
   const [selectedPR, setSelectedPR] = useState<any | null>(null);
   const [selectedPRItems, setSelectedPRItems] = useState<PRItemForPO[] | undefined>();
   const [selectedItemKeys, setSelectedItemKeys] = useState<Set<string>>(new Set());
@@ -207,17 +208,58 @@ const PurchaseOrders: React.FC = () => {
   const handlePrint = (order: any) => {
     const win = window.open('', '_blank');
     if (!win) return;
+
+    const itemsHtml = Array.isArray(order.items) 
+      ? order.items.map((item: any) => `
+          <tr>
+            <td>${item.material_name}</td>
+            <td style="text-align:right">${item.quantity}</td>
+            <td style="text-align:right">${formatCurrency(item.unit_price)}</td>
+            <td style="text-align:right">${formatCurrency(item.subtotal)}</td>
+          </tr>
+        `).join('')
+      : `<tr><td>${order.materials?.name || '-'}</td><td style="text-align:right">${order.quantity}</td><td style="text-align:right">${formatCurrency(order.unit_price)}</td><td style="text-align:right">${formatCurrency(order.total_price)}</td></tr>`;
+
     win.document.write(`
       <html><head><title>PO - ${order.po_number}</title>
-      <style>body{font-family:Arial,sans-serif;padding:32px}h2{margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}</style>
+      <style>
+        body{font-family:Arial,sans-serif;padding:32px;color:#333}
+        .header{display:flex;justify-content:between;border-bottom:2px solid #333;padding-bottom:16px;margin-bottom:24px}
+        h2{margin:0;color:#1a1a2e}
+        table{width:100%;border-collapse:collapse;margin-top:16px}
+        th,td{border:1px solid #ddd;padding:12px;text-align:left}
+        th{background:#f8f9fa;font-size:12px;text-transform:uppercase}
+        .footer{margin-top:32px;text-align:right;font-size:18px;font-weight:bold}
+      </style>
       </head><body>
-      <h2>PURCHASE ORDER</h2>
-      <p><b>No. PO:</b> ${order.po_number || '-'} &nbsp;&nbsp; <b>Status:</b> ${order.status}</p>
-      <p><b>Proyek:</b> ${order.project?.name || '-'} &nbsp;&nbsp; <b>Supplier:</b> ${order.supplier?.name || '-'}</p>
-      <p><b>Tanggal Order:</b> ${order.order_date ? formatDate(order.order_date) : '-'} &nbsp;&nbsp; <b>Jatuh Tempo:</b> ${order.due_date ? formatDate(order.due_date) : '-'}</p>
-      <table><tr><th>Qty</th><th>Harga Satuan</th><th>Total</th></tr>
-      <tr><td>${order.quantity || '-'}</td><td>${formatCurrency(order.unit_price)}</td><td>${formatCurrency(order.total_price)}</td></tr>
+      <div class="header">
+        <div>
+          <h2>PURCHASE ORDER</h2>
+          <p style="margin:4px 0">No. PO: <b>${order.po_number || '-'}</b></p>
+        </div>
+        <div style="text-align:right">
+          <p style="margin:0">Tanggal: ${formatDate(order.date)}</p>
+          <p style="margin:0">Jatuh Tempo: ${formatDate(order.due_date)}</p>
+        </div>
+      </div>
+      <p><b>Proyek:</b> ${order.project?.name || '-'}</p>
+      <p><b>Supplier:</b> ${order.supplier?.name || '-'}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Deskripsi Material</th>
+            <th style="text-align:right">Qty</th>
+            <th style="text-align:right">Harga Satuan</th>
+            <th style="text-align:right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
       </table>
+      <div class="footer">
+        Total: ${formatCurrency(order.total_price)}
+      </div>
       <script>window.onload=()=>{window.print();window.close();}</script>
       </body></html>
     `);
@@ -343,7 +385,7 @@ const PurchaseOrders: React.FC = () => {
                     </TD>
                     <TD className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button title="Detail" onClick={() => navigate(`/purchase-orders/${order.id}`)} className="p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 transition-colors">
+                        <button title="Detail" onClick={() => setViewingOrder(order)} className="p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 transition-colors">
                           <Eye className="w-4 h-4" />
                         </button>
                         <button title="Edit" onClick={() => { setSelectedOrder(order); setIsModalOpen(true); }} className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors">
@@ -482,6 +524,76 @@ const PurchaseOrders: React.FC = () => {
           initialOrder={selectedOrder}
           initialPRItems={selectedPRItems}
         />
+      </Modal>
+
+      {/* Modal Detail PO */}
+      <Modal
+        isOpen={!!viewingOrder}
+        onClose={() => setViewingOrder(null)}
+        title={`Detail Purchase Order: ${viewingOrder?.po_number}`}
+        size="4xl"
+      >
+        {viewingOrder && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-8 p-6 bg-slate-50 rounded-[24px] border-2 border-slate-100">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Supplier</p>
+                <p className="font-black text-slate-800">{viewingOrder.supplier?.name || '-'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Proyek</p>
+                <p className="font-black text-slate-800">{viewingOrder.project?.name || '-'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal Order</p>
+                <p className="font-black text-slate-800">{formatDate(viewingOrder.date)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jatuh Tempo</p>
+                <p className="font-black text-slate-800">{formatDate(viewingOrder.due_date)}</p>
+              </div>
+            </div>
+
+            <div className="overflow-hidden border-2 border-slate-100 rounded-[24px]">
+              <Table>
+                <THead>
+                  <TR className="bg-slate-50">
+                    <TH className="text-[10px] font-black uppercase tracking-widest">Material</TH>
+                    <TH className="text-right text-[10px] font-black uppercase tracking-widest">Qty</TH>
+                    <TH className="text-right text-[10px] font-black uppercase tracking-widest">Harga</TH>
+                    <TH className="text-right text-[10px] font-black uppercase tracking-widest">Subtotal</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {Array.isArray(viewingOrder.items) ? viewingOrder.items.map((item: any, i: number) => (
+                    <TR key={i}>
+                      <TD className="py-4">
+                        <p className="font-bold text-slate-800">{item.material_name}</p>
+                        <p className="text-[10px] text-slate-400">Ref PR: {item.pr_id?.slice(0, 8).toUpperCase()}</p>
+                      </TD>
+                      <TD className="text-right font-bold">{item.quantity}</TD>
+                      <TD className="text-right font-medium">{formatCurrency(item.unit_price)}</TD>
+                      <TD className="text-right font-black text-slate-800">{formatCurrency(item.subtotal)}</TD>
+                    </TR>
+                  )) : (
+                    <TR>
+                      <TD colSpan={4} className="text-center py-8 text-slate-400 italic">Data item tidak tersedia atau format lama.</TD>
+                    </TR>
+                  )}
+                </TBody>
+              </Table>
+            </div>
+
+            <div className="p-6 bg-accent-dark text-white rounded-[24px] flex justify-between items-center shadow-xl">
+              <span className="text-xs font-black uppercase tracking-widest opacity-60">Total Pembelian</span>
+              <span className="text-2xl font-black">{formatCurrency(viewingOrder.total_price)}</span>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button onClick={() => setViewingOrder(null)} variant="ghost" className="rounded-xl font-black">Tutup</Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

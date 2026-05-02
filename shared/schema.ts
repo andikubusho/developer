@@ -1573,8 +1573,9 @@ export const purchaseOrders = pgTable("purchase_orders", {
   projectId: text("project_id").notNull(),
   supplierId: integer("supplier_id"),
   date: timestamp("date"),
-  dueDate: timestamp("due_date").notNull().defaultNow(), // Will use DATE in DB, but timestamp here for convenience
+  dueDate: timestamp("due_date").notNull().defaultNow(),
   status: text("status").default("PENDING").notNull(),
+  items: jsonb("items"), // Added to support multiple items in one PO
   totalPrice: numeric("total_price").default("0"),
   createdAt: timestamp("created_at").defaultNow(),
 });

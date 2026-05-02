@@ -185,24 +185,38 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       }
 
       const total_price = values.quantity * values.unit_price;
+      const poItem = {
+        material_id: values.material_id,
+        material_name: masters.find(m => m.id === values.material_id)?.name || '-',
+        id_variant: finalVariantId,
+        quantity: values.quantity,
+        unit_price: values.unit_price,
+        subtotal: total_price,
+        pr_id: values.pr_id
+      };
 
       if (initialOrder) {
         await api.update('purchase_orders', initialOrder.id, {
-          ...values,
+          project_id: values.project_id,
           supplier_id: Number(values.supplier_id),
-          id_variant: finalVariantId,
+          date: values.order_date,
+          due_date: values.due_date,
           total_price,
+          status: initialOrder.status,
+          items: [poItem]
         });
       } else {
         const po_number = `PO-${Date.now().toString().slice(-8)}`;
         await api.insert('purchase_orders', {
           id: crypto.randomUUID(),
-          ...values,
+          project_id: values.project_id,
           supplier_id: Number(values.supplier_id),
-          id_variant: finalVariantId,
+          date: values.order_date,
+          due_date: values.due_date,
           po_number,
           total_price,
-          status: 'PENDING'
+          status: 'PENDING',
+          items: [poItem]
         });
       }
 
@@ -223,6 +237,10 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
     if (!batchSupplier) { alert('Supplier harus dipilih'); return; }
     setLoading(true);
     try {
+      const poItems = [];
+      const po_number = `PO-${Date.now().toString().slice(-8)}`;
+      let grandTotal = 0;
+
       for (let i = 0; i < initialPRItems!.length; i++) {
         const item = initialPRItems![i];
         const detail = itemDetails[i];
@@ -249,23 +267,33 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
           return;
         }
 
-        const total_price = Number(item.quantity) * detail.unitPrice;
-        await api.insert('purchase_orders', {
-          id: crypto.randomUUID(),
-          project_id: item.project_id,
+        const subtotal = Number(item.quantity) * detail.unitPrice;
+        grandTotal += subtotal;
+
+        poItems.push({
           material_id: item.material_id,
-          supplier_id: Number(batchSupplier),
+          material_name: item.master?.name || '-',
+          id_variant: variantId,
           quantity: Number(item.quantity),
           unit_price: detail.unitPrice,
-          id_variant: variantId,
-          order_date: batchOrderDate,
-          due_date: batchDueDate,
-          pr_id: item.prId,
-          po_number: `PO-${Date.now().toString().slice(-8)}-${i + 1}`,
-          total_price,
-          status: 'PENDING'
+          subtotal,
+          pr_id: item.prId
         });
       }
+
+      // Insert as ONE PO
+      await api.insert('purchase_orders', {
+        id: crypto.randomUUID(),
+        project_id: initialPRItems![0].project_id,
+        supplier_id: Number(batchSupplier),
+        date: batchOrderDate,
+        due_date: batchDueDate,
+        po_number,
+        total_price: grandTotal,
+        status: 'PENDING',
+        items: poItems // Store all items in JSONB
+      });
+
       onSuccess();
     } catch (error: any) {
       alert(`Gagal membuat PO: ${error?.message || error}`);

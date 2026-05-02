@@ -209,7 +209,9 @@ app.use((req, res, next) => {
           project_id TEXT NOT NULL,
           supplier_id INTEGER,
           date TIMESTAMP,
+          due_date TIMESTAMP,
           status TEXT DEFAULT 'PENDING' NOT NULL,
+          items JSONB,
           total_price NUMERIC DEFAULT '0',
           created_at TIMESTAMP DEFAULT NOW()
         );
