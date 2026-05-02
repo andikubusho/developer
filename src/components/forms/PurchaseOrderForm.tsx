@@ -28,9 +28,10 @@ interface POFormProps {
   onSuccess: (values?: any) => void;
   onCancel: () => void;
   initialPR?: PRItemForPO;
+  initialOrder?: any;
 }
 
-export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, initialPR }) => {
+export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, initialPR, initialOrder }) => {
   const [loading, setLoading] = useState(false);
   const [masters, setMasters] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
@@ -38,17 +39,19 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
   const [projects, setProjects] = useState<any[]>([]);
 
   const fromPR = !!initialPR;
+  const isEditMode = !!initialOrder;
 
   const { register, handleSubmit, watch, control, setValue, formState: { errors } } = useForm<POFormValues>({
     resolver: zodResolver(poSchema),
     defaultValues: {
-      order_date: new Date().toISOString().split('T')[0],
-      due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      quantity: initialPR?.quantity || 1,
-      project_id: initialPR?.project_id || '',
-      material_id: initialPR?.material_id || '',
-      id_variant: undefined,
-      pr_id: initialPR?.prId || undefined,
+      order_date: initialOrder?.order_date || new Date().toISOString().split('T')[0],
+      due_date: initialOrder?.due_date || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      quantity: Number(initialOrder?.quantity) || Number(initialPR?.quantity) || 1,
+      project_id: initialOrder?.project_id || initialPR?.project_id || '',
+      material_id: initialOrder?.material_id || initialPR?.material_id || '',
+      supplier_id: initialOrder?.supplier_id ? String(initialOrder.supplier_id) : '',
+      id_variant: initialOrder?.id_variant ? Number(initialOrder.id_variant) : undefined,
+      pr_id: initialOrder?.pr_id || initialPR?.prId || undefined,
     },
   });
 
@@ -80,8 +83,21 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       setSuppliers(supplierData);
       setProjects(projectData);
 
-      // Setelah data dimuat, set ulang nilai dari PR agar select terpilih dengan benar
-      if (initialPR) {
+      if (initialOrder) {
+        setValue('project_id', initialOrder.project_id);
+        setValue('material_id', initialOrder.material_id);
+        setValue('supplier_id', String(initialOrder.supplier_id));
+        setValue('quantity', Number(initialOrder.quantity));
+        setValue('unit_price', Number(initialOrder.unit_price));
+        setValue('order_date', initialOrder.order_date || '');
+        setValue('due_date', initialOrder.due_date || '');
+        if (initialOrder.pr_id) setValue('pr_id', initialOrder.pr_id);
+        if (initialOrder.material_id) {
+          const variantData = await api.get('material_variants', `material_id=eq.${initialOrder.material_id}&select=*&order=merk.asc`);
+          setVariants(variantData);
+          if (initialOrder.id_variant) setValue('id_variant', Number(initialOrder.id_variant));
+        }
+      } else if (initialPR) {
         setValue('project_id', initialPR.project_id);
         setValue('material_id', initialPR.material_id);
         setValue('quantity', Number(initialPR.quantity));
@@ -127,18 +143,27 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         return;
       }
 
-      const po_number = `PO-${Date.now().toString().slice(-8)}`;
       const total_price = values.quantity * values.unit_price;
 
-      await api.insert('purchase_orders', {
-        id: crypto.randomUUID(),
-        ...values,
-        supplier_id: Number(values.supplier_id),
-        id_variant: finalVariantId,
-        po_number,
-        total_price,
-        status: 'PENDING'
-      });
+      if (initialOrder) {
+        await api.update('purchase_orders', initialOrder.id, {
+          ...values,
+          supplier_id: Number(values.supplier_id),
+          id_variant: finalVariantId,
+          total_price,
+        });
+      } else {
+        const po_number = `PO-${Date.now().toString().slice(-8)}`;
+        await api.insert('purchase_orders', {
+          id: crypto.randomUUID(),
+          ...values,
+          supplier_id: Number(values.supplier_id),
+          id_variant: finalVariantId,
+          po_number,
+          total_price,
+          status: 'PENDING'
+        });
+      }
 
       onSuccess(values);
     } catch (error: any) {
@@ -388,12 +413,12 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         >
           Batalkan
         </Button>
-        <Button 
-          type="submit" 
-          className="h-14 rounded-2xl px-16 font-black text-sm uppercase tracking-widest shadow-premium bg-accent-dark hover:bg-slate-800 text-white transition-all hover:scale-[1.02] active:scale-[0.98]" 
+        <Button
+          type="submit"
+          className="h-14 rounded-2xl px-16 font-black text-sm uppercase tracking-widest shadow-premium bg-accent-dark hover:bg-slate-800 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
           isLoading={loading}
         >
-          Konfirmasi & Buat PO
+          {isEditMode ? 'Simpan Perubahan' : 'Konfirmasi & Buat PO'}
         </Button>
       </div>
     </form>

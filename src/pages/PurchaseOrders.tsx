@@ -279,13 +279,13 @@ const PurchaseOrders: React.FC = () => {
             <TBody>
               {loading ? (
                 <TR>
-                  <TD colSpan={6} className="text-center py-8">
+                  <TD colSpan={7} className="text-center py-8">
                     <div className="flex justify-center"><RefreshCw className="animate-spin" /></div>
                   </TD>
                 </TR>
               ) : filteredOrders.length === 0 ? (
                 <TR>
-                  <TD colSpan={6} className="text-center py-8 text-text-secondary">Tidak ada data PO.</TD>
+                  <TD colSpan={7} className="text-center py-8 text-text-secondary">Tidak ada data PO.</TD>
                 </TR>
               ) : (
                 filteredOrders.map((order) => (
@@ -397,6 +397,7 @@ const PurchaseOrders: React.FC = () => {
         onClose={() => {
           setIsModalOpen(false);
           setSelectedPR(null);
+          setSelectedOrder(undefined);
         }}
         title={selectedOrder ? 'Edit Purchase Order' : 'Tambah Purchase Order'}
         size="5xl"
@@ -405,13 +406,16 @@ const PurchaseOrders: React.FC = () => {
           onSuccess={() => {
             setIsModalOpen(false);
             setSelectedPR(null);
+            setSelectedOrder(undefined);
             fetchOrders();
           }}
           onCancel={() => {
             setIsModalOpen(false);
             setSelectedPR(null);
+            setSelectedOrder(undefined);
           }}
           initialPR={selectedPR}
+          initialOrder={selectedOrder}
         />
       </Modal>
     </div>
