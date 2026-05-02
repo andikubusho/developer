@@ -122,12 +122,24 @@ const MaterialUsage: React.FC = () => {
         api.get('rab_items', `rab_project_id=eq.${rabId}&level=eq.2&select=id,uraian`)
       ]);
 
-      // Gabungkan data agar item Level 3 mengetahui nama Pekerjaan induknya (Level 2)
+      // Ambil data stok varian untuk semua material yang ada di RAB ini
+      const materialIds = [...new Set((itemsL3 || []).map((i: any) => i.material_id).filter(Boolean))];
+      let variantStocks: Record<string, number> = {};
+      
+      if (materialIds.length > 0) {
+        const variantsData = await api.get('material_variants', `material_id=in.(${materialIds.join(',')})&select=material_id,stok`);
+        (variantsData || []).forEach((v: any) => {
+          variantStocks[v.material_id] = (variantStocks[v.material_id] || 0) + (Number(v.stok) || 0);
+        });
+      }
+
+      // Gabungkan data agar item Level 3 mengetahui nama Pekerjaan induknya dan total stoknya
       const mappedItems = (itemsL3 || []).map((l3: any) => {
         const parent = (itemsL2 || []).find((l2: any) => l2.id === l3.parent_id);
         return {
           ...l3,
-          parentUraian: parent ? parent.uraian : 'Tanpa Pekerjaan'
+          parentUraian: parent ? parent.uraian : 'Tanpa Pekerjaan',
+          totalStock: variantStocks[l3.material_id] || 0
         };
       });
 
@@ -228,7 +240,7 @@ const MaterialUsage: React.FC = () => {
                   <SearchableSelect 
                     label="2. Pilih Pekerjaan (Sesuai RAB)"
                     options={(rabItems || []).map(it => ({ 
-                      label: `${it.parentUraian} → ${it.uraian} [Budget: ${Number(it.volume).toFixed(2)} ${it.satuan}]`, 
+                      label: `${it.parentUraian} → ${it.uraian} [Budget: ${Number(it.volume).toFixed(2)} ${it.satuan} | Stok: ${formatNumber(it.totalStock)} ${it.satuan}]`, 
                       value: it.id 
                     }))}
                     value={form.rab_item_id}
