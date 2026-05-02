@@ -53,6 +53,7 @@ const OpnameForm: React.FC = () => {
   const [tree, setTree] = useState<RABNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchProjects();
@@ -146,6 +147,12 @@ const OpnameForm: React.FC = () => {
           .filter((item: any) => item.parent_id === parentId)
           .map((item: any) => {
             const children = buildTree(item.id, level + 1);
+            
+            // Search filter logic
+            const matchesSearch = item.uraian.toLowerCase().includes(searchTerm.toLowerCase());
+            const hasMatchingChildren = children.length > 0;
+
+            if (searchTerm && !matchesSearch && !hasMatchingChildren) return null;
             
             // Only show nodes that have wage_price > 0 OR have children with wage_price > 0
             const hasWage = (item.wage_price || 0) > 0;
@@ -444,6 +451,23 @@ const OpnameForm: React.FC = () => {
       </Card>
 
       <Card className="p-0 overflow-hidden border-white/40 shadow-premium bg-white/20 backdrop-blur-sm rounded-[2rem]">
+        <div className="p-6 border-b border-white/40 bg-white/40 flex items-center gap-4">
+           <div className="relative flex-1 max-w-md">
+             <input 
+               type="text"
+               placeholder="Cari item pekerjaan (misal: Listrik, Keramik...)"
+               value={searchTerm}
+               onChange={(e) => setSearchTerm(e.target.value)}
+               className="w-full h-12 bg-white/80 border-none rounded-2xl pl-12 pr-5 text-sm font-bold shadow-3d-inset focus:ring-2 focus:ring-primary/20 transition-all"
+             />
+             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+             </div>
+           </div>
+           {searchTerm && (
+             <Button variant="ghost" size="sm" onClick={() => setSearchTerm('')} className="text-rose-500 font-black text-xs uppercase">Reset</Button>
+           )}
+        </div>
         <Table className="min-w-[1200px]">
           <THead>
             <TR className="bg-white/60 text-text-primary text-[10px] font-black uppercase tracking-[0.2em] border-b border-white/40">
