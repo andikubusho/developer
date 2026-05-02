@@ -68,70 +68,61 @@ export const api = {
     apiRequest(`rpc/${functionName}`, { method: 'POST', body: JSON.stringify(params) }),
 
   // Special Helpers for Budget Control
-  getBudgetStatus: async (projectId: string, unitId?: string) => {
-    // 1. Fetch RAB Items (Volume & Koeff)
-    let rabQuery = `select=id,material_id,volume,koeff,satuan,uraian,rab_project_id&material_id=not.is.null`;
-    if (unitId) {
-      // Need to find rab_project_id first
-      const rabProjects = await api.get('rab_projects', `project_id=eq.${projectId}&unit_id=eq.${unitId}&select=id`);
-      if (rabProjects.length > 0) {
-        rabQuery += `&rab_project_id=eq.${rabProjects[0].id}`;
-      } else {
-        return [];
-      }
-    } else {
-      const rabProjects = await api.get('rab_projects', `project_id=eq.${projectId}&select=id`);
-      if (rabProjects.length > 0) {
-        const ids = rabProjects.map(rp => rp.id).join(',');
-        rabQuery += `&rab_project_id=in.(${ids})`;
-      } else {
-        return [];
-      }
-    }
-    
-    const [rabItems, prs, logs] = await Promise.all([
-      api.get('rab_items', rabQuery),
-      api.get('purchase_requests', `project_id=eq.${projectId}${unitId ? `&unit_id=eq.${unitId}` : ''}&status=in.(APPROVED,PENDING,SUBMITTED)`),
-      api.get('material_stock_logs', `project_id=eq.${projectId}${unitId ? `&unit_id=eq.${unitId}` : ''}&transaction_type=eq.GR`)
-    ]);
+  getBudgetStatus: async (rabProjectId: string) => {
+    // 1. Fetch all RAB items for this specific RAB project
+    const rabItems = await api.get('rab_items',
+      `select=id,parent_id,level,is_manual,volume,koeff,material_id,satuan,uraian,urutan&rab_project_id=eq.${rabProjectId}&order=urutan.asc`
+    );
+    if (!rabItems || rabItems.length === 0) return [];
 
-    // Aggregate RAB Quotas
-    const quotas: Record<string, { material_id: string, name: string, unit: string, quota: number, used: number, received: number }> = {};
-    
-    // We need parent volumes for RAB items if they are not manual
-    // Actually RABForm calculates them. Let's simplify: 
-    // In our simplified logic, rab_items.volume is the level 2 volume or manual volume.
-    
-    rabItems.forEach((item: any) => {
-      const mid = item.material_id;
-      if (!mid) return;
-      if (!quotas[mid]) quotas[mid] = { material_id: mid, name: item.uraian, unit: item.satuan, quota: 0, used: 0, received: 0 };
-      
-      // In the current RAB system: Level 3 Volume = parent.volume * node.koeff
-      // But if it's manual, volume is stored in the node.
-      // For simplicity here, we assume volume * koeff is the target if both exist.
-      const vol = Number(item.volume) || 0;
-      const koeff = Number(item.koeff) || 1;
-      quotas[mid].quota += (vol * koeff);
+    // 2. Build parent-child tree
+    const nodeMap: Record<string, any> = {};
+    rabItems.forEach((i: any) => { nodeMap[i.id] = { ...i, children: [] }; });
+    const roots: any[] = [];
+    rabItems.forEach((i: any) => {
+      if (i.parent_id && nodeMap[i.parent_id]) nodeMap[i.parent_id].children.push(nodeMap[i.id]);
+      else roots.push(nodeMap[i.id]);
     });
 
-    // Aggregate PR Usage
-    prs.forEach((pr: any) => {
-      const items = pr.items || [];
-      items.forEach((item: any) => {
-        const mid = item.material_id;
-        if (quotas[mid]) {
-          quotas[mid].used += (Number(item.quantity) || 0);
-        }
+    // 3. Inject parent volumes (level 2 volume propagates to level 3 children)
+    const injectParentVol = (nodes: any[], parentVol: number | null = null) => {
+      nodes.forEach(node => {
+        node._parentVolume = parentVol;
+        const nextVol = node.level === 2 ? (Number(node.volume) || 0) : parentVol;
+        if (node.children.length) injectParentVol(node.children, nextVol);
       });
-    });
+    };
+    injectParentVol(roots);
 
-    // Aggregate GR Received
-    logs.forEach((log: any) => {
-      const mid = log.material_id;
-      if (quotas[mid]) {
-        quotas[mid].received += (Number(log.qty_change) || 0);
+    // 4. Aggregate quotas per material_id using correct tree logic
+    const quotas: Record<string, { material_id: string, name: string, unit: string, quota: number, used: number, received: number }> = {};
+    const walk = (node: any) => {
+      if (node.level === 3 && !node.is_manual && node.material_id) {
+        const qty = (node.volume && Number(node.volume) !== 0)
+          ? Number(node.volume)
+          : (Number(node.koeff) || 0) * (node._parentVolume || 0);
+        const mid = node.material_id;
+        if (!quotas[mid]) quotas[mid] = { material_id: mid, name: node.uraian, unit: node.satuan || '', quota: 0, used: 0, received: 0 };
+        quotas[mid].quota += qty;
       }
+      node.children.forEach((c: any) => walk(c));
+    };
+    roots.forEach((r: any) => walk(r));
+
+    // 5. Fetch project_id + unit_id to look up PRs
+    const projRows = await api.get('rab_projects', `id=eq.${rabProjectId}&select=project_id,unit_id`);
+    if (!projRows || projRows.length === 0) return Object.values(quotas);
+    const { project_id, unit_id } = projRows[0];
+
+    // 6. Aggregate PR usage
+    const prs = await api.get('purchase_requests',
+      `project_id=eq.${project_id}${unit_id ? `&unit_id=eq.${unit_id}` : ''}&status=in.(APPROVED,PENDING,SUBMITTED)`
+    );
+    prs.forEach((pr: any) => {
+      (pr.items || []).forEach((item: any) => {
+        const mid = item.material_id;
+        if (quotas[mid]) quotas[mid].used += (Number(item.quantity) || 0);
+      });
     });
 
     return Object.values(quotas);

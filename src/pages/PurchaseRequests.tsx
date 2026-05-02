@@ -13,8 +13,13 @@ import {
   Search,
   Calculator,
   RefreshCw,
-  Info
+  Info,
+  Eye,
+  Edit,
+  Download,
+  Printer,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
@@ -108,7 +113,7 @@ const PurchaseRequests: React.FC = () => {
     if (!selectedRab) return;
     try {
       setLoadingBudget(true);
-      const status = await api.getBudgetStatus(selectedRab.project_id, selectedRab.unit_id);
+      const status = await api.getBudgetStatus(selectedRab.id);
       setBudgetItems(status || []);
     } catch (err) {
       console.error('Error fetching budget status:', err);
@@ -174,6 +179,102 @@ const PurchaseRequests: React.FC = () => {
       description: ''
     });
     setSelectedBudgetInfo(null);
+  };
+
+  const [detailPR, setDetailPR] = useState<any | null>(null);
+  const [editPR, setEditPR] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ quantity: 1, description: '', status: 'PENDING' });
+
+  const handleSaveEditPR = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editPR) return;
+    try {
+      await api.update('purchase_requests', editPR.id, {
+        items: [{ material_id: editPR.material_id, quantity: editForm.quantity }],
+        item_name: editForm.description,
+        status: editForm.status,
+      });
+      setRequests(prev => prev.map(r => r.id === editPR.id ? {
+        ...r,
+        items: [{ material_id: r.material_id, quantity: editForm.quantity }],
+        item_name: editForm.description,
+        status: editForm.status,
+      } : r));
+      setEditPR(null);
+    } catch (err: any) {
+      alert(`Gagal menyimpan: ${err.message}`);
+    }
+  };
+
+  const handleDeletePR = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm('Hapus Purchase Request ini?')) return;
+    try {
+      await api.delete('purchase_requests', id);
+      setRequests(prev => prev.filter(r => r.id !== id));
+    } catch (err: any) {
+      alert(`Gagal menghapus: ${err.message}`);
+    }
+  };
+
+  const handleDownloadPR = (e: React.MouseEvent, req: any) => {
+    e.stopPropagation();
+    const data = [{
+      'No PR': `PR-${req.id.slice(0, 8).toUpperCase()}`,
+      'Tanggal': formatDate(req.created_at),
+      'Proyek': req.project?.name || '-',
+      'Unit': req.unit?.unit_number || '-',
+      'Kode Material': req.master?.code || '-',
+      'Nama Material': req.master?.name || '-',
+      'Qty': req.items?.[0]?.quantity || req.quantity || 0,
+      'Satuan': req.master?.unit || '-',
+      'Keterangan': req.item_name || '-',
+      'Status': req.status,
+    }];
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [{ wch: 18 }, { wch: 14 }, { wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 28 }, { wch: 8 }, { wch: 10 }, { wch: 30 }, { wch: 12 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Purchase Request');
+    XLSX.writeFile(wb, `PR-${req.id.slice(0, 8).toUpperCase()}.xlsx`);
+  };
+
+  const handlePrintPR = (e: React.MouseEvent, req: any) => {
+    e.stopPropagation();
+    const qty = req.items?.[0]?.quantity || req.quantity || 0;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>PR-${req.id.slice(0,8).toUpperCase()}</title>
+    <style>
+      body{font-family:Arial,sans-serif;font-size:12px;padding:30px;color:#111}
+      @media print{@page{size:A4;margin:15mm}}
+      h2{font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:2px;margin:0 0 4px}
+      .sub{color:#666;font-size:11px;margin-bottom:20px}
+      table{width:100%;border-collapse:collapse;margin-top:16px}
+      th{background:#1A1A2E;color:white;padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px}
+      td{padding:8px 12px;border-bottom:1px solid #e5e5e5;font-size:12px}
+      .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:900;text-transform:uppercase;
+             background:${req.status==='APPROVED'?'#d1fae5':req.status==='REJECTED'?'#fee2e2':'#fef3c7'};
+             color:${req.status==='APPROVED'?'#065f46':req.status==='REJECTED'?'#991b1b':'#92400e'}}
+    </style></head><body>
+    <h2>Purchase Request</h2>
+    <div class="sub">No. PR-${req.id.slice(0,8).toUpperCase()} &nbsp;|&nbsp; ${formatDate(req.created_at)}</div>
+    <table>
+      <tr><th colspan="2">Informasi Purchase Request</th></tr>
+      <tr><td style="width:35%;color:#555;font-weight:600">Proyek</td><td><strong>${req.project?.name||'-'}</strong></td></tr>
+      <tr><td style="color:#555;font-weight:600">Unit</td><td>${req.unit?.unit_number||'-'}</td></tr>
+      <tr><td style="color:#555;font-weight:600">Material</td><td><strong>${req.master?.name||'Material Deleted'}</strong> (${req.master?.code||'-'})</td></tr>
+      <tr><td style="color:#555;font-weight:600">Kuantitas</td><td><strong>${qty} ${req.master?.unit||''}</strong></td></tr>
+      <tr><td style="color:#555;font-weight:600">Keterangan</td><td>${req.item_name||'-'}</td></tr>
+      <tr><td style="color:#555;font-weight:600">Status</td><td><span class="badge">${req.status}</span></td></tr>
+    </table>
+    <div style="margin-top:40px;display:flex;justify-content:flex-end">
+      <div style="text-align:center">
+        <div style="margin-bottom:50px;font-size:11px;color:#555">Disetujui oleh,</div>
+        <div style="border-top:1px solid #111;padding-top:4px;font-size:11px;min-width:160px">( ___________________ )</div>
+      </div>
+    </div>
+    <script>window.onload=()=>window.print()</script>
+    </body></html>`;
+    const win = window.open('', '_blank', 'width=800,height:600');
+    if (win) { win.document.write(html); win.document.close(); }
   };
 
   const isExceeding = selectedBudgetInfo && form.quantity > selectedBudgetInfo.remaining;
@@ -250,7 +351,28 @@ const PurchaseRequests: React.FC = () => {
                     </span>
                   </TD>
                   <TD className="text-right">
-                    <Button variant="ghost" size="sm" className="rounded-xl">Detail</Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 rounded-lg"
+                        onClick={(e) => { e.stopPropagation(); setDetailPR(req); }}>
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50 rounded-lg"
+                        onClick={(e) => { e.stopPropagation(); setEditPR(req); setEditForm({ quantity: req.items?.[0]?.quantity || req.quantity || 0, description: req.item_name || '', status: req.status }); }}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 rounded-lg"
+                        onClick={(e) => handleDownloadPR(e, req)}>
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-violet-600 hover:bg-violet-50 rounded-lg"
+                        onClick={(e) => handlePrintPR(e, req)}>
+                        <Printer className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 rounded-lg"
+                        onClick={(e) => handleDeletePR(e, req.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TD>
                 </TR>
               ))
@@ -258,6 +380,91 @@ const PurchaseRequests: React.FC = () => {
           </TBody>
         </Table>
       </Card>
+
+      {/* Detail Modal */}
+      {detailPR && (
+        <Modal isOpen={!!detailPR} onClose={() => setDetailPR(null)} title="Detail Purchase Request" size="md">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                ['No. PR', `PR-${detailPR.id.slice(0,8).toUpperCase()}`],
+                ['Tanggal', formatDate(detailPR.created_at)],
+                ['Proyek', detailPR.project?.name || '-'],
+                ['Unit', detailPR.unit?.unit_number || '-'],
+                ['Material', detailPR.master?.name || 'Material Deleted'],
+                ['Kode', detailPR.master?.code || '-'],
+                ['Kuantitas', `${formatNumber(detailPR.items?.[0]?.quantity || detailPR.quantity || 0)} ${detailPR.master?.unit || ''}`],
+                ['Keterangan', detailPR.item_name || '-'],
+              ].map(([label, value]) => (
+                <div key={label} className="p-3 bg-slate-50 rounded-xl">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+                  <p className="text-sm font-bold text-slate-700">{value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</p>
+              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                detailPR.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                detailPR.status === 'REJECTED' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                'bg-amber-50 text-amber-600 border-amber-100'
+              }`}>{detailPR.status}</span>
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button variant="ghost" className="h-10 rounded-xl" onClick={() => setDetailPR(null)}>Tutup</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Edit Modal */}
+      {editPR && (
+        <Modal isOpen={!!editPR} onClose={() => setEditPR(null)} title="Edit Purchase Request" size="sm">
+          <form onSubmit={handleSaveEditPR} className="space-y-4">
+            <div className="p-3 bg-slate-50 rounded-xl">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Material</p>
+              <p className="text-sm font-bold text-slate-700">{editPR.master?.name || 'Material Deleted'}</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Kuantitas</label>
+              <Input
+                type="number"
+                className="h-12 rounded-xl font-bold"
+                value={editForm.quantity}
+                onChange={(e) => setEditForm({ ...editForm, quantity: parseFloat(e.target.value) || 0 })}
+                min="0.1"
+                step="0.1"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Status</label>
+              <select
+                className="w-full h-12 glass-input rounded-xl px-4 text-sm font-bold focus:outline-none"
+                value={editForm.status}
+                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+              >
+                <option value="PENDING">PENDING</option>
+                <option value="APPROVED">APPROVED</option>
+                <option value="REJECTED">REJECTED</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Keterangan</label>
+              <textarea
+                className="w-full p-4 glass-input rounded-xl text-sm font-medium focus:outline-none"
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" variant="ghost" className="h-11 rounded-xl" onClick={() => setEditPR(null)}>Batal</Button>
+              <Button type="submit" className="h-11 rounded-xl px-6 font-black shadow-premium">Simpan</Button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       <Modal
         isOpen={isModalOpen}
