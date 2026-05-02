@@ -383,8 +383,7 @@ const PurchaseOrders: React.FC = () => {
                 {group.items.map((item: any, idx: number) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50/60 transition-colors cursor-pointer group"
-                    onClick={() => { setSelectedPR(item); setIsModalOpen(true); }}
+                    className="flex items-center justify-between px-5 py-3.5 hover:bg-blue-50/40 transition-colors"
                   >
                     <div className="flex items-center gap-3 flex-1">
                       <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-black text-slate-500 shrink-0">
@@ -394,14 +393,12 @@ const PurchaseOrders: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-sm font-black text-text-primary w-12 text-right">{item.quantity}</span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => { e.stopPropagation(); setSelectedPR(item); setIsModalOpen(true); }}
+                      <button
+                        className="px-4 py-2 rounded-xl bg-accent-dark text-white text-xs font-black uppercase tracking-wider hover:bg-slate-700 active:scale-95 transition-all shadow-sm"
+                        onClick={() => { setSelectedPR(item); setIsModalOpen(true); }}
                       >
                         Buat PO
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 ))}
