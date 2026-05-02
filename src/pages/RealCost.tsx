@@ -34,7 +34,7 @@ const RealCostPage: React.FC = () => {
     materialVariance: 0,
     wageVariance: 0,
     rabItems: [] as any[],
-    materialOrders: [] as PurchaseOrder[],
+    materialUsages: [] as any[],
     wageOpnames: [] as ProjectOpname[]
   });
 
@@ -110,8 +110,10 @@ const RealCostPage: React.FC = () => {
         wageActual,
         totalActual,
         variance: rabTotal - totalActual,
+        materialVariance: 0,
+        wageVariance: 0,
         rabItems: mockRab,
-        materialOrders: mockOrders,
+        materialUsages: [],
         wageOpnames: mockOpnames
       });
       setLoading(false);
@@ -127,18 +129,10 @@ const RealCostPage: React.FC = () => {
       const rabs = await api.get('rab_projects', rabProjIdsQuery);
       const rabProjectIds = (rabs || []).map((r: any) => r.id);
 
-      // 2. Fetch Material PRs for unit filtering (since PO doesn't have unit_id directly)
-      let poQuery = `select=*,project:projects(name),supplier:suppliers(name)&status=eq.received&project_id=eq.${selectedProjectId}`;
+      // 2. Fetch Material Usage (Instead of PO)
+      let usageQuery = `select=*,material:materials(name,unit),variant:material_variants(merk,harga_terakhir)&rab_project_id=in.(${rabProjectIds.join(',')})`;
       if (selectedUnitId) {
-        // We need to find PRs for this unit first
-        const prs = await api.get('purchase_requests', `project_id=eq.${selectedProjectId}&unit_id=eq.${selectedUnitId}&select=id`);
-        const prIds = (prs || []).map((p: any) => p.id);
-        if (prIds.length > 0) {
-          poQuery += `&pr_id=in.(${prIds.join(',')})`;
-        } else {
-          // If no PRs for this unit, then no unit-specific material cost
-          poQuery += `&id=eq.00000000-0000-0000-0000-000000000000`; // Force empty
-        }
+        // Data RAB items should also be filtered by unit if possible, but rabProjectIds already handle that
       }
 
       // 3. Wage Opname query
@@ -147,9 +141,9 @@ const RealCostPage: React.FC = () => {
         opnameQuery += `&unit_id=eq.${selectedUnitId}`;
       }
 
-      const [rabItems, orderData, opnameMasterData] = await Promise.all([
+      const [rabItems, usageData, opnameMasterData] = await Promise.all([
         rabProjectIds.length > 0 ? api.get('rab_items', `rab_project_id=in.(${rabProjectIds.join(',')})`) : Promise.resolve([]),
-        api.get('purchase_orders', poQuery),
+        rabProjectIds.length > 0 ? api.get('material_usages', usageQuery) : Promise.resolve([]),
         api.get('project_opnames', opnameQuery)
       ]);
 
@@ -162,7 +156,12 @@ const RealCostPage: React.FC = () => {
       const rabWage = (rabItems || []).reduce((sum: number, r: any) => sum + ((r.wage_price || 0) * (r.volume || 1) * (r.koeff || 1)), 0);
       const rabTotal = rabMaterial + rabWage;
 
-      const materialActual = orderData?.reduce((sum: number, o: any) => sum + Number(o.total_price), 0) || 0;
+      // Hitung pemakaian material berdasarkan harga_terakhir dari varian
+      const materialActual = (usageData || []).reduce((sum: number, u: any) => {
+        const itemPrice = u.variant?.harga_terakhir || 0;
+        return sum + (Number(u.qty) * itemPrice);
+      }, 0);
+
       const wageActual = (opnameItemData || [])?.reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0) || 0;
       const totalActual = materialActual + wageActual;
 
@@ -177,7 +176,7 @@ const RealCostPage: React.FC = () => {
         materialVariance: rabMaterial - materialActual,
         wageVariance: rabWage - wageActual,
         rabItems: rabItems || [],
-        materialOrders: orderData || [],
+        materialUsages: usageData || [],
         wageOpnames: opnameItemData || []
       });
     } catch (e) {
@@ -260,7 +259,7 @@ const RealCostPage: React.FC = () => {
 
         <Card className="border-l-4 border-emerald-500">
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Actual Material</p>
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Usage Realization</p>
             <p className={cn(
               "text-2xl font-black tracking-tighter italic",
               data.materialVariance >= 0 ? "text-emerald-600" : "text-rose-600"
@@ -342,7 +341,7 @@ const RealCostPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/20 pb-4">
           <div className="flex items-center gap-10">
             <button className="tab-underline active uppercase tracking-widest text-[11px] italic">Wages / Opname</button>
-            <button className="tab-underline uppercase tracking-widest text-[11px] italic">Material Orders</button>
+            <button className="tab-underline uppercase tracking-widest text-[11px] italic">Usage History</button>
           </div>
           <div className="tab-pill-container">
             <button className="tab-pill active">Mingguan</button>
@@ -394,27 +393,28 @@ const RealCostPage: React.FC = () => {
                   <Package className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-black text-text-primary uppercase tracking-tight text-sm">Material Terkirim</h3>
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Total: {data.materialOrders.length} Received</p>
+                  <h3 className="font-black text-text-primary uppercase tracking-tight text-sm">Material Dipakai</h3>
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Total: {data.materialUsages.length} Records</p>
                 </div>
               </div>
-              <Button variant="ghost" size="sm" className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50/50 border border-emerald-100 rounded-xl px-4 py-2 hover:bg-white transition-all">View Orders</Button>
+              <Button variant="ghost" size="sm" className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50/50 border border-emerald-100 rounded-xl px-4 py-2 hover:bg-white transition-all">View All</Button>
             </div>
             <div className="divide-y divide-white/20">
-              {data.materialOrders.map((order) => (
-                <div key={order.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/20 transition-colors group">
+              {data.materialUsages.map((usage) => (
+                <div key={usage.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/20 transition-colors group">
                   <div className="flex items-center gap-4">
                     <div className="w-1.5 h-10 rounded-full bg-emerald-200 group-hover:bg-emerald-500 transition-colors"></div>
                     <div>
-                      <p className="text-[13px] font-black text-text-primary uppercase tracking-tight">PO: {order.po_number}</p>
-                      <p className="text-[10px] font-medium text-text-muted mt-0.5">Supplier: {order.supplier}</p>
+                      <p className="text-[13px] font-black text-text-primary uppercase tracking-tight">{usage.material?.name}</p>
+                      <p className="text-[10px] font-medium text-text-muted mt-0.5">{usage.variant?.merk} | {formatDate(usage.tanggal)}</p>
                     </div>
                   </div>
                   <div className="text-right pl-4">
-                    <p className="text-[13px] font-black text-text-primary tracking-tight">{formatCurrency(order.total_price)}</p>
+                    <p className="text-[13px] font-black text-text-primary tracking-tight">{formatCurrency(Number(usage.qty) * (usage.variant?.harga_terakhir || 0))}</p>
                     <div className="flex items-center justify-end gap-1.5 mt-1">
-                      <Package className="w-3 h-3 text-emerald-500" />
-                      <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Received</p>
+                      <span className="text-[9px] font-bold text-text-muted">{usage.qty} {usage.material?.unit}</span>
+                      <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                      <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Used</p>
                     </div>
                   </div>
                 </div>
