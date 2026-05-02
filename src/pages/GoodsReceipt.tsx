@@ -23,6 +23,7 @@ import { formatNumber, formatDate } from '../lib/utils';
 const GoodsReceipt: React.FC = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,9 +40,13 @@ const GoodsReceipt: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Get PENDING POs that are not yet fully received
-      const data = await api.get('purchase_orders', 'select=*,project:projects(name),supplier:suppliers(name),master:materials(name,unit,code),variant:material_variants(merk)&status=eq.PENDING&order=created_at.desc');
-      setOrders(data || []);
+      // Get PENDING POs
+      const [orderData, historyData] = await Promise.all([
+        api.get('purchase_orders', 'select=*,project:projects(name),supplier:suppliers(name),master:materials(name,unit,code),variant:material_variants(merk)&status=eq.PENDING&order=created_at.desc'),
+        api.get('goods_receipts', 'select=*,po:purchase_orders(po_number),material:materials(name,unit),variant:material_variants(merk)&order=tanggal.desc&limit=20')
+      ]);
+      setOrders(orderData || []);
+      setHistory(historyData || []);
     } catch (err) {
       console.error('Error fetching POs:', err);
     } finally {
@@ -227,6 +232,55 @@ const GoodsReceipt: React.FC = () => {
                           <Plus className="w-4 h-4 mr-1" /> Terima
                         </Button>
                       </div>
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </div>
+        </Card>
+      </div>
+
+      {/* Riwayat Penerimaan */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 px-1">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+          <h2 className="text-xl font-black text-text-primary tracking-tight">Riwayat Penerimaan Terbaru</h2>
+        </div>
+        
+        <Card className="p-6 bg-white border-none shadow-premium overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <THead>
+                <TR isHoverable={false} className="bg-slate-50/50">
+                  <TH>No. PO / Tanggal Terima</TH>
+                  <TH>Material & Merk</TH>
+                  <TH className="text-right">Kuantitas Masuk</TH>
+                  <TH className="text-right">Status</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {loading ? (
+                  <TR isHoverable={false}><TD colSpan={4} className="py-8 text-center"><RefreshCw className="w-5 h-5 animate-spin mx-auto text-slate-300" /></TD></TR>
+                ) : history.length === 0 ? (
+                  <TR isHoverable={false}><TD colSpan={4} className="py-8 text-center text-slate-400 italic">Belum ada riwayat penerimaan.</TD></TR>
+                ) : history.map((h, i) => (
+                  <TR key={i}>
+                    <TD>
+                      <div className="font-black text-slate-700">{h.po?.po_number || 'PO-Manual'}</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{formatDate(h.tanggal)}</div>
+                    </TD>
+                    <TD>
+                      <div className="font-bold text-slate-800">{h.material?.name}</div>
+                      <div className="text-[10px] font-black text-emerald-600 uppercase">Merk: {h.variant?.merk}</div>
+                    </TD>
+                    <TD className="text-right font-black text-emerald-700">
+                      + {formatNumber(h.qty)} <span className="text-[10px] uppercase text-slate-400">{h.material?.unit}</span>
+                    </TD>
+                    <TD className="text-right">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-tighter">
+                        <CheckCircle2 className="w-3 h-3" /> Berhasil
+                      </span>
                     </TD>
                   </TR>
                 ))}
