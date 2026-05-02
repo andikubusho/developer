@@ -118,7 +118,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
           spesifikasi: newVariant.spesifikasi,
           stok: 0
         });
-        finalVariantId = createdVariant.id;
+        finalVariantId = createdVariant[0].id;
       }
 
       if (!finalVariantId) {
