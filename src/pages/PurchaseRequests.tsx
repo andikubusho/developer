@@ -550,156 +550,202 @@ const PurchaseRequests: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); resetForm(); }}
-        title="Buat Purchase Request (Multi-Item)"
-        size="lg"
+        title="Buat Purchase Request (Budget Controlled)"
+        size="xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-8 px-2 pb-2">
           {/* Step 1: Pilih RAB */}
-          <div className="space-y-2">
-            <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Pilih Referensi RAB Proyek</label>
-            <select 
-              className="w-full h-12 glass-input rounded-xl px-4 text-sm font-bold focus:outline-none"
-              value={selectedRab?.id || ''}
-              onChange={(e) => {
-                const rab = rabs.find(r => r.id === e.target.value);
-                setSelectedRab(rab || null);
-                setForm({ ...form, material_id: '' });
-                setPrItems([]);
-              }}
-              required
-            >
-              <option value="">-- Pilih RAB Proyek & Unit --</option>
-              {rabs.map(r => (
-                <option key={r.id} value={r.id}>
-                  {r.nama_proyek}{r.unit_id ? ` - Unit ${unitMap[r.unit_id]?.unit_number || r.unit_id}` : ''} - {formatDate(r.created_at)}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-3">
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-600">1</span>
+              Pilih Referensi RAB Proyek
+            </label>
+            <div className="relative group">
+              <select 
+                className="w-full h-14 bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 text-sm font-bold focus:outline-none focus:border-accent-lavender focus:bg-white transition-all appearance-none cursor-pointer"
+                value={selectedRab?.id || ''}
+                onChange={(e) => {
+                  const rab = rabs.find(r => r.id === e.target.value);
+                  setSelectedRab(rab || null);
+                  setForm({ ...form, material_id: '' });
+                  setPrItems([]);
+                }}
+                required
+              >
+                <option value="">-- Pilih RAB Proyek & Unit --</option>
+                {rabs.map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.nama_proyek}{r.unit_id ? ` - Unit ${unitMap[r.unit_id]?.unit_number || r.unit_id}` : ''} - {formatDate(r.created_at)}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                 <Search className="w-4 h-4" />
+              </div>
+            </div>
           </div>
 
           {selectedRab && (
-            <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-in fade-in slide-in-from-top-2">
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Proyek Terpilih</p>
-                <p className="text-sm font-black text-slate-700">{selectedRab.nama_proyek}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-gradient-to-br from-slate-50 to-white rounded-[24px] border-2 border-slate-100 shadow-sm animate-in fade-in zoom-in-95 duration-300">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-accent-dark">
+                   <Building2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Proyek Terpilih</p>
+                  <p className="text-base font-black text-slate-800 tracking-tight">{selectedRab.nama_proyek}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unit</p>
-                <p className="text-sm font-black text-slate-700">{selectedRab.unit_id ? (unitMap[selectedRab.unit_id]?.unit_number || selectedRab.unit_id) : 'Seluruh Proyek'}</p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-accent-dark">
+                   <Home className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unit Proyek</p>
+                  <p className="text-base font-black text-slate-800 tracking-tight">{selectedRab.unit_id ? (unitMap[selectedRab.unit_id]?.unit_number || selectedRab.unit_id) : 'Seluruh Proyek'}</p>
+                </div>
               </div>
             </div>
           )}
 
           {/* Step 2 & 3: Unified Item Table */}
-          <div className="space-y-3 animate-in fade-in slide-in-from-top-4">
-            <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Rincian Material PR</label>
-            <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm">
-              <Table>
+          <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-600">2</span>
+              Rincian Material PR
+            </label>
+            <div className="rounded-[28px] border-2 border-slate-100 overflow-hidden bg-white shadow-premium-subtle">
+              <Table className="w-full">
                 <THead>
-                  <TR className="bg-slate-50 border-b border-slate-100">
-                    <TH className="text-[10px] py-3">Material</TH>
-                    <TH className="text-right text-[10px] py-3">Qty</TH>
-                    <TH className="w-12 py-3"></TH>
+                  <TR className="bg-slate-50/80 border-b border-slate-100">
+                    <TH className="text-[11px] py-4 pl-6 uppercase tracking-wider text-slate-500 w-[60%]">Material</TH>
+                    <TH className="text-right text-[11px] py-4 uppercase tracking-wider text-slate-500 w-[30%]">Kuantitas</TH>
+                    <TH className="w-16 py-4 pr-6"></TH>
                   </TR>
                 </THead>
                 <TBody>
                   {/* List of Added Items */}
                   {prItems.map((item, i) => (
-                    <TR key={i} className="border-b border-slate-50">
-                      <TD className="py-3">
-                        <div className="font-bold text-slate-700">{item.name}</div>
-                        <div className="text-[9px] text-slate-400 uppercase font-black">Budgeted in RAB</div>
+                    <TR key={i} className="border-b border-slate-50 group hover:bg-slate-50/50 transition-colors">
+                      <TD className="py-5 pl-6">
+                        <div className="font-black text-slate-800 text-base mb-1">{item.name}</div>
+                        <div className="flex items-center gap-2">
+                           <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-[9px] font-black text-emerald-600 uppercase">Budgeted</span>
+                           <span className="text-[10px] font-bold text-slate-400">RAB Reference Active</span>
+                        </div>
                       </TD>
-                      <TD className="text-right py-3">
-                        <div className="font-black text-slate-700 text-sm">{formatNumber(item.quantity)} <span className="text-[10px] text-slate-400 font-bold uppercase">{item.unit}</span></div>
+                      <TD className="text-right py-5">
+                        <div className="font-black text-slate-800 text-lg">{formatNumber(item.quantity)} <span className="text-xs text-slate-400 font-bold uppercase ml-1">{item.unit}</span></div>
                       </TD>
-                      <TD className="py-3">
-                        <button type="button" onClick={() => handleRemoveItem(i)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
-                          <Trash2 className="w-4 h-4" />
+                      <TD className="py-5 pr-6 text-right">
+                        <button type="button" onClick={() => handleRemoveItem(i)} className="p-2.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all">
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </TD>
                     </TR>
                   ))}
 
                   {/* Form Row for Adding New Item */}
-                  <TR className="bg-slate-50/30">
-                    <TD className="py-4">
-                      <select 
-                        className="w-full h-11 bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-accent-lavender/20 disabled:opacity-50"
-                        value={form.material_id}
-                        onChange={(e) => setForm({ ...form, material_id: e.target.value })}
-                        disabled={!selectedRab || loadingBudget}
-                      >
-                        <option value="">{loadingBudget ? 'Menghitung sisa...' : '-- Pilih Material --'}</option>
-                        {budgetItems.map(m => (
-                          <option key={m.material_id} value={m.material_id} disabled={m.quota <= m.used || prItems.some(i => i.material_id === m.material_id)}>
-                            {m.name} {m.quota <= m.used ? '(Habis)' : `(Sisa: ${formatNumber(m.quota - m.used)} ${m.unit})`}
-                          </option>
-                        ))}
-                      </select>
-                      {selectedBudgetInfo && (
-                        <div className="mt-2 px-2 flex items-center gap-3">
-                          <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-slate-400 uppercase">Sisa RAB</span>
-                            <span className="text-[10px] font-black text-emerald-600">{formatNumber(selectedBudgetInfo.remaining)} {selectedBudgetInfo.unit}</span>
+                  <TR className="bg-slate-50/40">
+                    <TD className="py-6 pl-6">
+                      <div className="space-y-3">
+                        <select 
+                          className="w-full h-14 bg-white border-2 border-slate-200 rounded-2xl px-5 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender shadow-sm transition-all disabled:opacity-50"
+                          value={form.material_id}
+                          onChange={(e) => setForm({ ...form, material_id: e.target.value })}
+                          disabled={!selectedRab || loadingBudget}
+                        >
+                          <option value="">{loadingBudget ? 'Menghitung sisa...' : '-- Pilih Material --'}</option>
+                          {budgetItems.map(m => (
+                            <option key={m.material_id} value={m.material_id} disabled={m.quota <= m.used || prItems.some(i => i.material_id === m.material_id)}>
+                              {m.name} {m.quota <= m.used ? '(Budget Habis)' : `(Sisa: ${formatNumber(m.quota - m.used)} ${m.unit})`}
+                            </option>
+                          ))}
+                        </select>
+                        
+                        {selectedBudgetInfo && (
+                          <div className="flex items-center gap-4 px-1 animate-in slide-in-from-left-2 duration-300">
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sisa Anggaran</span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-xs font-black text-emerald-600">{formatNumber(selectedBudgetInfo.remaining)} {selectedBudgetInfo.unit}</span>
+                              </div>
+                            </div>
+                            <div className="w-px h-6 bg-slate-200" />
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Kuota</span>
+                              <span className="text-xs font-bold text-slate-500">{formatNumber(selectedBudgetInfo.quota)} {selectedBudgetInfo.unit}</span>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </TD>
-                    <TD className="text-right py-4">
-                      <div className="flex flex-col items-end gap-1">
-                        <div className="relative w-24">
+                    <TD className="text-right py-6">
+                      <div className="flex flex-col items-end gap-3">
+                        <div className="relative">
                           <Input 
                             type="number"
-                            className={`h-11 rounded-xl px-3 text-right font-black text-sm border-2 transition-all ${isExceeding ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'}`}
+                            className={`h-14 w-32 rounded-2xl px-5 text-right font-black text-xl border-2 transition-all shadow-sm ${isExceeding ? 'border-rose-300 bg-rose-50 text-rose-600' : 'border-slate-200 bg-white text-slate-800'}`}
                             value={form.quantity}
                             onChange={(e) => setForm({ ...form, quantity: parseFloat(e.target.value) || 0 })}
                             min="0.1"
                             step="0.1"
                             disabled={!form.material_id}
                           />
+                          {selectedBudgetInfo && (
+                            <div className="absolute -top-6 right-1">
+                               <span className="text-[10px] font-black text-slate-400 uppercase">{selectedBudgetInfo.unit}</span>
+                            </div>
+                          )}
                         </div>
-                        {selectedBudgetInfo && <span className="text-[9px] font-bold text-slate-400 uppercase mr-1">{selectedBudgetInfo.unit}</span>}
+                        {isExceeding && (
+                          <span className="text-[9px] font-black text-rose-500 uppercase tracking-tighter animate-bounce">Exceeds Budget!</span>
+                        )}
                       </div>
                     </TD>
-                    <TD className="py-4">
+                    <TD className="py-6 pr-6 text-right">
                       <Button 
                         type="button"
-                        size="sm"
-                        className="h-11 w-11 p-0 rounded-xl bg-accent-dark hover:bg-slate-800 text-white shadow-sm"
+                        className="h-14 w-14 p-0 rounded-2xl bg-accent-dark hover:bg-slate-800 text-white shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center disabled:opacity-30 disabled:scale-100"
                         onClick={handleAddItem}
                         disabled={!form.material_id || form.quantity <= 0 || isExceeding}
                       >
-                        <Plus className="w-5 h-5" />
+                        <Plus className="w-7 h-7" />
                       </Button>
                     </TD>
                   </TR>
                 </TBody>
               </Table>
             </div>
-            {isExceeding && (
-              <p className="text-[10px] font-black text-rose-600 uppercase tracking-tight flex items-center gap-1.5 ml-1 animate-pulse">
-                ⚠️ Kuantitas melebihi sisa anggaran RAB!
-              </p>
-            )}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Keterangan / Alasan Global</label>
+          <div className="space-y-3">
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-600">3</span>
+              Keterangan Tambahan
+            </label>
             <textarea 
-              className="w-full p-4 glass-input rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent-lavender/20"
+              className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-[24px] text-sm font-medium focus:outline-none focus:border-accent-lavender focus:bg-white transition-all shadow-sm"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              placeholder="Contoh: Stok menipis, kebutuhan mendesak..."
+              placeholder="Berikan alasan atau detail tambahan untuk pengajuan ini..."
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-            <Button type="button" variant="ghost" className="h-12 rounded-xl text-slate-500 font-bold" onClick={() => { setIsModalOpen(false); resetForm(); }}>Batal</Button>
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-slate-100">
+            <Button 
+              type="button" 
+              variant="ghost" 
+              className="h-14 rounded-2xl text-slate-500 font-black uppercase text-xs tracking-widest hover:bg-slate-100" 
+              onClick={() => { setIsModalOpen(false); resetForm(); }}
+            >
+              Batalkan
+            </Button>
             <Button 
               type="submit" 
-              className="h-12 rounded-xl px-10 font-black shadow-premium transition-all hover:scale-[1.02]" 
+              className="h-14 rounded-2xl px-12 font-black text-sm uppercase tracking-widest shadow-premium bg-accent-dark hover:bg-slate-800 text-white transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50" 
               isLoading={submitting}
               disabled={prItems.length === 0}
             >
