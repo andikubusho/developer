@@ -1330,12 +1330,16 @@ const RABForm: React.FC = () => {
                  <Calculator className="w-4 h-4 text-accent-dark" /> Ringkasan Biaya per Bagian
               </h3>
               <div className="space-y-4">
-                 {computedTree.map((node, idx) => (
-                   <div key={node.id} className="flex items-center justify-between p-4 bg-white/30 rounded-xl border border-white/40">
-                      <span className="text-sm font-bold text-text-primary">{getIndexLabel(0, idx)} - {node.uraian || "Tanpa Judul"}</span>
-                      <span className="text-sm font-black text-text-primary">{formatCurrency(node.subtotal)}</span>
-                   </div>
-                 ))}
+                 {computedTree.map((node, idx) => {
+                   const sec = sectionTotals[node.id];
+                   const secTotal = (sec?.mat || 0) + (sec?.wage || 0);
+                   return (
+                     <div key={node.id} className="flex items-center justify-between p-4 bg-white/30 rounded-xl border border-white/40">
+                       <span className="text-sm font-bold text-text-primary">{getIndexLabel(0, idx)} - {node.uraian || "Tanpa Judul"}</span>
+                       <span className="text-sm font-black text-text-primary">{formatCurrency(secTotal)}</span>
+                     </div>
+                   );
+                 })}
                  <div className="border-t border-white/40 pt-4 space-y-2 mt-2">
                    <div className="flex items-center justify-between px-2 py-2">
                      <span className="text-xs font-bold text-blue-600 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Total Material</span>
