@@ -124,6 +124,7 @@ const PurchaseOrders: React.FC = () => {
             approvedItems.push({
               ...item,
               prId: pr.id,
+              project_id: pr.project_id,
               projectName: projMap[pr.project_id] || 'Unknown',
               unitNumber: unitMap[pr.unit_id] || '-',
               material_id: item.material_id,

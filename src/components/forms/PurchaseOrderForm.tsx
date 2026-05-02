@@ -45,7 +45,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       project_id: initialPR?.project_id || '',
       material_id: initialPR?.material_id || '',
       id_variant: undefined,
-      pr_id: initialPR?.id || undefined,
+      pr_id: initialPR?.prId || initialPR?.id || undefined,
     },
   });
 
@@ -278,7 +278,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
           {initialPR && (
             <div className="text-right">
               <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Ref PR</p>
-              <p className="text-sm font-bold">PR-{initialPR.id.slice(0, 6).toUpperCase()}</p>
+              <p className="text-sm font-bold">PR-{(initialPR?.prId || initialPR?.id || '').slice(0, 6).toUpperCase()}</p>
             </div>
           )}
         </div>
