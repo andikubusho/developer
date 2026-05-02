@@ -8,7 +8,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { NumberInput } from '../ui/NumberInput';
-import { Info, Lock, Search } from 'lucide-react';
+import { Info, Lock } from 'lucide-react';
 import { SearchableSelect } from '../ui/SearchableSelect';
 
 const poSchema = z.object({
@@ -25,20 +25,39 @@ const poSchema = z.object({
 
 type POFormValues = z.infer<typeof poSchema>;
 
+interface ItemDetail {
+  variants: any[];
+  variantId?: number;
+  unitPrice: number;
+  isNewVariant: boolean;
+  newMerk: string;
+  newSpek: string;
+}
+
 interface POFormProps {
   onSuccess: (values?: any) => void;
   onCancel: () => void;
   initialPR?: PRItemForPO;
   initialOrder?: any;
+  initialPRItems?: PRItemForPO[];
 }
 
-export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, initialPR, initialOrder }) => {
+export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, initialPR, initialOrder, initialPRItems }) => {
   const [loading, setLoading] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [masters, setMasters] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+
+  // Batch mode state
+  const isBatchMode = !!(initialPRItems && initialPRItems.length > 0);
+  const [batchSupplier, setBatchSupplier] = useState('');
+  const [batchOrderDate, setBatchOrderDate] = useState(new Date().toISOString().split('T')[0]);
+  const [batchDueDate, setBatchDueDate] = useState(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [itemDetails, setItemDetails] = useState<ItemDetail[]>(() =>
+    (initialPRItems || []).map(() => ({ variants: [], variantId: undefined, unitPrice: 0, isNewVariant: false, newMerk: '', newSpek: '' }))
+  );
 
   const fromPR = !!initialPR;
   const isEditMode = !!initialOrder;
@@ -77,7 +96,6 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
     }
   }, [selectedMaterialId]);
 
-  // Setelah variants dimuat, pastikan id_variant terpilih di mode edit
   useEffect(() => {
     if (initialOrder?.id_variant && variants.length > 0) {
       setValue('id_variant', Number(initialOrder.id_variant));
@@ -95,7 +113,21 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       setSuppliers(supplierData);
       setProjects(projectData);
 
-      if (initialOrder) {
+      if (isBatchMode && initialPRItems) {
+        const variantResults = await Promise.all(
+          initialPRItems.map(item =>
+            api.get('material_variants', `material_id=eq.${item.material_id}&select=*&order=merk.asc`)
+          )
+        );
+        setItemDetails(initialPRItems.map((_, i) => ({
+          variants: variantResults[i] || [],
+          variantId: undefined,
+          unitPrice: 0,
+          isNewVariant: false,
+          newMerk: '',
+          newSpek: ''
+        })));
+      } else if (initialOrder) {
         setValue('project_id', initialOrder.project_id || '');
         setValue('material_id', initialOrder.material_id || '');
         setValue('supplier_id', String(initialOrder.supplier_id || ''));
@@ -183,7 +215,65 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
     }
   };
 
-  // Label proyek dari data yang sudah dimuat
+  const updateItemDetail = (i: number, patch: Partial<ItemDetail>) => {
+    setItemDetails(prev => prev.map((d, idx) => idx === i ? { ...d, ...patch } : d));
+  };
+
+  const onBatchSubmit = async () => {
+    if (!batchSupplier) { alert('Supplier harus dipilih'); return; }
+    setLoading(true);
+    try {
+      for (let i = 0; i < initialPRItems!.length; i++) {
+        const item = initialPRItems![i];
+        const detail = itemDetails[i];
+        let variantId = detail.variantId;
+
+        if (detail.isNewVariant) {
+          if (!detail.newMerk) {
+            alert(`Merk untuk "${item.master?.name}" harus diisi`);
+            setLoading(false);
+            return;
+          }
+          const created = await api.insert('material_variants', {
+            material_id: item.material_id,
+            merk: detail.newMerk,
+            spesifikasi: detail.newSpek,
+            stok: 0
+          });
+          variantId = created[0].id;
+        }
+
+        if (!variantId) {
+          alert(`Pilih varian untuk "${item.master?.name}"`);
+          setLoading(false);
+          return;
+        }
+
+        const total_price = Number(item.quantity) * detail.unitPrice;
+        await api.insert('purchase_orders', {
+          id: crypto.randomUUID(),
+          project_id: item.project_id,
+          material_id: item.material_id,
+          supplier_id: Number(batchSupplier),
+          quantity: Number(item.quantity),
+          unit_price: detail.unitPrice,
+          id_variant: variantId,
+          order_date: batchOrderDate,
+          due_date: batchDueDate,
+          pr_id: item.prId,
+          po_number: `PO-${Date.now().toString().slice(-8)}-${i + 1}`,
+          total_price,
+          status: 'PENDING'
+        });
+      }
+      onSuccess();
+    } catch (error: any) {
+      alert(`Gagal membuat PO: ${error?.message || error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const projectLabel = fromPR
     ? (projects.find(p => p.id === initialPR!.project_id)?.name || initialPR!.projectName || initialPR!.project_id)
     : null;
@@ -196,6 +286,166 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
     return (
       <div className="flex items-center justify-center py-16">
         <div className="w-8 h-8 border-4 border-accent-dark/20 border-t-accent-dark rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isBatchMode) {
+    const batchTotal = (initialPRItems || []).reduce(
+      (sum, item, i) => sum + Number(item.quantity) * (itemDetails[i]?.unitPrice || 0), 0
+    );
+    return (
+      <div className="space-y-6 px-2 pb-2">
+        {/* Banner info sumber PR */}
+        <div className="flex items-center gap-4 px-6 py-4 rounded-[24px] bg-blue-50/50 border-2 border-blue-100/50 text-blue-700 animate-in fade-in zoom-in-95 duration-300">
+          <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-blue-600 flex-shrink-0">
+            <Lock className="w-5 h-5" />
+          </div>
+          <span className="text-sm font-semibold tracking-tight">
+            Mode Batch: Membuat {initialPRItems!.length} PO sekaligus dari PR yang sama.
+          </span>
+        </div>
+
+        {/* Shared: Supplier + Dates */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SearchableSelect
+            label="Supplier / Vendor"
+            options={suppliers.map(s => ({ label: s.name, value: String(s.id) }))}
+            value={batchSupplier}
+            onChange={(v) => setBatchSupplier(String(v))}
+            placeholder="Pilih supplier..."
+          />
+          <div className="space-y-2">
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Tanggal Order</label>
+            <input
+              type="date"
+              value={batchOrderDate}
+              onChange={e => setBatchOrderDate(e.target.value)}
+              className="w-full h-14 rounded-2xl bg-slate-50 border-2 border-slate-100 px-5 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender transition-all shadow-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Jatuh Tempo</label>
+            <input
+              type="date"
+              value={batchDueDate}
+              onChange={e => setBatchDueDate(e.target.value)}
+              className="w-full h-14 rounded-2xl bg-slate-50 border-2 border-slate-100 px-5 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender transition-all shadow-sm"
+            />
+          </div>
+        </div>
+
+        {/* Per-item cards */}
+        <div className="space-y-3">
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">{initialPRItems!.length} Item Material</p>
+          {initialPRItems!.map((item, i) => {
+            const detail = itemDetails[i];
+            if (!detail) return null;
+            return (
+              <div key={i} className="p-5 bg-gradient-to-br from-slate-50 to-white rounded-[24px] border-2 border-slate-100 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-accent-dark/10 flex items-center justify-center text-xs font-black text-accent-dark shrink-0">
+                    {i + 1}
+                  </div>
+                  <div>
+                    <p className="font-black text-slate-800 text-sm">{item.master?.name || item.material_id}</p>
+                    <p className="text-xs text-slate-400">
+                      Qty: <span className="font-black text-slate-600">{item.quantity}</span> · {item.projectName}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Variant selector per item */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Variant (Merk)</label>
+                      <button
+                        type="button"
+                        onClick={() => updateItemDetail(i, { isNewVariant: !detail.isNewVariant })}
+                        className="text-[10px] font-black text-accent-dark bg-accent-dark/5 px-2 py-1 rounded-md uppercase tracking-widest hover:bg-accent-dark/10 transition-colors"
+                      >
+                        {detail.isNewVariant ? '← Pilih ada' : '+ Merk Baru'}
+                      </button>
+                    </div>
+                    {detail.isNewVariant ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          placeholder="Nama Merk..."
+                          value={detail.newMerk}
+                          onChange={e => updateItemDetail(i, { newMerk: e.target.value })}
+                          className="h-12 rounded-xl bg-white border-2 border-slate-100 px-4 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender"
+                        />
+                        <input
+                          placeholder="Spek (Opsional)"
+                          value={detail.newSpek}
+                          onChange={e => updateItemDetail(i, { newSpek: e.target.value })}
+                          className="h-12 rounded-xl bg-white border-2 border-slate-100 px-4 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender"
+                        />
+                      </div>
+                    ) : (
+                      <select
+                        value={detail.variantId ?? ''}
+                        onChange={e => updateItemDetail(i, { variantId: e.target.value ? Number(e.target.value) : undefined })}
+                        className="w-full h-12 rounded-xl bg-white border-2 border-slate-100 px-4 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender appearance-none cursor-pointer"
+                      >
+                        <option value="">Pilih Variant / Merk</option>
+                        {(detail.variants || []).map(v => (
+                          <option key={v.id} value={v.id}>{v.merk}{v.spesifikasi ? ` (${v.spesifikasi})` : ''}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  {/* Unit price per item */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Harga Satuan (Rp)</label>
+                    <CurrencyInput
+                      value={detail.unitPrice}
+                      onValueChange={(values) => updateItemDetail(i, { unitPrice: values.floatValue || 0 })}
+                      className="h-12 rounded-xl font-black border-2 border-slate-100"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1 border-t border-slate-100">
+                  <span className="text-sm font-black text-slate-600">
+                    Subtotal:&nbsp;
+                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(item.quantity) * detail.unitPrice)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Grand total */}
+        <div className="p-6 bg-slate-100 border-2 border-slate-200 rounded-[24px] flex justify-between items-center">
+          <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400">Total Estimasi Pembelian</p>
+          <p className="text-3xl font-black tracking-tighter">
+            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(batchTotal)}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row justify-end gap-4 pt-4 border-t border-slate-100">
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-14 rounded-2xl text-slate-500 font-black uppercase text-xs tracking-widest hover:bg-slate-100 px-8"
+            onClick={onCancel}
+          >
+            Batalkan
+          </Button>
+          <Button
+            type="button"
+            className="h-14 rounded-2xl px-12 font-black text-sm uppercase tracking-widest shadow-premium bg-accent-dark hover:bg-slate-800 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+            isLoading={loading}
+            onClick={onBatchSubmit}
+          >
+            Buat {initialPRItems!.length} PO
+          </Button>
+        </div>
       </div>
     );
   }
@@ -249,7 +499,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
           )}
         </div>
 
-        {/* Supplier — Searchable */}
+        {/* Supplier */}
         <div className="space-y-2">
           <Controller
             name="supplier_id"
@@ -305,7 +555,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
             )}
           </div>
 
-          {/* Variant (Merk) — selalu bisa dipilih */}
+          {/* Variant (Merk) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Variant (Merk)</label>
@@ -351,7 +601,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Jumlah — dikunci jika dari PR */}
+        {/* Jumlah */}
         <div className="space-y-2">
           <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Kuantitas Pesanan</label>
           {fromPR ? (
@@ -439,10 +689,10 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       </div>
 
       <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-slate-100">
-        <Button 
-          type="button" 
-          variant="ghost" 
-          className="h-14 rounded-2xl text-slate-500 font-black uppercase text-xs tracking-widest hover:bg-slate-100 px-8" 
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-14 rounded-2xl text-slate-500 font-black uppercase text-xs tracking-widest hover:bg-slate-100 px-8"
           onClick={onCancel}
         >
           Batalkan

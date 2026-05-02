@@ -53,6 +53,7 @@ const PurchaseOrders: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | undefined>();
   const [selectedPR, setSelectedPR] = useState<any | null>(null);
+  const [selectedPRItems, setSelectedPRItems] = useState<PRItemForPO[] | undefined>();
   const [selectedItemKeys, setSelectedItemKeys] = useState<Set<string>>(new Set());
   const [poQueue, setPoQueue] = useState<any[]>([]);
 
@@ -67,8 +68,16 @@ const PurchaseOrders: React.FC = () => {
   const handleBuatPOGroup = (group: any) => {
     const selected = group.items.filter((_: any, idx: number) => selectedItemKeys.has(`${group.prId}-${idx}`));
     if (selected.length === 0) return;
-    setPoQueue(selected.slice(1));
-    setSelectedPR(selected[0]);
+    
+    // Jika lebih dari 1 item, gunakan mode batch
+    if (selected.length > 1) {
+      setSelectedPRItems(selected);
+      setSelectedPR(null);
+    } else {
+      setSelectedPR(selected[0]);
+      setSelectedPRItems(undefined);
+    }
+    
     setIsModalOpen(true);
   };
 
@@ -442,6 +451,7 @@ const PurchaseOrders: React.FC = () => {
         onClose={() => {
           setIsModalOpen(false);
           setSelectedPR(null);
+          setSelectedPRItems(undefined);
           setSelectedOrder(undefined);
         }}
         title={selectedOrder ? 'Edit Purchase Order' : 'Tambah Purchase Order'}
@@ -455,6 +465,7 @@ const PurchaseOrders: React.FC = () => {
             } else {
               setIsModalOpen(false);
               setSelectedPR(null);
+              setSelectedPRItems(undefined);
               setSelectedOrder(undefined);
               setSelectedItemKeys(new Set());
               fetchOrders();
@@ -469,6 +480,7 @@ const PurchaseOrders: React.FC = () => {
           }}
           initialPR={selectedPR}
           initialOrder={selectedOrder}
+          initialPRItems={selectedPRItems}
         />
       </Modal>
     </div>
