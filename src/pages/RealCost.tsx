@@ -212,7 +212,7 @@ const RealCostPage: React.FC = () => {
             .filter((o: any) => o.rab_item_id && itemsForThisRab.some(ri => ri.id === o.rab_item_id))
             .reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0);
 
-          const totalBudget = rabMatTotal + rabWageTotal;
+          const totalBudget = Number(rp.total_anggaran || 0);
           const totalActual = actualMat + actualWage;
 
           return {
@@ -220,30 +220,32 @@ const RealCostPage: React.FC = () => {
             totalBudget,
             totalActual,
             usagePercentage: totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0,
-            items: itemsForThisRab.map(ri => {
-               const itemMatActual = (usageData || [])
-                .filter((u: any) => u.rab_item_id === ri.id)
-                .reduce((sum: number, u: any) => sum + (Number(u.qty) * (u.variant?.harga_terakhir || 0)), 0);
-              const itemWageActual = (opnameItemData || [])
-                .filter((o: any) => o.rab_item_id === ri.id)
-                .reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0);
-              
-              const iBudgetMat = (ri.material_price || 0) * (ri.volume || 1) * (ri.koeff || 1);
-              const iBudgetWage = (ri.wage_price || 0) * (ri.volume || 1) * (ri.koeff || 1);
-              const iBudget = iBudgetMat + iBudgetWage;
-              const iActual = itemMatActual + itemWageActual;
-              
-              return {
-                ...ri,
-                iBudgetMat,
-                iBudgetWage,
-                itemMatActual,
-                itemWageActual,
-                totalBudget: iBudget,
-                totalActual: iActual,
-                usagePercentage: iBudget > 0 ? (iActual / iBudget) * 100 : 0
-              };
-            }).filter(ri => ri.totalBudget > 0)
+            items: itemsForThisRab
+              .filter(ri => ri.level === 3 || ri.is_manual) // Hanya ambil item pekerjaan (bukan header/bab)
+              .map(ri => {
+                const itemMatActual = (usageData || [])
+                  .filter((u: any) => u.rab_item_id === ri.id)
+                  .reduce((sum: number, u: any) => sum + (Number(u.qty) * (u.variant?.harga_terakhir || 0)), 0);
+                const itemWageActual = (opnameItemData || [])
+                  .filter((o: any) => o.rab_item_id === ri.id)
+                  .reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0);
+                
+                const iBudgetMat = (ri.material_price || 0) * (ri.volume || 1) * (ri.koeff || 1);
+                const iBudgetWage = (ri.wage_price || 0) * (ri.volume || 1) * (ri.koeff || 1);
+                const iBudget = iBudgetMat + iBudgetWage;
+                const iActual = itemMatActual + itemWageActual;
+                
+                return {
+                  ...ri,
+                  iBudgetMat,
+                  iBudgetWage,
+                  itemMatActual,
+                  itemWageActual,
+                  totalBudget: iBudget,
+                  totalActual: iActual,
+                  usagePercentage: iBudget > 0 ? (iActual / iBudget) * 100 : 0
+                };
+              }).filter(ri => ri.totalBudget > 0)
           };
         }),
         materialUsages: usageData || [],
