@@ -365,7 +365,7 @@ const StockCard: React.FC = () => {
                             </span>
                             <span className="text-xs font-black text-slate-700 uppercase leading-tight truncate max-w-[300px]">
                               {m.keterangan || (
-                                m.sumber === 'GR' ? `Masuk #${m.reference_id}` : 
+                                m.sumber === 'GR' ? `PO #${m.reference_id}` : 
                                 m.sumber === 'USAGE' ? `Keluar #${m.reference_id}` : 
                                 `${m.sumber} #${m.reference_id}`
                               )}
