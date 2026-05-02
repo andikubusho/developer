@@ -9,7 +9,12 @@ import {
   ArrowDownLeft,
   FileSpreadsheet,
   Building2,
-  Filter
+  Filter,
+  Truck,
+  HardHat,
+  UserCheck,
+  Info,
+  Package
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -341,16 +346,32 @@ const StockCard: React.FC = () => {
                         )}
                       </TD>
                       <TD className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-text-muted uppercase tracking-tighter opacity-70">{m.sumber}</span>
-                          <span className="text-xs font-bold text-text-primary uppercase leading-tight">
-                            {m.keterangan || m.reference_id?.slice(0, 8)}
-                          </span>
-                          {m.worker?.name && (
-                            <span className="text-[9px] font-black text-accent-lavender uppercase mt-1">
-                               Mandor: {m.worker.name}
+                        <div className="flex items-start gap-3">
+                          <div className={cn(
+                            "mt-0.5 p-1.5 rounded-lg shrink-0 shadow-sm",
+                            m.sumber === 'GR' ? "bg-emerald-100 text-emerald-600" : 
+                            m.sumber === 'USAGE' ? "bg-rose-100 text-rose-600" : 
+                            "bg-amber-100 text-amber-600"
+                          )}>
+                            {m.sumber === 'GR' ? <Truck className="w-3.5 h-3.5" /> : 
+                             m.sumber === 'USAGE' ? <HardHat className="w-3.5 h-3.5" /> : 
+                             <Package className="w-3.5 h-3.5" />}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                              {m.sumber === 'GR' ? 'Penerimaan Barang' : 
+                               m.sumber === 'USAGE' ? 'Pemakaian Proyek' : 
+                               m.sumber === 'OPNAME' ? 'Penyesuaian Opname' : m.sumber}
                             </span>
-                          )}
+                            <span className="text-xs font-black text-slate-700 uppercase leading-tight truncate max-w-[300px]">
+                              {m.keterangan || `${m.sumber} #${m.reference_id}`}
+                            </span>
+                            {m.worker?.name && (
+                              <span className="text-[10px] font-bold text-accent-lavender mt-1.5 flex items-center gap-1.5 bg-accent-lavender/5 w-fit px-2 py-0.5 rounded-full border border-accent-lavender/10">
+                                <UserCheck className="w-2.5 h-2.5" /> {m.worker.name}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </TD>
                       <TD className="px-6 py-4 text-right font-black text-emerald-600">
