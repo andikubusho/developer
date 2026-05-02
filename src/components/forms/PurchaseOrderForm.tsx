@@ -355,22 +355,22 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         </div>
       </div>
 
-      <div className="p-8 bg-gradient-to-r from-accent-dark to-slate-800 text-white rounded-[32px] shadow-xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+      <div className="p-8 bg-slate-100 border-2 border-slate-200 text-slate-900 rounded-[32px] shadow-sm relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
           <Info className="w-24 h-24 -mr-8 -mt-8" />
         </div>
         <div className="flex justify-between items-end relative z-10">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.3em] opacity-60 mb-2">Total Estimasi Pembelian</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2">Total Estimasi Pembelian</p>
             <p className="text-4xl font-black tracking-tighter">
               {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(watch('quantity') * watch('unit_price') || 0)}
             </p>
           </div>
           {initialPR?.prId && (
             <div className="text-right">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Referensi Dokumen</p>
-              <div className="px-3 py-1 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 inline-block">
-                <span className="text-xs font-black">PR-{initialPR.prId.slice(0, 6).toUpperCase()}</span>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Referensi Dokumen</p>
+              <div className="px-3 py-1 bg-slate-200/50 rounded-lg border border-slate-300 inline-block">
+                <span className="text-xs font-black text-slate-700">PR-{initialPR.prId.slice(0, 6).toUpperCase()}</span>
               </div>
             </div>
           )}
