@@ -30,7 +30,6 @@ interface Supplier {
   phone: string;
   contact_person: string;
   bank_name: string;
-  bank_account_number?: string; // Fallback for old data
   account_number: string;
   created_at: string;
 }
@@ -221,12 +220,12 @@ const Suppliers: React.FC = () => {
                       <div className="font-black text-text-primary flex items-center gap-1">
                         <CreditCard className="w-2 h-2" /> {s.bank_name}
                       </div>
-                      <div className="text-text-muted">{s.account_number || s.bank_account_number}</div>
+                      <div className="text-text-muted">{s.account_number}</div>
                     </div>
                   </TD>
                   <TD className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => { setEditingSupplier(s); setForm({ name: s.name, address: s.address, phone: s.phone, contact_person: s.contact_person, bank_name: s.bank_name, account_number: s.account_number || s.bank_account_number || '' }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-white/40">
+                      <Button variant="ghost" size="sm" onClick={() => { setEditingSupplier(s); setForm({ name: s.name, address: s.address, phone: s.phone, contact_person: s.contact_person, bank_name: s.bank_name, account_number: s.account_number || '' }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-white/40">
                         <Pencil className="w-4 h-4 text-accent-dark" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDelete(s.id)} className="h-9 w-9 p-0 rounded-xl hover:bg-rose-50">
