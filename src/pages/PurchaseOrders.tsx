@@ -17,7 +17,7 @@ import {
   ClipboardList
 } from 'lucide-react';
 import { api } from '../lib/api';
-import { PurchaseOrder, Material } from '../types';
+import { PurchaseOrder, Material, PRItemForPO } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
@@ -43,7 +43,7 @@ const PurchaseOrders: React.FC = () => {
   const { isMockMode, division } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [approvedPRItems, setApprovedPRItems] = useState<any[]>([]);
+  const [approvedPRItems, setApprovedPRItems] = useState<PRItemForPO[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
    const [isModalOpen, setIsModalOpen] = useState(false);
@@ -115,19 +115,19 @@ const PurchaseOrders: React.FC = () => {
       
       // Flatten items from APPROVED/ordered PRs that don't have POs yet
       // (Actually showing only APPROVED for PO creation)
-      const approvedItems: any[] = [];
+      const approvedItems: PRItemForPO[] = [];
       (prData || []).forEach((pr: any) => {
         const prStatus = (pr.status || '').toUpperCase();
         if (prStatus === 'APPROVED') {
           (pr.items || []).forEach((item: any) => {
             const mat = matMap[item.material_id] || null;
             approvedItems.push({
-              ...item,
               prId: pr.id,
               project_id: pr.project_id,
+              material_id: item.material_id,
+              quantity: item.quantity,
               projectName: projMap[pr.project_id] || 'Unknown',
               unitNumber: unitMap[pr.unit_id] || '-',
-              material_id: item.material_id,
               master: mat,
               createdAt: pr.created_at
             });

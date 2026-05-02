@@ -3,6 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { api } from '../../lib/api';
+import { PRItemForPO } from '../../types';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { CurrencyInput } from '../ui/CurrencyInput';
@@ -26,7 +27,7 @@ type POFormValues = z.infer<typeof poSchema>;
 interface POFormProps {
   onSuccess: (values?: any) => void;
   onCancel: () => void;
-  initialPR?: any;
+  initialPR?: PRItemForPO;
 }
 
 export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, initialPR }) => {
@@ -45,7 +46,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       project_id: initialPR?.project_id || '',
       material_id: initialPR?.material_id || '',
       id_variant: undefined,
-      pr_id: initialPR?.prId || initialPR?.id || undefined,
+      pr_id: initialPR?.prId || undefined,
     },
   });
 
@@ -55,6 +56,9 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
   const selectedMaterialId = watch('material_id');
 
   useEffect(() => {
+    if (initialPR && (!initialPR.prId || !initialPR.project_id || !initialPR.material_id)) {
+      console.warn('[PurchaseOrderForm] Data PR awal tidak lengkap:', initialPR);
+    }
     fetchInitialData();
   }, []);
 
@@ -275,10 +279,10 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
               {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(watch('quantity') * watch('unit_price') || 0)}
             </p>
           </div>
-          {initialPR && (
+          {initialPR?.prId && (
             <div className="text-right">
               <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Ref PR</p>
-              <p className="text-sm font-bold">PR-{(initialPR?.prId || initialPR?.id || '').slice(0, 6).toUpperCase()}</p>
+              <p className="text-sm font-bold">PR-{initialPR.prId.slice(0, 6).toUpperCase()}</p>
             </div>
           )}
         </div>

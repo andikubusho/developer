@@ -279,6 +279,17 @@ export interface PurchaseRequest {
   description?: string;
 }
 
+export interface PRItemForPO {
+  prId: string;
+  project_id: string;
+  material_id: string;
+  quantity: number;
+  projectName: string;
+  unitNumber: string;
+  master: Material | null;
+  createdAt: string;
+}
+
 export interface SPK {
   id: string;
   project_id: string;
