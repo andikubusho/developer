@@ -364,7 +364,11 @@ const StockCard: React.FC = () => {
                                m.sumber === 'OPNAME' ? 'Penyesuaian Opname' : m.sumber}
                             </span>
                             <span className="text-xs font-black text-slate-700 uppercase leading-tight truncate max-w-[300px]">
-                              {m.keterangan || `${m.sumber} #${m.reference_id}`}
+                              {m.keterangan || (
+                                m.sumber === 'GR' ? `Masuk #${m.reference_id}` : 
+                                m.sumber === 'USAGE' ? `Keluar #${m.reference_id}` : 
+                                `${m.sumber} #${m.reference_id}`
+                              )}
                             </span>
                             {m.worker?.name && (
                               <span className="text-[10px] font-bold text-accent-lavender mt-1.5 flex items-center gap-1.5 bg-accent-lavender/5 w-fit px-2 py-0.5 rounded-full border border-accent-lavender/10">
