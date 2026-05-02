@@ -590,104 +590,116 @@ const PurchaseRequests: React.FC = () => {
             </div>
           )}
 
-          {/* Step 2: Pilih Material & Qty */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
-             <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Pilih Material</label>
-                <select 
-                  className="w-full h-12 glass-input rounded-xl px-4 text-sm font-bold focus:outline-none disabled:opacity-50"
-                  value={form.material_id}
-                  onChange={(e) => setForm({ ...form, material_id: e.target.value })}
-                  disabled={!selectedRab || loadingBudget}
-                >
-                  <option value="">{loadingBudget ? 'Menghitung sisa anggaran...' : '-- Pilih Material dari RAB --'}</option>
-                  {budgetItems.map(m => (
-                    <option key={m.material_id} value={m.material_id} disabled={m.quota <= m.used}>
-                      {m.name} {m.quota <= m.used ? '(Budget Habis)' : `(Sisa: ${formatNumber(m.quota - m.used)} ${m.unit})`}
-                    </option>
-                  ))}
-                </select>
-             </div>
-
-             {selectedBudgetInfo && (
-                <div className="grid grid-cols-2 gap-4 animate-in zoom-in-95">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kuantitas</label>
-                    <div className="relative">
-                      <Input 
-                        type="number"
-                        className={`h-12 rounded-xl px-4 font-black text-lg border-2 transition-all ${isExceeding ? 'border-rose-400 bg-rose-50' : 'border-slate-200 bg-slate-50'}`}
-                        value={form.quantity}
-                        onChange={(e) => setForm({ ...form, quantity: parseFloat(e.target.value) || 0 })}
-                        min="0.1"
-                        step="0.1"
-                      />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-text-muted">
-                        {selectedBudgetInfo.unit}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-end pb-1">
-                    <Button 
-                      type="button"
-                      className="w-full h-12 rounded-xl font-black uppercase text-xs"
-                      onClick={handleAddItem}
-                      disabled={!form.material_id || form.quantity <= 0 || isExceeding}
-                    >
-                      Tambah ke Daftar
-                    </Button>
-                  </div>
-                </div>
-             )}
-          </div>
-
-          {/* Item List */}
-          {prItems.length > 0 && (
-            <div className="space-y-3">
-              <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Daftar Material PR</label>
-              <div className="rounded-2xl border border-slate-100 overflow-hidden bg-slate-50/50">
-                <Table>
-                  <THead>
-                    <TR className="bg-slate-100/50">
-                      <TH className="text-[9px]">Nama Material</TH>
-                      <TH className="text-right text-[9px]">Qty</TH>
-                      <TH className="w-10"></TH>
+          {/* Step 2 & 3: Unified Item Table */}
+          <div className="space-y-3 animate-in fade-in slide-in-from-top-4">
+            <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Rincian Material PR</label>
+            <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+              <Table>
+                <THead>
+                  <TR className="bg-slate-50 border-b border-slate-100">
+                    <TH className="text-[10px] py-3">Material</TH>
+                    <TH className="text-right text-[10px] py-3">Qty</TH>
+                    <TH className="w-12 py-3"></TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {/* List of Added Items */}
+                  {prItems.map((item, i) => (
+                    <TR key={i} className="border-b border-slate-50">
+                      <TD className="py-3">
+                        <div className="font-bold text-slate-700">{item.name}</div>
+                        <div className="text-[9px] text-slate-400 uppercase font-black">Budgeted in RAB</div>
+                      </TD>
+                      <TD className="text-right py-3">
+                        <div className="font-black text-slate-700 text-sm">{formatNumber(item.quantity)} <span className="text-[10px] text-slate-400 font-bold uppercase">{item.unit}</span></div>
+                      </TD>
+                      <TD className="py-3">
+                        <button type="button" onClick={() => handleRemoveItem(i)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </TD>
                     </TR>
-                  </THead>
-                  <TBody>
-                    {prItems.map((item, i) => (
-                      <TR key={i}>
-                        <TD className="text-xs font-bold text-slate-700">{item.name}</TD>
-                        <TD className="text-right text-xs font-black text-slate-700">{formatNumber(item.quantity)} {item.unit}</TD>
-                        <TD>
-                          <button type="button" onClick={() => handleRemoveItem(i)} className="p-1 text-rose-500 hover:bg-rose-50 rounded">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </TD>
-                      </TR>
-                    ))}
-                  </TBody>
-                </Table>
-              </div>
+                  ))}
+
+                  {/* Form Row for Adding New Item */}
+                  <TR className="bg-slate-50/30">
+                    <TD className="py-4">
+                      <select 
+                        className="w-full h-11 bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-accent-lavender/20 disabled:opacity-50"
+                        value={form.material_id}
+                        onChange={(e) => setForm({ ...form, material_id: e.target.value })}
+                        disabled={!selectedRab || loadingBudget}
+                      >
+                        <option value="">{loadingBudget ? 'Menghitung sisa...' : '-- Pilih Material --'}</option>
+                        {budgetItems.map(m => (
+                          <option key={m.material_id} value={m.material_id} disabled={m.quota <= m.used || prItems.some(i => i.material_id === m.material_id)}>
+                            {m.name} {m.quota <= m.used ? '(Habis)' : `(Sisa: ${formatNumber(m.quota - m.used)} ${m.unit})`}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedBudgetInfo && (
+                        <div className="mt-2 px-2 flex items-center gap-3">
+                          <div className="flex flex-col">
+                            <span className="text-[8px] font-black text-slate-400 uppercase">Sisa RAB</span>
+                            <span className="text-[10px] font-black text-emerald-600">{formatNumber(selectedBudgetInfo.remaining)} {selectedBudgetInfo.unit}</span>
+                          </div>
+                        </div>
+                      )}
+                    </TD>
+                    <TD className="text-right py-4">
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="relative w-24">
+                          <Input 
+                            type="number"
+                            className={`h-11 rounded-xl px-3 text-right font-black text-sm border-2 transition-all ${isExceeding ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'}`}
+                            value={form.quantity}
+                            onChange={(e) => setForm({ ...form, quantity: parseFloat(e.target.value) || 0 })}
+                            min="0.1"
+                            step="0.1"
+                            disabled={!form.material_id}
+                          />
+                        </div>
+                        {selectedBudgetInfo && <span className="text-[9px] font-bold text-slate-400 uppercase mr-1">{selectedBudgetInfo.unit}</span>}
+                      </div>
+                    </TD>
+                    <TD className="py-4">
+                      <Button 
+                        type="button"
+                        size="sm"
+                        className="h-11 w-11 p-0 rounded-xl bg-accent-dark hover:bg-slate-800 text-white shadow-sm"
+                        onClick={handleAddItem}
+                        disabled={!form.material_id || form.quantity <= 0 || isExceeding}
+                      >
+                        <Plus className="w-5 h-5" />
+                      </Button>
+                    </TD>
+                  </TR>
+                </TBody>
+              </Table>
             </div>
-          )}
+            {isExceeding && (
+              <p className="text-[10px] font-black text-rose-600 uppercase tracking-tight flex items-center gap-1.5 ml-1 animate-pulse">
+                ⚠️ Kuantitas melebihi sisa anggaran RAB!
+              </p>
+            )}
+          </div>
 
           <div className="space-y-2">
             <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Keterangan / Alasan Global</label>
             <textarea 
-              className="w-full p-4 glass-input rounded-xl text-sm font-medium focus:outline-none"
+              className="w-full p-4 glass-input rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent-lavender/20"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              placeholder="Contoh: Stok menipis, kebutuhan untuk cor lantai 2..."
+              rows={2}
+              placeholder="Contoh: Stok menipis, kebutuhan mendesak..."
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="ghost" className="h-12 rounded-xl" onClick={() => { setIsModalOpen(false); resetForm(); }}>Batal</Button>
+          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+            <Button type="button" variant="ghost" className="h-12 rounded-xl text-slate-500 font-bold" onClick={() => { setIsModalOpen(false); resetForm(); }}>Batal</Button>
             <Button 
               type="submit" 
-              className="h-12 rounded-xl px-8 font-black shadow-premium disabled:opacity-50" 
+              className="h-12 rounded-xl px-10 font-black shadow-premium transition-all hover:scale-[1.02]" 
               isLoading={submitting}
               disabled={prItems.length === 0}
             >
