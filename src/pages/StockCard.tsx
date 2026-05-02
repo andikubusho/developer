@@ -16,6 +16,7 @@ import { Button } from '../components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { api } from '../lib/api';
 import { formatNumber, formatDate } from '../lib/utils';
+import * as XLSX from 'xlsx';
 
 const StockCard: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -28,6 +29,11 @@ const StockCard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   
   const [variantInfo, setVariantInfo] = useState<any | null>(null);
+  const [dateRange, setDateRange] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], // Awal bulan ini
+    end: new Date().toISOString().split('T')[0]
+  });
+  const [openingBalance, setOpeningBalance] = useState(0);
 
   useEffect(() => {
     fetchVariants();
@@ -39,8 +45,9 @@ const StockCard: React.FC = () => {
     } else {
       setMovements([]);
       setVariantInfo(null);
+      setOpeningBalance(0);
     }
-  }, [selectedVariantId]);
+  }, [selectedVariantId, dateRange]);
 
   const fetchVariants = async () => {
     try {
@@ -54,10 +61,24 @@ const StockCard: React.FC = () => {
   const fetchMovements = async (id: string) => {
     try {
       setLoading(true);
-      const [moveData, vInfo] = await Promise.all([
-        api.get('stock_movements', `id_variant=eq.${id}&order=tanggal.desc`),
-        api.get('material_variants', `id=eq.${id}&select=*,master:materials(*)`)
-      ]);
+      // 1. Ambil Data Mutasi dalam Range (Ascending agar mudah hitung saldo berjalan)
+      const moveData = await api.get('stock_movements', 
+        `id_variant=eq.${id}&tanggal=gte.${dateRange.start}T00:00:00&tanggal=lte.${dateRange.end}T23:59:59&order=tanggal.asc`
+      );
+
+      // 2. Ambil Info Varian
+      const vInfo = await api.get('material_variants', `id=eq.${id}&select=*,master:materials(*)`);
+
+      // 3. Hitung Saldo Awal (Mutasi sebelum startDate)
+      const historicalData = await api.get('stock_movements', 
+        `id_variant=eq.${id}&tanggal=lt.${dateRange.start}T00:00:00&select=tipe,qty`
+      );
+      
+      const initialBal = (historicalData || []).reduce((acc: number, cur: any) => {
+        return cur.tipe === 'IN' ? acc + Number(cur.qty) : acc - Number(cur.qty);
+      }, 0);
+
+      setOpeningBalance(initialBal);
       setMovements(moveData || []);
       setVariantInfo(vInfo?.[0] || null);
     } catch (err) {
@@ -65,6 +86,53 @@ const StockCard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExport = () => {
+    if (!variantInfo || movements.length === 0) {
+      alert('Tidak ada data untuk diekspor');
+      return;
+    }
+
+    // 1. Siapkan Header Informasi
+    const header = [
+      ['KARTU STOK MATERIAL'],
+      [`Periode: ${formatDate(dateRange.start)} s/d ${formatDate(dateRange.end)}`],
+      [''],
+      ['Material:', variantInfo.master?.name || '-'],
+      ['Merk:', variantInfo.merk || '-'],
+      ['Satuan:', variantInfo.master?.unit || '-'],
+      [''],
+      ['Tanggal', 'Tipe', 'Sumber / Referensi', 'Masuk (In)', 'Keluar (Out)', 'Saldo']
+    ];
+
+    // 2. Baris Saldo Awal
+    const rows = [
+      [formatDate(dateRange.start), 'SALDO AWAL', '-', '-', '-', openingBalance]
+    ];
+
+    // 3. Baris Mutasi
+    let runningBalance = openingBalance;
+    movements.forEach(m => {
+      runningBalance = m.tipe === 'IN' ? runningBalance + Number(m.qty) : runningBalance - Number(m.qty);
+      rows.push([
+        formatDate(m.tanggal),
+        m.tipe === 'IN' ? 'MASUK' : m.tipe === 'OUT' ? 'KELUAR' : 'PENYESUAIAN',
+        m.keterangan || m.sumber,
+        m.tipe === 'IN' ? m.qty : 0,
+        m.tipe === 'OUT' ? m.qty : 0,
+        runningBalance
+      ]);
+    });
+
+    // 4. Generate Workbook
+    const ws = XLSX.utils.aoa_to_sheet([...header, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Kartu Stok');
+
+    // 5. Download File
+    const fileName = `KartuStok_${variantInfo.merk.replace(/\s+/g, '_')}_${dateRange.start}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   return (
@@ -79,9 +147,32 @@ const StockCard: React.FC = () => {
             <p className="text-text-secondary font-medium">Riwayat mutasi keluar/masuk material per varian</p>
           </div>
         </div>
-        <Button variant="outline" className="rounded-xl h-12 bg-white">
-          <FileSpreadsheet className="w-5 h-5 mr-2 text-emerald-600" /> Export Excel
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-12 shadow-sm">
+            <Calendar className="w-4 h-4 text-slate-400 mr-2" />
+            <input 
+              type="date" 
+              className="bg-transparent border-none text-xs font-bold focus:outline-none" 
+              value={dateRange.start}
+              onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+            />
+            <span className="mx-2 text-slate-300">-</span>
+            <input 
+              type="date" 
+              className="bg-transparent border-none text-xs font-bold focus:outline-none" 
+              value={dateRange.end}
+              onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+            />
+          </div>
+          <Button 
+            variant="outline" 
+            className="rounded-xl h-12 bg-white hover:bg-slate-50 transition-all border-slate-200"
+            onClick={handleExport}
+            disabled={!selectedVariantId || movements.length === 0}
+          >
+            <FileSpreadsheet className="w-5 h-5 mr-2 text-emerald-600" /> Export Excel
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -141,6 +232,14 @@ const StockCard: React.FC = () => {
                 </TR>
               </THead>
               <TBody>
+                {selectedVariantId && !loading && (
+                  <TR className="bg-slate-50/50 italic">
+                    <TD className="px-6 py-3 font-bold text-slate-400" colSpan={3}>SALDO AWAL (PER {formatDate(dateRange.start)})</TD>
+                    <TD className="px-6 py-3 text-right">-</TD>
+                    <TD className="px-6 py-3 text-right">-</TD>
+                    <TD className="px-6 py-3 text-right font-black text-slate-600">{formatNumber(openingBalance)}</TD>
+                  </TR>
+                )}
                 {loading && selectedVariantId ? (
                   <TR isHoverable={false}>
                     <TD colSpan={6} className="py-20 text-center">
@@ -155,42 +254,57 @@ const StockCard: React.FC = () => {
                   <TR isHoverable={false}>
                     <TD colSpan={6} className="py-20 text-center text-text-muted font-bold uppercase text-[10px] tracking-widest">Belum ada riwayat mutasi</TD>
                   </TR>
-                ) : movements.map(m => (
-                  <TR key={m.id}>
-                    <TD className="px-6 py-4">
-                      <div className="flex items-center gap-2 font-bold text-text-primary">
-                        <Calendar className="w-3 h-3 text-text-muted" />
-                        {formatDate(m.tanggal)}
-                      </div>
-                    </TD>
-                    <TD className="px-6 py-4">
-                      {m.tipe === 'IN' ? (
-                        <span className="px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest flex items-center w-fit gap-1">
-                          <ArrowDownLeft className="w-3 h-3" /> Masuk
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 rounded bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest flex items-center w-fit gap-1">
-                          <ArrowUpRight className="w-3 h-3" /> Keluar
-                        </span>
-                      )}
-                    </TD>
-                    <TD className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-black text-text-primary uppercase">{m.sumber}</span>
-                        <span className="text-[10px] text-text-muted font-medium">{m.reference_id?.slice(0, 8)}...</span>
-                      </div>
-                    </TD>
-                    <TD className="px-6 py-4 text-right font-black text-emerald-600">
-                      {m.tipe === 'IN' ? `+${formatNumber(m.qty)}` : '-'}
-                    </TD>
-                    <TD className="px-6 py-4 text-right font-black text-rose-600">
-                      {m.tipe === 'OUT' ? `-${formatNumber(m.qty)}` : '-'}
-                    </TD>
-                    <TD className="px-6 py-4 text-right font-black text-accent-dark text-lg">
-                      {formatNumber(m.saldo_setelah)}
-                    </TD>
-                  </TR>
-                ))}
+                ) : movements.map((m, idx) => {
+                  // Hitung running balance secara manual berdasarkan urutan array asc
+                  let runningBalance = openingBalance;
+                  for (let i = 0; i <= idx; i++) {
+                    const tx = movements[i];
+                    runningBalance = tx.tipe === 'IN' ? runningBalance + Number(tx.qty) : runningBalance - Number(tx.qty);
+                  }
+
+                  return (
+                    <TR key={m.id}>
+                      <TD className="px-6 py-4">
+                        <div className="flex items-center gap-2 font-bold text-text-primary">
+                          <Calendar className="w-3 h-3 text-text-muted" />
+                          {formatDate(m.tanggal)}
+                        </div>
+                      </TD>
+                      <TD className="px-6 py-4">
+                        {m.tipe === 'IN' ? (
+                          <span className="px-2 py-1 rounded bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest flex items-center w-fit gap-1">
+                            <ArrowDownLeft className="w-3 h-3" /> Masuk
+                          </span>
+                        ) : m.tipe === 'OUT' ? (
+                          <span className="px-2 py-1 rounded bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest flex items-center w-fit gap-1">
+                            <ArrowUpRight className="w-3 h-3" /> Keluar
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 rounded bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-widest flex items-center w-fit gap-1">
+                            Penyesuaian
+                          </span>
+                        )}
+                      </TD>
+                      <TD className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-text-muted uppercase tracking-tighter opacity-70">{m.sumber}</span>
+                          <span className="text-xs font-bold text-text-primary uppercase leading-tight">
+                            {m.keterangan || m.reference_id?.slice(0, 8)}
+                          </span>
+                        </div>
+                      </TD>
+                      <TD className="px-6 py-4 text-right font-black text-emerald-600">
+                        {m.tipe === 'IN' ? `+${formatNumber(m.qty)}` : '-'}
+                      </TD>
+                      <TD className="px-6 py-4 text-right font-black text-rose-600">
+                        {m.tipe === 'OUT' ? `-${formatNumber(m.qty)}` : '-'}
+                      </TD>
+                      <TD className="px-6 py-4 text-right font-black text-accent-dark text-lg">
+                        {formatNumber(runningBalance)}
+                      </TD>
+                    </TR>
+                  );
+                })}
               </TBody>
             </Table>
           </div>
