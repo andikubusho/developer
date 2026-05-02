@@ -37,6 +37,8 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
 
+  const fromPR = !!initialPR;
+
   const { register, handleSubmit, watch, control, setValue, formState: { errors } } = useForm<POFormValues>({
     resolver: zodResolver(poSchema),
     defaultValues: {
@@ -56,9 +58,6 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
   const selectedMaterialId = watch('material_id');
 
   useEffect(() => {
-    if (initialPR && (!initialPR.prId || !initialPR.project_id || !initialPR.material_id)) {
-      console.warn('[PurchaseOrderForm] Data PR awal tidak lengkap:', initialPR);
-    }
     fetchInitialData();
   }, []);
 
@@ -80,6 +79,14 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       setMasters(masterData);
       setSuppliers(supplierData);
       setProjects(projectData);
+
+      // Setelah data dimuat, set ulang nilai dari PR agar select terpilih dengan benar
+      if (initialPR) {
+        setValue('project_id', initialPR.project_id);
+        setValue('material_id', initialPR.material_id);
+        setValue('quantity', initialPR.quantity);
+        if (initialPR.prId) setValue('pr_id', initialPR.prId);
+      }
     } catch (err) {
       console.error('Error fetching initial data:', err);
     }
@@ -99,7 +106,6 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
     try {
       let finalVariantId = values.id_variant;
 
-      // Jika user memilih tambah varian baru
       if (isNewVariant) {
         if (!newVariant.merk) {
           alert('Nama Merk harus diisi untuk varian baru');
@@ -141,18 +147,53 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
     }
   };
 
+  // Label proyek dari data yang sudah dimuat
+  const projectLabel = fromPR
+    ? (projects.find(p => p.id === initialPR!.project_id)?.name || initialPR!.projectName || initialPR!.project_id)
+    : null;
+
+  const materialLabel = fromPR
+    ? (masters.find(m => m.id === initialPR!.material_id)?.name || initialPR!.master?.name || initialPR!.material_id)
+    : null;
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+
+      {/* Banner info sumber PR */}
+      {fromPR && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700">
+          <Lock className="w-4 h-4 flex-shrink-0" />
+          <span className="text-xs font-semibold">
+            PO dibuat dari PR&nbsp;
+            <span className="font-black">PR-{initialPR!.prId?.slice(0, 6).toUpperCase()}</span>
+            &nbsp;— Proyek, material, dan jumlah dikunci sesuai PR.
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
+        {/* Proyek */}
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-text-primary">Proyek</label>
-          <select {...register('project_id')} className="w-full h-12 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none">
-            <option value="">Pilih Proyek</option>
-            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          {errors.project_id && <p className="text-xs text-red-500">{errors.project_id.message}</p>}
+          {fromPR ? (
+            <>
+              <input type="hidden" {...register('project_id')} />
+              <div className="w-full h-12 rounded-xl bg-slate-100 border border-slate-200 px-3 flex items-center text-sm font-semibold text-text-primary select-none">
+                {projectLabel || '...'}
+              </div>
+            </>
+          ) : (
+            <>
+              <select {...register('project_id')} className="w-full h-12 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none">
+                <option value="">Pilih Proyek</option>
+                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              {errors.project_id && <p className="text-xs text-red-500">{errors.project_id.message}</p>}
+            </>
+          )}
         </div>
 
+        {/* Supplier — selalu bisa dipilih */}
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-text-primary">Supplier</label>
           <select {...register('supplier_id')} className="w-full h-12 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none">
@@ -170,21 +211,34 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Master Material */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-text-primary">Master Material</label>
-            <select {...register('material_id')} className="w-full h-12 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none">
-              <option value="">Pilih Master</option>
-              {masters.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-            {errors.material_id && <p className="text-xs text-red-500">{errors.material_id.message}</p>}
+            {fromPR ? (
+              <>
+                <input type="hidden" {...register('material_id')} />
+                <div className="w-full h-12 rounded-xl bg-slate-100 border border-slate-200 px-3 flex items-center text-sm font-semibold text-text-primary select-none">
+                  {materialLabel || '...'}
+                </div>
+              </>
+            ) : (
+              <>
+                <select {...register('material_id')} className="w-full h-12 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none">
+                  <option value="">Pilih Master</option>
+                  {masters.map(m => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+                {errors.material_id && <p className="text-xs text-red-500">{errors.material_id.message}</p>}
+              </>
+            )}
           </div>
 
+          {/* Variant (Merk) — selalu bisa dipilih */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-text-primary">Variant (Merk)</label>
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsNewVariant(!isNewVariant)}
                 className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline"
@@ -192,26 +246,26 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
                 {isNewVariant ? '← Pilih yang ada' : '+ Merk Baru'}
               </button>
             </div>
-            
+
             {isNewVariant ? (
               <div className="flex gap-2">
-                <Input 
-                  placeholder="Nama Merk..." 
+                <Input
+                  placeholder="Nama Merk..."
                   value={newVariant.merk}
                   onChange={(e) => setNewVariant({ ...newVariant, merk: e.target.value })}
                   className="h-12 text-sm rounded-xl"
                 />
-                <Input 
-                  placeholder="Spek (Opsional)" 
+                <Input
+                  placeholder="Spek (Opsional)"
                   value={newVariant.spesifikasi}
                   onChange={(e) => setNewVariant({ ...newVariant, spesifikasi: e.target.value })}
                   className="h-12 text-sm rounded-xl"
                 />
               </div>
             ) : (
-              <select 
-                {...register('id_variant', { valueAsNumber: true })} 
-                disabled={!selectedMaterialId} 
+              <select
+                {...register('id_variant', { valueAsNumber: true })}
+                disabled={!selectedMaterialId}
                 className="w-full h-12 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none disabled:opacity-50"
               >
                 <option value="">Pilih Variant / Merk</option>
@@ -226,19 +280,31 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Controller
-          name="quantity"
-          control={control}
-          render={({ field }) => (
-            <NumberInput
-              label="Jumlah (Qty)"
-              value={field.value}
-              onValueChange={(values) => field.onChange(values.floatValue || 0)}
-              error={errors.quantity?.message}
-              className="h-12"
-            />
-          )}
-        />
+        {/* Jumlah — dikunci jika dari PR */}
+        {fromPR ? (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-text-primary">Jumlah (Qty)</label>
+            <input type="hidden" {...register('quantity', { valueAsNumber: true })} />
+            <div className="w-full h-12 rounded-xl bg-slate-100 border border-slate-200 px-3 flex items-center text-sm font-semibold text-text-primary select-none">
+              {initialPR!.quantity}
+            </div>
+          </div>
+        ) : (
+          <Controller
+            name="quantity"
+            control={control}
+            render={({ field }) => (
+              <NumberInput
+                label="Jumlah (Qty)"
+                value={field.value}
+                onValueChange={(values) => field.onChange(values.floatValue || 0)}
+                error={errors.quantity?.message}
+                className="h-12"
+              />
+            )}
+          />
+        )}
+
         <Controller
           name="unit_price"
           control={control}
@@ -255,18 +321,18 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Input 
-          label="Tanggal Order" 
-          type="date" 
-          {...register('order_date')} 
-          error={errors.order_date?.message} 
+        <Input
+          label="Tanggal Order"
+          type="date"
+          {...register('order_date')}
+          error={errors.order_date?.message}
           className="h-12 rounded-xl"
         />
-        <Input 
-          label="Jatuh Tempo" 
-          type="date" 
-          {...register('due_date')} 
-          error={errors.due_date?.message} 
+        <Input
+          label="Jatuh Tempo"
+          type="date"
+          {...register('due_date')}
+          error={errors.due_date?.message}
           className="h-12 rounded-xl"
         />
       </div>
