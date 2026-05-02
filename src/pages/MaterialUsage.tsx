@@ -104,9 +104,22 @@ const MaterialUsage: React.FC = () => {
   const fetchRabMaterials = async (rabId: string) => {
     try {
       setLoading(true);
-      // Get level 3 items (materials/jobs) from this RAB
-      const items = await api.get('rab_items', `rab_project_id=eq.${rabId}&level=eq.3&select=*,material:materials(*)`);
-      setRabItems(items || []);
+      // Ambil Level 2 (Pekerjaan) dan Level 3 (Material) secara paralel
+      const [itemsL3, itemsL2] = await Promise.all([
+        api.get('rab_items', `rab_project_id=eq.${rabId}&level=eq.3&select=*,material:materials(*)`),
+        api.get('rab_items', `rab_project_id=eq.${rabId}&level=eq.2&select=id,uraian`)
+      ]);
+
+      // Gabungkan data agar item Level 3 mengetahui nama Pekerjaan induknya (Level 2)
+      const mappedItems = (itemsL3 || []).map((l3: any) => {
+        const parent = (itemsL2 || []).find((l2: any) => l2.id === l3.parent_id);
+        return {
+          ...l3,
+          parentUraian: parent ? parent.uraian : 'Tanpa Pekerjaan'
+        };
+      });
+
+      setRabItems(mappedItems);
     } catch (err) {
       console.error('Error fetching RAB materials:', err);
     } finally {
@@ -184,7 +197,7 @@ const MaterialUsage: React.FC = () => {
                   <SearchableSelect 
                     label="1. Pilih Dokumen RAB"
                     options={projects.map(p => ({ 
-                      label: `${p.nama_proyek} [ID: ${p.id.slice(0,5)}] - ${p.lokasi || 'Umum'}`, 
+                      label: `RAB: ${p.nama_proyek} - ${p.lokasi || 'Lokasi Umum'}`, 
                       value: p.id 
                     }))}
                     value={form.rab_project_id}
@@ -198,7 +211,7 @@ const MaterialUsage: React.FC = () => {
                   <SearchableSelect 
                     label="2. Pilih Pekerjaan (Sesuai RAB)"
                     options={rabItems.map(it => ({ 
-                      label: `${it.uraian} [Budget: ${it.volume} ${it.satuan}]`, 
+                      label: `${it.parentUraian} → ${it.uraian} [Budget: ${Number(it.volume).toFixed(2)} ${it.satuan}]`, 
                       value: it.id 
                     }))}
                     value={form.rab_item_id}
