@@ -41,17 +41,29 @@ const ApprovalManager: React.FC = () => {
   const fetchPRs = async () => {
     try {
       setLoading(true);
-      const [prData, projData] = await Promise.all([
+      const [prData, projData, materialData] = await Promise.all([
         api.get('purchase_requests', 'select=*&order=created_at.desc'),
         api.get('projects', 'select=id,name'),
+        api.get('materials', 'select=id,name,unit'),
       ]);
 
       const projMap: Record<string, string> = {};
       (projData || []).forEach((p: any) => { projMap[p.id] = p.name; });
 
+      const matMap: Record<string, any> = {};
+      (materialData || []).forEach((m: any) => { matMap[m.id] = m; });
+
       const enriched = (prData || []).map((pr: any) => ({
         ...pr,
         projectName: pr.project_id ? (projMap[pr.project_id] || 'Unknown') : '-',
+        items: (pr.items || []).map((item: any) => {
+          const mat = matMap[item.material_id];
+          return {
+            ...item,
+            name: item.name || item.materialName || mat?.name || 'Unknown Material',
+            unit: item.unit || mat?.unit || '',
+          };
+        })
       }));
 
       setPrs(enriched);
@@ -73,6 +85,7 @@ const ApprovalManager: React.FC = () => {
     try {
       setLoading(true);
       await api.update('purchase_requests', id, { status });
+      alert(`Berhasil ${status === 'APPROVED' ? 'menyetujui' : 'menolak'} PR.`);
       setIsModalOpen(false);
       fetchPRs();
     } catch (error: any) {
@@ -186,8 +199,11 @@ const ApprovalManager: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'PENDING': return { label: 'MENUNGGU', color: 'bg-amber-100 text-amber-600 border-amber-200', icon: Clock };
+    const s = (status || '').toUpperCase();
+    switch(s) {
+      case 'PENDING': 
+      case 'SUBMITTED':
+        return { label: 'MENUNGGU', color: 'bg-amber-100 text-amber-600 border-amber-200', icon: Clock };
       case 'APPROVED': return { label: 'DISETUJUI', color: 'bg-emerald-100 text-emerald-600 border-emerald-200', icon: CheckCircle2 };
       case 'REJECTED': return { label: 'DITOLAK', color: 'bg-rose-100 text-rose-600 border-rose-200', icon: XCircle };
       default: return { label: status, color: 'bg-gray-100 text-gray-600 border-gray-200', icon: Clock };
@@ -377,7 +393,7 @@ const ApprovalManager: React.FC = () => {
               </Button>
 
               <div className="flex-1 flex gap-4">
-                {selectedPR.status === 'PENDING' && (
+                {['PENDING', 'SUBMITTED'].includes((selectedPR.status || '').toUpperCase()) && (
                   <>
                     <Button 
                       variant="ghost" 
