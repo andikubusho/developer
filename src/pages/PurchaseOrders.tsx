@@ -1,20 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Trash2, 
-  Package, 
-  Truck, 
-  CheckCircle2, 
+import {
+  Plus,
+  Search,
+  Filter,
+  Trash2,
+  Package,
+  Truck,
+  CheckCircle2,
   ArrowLeft,
   RefreshCw,
   FileText,
   Clock,
   XCircle,
-  ClipboardList
+  ClipboardList,
+  Eye,
+  Pencil,
+  Download,
+  Printer
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { PurchaseOrder, Material, PRItemForPO } from '../types';
@@ -162,6 +166,59 @@ const PurchaseOrders: React.FC = () => {
     }
   };
 
+  const handleDelete = async (id: string, poNumber: string) => {
+    if (!confirm(`Hapus PO ${poNumber}? Tindakan ini tidak dapat dibatalkan.`)) return;
+    try {
+      await api.delete('purchase_orders', id);
+      fetchOrders();
+    } catch (error) {
+      console.error('Error deleting PO:', error);
+      alert('Gagal menghapus PO.');
+    }
+  };
+
+  const handlePrint = (order: any) => {
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>PO - ${order.po_number}</title>
+      <style>body{font-family:Arial,sans-serif;padding:32px}h2{margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}</style>
+      </head><body>
+      <h2>PURCHASE ORDER</h2>
+      <p><b>No. PO:</b> ${order.po_number || '-'} &nbsp;&nbsp; <b>Status:</b> ${order.status}</p>
+      <p><b>Proyek:</b> ${order.project?.name || '-'} &nbsp;&nbsp; <b>Supplier:</b> ${order.supplier?.name || '-'}</p>
+      <p><b>Tanggal Order:</b> ${order.order_date ? formatDate(order.order_date) : '-'} &nbsp;&nbsp; <b>Jatuh Tempo:</b> ${order.due_date ? formatDate(order.due_date) : '-'}</p>
+      <table><tr><th>Qty</th><th>Harga Satuan</th><th>Total</th></tr>
+      <tr><td>${order.quantity || '-'}</td><td>${formatCurrency(order.unit_price)}</td><td>${formatCurrency(order.total_price)}</td></tr>
+      </table>
+      <script>window.onload=()=>{window.print();window.close();}</script>
+      </body></html>
+    `);
+    win.document.close();
+  };
+
+  const handleDownload = (order: any) => {
+    const rows = [
+      ['No. PO', order.po_number || '-'],
+      ['Status', order.status],
+      ['Proyek', order.project?.name || '-'],
+      ['Supplier', order.supplier?.name || '-'],
+      ['Tanggal Order', order.order_date ? formatDate(order.order_date) : '-'],
+      ['Jatuh Tempo', order.due_date ? formatDate(order.due_date) : '-'],
+      ['Qty', order.quantity || '-'],
+      ['Harga Satuan', order.unit_price || 0],
+      ['Total', order.total_price || 0],
+    ];
+    const csv = rows.map(r => `"${r[0]}","${r[1]}"`).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${order.po_number || 'PO'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const filteredOrders = orders.filter(order => 
     (order.po_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (order.supplier?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -258,9 +315,23 @@ const PurchaseOrders: React.FC = () => {
                       </span>
                     </TD>
                     <TD className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => navigate(`/purchase-orders/${order.id}`)}>
-                        Detail
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button title="Detail" onClick={() => navigate(`/purchase-orders/${order.id}`)} className="p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 transition-colors">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button title="Edit" onClick={() => { setSelectedOrder(order); setIsModalOpen(true); }} className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button title="Download CSV" onClick={() => handleDownload(order)} className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 transition-colors">
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button title="Print" onClick={() => handlePrint(order)} className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 transition-colors">
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button title="Hapus" onClick={() => handleDelete(order.id, order.po_number)} className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </TD>
                   </TR>
                 ))
