@@ -14,7 +14,7 @@ import { SearchableSelect } from '../ui/SearchableSelect';
 const poSchema = z.object({
   project_id: z.string().min(1, 'Proyek harus dipilih'),
   material_id: z.string().min(1, 'Master Material harus dipilih'),
-  id_variant: z.preprocess((val: unknown) => (typeof val === 'number' && isNaN(val)) ? undefined : val, z.number().optional()),
+  id_variant: z.number().optional(),
   supplier_id: z.string().min(1, 'Supplier harus dipilih'),
   quantity: z.number().min(1, 'Jumlah minimal 1'),
   unit_price: z.number().min(0, 'Harga harus positif'),
@@ -657,27 +657,35 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
                 />
               </div>
             ) : (
-              <div className="flex gap-2">
-                <select
-                  {...register('id_variant')}
-                  className="flex-1 h-14 rounded-2xl bg-white border-2 border-slate-100 px-5 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender appearance-none cursor-pointer shadow-sm transition-all"
-                >
-                  <option value="">Pilih Variant / Merk</option>
-                  {variants.map(v => (
-                    <option key={v.id} value={v.id}>{v.merk}{v.spesifikasi ? ` (${v.spesifikasi})` : ''}</option>
-                  ))}
-                </select>
-                {watch('id_variant') && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteVariant(Number(watch('id_variant')))}
-                    className="w-14 h-14 flex items-center justify-center rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors border-2 border-rose-100 shadow-sm"
-                    title="Hapus Varian"
+              <Controller
+              name="id_variant"
+              control={control}
+              render={({ field }) => (
+                <div className="flex gap-2">
+                  <select
+                    {...field}
+                    value={field.value || ''}
+                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                    className="flex-1 h-14 rounded-2xl bg-white border-2 border-slate-100 px-5 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender appearance-none cursor-pointer shadow-sm transition-all"
                   >
-                    <Trash2 className="w-6 h-6" />
-                  </button>
-                )}
-              </div>
+                    <option value="">Pilih Variant / Merk</option>
+                    {variants.map(v => (
+                      <option key={v.id} value={v.id}>{v.merk}{v.spesifikasi ? ` (${v.spesifikasi})` : ''}</option>
+                    ))}
+                  </select>
+                  {field.value && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteVariant(Number(field.value))}
+                      className="w-14 h-14 flex items-center justify-center rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors border-2 border-rose-100 shadow-sm"
+                      title="Hapus Varian"
+                    >
+                      <Trash2 className="w-6 h-6" />
+                    </button>
+                  )}
+                </div>
+              )}
+            />
             )}
             {errors.id_variant && !isNewVariant && <p className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.id_variant.message}</p>}
           </div>
