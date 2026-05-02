@@ -30,7 +30,7 @@ interface Supplier {
   phone: string;
   contact_person: string;
   bank_name: string;
-  account_number: string;
+  bank_account_number: string;
   created_at: string;
 }
 
@@ -47,13 +47,13 @@ const Suppliers: React.FC = () => {
     phone: '',
     contact_person: '',
     bank_name: '',
-    account_number: ''
+    bank_account_number: ''
   });
 
   const fetchSuppliers = async () => {
     try {
       setLoading(true);
-      const data = await api.get('suppliers', 'select=*&order=created_at.desc');
+      const data = await api.get('material_suppliers', 'select=*&order=created_at.desc');
       setSuppliers(data || []);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
@@ -71,14 +71,14 @@ const Suppliers: React.FC = () => {
     try {
       setLoading(true);
       if (editingSupplier) {
-        await api.update('suppliers', editingSupplier.id, form);
+        await api.update('material_suppliers', editingSupplier.id, form);
       } else {
-        await api.insert('suppliers', form);
+        await api.insert('material_suppliers', form);
       }
 
       setIsModalOpen(false);
       setEditingSupplier(null);
-      setForm({ name: '', address: '', phone: '', contact_person: '', bank_name: '', account_number: '' });
+      setForm({ name: '', address: '', phone: '', contact_person: '', bank_name: '', bank_account_number: '' });
       fetchSuppliers();
     } catch (error: any) {
       console.error('Error saving supplier:', error);
@@ -92,7 +92,7 @@ const Suppliers: React.FC = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus supplier ini?')) return;
     try {
       setLoading(true);
-      await api.delete('suppliers', id);
+      await api.delete('material_suppliers', id);
       fetchSuppliers();
     } catch (error) {
       console.error('Error deleting supplier:', error);
@@ -120,7 +120,7 @@ const Suppliers: React.FC = () => {
             <p className="text-text-secondary font-medium">Kelola daftar pemasok material konstruksi</p>
           </div>
         </div>
-        <Button onClick={() => { setEditingSupplier(null); setForm({ name: '', address: '', phone: '', contact_person: '', bank_name: '', account_number: '' }); setIsModalOpen(true); }} className="rounded-xl h-12 px-8 shadow-premium">
+        <Button onClick={() => { setEditingSupplier(null); setForm({ name: '', address: '', phone: '', contact_person: '', bank_name: '', bank_account_number: '' }); setIsModalOpen(true); }} className="rounded-xl h-12 px-8 shadow-premium">
           <Plus className="w-5 h-5 mr-2" /> Tambah Supplier
         </Button>
       </div>
@@ -220,12 +220,12 @@ const Suppliers: React.FC = () => {
                       <div className="font-black text-text-primary flex items-center gap-1">
                         <CreditCard className="w-2 h-2" /> {s.bank_name}
                       </div>
-                      <div className="text-text-muted">{s.account_number}</div>
+                      <div className="text-text-muted">{s.bank_account_number}</div>
                     </div>
                   </TD>
                   <TD className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => { setEditingSupplier(s); setForm({ name: s.name, address: s.address, phone: s.phone, contact_person: s.contact_person, bank_name: s.bank_name, account_number: s.account_number || '' }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-white/40">
+                      <Button variant="ghost" size="sm" onClick={() => { setEditingSupplier(s); setForm({ name: s.name, address: s.address, phone: s.phone, contact_person: s.contact_person, bank_name: s.bank_name, bank_account_number: s.bank_account_number || '' }); setIsModalOpen(true); }} className="h-9 w-9 p-0 rounded-xl hover:bg-white/40">
                         <Pencil className="w-4 h-4 text-accent-dark" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDelete(s.id)} className="h-9 w-9 p-0 rounded-xl hover:bg-rose-50">
@@ -306,8 +306,8 @@ const Suppliers: React.FC = () => {
               <label className="text-xs font-black text-text-muted uppercase tracking-[0.2em] block ml-1">Nomor Rekening</label>
               <Input 
                 placeholder="0001234567"
-                value={form.account_number}
-                onChange={(e) => setForm({ ...form, account_number: e.target.value })}
+                value={form.bank_account_number}
+                onChange={(e) => setForm({ ...form, bank_account_number: e.target.value })}
                 className="h-12 rounded-xl border-white/40 focus:border-primary shadow-glass"
               />
             </div>

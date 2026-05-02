@@ -88,7 +88,7 @@ const PurchaseOrders: React.FC = () => {
         api.get('purchase_orders', 'select=*&order=created_at.desc'),
         api.get('purchase_requests', 'select=*&order=created_at.desc'),
         api.get('projects', 'select=id,name'),
-        api.get('suppliers', 'select=id,name'),
+        api.get('material_suppliers', 'select=id,name'),
         api.get('materials', 'select=id,name,unit,code'),
         api.get('units', 'select=id,unit_number'),
       ]);

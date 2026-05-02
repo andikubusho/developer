@@ -74,7 +74,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
     try {
       const [masterData, supplierData, projectData] = await Promise.all([
         api.get('materials', 'select=id,name&order=name.asc'),
-        api.get('suppliers', 'select=id,name&order=name.asc'),
+        api.get('material_suppliers', 'select=id,name&order=name.asc'),
         api.get('projects', 'select=id,name&order=name.asc')
       ]);
       setMasters(masterData);
