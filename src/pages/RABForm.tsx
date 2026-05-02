@@ -179,7 +179,7 @@ const RABForm: React.FC = () => {
         const [projData, rabData, matData] = await Promise.all([
           api.get('projects', 'select=id,name,location&order=name.asc'),
           api.get('rab_projects', 'select=id,nama_proyek,lokasi,created_at&order=created_at.desc'),
-          api.get('materials', 'select=id,name,unit&order=name.asc')
+          api.get('materials', 'select=id,name,unit,unit_price&order=name.asc')
         ]);
         setProjects(projData || []);
         setExistingRabs(rabData || []);
@@ -714,7 +714,6 @@ const RABForm: React.FC = () => {
           kategori: projectHeader.unit_id || null,
           nama_proyek: projectHeader.nama_proyek,
           lokasi: projectHeader.lokasi,
-          keterangan: projectHeader.keterangan,
           total_anggaran: grandTotal,
         });
         projectId = editId;
@@ -732,7 +731,6 @@ const RABForm: React.FC = () => {
           kategori: projectHeader.unit_id || null,
           nama_proyek: projectHeader.nama_proyek,
           lokasi: projectHeader.lokasi,
-          keterangan: projectHeader.keterangan,
           total_anggaran: grandTotal,
         });
         projectId = project[0].id;
@@ -881,7 +879,7 @@ const RABForm: React.FC = () => {
                     value={node.uraian}
                     onChange={(e) => updateNode(node.id, { uraian: e.target.value })}
                     placeholder={isLevel0 ? "Nama Lantai / Bagian..." : isLevel1 ? "Kelompok Pekerjaan..." : "Deskripsi..."}
-                    className="bg-transparent border-none focus:ring-0 w-full p-0 font-inherit placeholder-text-muted"
+                    className="bg-transparent border-none focus:ring-0 w-full p-0 font-inherit text-inherit placeholder-text-muted"
                   />
                 )}
               </div>
