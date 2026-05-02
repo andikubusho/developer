@@ -178,27 +178,29 @@ const RealCostPage: React.FC = () => {
         variance: rabTotal - totalActual,
         materialVariance: rabMaterial - materialActual,
         wageVariance: rabWage - wageActual,
-        rabItems: (rabItems || []).map((ri: any) => {
-          // Hitung pemakaian material untuk item ini
-          const itemMaterialActual = (usageData || [])
-            .filter((u: any) => u.rab_item_id === ri.id)
-            .reduce((sum: number, u: any) => sum + (Number(u.qty) * (u.variant?.harga_terakhir || 0)), 0);
-          
-          // Hitung pemakaian upah untuk item ini
-          const itemWageActual = (opnameItemData || [])
-            .filter((o: any) => o.rab_item_id === ri.id)
-            .reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0);
-          
-          const totalItemBudget = ((ri.material_price || 0) + (ri.wage_price || 0)) * (ri.volume || 1) * (ri.koeff || 1);
-          const totalItemActual = itemMaterialActual + itemWageActual;
-          
-          return {
-            ...ri,
-            totalBudget: totalItemBudget,
-            totalActual: totalItemActual,
-            usagePercentage: totalItemBudget > 0 ? (totalItemActual / totalItemBudget) * 100 : 0
-          };
-        }),
+        rabItems: (rabItems || [])
+          .filter((ri: any) => (ri.material_price || 0) > 0 || (ri.wage_price || 0) > 0 || (ri.volume || 0) > 0)
+          .map((ri: any) => {
+            // Hitung pemakaian material untuk item ini
+            const itemMaterialActual = (usageData || [])
+              .filter((u: any) => u.rab_item_id === ri.id)
+              .reduce((sum: number, u: any) => sum + (Number(u.qty) * (u.variant?.harga_terakhir || 0)), 0);
+            
+            // Hitung pemakaian upah untuk item ini
+            const itemWageActual = (opnameItemData || [])
+              .filter((o: any) => o.rab_item_id === ri.id)
+              .reduce((sum: number, o: any) => sum + Number(o.amount_opname), 0);
+            
+            const totalItemBudget = ((ri.material_price || 0) + (ri.wage_price || 0)) * (ri.volume || 1) * (ri.koeff || 1);
+            const totalItemActual = itemMaterialActual + itemWageActual;
+            
+            return {
+              ...ri,
+              totalBudget: totalItemBudget,
+              totalActual: totalItemActual,
+              usagePercentage: totalItemBudget > 0 ? (totalItemActual / totalItemBudget) * 100 : 0
+            };
+          }),
         materialUsages: usageData || [],
         wageOpnames: opnameItemData || []
       });
