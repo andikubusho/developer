@@ -340,57 +340,76 @@ const PurchaseOrders: React.FC = () => {
           </Table>
       </Card>
       
-      {/* Approved PR Items Section */}
-      <Card>
-        <div className="p-4 border-b border-white/40">
-          <h2 className="text-lg font-bold">PR Disetujui (Belum PO)</h2>
+      {/* Approved PR Items Section — grouped by PR */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-lg font-bold text-text-primary">PR Disetujui (Belum PO)</h2>
+          <span className="text-xs font-black text-text-secondary uppercase tracking-widest">
+            {Object.keys(approvedPRItems.reduce((a: any, i) => { a[i.prId] = 1; return a; }, {})).length} PR
+          </span>
         </div>
-        <Table>
-          <THead>
-            <TR>
-              <TH>Proyek</TH>
-              <TH>Unit</TH>
-              <TH>Material</TH>
-              <TH>Qty</TH>
-              <TH>Aksi</TH>
-            </TR>
-          </THead>
-          <TBody>
-            {approvedPRItems.length === 0 ? (
-              <TR>
-                <TD colSpan={5} className="text-center py-4 text-text-secondary text-sm">Tidak ada PR yang menunggu PO</TD>
-              </TR>
-            ) : (
-              approvedPRItems.map((item, idx) => (
-                <TR key={idx}>
-                  <TD className="py-3 font-bold text-text-primary">{item.projectName}</TD>
-                  <TD className="text-sm font-medium">{item.unitNumber}</TD>
-                    <TD>
-                       <div className="flex items-center gap-2">
-                         <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-black text-slate-600">{item.master?.code || '-'}</span>
-                         <span className="font-bold text-text-primary">{item.master?.name || item.nama_material}</span>
-                       </div>
-                    </TD>
-                  <TD className="font-black text-text-primary">{item.quantity}</TD>
-                  <TD>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="rounded-xl"
-                      onClick={() => {
-                        setSelectedPR(item);
-                        setIsModalOpen(true);
-                      }}
-                    >
-                      Buat PO
-                    </Button>
-                  </TD>
-                </TR>
-              ))
-            )}
-          </TBody>
-        </Table>
-      </Card>
+
+        {approvedPRItems.length === 0 ? (
+          <Card>
+            <div className="py-10 text-center text-text-secondary text-sm">Tidak ada PR yang menunggu PO</div>
+          </Card>
+        ) : (
+          Object.values(
+            approvedPRItems.reduce((groups: any, item) => {
+              if (!groups[item.prId]) {
+                groups[item.prId] = { prId: item.prId, projectName: item.projectName, unitNumber: item.unitNumber, createdAt: item.createdAt, items: [] };
+              }
+              groups[item.prId].items.push(item);
+              return groups;
+            }, {})
+          ).map((group: any) => (
+            <Card key={group.prId} className="overflow-hidden">
+              {/* PR Header */}
+              <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <span className="px-2.5 py-1 rounded-lg bg-accent-dark text-white text-[11px] font-black tracking-widest">
+                    PR-{group.prId.slice(0, 6).toUpperCase()}
+                  </span>
+                  <span className="font-bold text-text-primary text-sm">{group.projectName}</span>
+                  {group.unitNumber && group.unitNumber !== '-' && (
+                    <span className="text-xs text-text-secondary">· Unit {group.unitNumber}</span>
+                  )}
+                </div>
+                <span className="text-xs text-text-secondary">{formatDate(group.createdAt)}</span>
+              </div>
+
+              {/* Items */}
+              <div className="divide-y divide-slate-50">
+                {group.items.map((item: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50/60 transition-colors cursor-pointer group"
+                    onClick={() => { setSelectedPR(item); setIsModalOpen(true); }}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-black text-slate-500 shrink-0">
+                        {item.master?.code || '-'}
+                      </span>
+                      <span className="font-semibold text-text-primary text-sm">{item.master?.name || '-'}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-black text-text-primary w-12 text-right">{item.quantity}</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => { e.stopPropagation(); setSelectedPR(item); setIsModalOpen(true); }}
+                      >
+                        Buat PO
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
 
       <Modal
         isOpen={isModalOpen}
