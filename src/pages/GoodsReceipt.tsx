@@ -117,6 +117,26 @@ const GoodsReceipt: React.FC = () => {
     }
   };
 
+  const handleDeleteGR = async (gr: any) => {
+    if (!confirm(`Batalkan penerimaan barang "${gr.material?.name}"? Stok akan dikurangi kembali.`)) return;
+
+    try {
+      setLoading(true);
+      await api.delete('goods_receipts', gr.id);
+      
+      // Jika PO sudah COMPLETED, kita bisa pertimbangkan untuk mengembalikannya ke PENDING
+      // Namun untuk keamanan stok, yang terpenting adalah catatan GR terhapus
+      // dan trigger DB mengurus saldo stok.
+      
+      await fetchData();
+    } catch (err) {
+      console.error('Error deleting GR:', err);
+      alert('Gagal menghapus riwayat penerimaan.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredOrders = orders.filter(o => 
     o.po_number.toLowerCase().includes(search.toLowerCase()) ||
     o.project?.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -257,13 +277,14 @@ const GoodsReceipt: React.FC = () => {
                   <TH>Material & Merk</TH>
                   <TH className="text-right">Kuantitas Masuk</TH>
                   <TH className="text-right">Status</TH>
+                  <TH className="text-right">Aksi</TH>
                 </TR>
               </THead>
               <TBody>
                 {loading ? (
-                  <TR isHoverable={false}><TD colSpan={4} className="py-8 text-center"><RefreshCw className="w-5 h-5 animate-spin mx-auto text-slate-300" /></TD></TR>
+                  <TR isHoverable={false}><TD colSpan={5} className="py-8 text-center"><RefreshCw className="w-5 h-5 animate-spin mx-auto text-slate-300" /></TD></TR>
                 ) : history.length === 0 ? (
-                  <TR isHoverable={false}><TD colSpan={4} className="py-8 text-center text-slate-400 italic">Belum ada riwayat penerimaan.</TD></TR>
+                  <TR isHoverable={false}><TD colSpan={5} className="py-8 text-center text-slate-400 italic">Belum ada riwayat penerimaan.</TD></TR>
                 ) : history.map((h, i) => (
                   <TR key={i}>
                     <TD>
@@ -281,6 +302,15 @@ const GoodsReceipt: React.FC = () => {
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-tighter">
                         <CheckCircle2 className="w-3 h-3" /> Berhasil
                       </span>
+                    </TD>
+                    <TD className="text-right">
+                      <button 
+                        onClick={() => handleDeleteGR(h)}
+                        className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 transition-colors"
+                        title="Batalkan Penerimaan"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
                     </TD>
                   </TR>
                 ))}
