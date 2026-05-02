@@ -117,6 +117,7 @@ const RABForm: React.FC = () => {
   const [existingRabs, setExistingRabs] = useState<any[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
   const [loadingExisting, setLoadingExisting] = useState(false);
+  const [showSyncSuccess, setShowSyncSuccess] = useState(false);
 
   // Handle imported tree from list page
   useEffect(() => {
@@ -543,6 +544,50 @@ const RABForm: React.FC = () => {
     };
     reader.readAsBinaryString(file);
     e.target.value = '';
+  };
+  
+  const handleSyncPrices = () => {
+    if (!materials || materials.length === 0) {
+      alert('Data master material belum termuat sempurna. Silakan tunggu sebentar.');
+      return;
+    }
+
+    if (!confirm('Perbarui semua harga material di RAB ini sesuai harga Master saat ini? Tindakan ini akan menimpa harga material yang sudah ada di tabel.')) {
+      return;
+    }
+
+    const priceMap: Record<string, number> = {};
+    materials.forEach((m: any) => {
+      priceMap[m.id] = Number(m.harga_satuan || 0);
+    });
+
+    let changeCount = 0;
+    const updateRecursive = (nodes: RABNode[]): RABNode[] => {
+      return nodes.map(node => {
+        let updatedNode = { ...node };
+        if (node.level === 3 && node.material_id && priceMap[node.material_id] !== undefined) {
+          const newPrice = priceMap[node.material_id];
+          if (updatedNode.material_price !== newPrice) {
+            updatedNode.material_price = newPrice;
+            changeCount++;
+          }
+        }
+        if (node.children && node.children.length > 0) {
+          updatedNode.children = updateRecursive(node.children);
+        }
+        return updatedNode;
+      });
+    };
+
+    const newTree = updateRecursive(tree);
+    if (changeCount === 0) {
+      alert('Semua harga sudah sesuai dengan Master Material.');
+    } else {
+      setTree(newTree);
+      setShowSyncSuccess(true);
+      // Auto hide banner after 10 seconds
+      setTimeout(() => setShowSyncSuccess(false), 10000);
+    }
   };
 
   // --- Tree Mutations ---
@@ -1171,6 +1216,13 @@ const RABForm: React.FC = () => {
           <Button variant="outline" onClick={() => setIsCopyModalOpen(true)} className="h-12 px-6 rounded-xl bg-white shadow-glass font-bold text-text-primary">
             <Copy className="w-4 h-4 mr-2 text-accent-dark" /> Salin Dari RAB Lain
           </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleSyncPrices} 
+            className="h-12 px-6 rounded-xl bg-white border-amber-200 shadow-glass font-bold text-amber-700 hover:bg-amber-50"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" /> Sinkron Harga Master
+          </Button>
           <Button variant="ghost" onClick={handleReset} className="h-12 px-6 rounded-xl glass-input font-bold text-rose-500">
             <RotateCcw className="w-4 h-4 mr-2" /> Reset
           </Button>
@@ -1261,6 +1313,28 @@ const RABForm: React.FC = () => {
           </div>
         </div>
       </Card>
+
+      {showSyncSuccess && (
+        <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-[2rem] flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500 shadow-sm mx-1">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200">
+              <Save className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-emerald-900 uppercase tracking-widest">Harga Berhasil Disinkronkan!</p>
+              <p className="text-[11px] font-bold text-emerald-700 mt-0.5">
+                Nilai RAB telah diperbarui mengikuti harga Master terbaru. Pastikan untuk menekan tombol <span className="underline italic text-emerald-900 font-black">SIMPAN RAB</span> di atas untuk menyimpan perubahan ini secara permanen.
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setShowSyncSuccess(false)} 
+            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-emerald-100 text-emerald-400 hover:text-emerald-600 transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
       {/* Main Table */}
       <Card className="p-0 border-none shadow-premium bg-white overflow-hidden rounded-[2rem]">
