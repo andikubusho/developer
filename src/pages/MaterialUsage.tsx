@@ -55,15 +55,17 @@ const MaterialUsage: React.FC = () => {
       ]);
 
       const unitsMap: Record<string, any> = {};
-      (unitsData || []).forEach((u: any) => { unitsMap[u.id] = u; });
+      if (Array.isArray(unitsData)) {
+        unitsData.forEach((u: any) => { if (u?.id) unitsMap[u.id] = u; });
+      }
 
       const enriched = (rabData || []).map((r: any) => ({
         ...r,
-        unit: r.unit_id ? unitsMap[r.unit_id] : null
+        unit: (r.unit_id && unitsMap[r.unit_id]) ? unitsMap[r.unit_id] : null
       }));
 
       setProjects(enriched);
-      setHistory(historyData || []);
+      setHistory(Array.isArray(historyData) ? historyData : []);
     } catch (err) {
       console.error('Error fetching initial data:', err);
     } finally {
@@ -130,6 +132,11 @@ const MaterialUsage: React.FC = () => {
       });
 
       setRabItems(mappedItems);
+      // Sinkronkan data masters agar sidebar (Info Sidebar) bisa menampilkan nama & unit material
+      const materialMasters = mappedItems
+        .filter((it: any) => it.material)
+        .map((it: any) => it.material);
+      setMasters(materialMasters);
     } catch (err) {
       console.error('Error fetching RAB materials:', err);
     } finally {
@@ -206,9 +213,9 @@ const MaterialUsage: React.FC = () => {
                 <div className="md:col-span-2 p-1 bg-accent-lavender/5 rounded-[2rem] border-2 border-accent-lavender/10">
                   <SearchableSelect 
                     label="1. Pilih Dokumen RAB"
-                    options={projects.map(p => ({ 
-                      label: `RAB: ${p.nama_proyek}${p.unit ? ` - ${p.unit.unit_number}` : ''} - ${p.lokasi || 'Lokasi Umum'}${p.keterangan ? ` (${p.keterangan})` : ''}`, 
-                      value: p.id 
+                    options={(projects || []).map(p => ({ 
+                      label: `RAB: ${p?.nama_proyek || 'Tanpa Nama'}${p?.unit?.unit_number ? ` - ${p.unit.unit_number}` : ''} - ${p?.lokasi || 'Lokasi Umum'}${p?.keterangan ? ` (${p.keterangan})` : ''}`, 
+                      value: p?.id 
                     }))}
                     value={form.rab_project_id}
                     onChange={(val) => setForm({ ...form, rab_project_id: val, rab_item_id: '', material_id: '', id_variant: '' })}
