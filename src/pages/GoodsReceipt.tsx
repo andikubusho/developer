@@ -127,7 +127,7 @@ const GoodsReceipt: React.FC = () => {
           saldo_setelah: newStok,
           sumber: 'GR',
           reference_id: grResponse?.[0]?.id || 'Manual',
-          keterangan: `Terima dari PO: ${selectedPO.po_number}${form.worker_id ? ` (Penerima: ${workers.find(w => w.id === form.worker_id)?.name})` : ''}`,
+          keterangan: `${selectedPO.project?.name || 'UMUM'} | Terima dari PO: ${selectedPO.po_number}${form.worker_id ? ` | Penerima: ${workers.find(w => w.id === form.worker_id)?.name}` : ''}`,
           worker_id: form.worker_id || null
         });
 

@@ -199,7 +199,7 @@ const MaterialUsage: React.FC = () => {
       const project = projects.find(p => p.id === form.rab_project_id);
       const item = rabItems.find(it => it.id === form.rab_item_id);
       const selectedWorker = workers.find(w => w.id === form.worker_id);
-      const referenceLabel = `Proyek: ${project?.nama_proyek || 'Umum'}${project?.unit ? ` (${project.unit.unit_number})` : ''} - ${item?.uraian || 'Pemakaian'}${selectedWorker ? ` (Mandor: ${selectedWorker.name})` : ''}`;
+      const referenceLabel = `${project?.nama_proyek || 'UMUM'}${project?.unit ? ` (${project.unit.unit_number})` : ''} - ${item?.uraian || 'Pemakaian'}${selectedWorker ? ` | Mandor: ${selectedWorker.name}` : ''}`;
 
       await api.insert('stock_movements', {
         id_variant: parseInt(form.id_variant),
