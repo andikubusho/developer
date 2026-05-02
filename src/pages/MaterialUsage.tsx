@@ -47,12 +47,22 @@ const MaterialUsage: React.FC = () => {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      // Fetch RAB Projects and Recent Usage History
-      const [rabData, historyData] = await Promise.all([
+      // Fetch RAB Projects, Recent Usage History, and Unit Info
+      const [rabData, historyData, unitsData] = await Promise.all([
         api.get('rab_projects', 'select=*&order=nama_proyek.asc'),
-        api.get('material_usages', 'select=*,rab:rab_projects(nama_proyek),material:materials(name,unit),variant:material_variants(merk)&order=tanggal.desc&limit=10')
+        api.get('material_usages', 'select=*,rab:rab_projects(nama_proyek),material:materials(name,unit),variant:material_variants(merk)&order=tanggal.desc&limit=10'),
+        api.get('units', 'select=id,unit_number,type')
       ]);
-      setProjects(rabData || []);
+
+      const unitsMap: Record<string, any> = {};
+      (unitsData || []).forEach((u: any) => { unitsMap[u.id] = u; });
+
+      const enriched = (rabData || []).map((r: any) => ({
+        ...r,
+        unit: r.unit_id ? unitsMap[r.unit_id] : null
+      }));
+
+      setProjects(enriched);
       setHistory(historyData || []);
     } catch (err) {
       console.error('Error fetching initial data:', err);
@@ -197,7 +207,7 @@ const MaterialUsage: React.FC = () => {
                   <SearchableSelect 
                     label="1. Pilih Dokumen RAB"
                     options={projects.map(p => ({ 
-                      label: `RAB: ${p.nama_proyek} - ${p.lokasi || 'Lokasi Umum'}${p.keterangan ? ` (${p.keterangan})` : ''}`, 
+                      label: `RAB: ${p.nama_proyek}${p.unit ? ` - ${p.unit.unit_number}` : ''} - ${p.lokasi || 'Lokasi Umum'}${p.keterangan ? ` (${p.keterangan})` : ''}`, 
                       value: p.id 
                     }))}
                     value={form.rab_project_id}
