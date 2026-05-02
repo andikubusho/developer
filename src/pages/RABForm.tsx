@@ -693,10 +693,10 @@ const RABForm: React.FC = () => {
   }, [computedTree]);
 
   const sectionTotals = useMemo(() => {
+    // Sum ALL visible Total Material values (including reference items under LANGSUNG mode)
     const calcMat = (node: any): number => {
       if (node.level === 3 && !node.is_manual) return (node.jumlah_material || 0) * (node.material_price || 0);
       if (node.level === 3 && node.is_manual) return node.harga_rab || 0;
-      if (node.level === 2 && node.is_manual) return (node.volume || 0) * (node.material_price || 0);
       return (node.children || []).reduce((s: number, c: any) => s + calcMat(c), 0);
     };
     const calcWage = (node: any): number => {
