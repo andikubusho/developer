@@ -664,6 +664,27 @@ const RABForm: React.FC = () => {
     return computedTree.reduce((sum, node) => sum + node.subtotal, 0);
   }, [computedTree]);
 
+  const { totalMaterial, totalWage } = useMemo(() => {
+    let mat = 0;
+    let wage = 0;
+    const walk = (nodes: any[]) => {
+      nodes.forEach(node => {
+        if (node.level === 3 && !node.is_manual) {
+          const qty = node.jumlah_material || 0;
+          mat += qty * (node.material_price || 0);
+          wage += qty * (node.wage_price || 0);
+        } else if (node.level === 2 && node.is_manual) {
+          const qty = node.volume || 0;
+          mat += qty * (node.material_price || 0);
+          wage += qty * (node.wage_price || 0);
+        }
+        if (node.children?.length) walk(node.children);
+      });
+    };
+    walk(computedTree);
+    return { totalMaterial: mat, totalWage: wage };
+  }, [computedTree]);
+
   // --- Persistence ---
 
   const handleSave = async () => {
@@ -1221,6 +1242,30 @@ const RABForm: React.FC = () => {
                   </TD>
                 </TR>
               )}
+              {tree.length > 0 && (
+                <>
+                  <tr className="border-t-2 border-gray-300 bg-gray-50">
+                    <td colSpan={5} className="px-4 py-3 text-xs font-black text-gray-600 uppercase tracking-widest">Rekapitulasi</td>
+                    <td className="px-4 py-3 text-right text-xs font-black text-blue-700">{formatCurrency(totalMaterial)}</td>
+                    <td className="px-4 py-3 text-right text-xs font-black text-orange-600">{formatCurrency(totalWage)}</td>
+                    <td className="px-4 py-3 text-right text-sm font-black text-accent-dark">{formatCurrency(grandTotal)}</td>
+                    <td className="px-4 py-3" />
+                  </tr>
+                  <tr className="bg-accent-dark/5">
+                    <td colSpan={5} className="px-4 py-2 text-[10px] text-gray-500 uppercase tracking-widest">
+                      <span className="inline-flex items-center gap-4">
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Material</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" />Upah</span>
+                      </span>
+                    </td>
+                    <td colSpan={4} className="px-4 py-2 text-right text-[10px] text-gray-500">
+                      {grandTotal > 0 && (
+                        <span>Material {Math.round(totalMaterial / grandTotal * 100)}% · Upah {Math.round(totalWage / grandTotal * 100)}%</span>
+                      )}
+                    </td>
+                  </tr>
+                </>
+              )}
             </TBody>
           </Table>
         
@@ -1246,7 +1291,17 @@ const RABForm: React.FC = () => {
                       <span className="text-sm font-black text-text-primary">{formatCurrency(node.subtotal)}</span>
                    </div>
                  ))}
-                 <div className="flex items-center justify-between p-6 bg-white/50 rounded-xl text-text-primary shadow-3d-inset border border-white/40 mt-8">
+                 <div className="border-t border-white/40 pt-4 space-y-2 mt-2">
+                   <div className="flex items-center justify-between px-2 py-2">
+                     <span className="text-xs font-bold text-blue-600 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Total Material</span>
+                     <span className="text-sm font-black text-blue-700">{formatCurrency(totalMaterial)}</span>
+                   </div>
+                   <div className="flex items-center justify-between px-2 py-2">
+                     <span className="text-xs font-bold text-orange-500 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" />Total Upah</span>
+                     <span className="text-sm font-black text-orange-600">{formatCurrency(totalWage)}</span>
+                   </div>
+                 </div>
+                 <div className="flex items-center justify-between p-6 bg-white/50 rounded-xl text-text-primary shadow-3d-inset border border-white/40 mt-2">
                     <span className="text-xs font-black uppercase tracking-[0.2em]">Total Seluruh Anggaran</span>
                     <span className="text-2xl font-black text-accent-lavender">{formatCurrency(grandTotal)}</span>
                  </div>
