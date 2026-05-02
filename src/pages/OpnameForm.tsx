@@ -102,12 +102,17 @@ const OpnameForm: React.FC = () => {
     try {
       setLoading(true);
       // 1. Get RAB Projects for this project/unit
-      // Try specific unit first, then fallback to global if unit has no specific RAB
-      let rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=eq.${selectedUnitId}`);
-      
-      if (!rabs || rabs.length === 0) {
-        // Try global RAB
+      let rabs;
+      if (selectedUnitId === 'GLOBAL') {
         rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=is.null`);
+      } else {
+        // Try specific unit first, then fallback to global if unit has no specific RAB
+        rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=eq.${selectedUnitId}`);
+        
+        if (!rabs || rabs.length === 0) {
+          // Try global RAB as fallback
+          rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=is.null`);
+        }
       }
 
       if (!rabs || rabs.length === 0) {
@@ -405,6 +410,11 @@ const OpnameForm: React.FC = () => {
               disabled={!selectedProjectId}
             >
               <option value="">-- Pilih Unit --</option>
+              {hasGlobalRAB && (
+                <option value="GLOBAL" className="text-blue-700 font-bold">
+                  🌐 GLOBAL / FASILITAS UMUM
+                </option>
+              )}
               {units.map(u => (
                 <option 
                   key={u.id} 
