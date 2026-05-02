@@ -36,7 +36,9 @@ const GoodsReceipt: React.FC = () => {
   
   const [form, setForm] = useState({
     tanggal: new Date().toISOString().split('T')[0],
+    worker_id: '',
   });
+  const [workers, setWorkers] = useState<any[]>([]);
 
   const fetchData = async () => {
     try {
@@ -44,7 +46,7 @@ const GoodsReceipt: React.FC = () => {
       // Get PENDING POs
       const [orderData, historyData] = await Promise.all([
         api.get('purchase_orders', 'select=*,project:projects(name),supplier:suppliers(name),master:materials(name,unit,code),variant:material_variants(merk,stok)&status=eq.PENDING&order=created_at.desc'),
-        api.get('goods_receipts', 'select=*,po:purchase_orders(po_number),material:materials(name,unit),variant:material_variants(merk)&order=tanggal.desc&limit=20')
+        api.get('goods_receipts', 'select=*,po:purchase_orders(po_number),material:materials(name,unit),variant:material_variants(merk),worker:worker_masters(name)&order=tanggal.desc&limit=20')
       ]);
       setOrders(orderData || []);
       setHistory(historyData || []);
@@ -55,8 +57,14 @@ const GoodsReceipt: React.FC = () => {
     }
   };
 
+  const fetchWorkers = async () => {
+    const data = await api.get('worker_masters', 'select=id,name,type&status=eq.active&order=name.asc');
+    setWorkers(data || []);
+  };
+
   useEffect(() => {
     fetchData();
+    fetchWorkers();
   }, []);
 
   const handleOpenGR = (po: any) => {
@@ -100,7 +108,8 @@ const GoodsReceipt: React.FC = () => {
           po_id: selectedPO.id,
           material_id: it.material_id,
           id_variant: it.id_variant,
-          qty: it.qty_received
+          qty: it.qty_received,
+          worker_id: form.worker_id || null
         });
 
         // Ambil stok terbaru varian ini untuk akurasi saldo (mencegah race condition sederhana)
@@ -117,7 +126,8 @@ const GoodsReceipt: React.FC = () => {
           saldo_setelah: newStok,
           sumber: 'GR',
           reference_id: grResponse?.[0]?.id || 'Manual',
-          keterangan: `Terima Barang dari PO: ${selectedPO.po_number}`
+          keterangan: `Terima Barang dari PO: ${selectedPO.po_number}`,
+          worker_id: form.worker_id || null
         });
 
         // UPDATE STOK FISIK
@@ -311,6 +321,7 @@ const GoodsReceipt: React.FC = () => {
                   <TH>No. PO / Tanggal Terima</TH>
                   <TH>Material & Merk</TH>
                   <TH className="text-right">Kuantitas Masuk</TH>
+                  <TH>Penerima</TH>
                   <TH className="text-right">Status</TH>
                   <TH className="text-right">Aksi</TH>
                 </TR>
@@ -332,6 +343,12 @@ const GoodsReceipt: React.FC = () => {
                     </TD>
                     <TD className="text-right font-black text-emerald-700">
                       + {formatNumber(h.qty)} <span className="text-[10px] uppercase text-slate-400">{h.material?.unit}</span>
+                    </TD>
+                    <TD>
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-3.5 h-3.5 text-accent-dark" />
+                        <span className="text-xs font-bold text-slate-700">{h.worker?.name || 'Umum'}</span>
+                      </div>
                     </TD>
                     <TD className="text-right">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-tighter">
@@ -382,9 +399,9 @@ const GoodsReceipt: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Tanggal Terima</label>
-                <div className="w-48">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
+                <div className="flex flex-col gap-2 flex-1">
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Tanggal Terima</label>
                   <Input 
                     type="date"
                     value={form.tanggal}
@@ -392,6 +409,17 @@ const GoodsReceipt: React.FC = () => {
                     className="h-10 glass-input rounded-xl px-4 font-bold text-sm"
                     required
                   />
+                </div>
+                <div className="flex flex-col gap-2 flex-1">
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Penerima (Mandor/Staff)</label>
+                  <select 
+                    className="h-10 glass-input rounded-xl px-4 font-bold text-sm border border-slate-200"
+                    value={form.worker_id}
+                    onChange={(e) => setForm({ ...form, worker_id: e.target.value })}
+                  >
+                    <option value="">-- Pilih Penerima --</option>
+                    {workers.map(w => <option key={w.id} value={w.id}>{w.name} ({w.type})</option>)}
+                  </select>
                 </div>
               </div>
 

@@ -54,7 +54,7 @@ const MaterialUsage: React.FC = () => {
       // Fetch RAB Projects, Recent Usage History, and Unit Info
       const [rabData, historyData, unitsData, workersData] = await Promise.all([
         api.get('rab_projects', 'select=*&order=nama_proyek.asc'),
-        api.get('material_usages', 'select=*,rab:rab_projects(nama_proyek),material:materials(name,unit),variant:material_variants(merk)&order=tanggal.desc&limit=10'),
+        api.get('material_usages', 'select=*,rab:rab_projects(nama_proyek),material:materials(name,unit),variant:material_variants(merk),worker:worker_masters(name)&order=tanggal.desc&limit=10'),
         api.get('units', 'select=id,unit_number,type'),
         api.get('worker_masters', 'select=id,name,type&status=eq.active&order=name.asc')
       ]);
@@ -190,6 +190,7 @@ const MaterialUsage: React.FC = () => {
         id_variant: parseInt(form.id_variant),
         qty: form.qty,
         worker_id: form.worker_id || null,
+        worker_name: workers.find(w => w.id === form.worker_id)?.name || null,
         keterangan: form.keterangan
       });
 
@@ -207,7 +208,8 @@ const MaterialUsage: React.FC = () => {
         saldo_setelah: (selectedVariant?.stok || 0) - form.qty,
         sumber: 'USAGE',
         reference_id: usageResponse?.[0]?.id || 'Manual',
-        keterangan: referenceLabel
+        keterangan: referenceLabel,
+        worker_id: form.worker_id || null
       });
 
       // Update stok akhir di tabel varian (jika trigger DB tidak melakukannya)
@@ -528,13 +530,14 @@ const MaterialUsage: React.FC = () => {
                   <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal / RAB</th>
                   <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Material & Merk</th>
                   <th className="px-4 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty Keluar</th>
+                   <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Penerima / Mandor</th>
                    <th className="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Keterangan</th>
                    <th className="px-4 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {history.length === 0 ? (
-                  <tr><td colSpan={5} className="py-20 text-center text-slate-300 italic font-medium">Belum ada riwayat pemakaian.</td></tr>
+                  <tr><td colSpan={6} className="py-20 text-center text-slate-300 italic font-medium">Belum ada riwayat pemakaian.</td></tr>
                 ) : history.map((h, i) => (
                   <tr key={i} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-4 py-4">
@@ -547,6 +550,14 @@ const MaterialUsage: React.FC = () => {
                     </td>
                     <td className="px-4 py-4 text-right font-black text-rose-600">
                       - {formatNumber(h.qty)} <span className="text-[10px] uppercase text-slate-400 font-bold">{h.material?.unit}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-accent-lavender/10 flex items-center justify-center">
+                          <UserCheck className="w-3 h-3 text-accent-lavender" />
+                        </div>
+                        <span className="text-xs font-bold text-slate-700">{h.worker?.name || h.worker_name || 'Umum'}</span>
+                      </div>
                     </td>
                     <td className="px-4 py-4 text-xs font-medium text-slate-500 max-w-[200px] truncate">
                       {h.keterangan}
