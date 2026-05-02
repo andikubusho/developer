@@ -46,6 +46,7 @@ const OpnameForm: React.FC = () => {
   const [units, setUnits] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedUnitId, setSelectedUnitId] = useState('');
+  const [hasGlobalRAB, setHasGlobalRAB] = useState(false);
   const [workerName, setWorkerName] = useState('');
   const [opnameDate, setOpnameDate] = useState(new Date().toISOString().split('T')[0]);
   
@@ -77,10 +78,14 @@ const OpnameForm: React.FC = () => {
     try {
       const [unitsData, rabsData] = await Promise.all([
         api.get('units', `project_id=eq.${selectedProjectId}&order=unit_number.asc`),
-        api.get('rab_projects', `project_id=eq.${selectedProjectId}&select=unit_id`)
+        api.get('rab_projects', `project_id=eq.${selectedProjectId}`)
       ]);
       
-      const rabUnitIds = new Set((rabsData || []).map((r: any) => r.unit_id).filter(Boolean));
+      const rabList = rabsData || [];
+      const rabUnitIds = new Set(rabList.map((r: any) => r.unit_id).filter(Boolean));
+      const globalExists = rabList.some((r: any) => !r.unit_id);
+      
+      setHasGlobalRAB(globalExists);
       
       const enrichedUnits = (unitsData || []).map((u: any) => ({
         ...u,
@@ -97,7 +102,14 @@ const OpnameForm: React.FC = () => {
     try {
       setLoading(true);
       // 1. Get RAB Projects for this project/unit
-      const rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=eq.${selectedUnitId}`);
+      // Try specific unit first, then fallback to global if unit has no specific RAB
+      let rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=eq.${selectedUnitId}`);
+      
+      if (!rabs || rabs.length === 0) {
+        // Try global RAB
+        rabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=is.null`);
+      }
+
       if (!rabs || rabs.length === 0) {
         setTree([]);
         return;
@@ -382,8 +394,9 @@ const OpnameForm: React.FC = () => {
 
           {/* Unit */}
           <div className="space-y-3">
-            <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center gap-2 ml-1 opacity-70">
-              <Layers className="w-3.5 h-3.5 text-accent-dark" /> Pilih Unit
+            <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em] flex items-center justify-between gap-2 ml-1 opacity-70">
+              <span className="flex items-center gap-2"><Layers className="w-3.5 h-3.5 text-accent-dark" /> Pilih Unit</span>
+              {hasGlobalRAB && <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">RAB Global Tersedia</span>}
             </label>
             <select
               className="w-full h-12 bg-white/50 border-none rounded-2xl px-5 text-sm font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-lavender/50 transition-all disabled:opacity-30"
