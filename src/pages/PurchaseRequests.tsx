@@ -551,7 +551,7 @@ const PurchaseRequests: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); resetForm(); }}
         title="Buat Purchase Request (Budget Controlled)"
-        size="xl"
+        size="3xl"
       >
         <form onSubmit={handleSubmit} className="space-y-8 px-2 pb-2">
           {/* Step 1: Pilih RAB */}
@@ -618,9 +618,9 @@ const PurchaseRequests: React.FC = () => {
               <Table className="w-full">
                 <THead>
                   <TR className="bg-slate-50/80 border-b border-slate-100">
-                    <TH className="text-[11px] py-4 pl-6 uppercase tracking-wider text-slate-500 w-[60%]">Material</TH>
-                    <TH className="text-right text-[11px] py-4 uppercase tracking-wider text-slate-500 w-[30%]">Kuantitas</TH>
-                    <TH className="w-16 py-4 pr-6"></TH>
+                    <TH className="text-[11px] py-4 pl-6 uppercase tracking-wider text-slate-500">Material</TH>
+                    <TH className="text-right text-[11px] py-4 uppercase tracking-wider text-slate-500 w-44">Kuantitas</TH>
+                    <TH className="w-20 py-4 pr-6"></TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -634,10 +634,10 @@ const PurchaseRequests: React.FC = () => {
                            <span className="text-[10px] font-bold text-slate-400">RAB Reference Active</span>
                         </div>
                       </TD>
-                      <TD className="text-right py-5">
+                      <TD className="text-right py-5 w-44">
                         <div className="font-black text-slate-800 text-lg">{formatNumber(item.quantity)} <span className="text-xs text-slate-400 font-bold uppercase ml-1">{item.unit}</span></div>
                       </TD>
-                      <TD className="py-5 pr-6 text-right">
+                      <TD className="py-5 pr-6 text-right w-20">
                         <button type="button" onClick={() => handleRemoveItem(i)} className="p-2.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all">
                           <Trash2 className="w-5 h-5" />
                         </button>
@@ -681,7 +681,7 @@ const PurchaseRequests: React.FC = () => {
                         )}
                       </div>
                     </TD>
-                    <TD className="text-right py-6">
+                    <TD className="text-right py-6 w-44">
                       <div className="flex flex-col items-end gap-3">
                         <div className="relative">
                           <Input 
@@ -704,7 +704,7 @@ const PurchaseRequests: React.FC = () => {
                         )}
                       </div>
                     </TD>
-                    <TD className="py-6 pr-6 text-right">
+                    <TD className="py-6 pr-6 text-right w-20">
                       <Button 
                         type="button"
                         className="h-14 w-14 p-0 rounded-2xl bg-accent-dark hover:bg-slate-800 text-white shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center disabled:opacity-30 disabled:scale-100"
