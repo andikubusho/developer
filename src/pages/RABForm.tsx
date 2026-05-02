@@ -665,30 +665,20 @@ const RABForm: React.FC = () => {
   }, [computedTree]);
 
   const { totalMaterial, totalWage } = useMemo(() => {
-    let mat = 0;
-    let wage = 0;
-    const walk = (nodes: any[]) => {
-      nodes.forEach(node => {
-        if (node.level === 3 && !node.is_manual) {
-          // Coefficient mode — material and wage contribute separately
-          const qty = node.jumlah_material || 0;
-          mat += qty * (node.material_price || 0);
-          wage += qty * (node.wage_price || 0);
-        } else if (node.level === 3 && node.is_manual) {
-          // Manual level 3 — combined harga_rab, treat as material
-          mat += node.harga_rab || 0;
-        } else if (node.level === 2 && node.is_manual) {
-          // LANGSUNG mode — direct price on level 2, children are reference-only
-          const qty = node.volume || 0;
-          mat += qty * (node.material_price || 0);
-          wage += qty * (node.wage_price || 0);
-          // Do NOT walk children — they don't contribute to grandTotal
-        } else if (node.children?.length) {
-          walk(node.children);
-        }
-      });
+    // Aggregate from sectionTotals-style calculation so Rekapitulasi = sum of subtotals
+    const calcMat = (node: any): number => {
+      if (node.level === 3 && !node.is_manual) return (node.jumlah_material || 0) * (node.material_price || 0);
+      if (node.level === 3 && node.is_manual) return node.harga_rab || 0;
+      return (node.children || []).reduce((s: number, c: any) => s + calcMat(c), 0);
     };
-    walk(computedTree);
+    const calcWage = (node: any): number => {
+      if (node.level === 3 && !node.is_manual) return (node.jumlah_material || 0) * (node.wage_price || 0);
+      if (node.level === 3 && node.is_manual) return 0;
+      if (node.level === 2 && node.is_manual) return (node.volume || 0) * (node.wage_price || 0);
+      return (node.children || []).reduce((s: number, c: any) => s + calcWage(c), 0);
+    };
+    const mat = computedTree.reduce((s: number, n: any) => s + calcMat(n), 0);
+    const wage = computedTree.reduce((s: number, n: any) => s + calcWage(n), 0);
     return { totalMaterial: mat, totalWage: wage };
   }, [computedTree]);
 
@@ -1303,7 +1293,7 @@ const RABForm: React.FC = () => {
                     <td className="px-4 py-3" />
                     <td className="px-4 py-3 text-right text-xs font-black text-blue-700">{formatCurrency(totalMaterial)}</td>
                     <td className="px-4 py-3 text-right text-xs font-black text-orange-600">{formatCurrency(totalWage)}</td>
-                    <td className="px-4 py-3 text-right text-sm font-black text-accent-dark">{formatCurrency(grandTotal)}</td>
+                    <td className="px-4 py-3 text-right text-sm font-black text-accent-dark">{formatCurrency(totalMaterial + totalWage)}</td>
                     <td className="px-4 py-3" />
                   </tr>
                   <tr className="bg-accent-dark/5">
@@ -1314,8 +1304,8 @@ const RABForm: React.FC = () => {
                       </span>
                     </td>
                     <td colSpan={5} className="px-4 py-2 text-right text-[10px] text-gray-500">
-                      {grandTotal > 0 && (
-                        <span>Material {Math.round(totalMaterial / grandTotal * 100)}% · Upah {Math.round(totalWage / grandTotal * 100)}%</span>
+                      {(totalMaterial + totalWage) > 0 && (
+                        <span>Material {Math.round(totalMaterial / (totalMaterial + totalWage) * 100)}% · Upah {Math.round(totalWage / (totalMaterial + totalWage) * 100)}%</span>
                       )}
                     </td>
                   </tr>
@@ -1358,7 +1348,7 @@ const RABForm: React.FC = () => {
                  </div>
                  <div className="flex items-center justify-between p-6 bg-white/50 rounded-xl text-text-primary shadow-3d-inset border border-white/40 mt-2">
                     <span className="text-xs font-black uppercase tracking-[0.2em]">Total Seluruh Anggaran</span>
-                    <span className="text-2xl font-black text-accent-lavender">{formatCurrency(grandTotal)}</span>
+                    <span className="text-2xl font-black text-accent-lavender">{formatCurrency(totalMaterial + totalWage)}</span>
                  </div>
               </div>
            </Card>
