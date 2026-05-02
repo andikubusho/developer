@@ -262,7 +262,7 @@ const MaterialUsage: React.FC = () => {
                     disabled={!form.material_id}
                   >
                     <option value="">-- Pilih Variant --</option>
-                    {variants.map(v => (
+                    {variants.filter(v => (Number(v.stok) || 0) > 0).map(v => (
                       <option key={v.id} value={v.id}>{v.merk} (Stok: {formatNumber(v.stok)})</option>
                     ))}
                   </select>
