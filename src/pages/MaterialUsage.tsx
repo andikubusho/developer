@@ -178,7 +178,8 @@ const MaterialUsage: React.FC = () => {
     try {
       await api.insert('material_usages', {
         tanggal: form.tanggal,
-        rab_project_id: form.rab_project_id,
+        rab_project_id: form.rab_project_id || null,
+        rab_item_id: form.rab_item_id || null,
         material_id: form.material_id,
         id_variant: parseInt(form.id_variant),
         qty: form.qty,
