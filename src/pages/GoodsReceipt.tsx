@@ -45,12 +45,25 @@ const GoodsReceipt: React.FC = () => {
     try {
       setLoading(true);
       // Get PENDING POs
-      const [orderData, historyData] = await Promise.all([
+      const [orderData, historyData, rabData] = await Promise.all([
         api.get('purchase_orders', 'select=*,project:projects(name),supplier:suppliers(name),master:materials(name,unit,code),variant:material_variants(merk,stok)&status=eq.PENDING&order=created_at.desc'),
-        api.get('goods_receipts', 'select=*,po:purchase_orders(po_number),material:materials(name,unit),variant:material_variants(merk),worker:worker_masters(name)&order=tanggal.desc&limit=20')
+        api.get('goods_receipts', 'select=*,po:purchase_orders(po_number,project_id,unit_id),material:materials(name,unit),variant:material_variants(merk),worker:worker_masters(name)&order=tanggal.desc&limit=20'),
+        api.get('rab_projects', 'select=id,project_id,unit_id,keterangan')
       ]);
-      setOrders(orderData || []);
-      setHistory(historyData || []);
+
+      const enrichedOrders = (orderData || []).map((o: any) => {
+        const matchingRab = (rabData || []).find(r => r.project_id === o.project_id && r.unit_id === o.unit_id);
+        return { ...o, rab_title: matchingRab?.keterangan || null };
+      });
+
+      const enrichedHistory = (historyData || []).map((h: any) => {
+        const po = h.po;
+        const matchingRab = po ? (rabData || []).find(r => r.project_id === po.project_id && r.unit_id === po.unit_id) : null;
+        return { ...h, rab_title: matchingRab?.keterangan || null };
+      });
+
+      setOrders(enrichedOrders);
+      setHistory(enrichedHistory);
     } catch (err) {
       console.error('Error fetching POs:', err);
     } finally {
@@ -229,7 +242,8 @@ const GoodsReceipt: React.FC = () => {
               <THead>
                 <TR isHoverable={false}>
                   <TH>PO / Tgl</TH>
-                  <TH>Proyek & Supplier</TH>
+                  <TH>Pekerjaan / Unit</TH>
+                  <TH>Supplier / Proyek</TH>
                   <TH>Item (Variant)</TH>
                   <TH className="text-right">Qty Order</TH>
                   <TH className="text-right">Aksi</TH>
@@ -253,8 +267,12 @@ const GoodsReceipt: React.FC = () => {
                       <div className="text-[10px] text-text-muted font-bold uppercase">{formatDate(o.created_at)}</div>
                     </TD>
                     <TD>
-                      <div className="font-bold text-text-primary">{o.project?.name}</div>
-                      <div className="text-xs text-text-secondary">{o.supplier?.name}</div>
+                      <div className="font-black text-text-primary uppercase tracking-tight text-sm leading-tight mb-0.5">{o.rab_title || 'Pekerjaan Umum'}</div>
+                      <div className="text-[10px] font-bold text-text-muted italic">Unit: {o.unit_id || 'Seluruh'}</div>
+                    </TD>
+                    <TD>
+                      <div className="font-bold text-text-primary text-sm">{o.supplier?.name}</div>
+                      <div className="text-[10px] text-text-muted font-bold uppercase">{o.project?.name}</div>
                     </TD>
                     <TD>
                       <div className="flex flex-col gap-1.5">
@@ -320,7 +338,7 @@ const GoodsReceipt: React.FC = () => {
               <THead>
                 <TR isHoverable={false} className="bg-slate-50/50">
                   <TH>No. PO / Tanggal Terima</TH>
-                  <TH>Material & Merk</TH>
+                  <TH>Pekerjaan & Material</TH>
                   <TH className="text-right">Kuantitas Masuk</TH>
                   <TH>Penerima</TH>
                   <TH className="text-right">Status</TH>
@@ -339,8 +357,11 @@ const GoodsReceipt: React.FC = () => {
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{formatDate(h.tanggal)}</div>
                     </TD>
                     <TD>
-                      <div className="font-bold text-slate-800">{h.material?.name}</div>
-                      <div className="text-[10px] font-black text-emerald-600 uppercase">Merk: {h.variant?.merk}</div>
+                      <div className="font-black text-slate-800 text-xs uppercase mb-1">{h.rab_title || 'Umum'}</div>
+                      <div className="flex flex-col border-l-2 border-emerald-500/20 pl-2">
+                        <div className="font-bold text-slate-700 text-sm">{h.material?.name}</div>
+                        <div className="text-[10px] font-black text-emerald-600 uppercase tracking-tight">Merk: {h.variant?.merk}</div>
+                      </div>
                     </TD>
                     <TD className="text-right font-black text-emerald-700">
                       + {formatNumber(h.qty)} <span className="text-[10px] uppercase text-slate-400">{h.material?.unit}</span>
