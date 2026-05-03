@@ -269,10 +269,10 @@ const Dashboard: React.FC = () => {
 
     try {
       const [cpRaw, stockRaw, prRaw, spkRaw] = await Promise.all([
-        api.get('construction_progress', 'select=*,unit:units(unit_number),project:projects(name)&limit=5&order=created_at.desc'),
+        api.get('construction_progress', 'select=*,unit_id:units(unit_number),project_id:projects(name)&limit=5&order=created_at.desc'),
         api.get('materials', 'select=*&limit=5'),
         api.get('purchase_requests', 'status=eq.PENDING&limit=5&order=created_at.desc'),
-        api.get('spk', 'select=*,contractor:suppliers(name)&limit=5&order=created_at.desc'),
+        api.get('spks', 'select=*,worker_id:worker_masters(name)&limit=5&order=created_at.desc'),
       ]);
 
       setConstructionProgress((cpRaw || []).map((cp: any) => ({
@@ -300,9 +300,9 @@ const Dashboard: React.FC = () => {
 
       setActiveSpks((spkRaw || []).map((s: any) => ({
         id: s.id,
-        contractor: s.contractor?.name || s.supplier_id || '-',
+        contractor: s.worker_id?.name || s.contractor_name || '-',
         work: s.title || 'Pekerjaan Borongan',
-        value: s.total_amount || 0,
+        value: s.contract_value || 0,
       })));
     } catch (e) {
       console.error('Error fetching Teknik specifics:', e);

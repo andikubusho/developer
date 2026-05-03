@@ -343,7 +343,7 @@ const RealCostPage: React.FC = () => {
            <h3 className="text-xl font-black italic tracking-tight uppercase mb-8">Summary Analisa</h3>
            
            <div className="flex-1 flex flex-col justify-center space-y-10">
-              <div className="relative h-64 flex items-center justify-center">
+              <div className="relative h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
