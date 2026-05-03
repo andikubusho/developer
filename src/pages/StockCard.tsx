@@ -100,6 +100,32 @@ const StockCard: React.FC = () => {
       }, 0);
 
       setOpeningBalance(initialBal);
+      
+      // 4. Enrich USAGE movements with Work Description (Uraian)
+      const usageIds = (moveData || [])
+        .filter((m: any) => m.sumber === 'USAGE' && m.reference_id)
+        .map((m: any) => m.reference_id);
+
+      if (usageIds.length > 0) {
+        try {
+          const usageDetails = await api.get('material_usages', 
+            `id=in.(${usageIds.join(',')})&select=id,rab_item:rab_items(uraian)`
+          );
+          const usageMap: Record<string, string> = {};
+          (usageDetails || []).forEach((u: any) => {
+            if (u.id) usageMap[u.id] = u.rab_item?.uraian || '';
+          });
+          
+          moveData.forEach((m: any) => {
+            if (m.sumber === 'USAGE' && usageMap[m.reference_id]) {
+              m.uraian_pekerjaan = usageMap[m.reference_id];
+            }
+          });
+        } catch (e) {
+          console.error('Error enriching usages:', e);
+        }
+      }
+
       setMovements(moveData || []);
       setVariantInfo(vInfo?.[0] || null);
     } catch (err) {
@@ -139,7 +165,7 @@ const StockCard: React.FC = () => {
       rows.push([
         formatDate(m.tanggal),
         m.tipe === 'IN' ? 'MASUK' : m.tipe === 'OUT' ? 'KELUAR' : 'PENYESUAIAN',
-        `${m.keterangan || m.sumber}${m.worker?.name ? ` (Mandor: ${m.worker.name})` : ''}`,
+        `${m.uraian_pekerjaan ? `${m.uraian_pekerjaan} ` : ''}${m.keterangan || m.sumber}${m.worker?.name ? ` (Mandor: ${m.worker.name})` : ''}`,
         m.tipe === 'IN' ? m.qty : 0,
         m.tipe === 'OUT' ? m.qty : 0,
         runningBalance
@@ -363,18 +389,25 @@ const StockCard: React.FC = () => {
                                m.sumber === 'USAGE' ? 'Pemakaian Proyek' : 
                                m.sumber === 'OPNAME' ? 'Penyesuaian Opname' : m.sumber}
                             </span>
-                            <span className="text-xs font-black text-slate-700 uppercase leading-tight truncate max-w-[300px]">
-                              {m.keterangan || (
+                             <span className="text-xs font-black text-slate-700 uppercase leading-tight truncate max-w-[300px]">
+                              {m.uraian_pekerjaan || m.keterangan || (
                                 m.sumber === 'GR' ? `PO #${m.reference_id}` : 
                                 m.sumber === 'USAGE' ? `Keluar #${m.reference_id}` : 
                                 `${m.sumber} #${m.reference_id}`
                               )}
                             </span>
-                            {m.worker?.name && (
-                              <span className="text-[10px] font-bold text-accent-lavender mt-1.5 flex items-center gap-1.5 bg-accent-lavender/5 w-fit px-2 py-0.5 rounded-full border border-accent-lavender/10">
-                                <UserCheck className="w-2.5 h-2.5" /> {m.worker.name}
-                              </span>
-                            )}
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {m.uraian_pekerjaan && m.keterangan && (
+                                <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                  #{m.reference_id}
+                                </span>
+                              )}
+                              {m.worker?.name && (
+                                <span className="text-[10px] font-bold text-accent-lavender flex items-center gap-1.5 bg-accent-lavender/5 w-fit px-2 py-0.5 rounded-full border border-accent-lavender/10">
+                                  <UserCheck className="w-2.5 h-2.5" /> {m.worker.name}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </TD>
