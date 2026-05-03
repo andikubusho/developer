@@ -284,6 +284,8 @@ const ConsultantSchedulePage: React.FC = () => {
           body {
             background: white !important;
             -webkit-print-color-adjust: exact;
+            margin: 0;
+            padding: 0;
           }
           header, nav, aside, footer, button, .print-hidden {
             display: none !important;
@@ -293,19 +295,18 @@ const ConsultantSchedulePage: React.FC = () => {
             box-shadow: none !important;
             padding: 0 !important;
             margin: 0 !important;
-            width: 115% !important; /* Slightly wider to compensate for scale */
+            width: 100% !important;
             height: auto !important;
-            transform: scale(0.75);
-            transform-origin: top left;
+            zoom: 0.65; /* Better for Chrome/Edge print engine */
           }
           .print-compact-row {
-            min-height: 25mm !important;
+            min-height: 20mm !important;
             height: auto !important; 
             padding: 1px !important;
           }
           .print-schedule-item {
-            font-size: 6px !important;
-            padding: 0px 2px !important;
+            font-size: 8px !important;
+            padding: 1px 2px !important;
             line-height: 1 !important;
             margin-bottom: 1px !important;
             border-width: 0.5px !important;
@@ -313,8 +314,8 @@ const ConsultantSchedulePage: React.FC = () => {
           h1, h2 {
             margin-bottom: 2px !important;
             margin-top: 0 !important;
-            font-size: 16pt !important;
-            text-align: left !important;
+            font-size: 18pt !important;
+            text-align: center !important;
           }
         }
       `}} />
