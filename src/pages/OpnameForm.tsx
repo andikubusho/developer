@@ -365,6 +365,20 @@ const OpnameForm: React.FC = () => {
     }
   };
 
+  const getGrandTotal = () => {
+    let total = 0;
+    const traverse = (nodes: RABNode[]) => {
+      nodes.forEach(node => {
+        if (node.input_percentage > 0) {
+          total += node.calculated_amount;
+        }
+        if (node.children.length > 0) traverse(node.children);
+      });
+    };
+    traverse(tree);
+    return total;
+  };
+
   const handleSelectAll = () => {
     const allLeafIds: string[] = [];
     const traverse = (nodes: RABNode[]) => {
@@ -664,7 +678,15 @@ const OpnameForm: React.FC = () => {
             ) : tree.length === 0 ? (
               <TR><TD colSpan={9} className="px-6 py-20 text-center text-text-secondary font-bold italic">Pilih Proyek & Unit untuk memuat data</TD></TR>
             ) : (
-              renderRows(tree)
+              <>
+                {renderRows(tree)}
+                <TR className="bg-primary/5 border-t-2 border-primary/20">
+                  <TD colSpan={8} className="px-6 py-4 text-right text-xs font-black uppercase tracking-widest text-text-muted">Total Batch Opname</TD>
+                  <TD className="px-4 py-4 text-right font-black text-primary text-base">
+                    {formatCurrency(getGrandTotal())}
+                  </TD>
+                </TR>
+              </>
             )}
           </TBody>
         </Table>
