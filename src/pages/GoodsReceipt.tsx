@@ -182,17 +182,8 @@ const GoodsReceipt: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="p-6 bg-accent-dark text-white border-none shadow-premium md:col-span-1 flex flex-col justify-between">
-          <div>
-            <Package className="w-8 h-8 text-accent-lavender mb-4" />
-            <h3 className="font-black text-lg leading-tight mb-2">Menunggu Kedatangan</h3>
-            <p className="text-xs font-bold text-white/60 uppercase tracking-widest">Total PO Aktif</p>
-          </div>
-          <p className="text-4xl font-black mt-4">{orders.length}</p>
-        </Card>
-
-        <Card className="md:col-span-3 p-6 bg-white border-none shadow-premium">
+      <div className="grid grid-cols-1 gap-6">
+        <Card className="p-6 bg-white border-none shadow-premium">
           <div className="relative mb-6">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <Input
