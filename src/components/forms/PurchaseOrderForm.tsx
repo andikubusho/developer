@@ -21,6 +21,7 @@ const poSchema = z.object({
   order_date: z.string(),
   due_date: z.string().min(1, 'Tanggal jatuh tempo harus diisi'),
   pr_id: z.string().optional(),
+  rab_project_id: z.string().optional(),
 });
 
 type POFormValues = z.infer<typeof poSchema>;
@@ -76,6 +77,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       supplier_id: initialOrder?.supplier_id ? String(initialOrder.supplier_id) : '',
       id_variant: initialOrder?.id_variant ? Number(initialOrder.id_variant) : undefined,
       pr_id: initialOrder?.pr_id || initialPR?.prId || undefined,
+      rab_project_id: initialOrder?.rab_project_id || initialPR?.rab_project_id || undefined,
     },
   });
 
@@ -141,6 +143,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         setValue('material_id', initialPR.material_id);
         setValue('quantity', Number(initialPR.quantity));
         if (initialPR.prId) setValue('pr_id', initialPR.prId);
+        if (initialPR.rab_project_id) setValue('rab_project_id', initialPR.rab_project_id);
       }
     } catch (err) {
       console.error('Error fetching initial data:', err);
@@ -236,6 +239,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
           due_date: values.due_date,
           total_price,
           status: initialOrder.status,
+          rab_project_id: values.rab_project_id,
           items: [poItem]
         });
       } else {
@@ -249,6 +253,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
           po_number,
           total_price,
           status: 'PENDING',
+          rab_project_id: values.rab_project_id,
           items: [poItem]
         });
       }
@@ -324,6 +329,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         po_number,
         total_price: grandTotal,
         status: 'PENDING',
+        rab_project_id: initialPRItems![0].rab_project_id,
         items: poItems // Store all items in JSONB
       });
 

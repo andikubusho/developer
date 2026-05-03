@@ -157,6 +157,7 @@ const PurchaseOrders: React.FC = () => {
             const mat = matMap[item.material_id] || null;
             approvedItems.push({
               prId: pr.id,
+              rab_project_id: pr.rab_project_id,
               project_id: pr.project_id,
               material_id: item.material_id,
               quantity: item.quantity,

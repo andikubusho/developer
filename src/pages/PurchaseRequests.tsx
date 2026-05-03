@@ -85,10 +85,10 @@ const PurchaseRequests: React.FC = () => {
       (masterData || []).forEach((m: any) => { masterMap[m.id] = m; });
 
       const enrichedReqs = (reqData || []).map((r: any) => {
-        // Try to find matching RAB for title display
+        // Find matching RAB by rab_project_id (primary) or fallback to project+unit
         const matchingRab = (rabData || []).find(rab => 
-          rab.project_id === r.project_id && 
-          rab.unit_id === r.unit_id
+          rab.id === r.rab_project_id || 
+          (rab.project_id === r.project_id && rab.unit_id === r.unit_id)
         );
 
         return {
@@ -191,6 +191,7 @@ const PurchaseRequests: React.FC = () => {
     setSubmitting(true);
     try {
       const data = {
+        rab_project_id: selectedRab.id,
         project_id: selectedRab.project_id,
         unit_id: selectedRab.unit_id,
         material_id: prItems[0].material_id, // Main material
@@ -235,8 +236,9 @@ const PurchaseRequests: React.FC = () => {
   const handleEditPR = (req: any) => {
     setEditingPRId(req.id);
     
-    // Find matching RAB (ideally we should store rab_project_id in PR, but we find by project & unit as fallback)
-    const rab = rabs.find(r => r.project_id === req.project_id && r.unit_id === req.unit_id);
+    // Find matching RAB (primary by rab_project_id)
+    const rab = rabs.find(r => r.id === req.rab_project_id) || 
+                rabs.find(r => r.project_id === req.project_id && r.unit_id === req.unit_id);
     setSelectedRab(rab || null);
     
     setDescription(req.item_name || '');

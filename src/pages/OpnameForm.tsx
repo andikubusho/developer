@@ -60,6 +60,7 @@ const OpnameForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentRabId, setCurrentRabId] = useState<string | null>(null);
   const [workers, setWorkers] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkWorker, setBulkWorker] = useState<{id: string, name: string} | null>(null);
@@ -128,11 +129,13 @@ const OpnameForm: React.FC = () => {
         
       if (!rabData || rabData.length === 0) {
         setTree([]);
+        setCurrentRabId(null);
         setLoading(false);
         return;
       }
 
       const rabProjectId = rabData[0].id;
+      setCurrentRabId(rabProjectId);
 
       // 2. Fetch all items and opname history
       const [items, allOpnameItems] = await Promise.all([
@@ -320,7 +323,8 @@ const OpnameForm: React.FC = () => {
         const master = await api.insert('project_opnames', {
           date: opnameDate,
           project_id: selectedProjectId,
-          unit_id: selectedUnitId === 'GLOBAL' ? null : selectedUnitId,
+          unit_id: selectedUnitId.startsWith('RAB_') ? null : selectedUnitId,
+          rab_project_id: currentRabId,
           worker_id: firstItem.worker_id,
           worker_name: firstItem.worker_name,
           status: 'approved',

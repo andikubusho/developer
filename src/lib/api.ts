@@ -109,14 +109,9 @@ export const api = {
     };
     roots.forEach((r: any) => walk(r));
 
-    // 5. Fetch project_id + unit_id to look up PRs
-    const projRows = await api.get('rab_projects', `id=eq.${rabProjectId}&select=project_id,unit_id`);
-    if (!projRows || projRows.length === 0) return Object.values(quotas);
-    const { project_id, unit_id } = projRows[0];
-
-    // 6. Aggregate PR usage
+    // 5. Aggregate PR usage linked specifically to this RAB
     const prs = await api.get('purchase_requests',
-      `project_id=eq.${project_id}${unit_id ? `&unit_id=eq.${unit_id}` : ''}&status=in.(APPROVED,PENDING,SUBMITTED)`
+      `rab_project_id=eq.${rabProjectId}&status=in.(APPROVED,PENDING,SUBMITTED)`
     );
     prs.forEach((pr: any) => {
       (pr.items || []).forEach((item: any) => {
