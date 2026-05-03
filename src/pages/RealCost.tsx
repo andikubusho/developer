@@ -37,8 +37,9 @@ const RealCostPage: React.FC = () => {
   const { isMockMode } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
+  const [globalRabs, setGlobalRabs] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  const [selectedUnitId, setSelectedUnitId] = useState<string>('');
+  const [selectedFilter, setSelectedFilter] = useState<string>(''); // '': semua, 'unit:id', 'rab:id'
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,10 +67,10 @@ const RealCostPage: React.FC = () => {
 
   useEffect(() => {
     if (selectedProjectId) {
-      fetchUnits(selectedProjectId);
+      fetchUnitsAndGlobalRabs(selectedProjectId);
       fetchRealCostData();
     }
-  }, [selectedProjectId, selectedUnitId, selectedWorkerId]);
+  }, [selectedProjectId, selectedFilter, selectedWorkerId]);
 
   const fetchProjects = async () => {
     const data = await api.get('projects', 'select=*');
@@ -82,17 +83,29 @@ const RealCostPage: React.FC = () => {
     setWorkers(data || []);
   };
 
-  const fetchUnits = async (projectId: string) => {
-    const data = await api.get('units', `project_id=eq.${projectId}&order=unit_number.asc`);
-    setUnits(data || []);
+  const fetchUnitsAndGlobalRabs = async (projectId: string) => {
+    const [unitsData, rabsWithUnit, globalRabsData] = await Promise.all([
+      api.get('units', `project_id=eq.${projectId}&order=unit_number.asc`),
+      api.get('rab_projects', `project_id=eq.${projectId}&unit_id=not.is.null&select=unit_id`),
+      api.get('rab_projects', `project_id=eq.${projectId}&unit_id=is.null&order=nama_proyek.asc`)
+    ]);
+    const unitIdsWithRab = new Set((rabsWithUnit || []).map((r: any) => r.unit_id));
+    setUnits((unitsData || []).filter((u: any) => unitIdsWithRab.has(u.id)));
+    setGlobalRabs(globalRabsData || []);
   };
 
   const fetchRealCostData = async () => {
     setLoading(true);
     try {
+      // Parse filter: '' | 'unit:id' | 'rab:id'
+      const filterType = selectedFilter.startsWith('unit:') ? 'unit'
+        : selectedFilter.startsWith('rab:') ? 'rab' : 'all';
+      const filterId = selectedFilter.split(':')[1] || '';
+
       // 1. Get RAB Project IDs
       let rabProjIdsQuery = `project_id=eq.${selectedProjectId}`;
-      if (selectedUnitId) rabProjIdsQuery += `&unit_id=eq.${selectedUnitId}`;
+      if (filterType === 'unit') rabProjIdsQuery += `&unit_id=eq.${filterId}`;
+      else if (filterType === 'rab') rabProjIdsQuery += `&id=eq.${filterId}`;
       const rabs = await api.get('rab_projects', rabProjIdsQuery);
       const rabProjectIds = (rabs || []).map((r: any) => r.id);
 
@@ -106,9 +119,9 @@ const RealCostPage: React.FC = () => {
       let opnameQuery = `select=id&project_id=eq.${selectedProjectId}&status=in.(approved,paid)`;
       let progressQuery = `select=rab_item_id,percentage&order=report_date.desc`;
 
-      if (selectedUnitId) {
-        opnameQuery += `&unit_id=eq.${selectedUnitId}`;
-        progressQuery += `&unit_id=eq.${selectedUnitId}`;
+      if (filterType === 'unit') {
+        opnameQuery += `&unit_id=eq.${filterId}`;
+        progressQuery += `&unit_id=eq.${filterId}`;
       }
       if (selectedWorkerId) {
         usageQuery += `&worker_id=eq.${selectedWorkerId}`;
@@ -230,9 +243,20 @@ const RealCostPage: React.FC = () => {
            <select className="h-14 glass-input rounded-2xl px-6 font-bold min-w-[200px] shadow-3d" value={selectedProjectId} onChange={(e) => setSelectedProjectId(e.target.value)}>
              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
            </select>
-           <select className="h-14 glass-input rounded-2xl px-6 font-bold min-w-[150px] shadow-3d" value={selectedUnitId} onChange={(e) => setSelectedUnitId(e.target.value)}>
-             <option value="">Semua Unit</option>
-             {units.map(u => <option key={u.id} value={u.id}>{u.unit_number}</option>)}
+           <select className="h-14 glass-input rounded-2xl px-6 font-bold min-w-[200px] shadow-3d" value={selectedFilter} onChange={(e) => setSelectedFilter(e.target.value)}>
+             <option value="">Semua Unit / Pekerjaan</option>
+             {globalRabs.length > 0 && (
+               <optgroup label="── PEKERJAAN GLOBAL / FASUM">
+                 {globalRabs.map((r: any) => (
+                   <option key={r.id} value={`rab:${r.id}`}>{r.nama_proyek}{r.keterangan ? ` - ${r.keterangan}` : ''}</option>
+                 ))}
+               </optgroup>
+             )}
+             {units.length > 0 && (
+               <optgroup label="── UNIT PROPERTY">
+                 {units.map((u: any) => <option key={u.id} value={`unit:${u.id}`}>{u.unit_number}{u.type ? ` - ${u.type}` : ''}</option>)}
+               </optgroup>
+             )}
            </select>
         </div>
       </div>
