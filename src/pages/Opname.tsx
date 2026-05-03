@@ -16,7 +16,8 @@ import {
   Trash2,
   CheckCircle2,
   Clock,
-  Printer
+  Printer,
+  Eye
 } from 'lucide-react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { Button } from '../components/ui/Button';
@@ -300,8 +301,18 @@ const OpnamePage: React.FC = () => {
                            <Button 
                              variant="ghost" 
                              size="sm" 
+                             className="text-accent-lavender hover:bg-accent-lavender/10"
+                             onClick={() => toggleExpand(o.id)}
+                             title="Lihat Detail"
+                           >
+                             <Eye className="w-4 h-4" />
+                           </Button>
+                           <Button 
+                             variant="ghost" 
+                             size="sm" 
                              className="text-blue-500 hover:bg-blue-50"
                              onClick={() => handlePrint(o)}
+                             title="Cetak Laporan"
                            >
                              <Printer className="w-4 h-4" />
                            </Button>
