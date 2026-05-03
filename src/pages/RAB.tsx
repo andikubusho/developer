@@ -470,7 +470,7 @@ const RAB: React.FC = () => {
               <TH className="px-6 py-3 font-semibold">Nama Proyek</TH>
               <TH className="px-6 py-3 font-semibold">Unit</TH>
               <TH className="px-6 py-3 font-semibold">Lokasi</TH>
-              <TH className="px-6 py-3 font-semibold">Keterangan</TH>
+              <TH className="px-6 py-3 font-semibold">Judul RAB / Pekerjaan</TH>
               <TH className="px-6 py-3 font-semibold text-right">Total Anggaran</TH>
               <TH className="px-6 py-3 font-semibold">Tanggal Buat</TH>
               <TH className="px-6 py-3 font-semibold text-right">Aksi</TH>
@@ -505,8 +505,10 @@ const RAB: React.FC = () => {
                   <TD className="px-6 py-4 text-sm text-text-secondary">
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.lokasi || '-'}</span>
                   </TD>
-                  <TD className="px-6 py-4 text-sm text-text-secondary italic">
-                    {r.keterangan || '-'}
+                  <TD className="px-6 py-4">
+                    <div className="text-sm font-black text-text-primary uppercase tracking-tight">
+                      {r.keterangan || 'Tanpa Judul'}
+                    </div>
                   </TD>
                   <TD className="px-6 py-4 text-sm font-black text-accent-dark text-right">
                     {formatCurrency(Number(r.total_anggaran) || 0)}

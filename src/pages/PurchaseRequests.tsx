@@ -573,11 +573,14 @@ const PurchaseRequests: React.FC = () => {
                 required
               >
                 <option value="">-- Pilih RAB Proyek & Unit --</option>
-                {rabs.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {r.nama_proyek}{r.unit_id ? ` - Unit ${unitMap[r.unit_id]?.unit_number || r.unit_id}` : ''} - {formatDate(r.created_at)}
-                  </option>
-                ))}
+                {rabs.map(r => {
+                  const unitLabel = r.unit_id ? ` - Unit ${unitMap[r.unit_id]?.unit_number || r.unit_id}` : '';
+                  return (
+                    <option key={r.id} value={r.id}>
+                      {r.nama_proyek}{unitLabel} - {r.keterangan || 'Tanpa Judul'}
+                    </option>
+                  );
+                })}
               </select>
               <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                  <Search className="w-4 h-4" />

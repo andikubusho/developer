@@ -1301,14 +1301,15 @@ const RABForm: React.FC = () => {
             </select>
           </div>
           <div className="md:col-span-3 space-y-2">
-            <label className="text-xs font-black text-text-muted uppercase tracking-widest block flex items-center gap-2 ml-1">
-              <FileText className="w-3 h-3 text-accent-dark" /> Keterangan Pekerjaan
+            <label className="text-xs font-black text-text-primary uppercase tracking-widest block flex items-center gap-2 ml-1">
+              <FileText className="w-3 h-3 text-accent-dark" /> Judul RAB / Pekerjaan
             </label>
             <Input
               value={projectHeader.keterangan}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProjectHeader({ ...projectHeader, keterangan: e.target.value })}
-              placeholder="Contoh: Pekerjaan Pembangunan Tahap 1..."
-              className="h-14 text-base font-bold rounded-xl"
+              placeholder="Contoh: Pembangunan Rumah Blok A-01, Renovasi Taman, dll..."
+              className="h-14 text-base font-black rounded-xl border-accent-lavender/40 focus:border-primary shadow-premium placeholder:font-normal placeholder:italic"
+              required
             />
           </div>
         </div>

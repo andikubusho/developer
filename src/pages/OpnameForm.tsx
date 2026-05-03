@@ -519,7 +519,7 @@ const OpnameForm: React.FC = () => {
                 <optgroup label="🌐 PEKERJAAN GLOBAL / FASUM">
                   {globalRabs.map(gr => (
                     <option key={gr.id} value={`RAB_${gr.id}`} className="text-blue-700 font-bold">
-                       {gr.nama_proyek}
+                       {gr.nama_proyek} - {gr.keterangan || 'Tanpa Judul'}
                     </option>
                   ))}
                 </optgroup>

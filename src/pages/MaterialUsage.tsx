@@ -64,10 +64,16 @@ const MaterialUsage: React.FC = () => {
         unitsData.forEach((u: any) => { if (u?.id) unitsMap[u.id] = u; });
       }
 
-      const enriched = (rabData || []).map((r: any) => ({
-        ...r,
-        unit: (r.unit_id && unitsMap[r.unit_id]) ? unitsMap[r.unit_id] : null
-      }));
+      const enriched = (rabData || []).map((r: any) => {
+        const unitLabel = (r.unit_id && unitsMap[r.unit_id]) 
+          ? ` (${unitsMap[r.unit_id].unit_number})` 
+          : '';
+        return {
+          ...r,
+          label: `${r.nama_proyek}${unitLabel} - ${r.keterangan || 'Tanpa Judul'}`,
+          unit: (r.unit_id && unitsMap[r.unit_id]) ? unitsMap[r.unit_id] : null
+        };
+      });
 
       setProjects(enriched);
       setHistory(Array.isArray(historyData) ? historyData : []);
