@@ -84,12 +84,21 @@ const PurchaseRequests: React.FC = () => {
       const masterMap: Record<string, any> = {};
       (masterData || []).forEach((m: any) => { masterMap[m.id] = m; });
 
-      const enrichedReqs = (reqData || []).map((r: any) => ({
-        ...r,
-        project: r.project_id ? (projectMap[r.project_id] || null) : null,
-        unit: r.unit_id ? (uMap[r.unit_id] || null) : null,
-        master: r.material_id ? (masterMap[r.material_id] || null) : null,
-      }));
+      const enrichedReqs = (reqData || []).map((r: any) => {
+        // Try to find matching RAB for title display
+        const matchingRab = (rabData || []).find(rab => 
+          rab.project_id === r.project_id && 
+          rab.unit_id === r.unit_id
+        );
+
+        return {
+          ...r,
+          project: r.project_id ? (projectMap[r.project_id] || null) : null,
+          unit: r.unit_id ? (uMap[r.unit_id] || null) : null,
+          master: r.material_id ? (masterMap[r.material_id] || null) : null,
+          rab_title: matchingRab?.keterangan || null
+        };
+      });
 
       setRabs(rabData || []);
       setRequests(enrichedReqs);
@@ -376,7 +385,8 @@ const PurchaseRequests: React.FC = () => {
           <THead>
             <TR isHoverable={false}>
               <TH>No. PR / Tgl</TH>
-              <TH>Proyek & Unit</TH>
+              <TH>Proyek & Pekerjaan</TH>
+              <TH>Unit</TH>
               <TH>Item Summary</TH>
               <TH className="text-right">Total Items</TH>
               <TH>Status</TH>
@@ -402,8 +412,11 @@ const PurchaseRequests: React.FC = () => {
                     <div className="text-[10px] text-text-muted font-bold uppercase">{formatDate(req.created_at)}</div>
                   </TD>
                   <TD>
-                    <div className="font-bold text-text-primary">{req.project?.name || '-'}</div>
-                    <div className="text-xs text-text-secondary">Unit: {req.unit?.unit_number || 'Seluruh'}</div>
+                    <div className="font-black text-text-primary uppercase tracking-tight text-sm">{req.rab_title || req.project?.name || '-'}</div>
+                    <div className="text-[10px] text-text-muted font-bold">{req.project?.name || '-'}</div>
+                  </TD>
+                  <TD>
+                    <div className="text-xs font-black text-text-secondary">Unit: {req.unit?.unit_number || 'Seluruh'}</div>
                   </TD>
                   <TD>
                     <div className="font-bold text-text-primary text-sm truncate max-w-[200px]">{req.item_name}</div>
