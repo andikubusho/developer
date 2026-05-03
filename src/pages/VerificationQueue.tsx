@@ -29,6 +29,7 @@ interface CashFlowItem {
     payment_method: string;
     installment_id: string | null;
     sale?: {
+      id: string;
       customer?: { full_name: string };
       unit?: { unit_number: string };
     };
