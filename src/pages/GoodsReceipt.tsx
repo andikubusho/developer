@@ -47,18 +47,18 @@ const GoodsReceipt: React.FC = () => {
       // Get PENDING POs
       const [orderData, historyData, rabData] = await Promise.all([
         api.get('purchase_orders', 'select=*,project:projects(name),supplier:suppliers(name),master:materials(name,unit,code),variant:material_variants(merk,stok)&status=eq.PENDING&order=created_at.desc'),
-        api.get('goods_receipts', 'select=*,po:purchase_orders(po_number,project_id,unit_id),material:materials(name,unit),variant:material_variants(merk),worker:worker_masters(name)&order=tanggal.desc&limit=20'),
+        api.get('goods_receipts', 'select=*,po:purchase_orders(po_number,project_id),material:materials(name,unit),variant:material_variants(merk),worker:worker_masters(name)&order=tanggal.desc&limit=20'),
         api.get('rab_projects', 'select=id,project_id,unit_id,keterangan')
       ]);
 
       const enrichedOrders = (orderData || []).map((o: any) => {
-        const matchingRab = (rabData || []).find(r => r.project_id === o.project_id && r.unit_id === o.unit_id);
+        const matchingRab = (rabData || []).find(r => r.project_id === o.project_id);
         return { ...o, rab_title: matchingRab?.keterangan || null };
       });
 
       const enrichedHistory = (historyData || []).map((h: any) => {
         const po = h.po;
-        const matchingRab = po ? (rabData || []).find(r => r.project_id === po.project_id && r.unit_id === po.unit_id) : null;
+        const matchingRab = po ? (rabData || []).find(r => r.project_id === po.project_id) : null;
         return { ...h, rab_title: matchingRab?.keterangan || null };
       });
 
