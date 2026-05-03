@@ -189,7 +189,6 @@ const OpnameForm: React.FC = () => {
             const paidPct = itemHistory.reduce((sum: number, h: any) => sum + Number(h.percentage_opname), 0);
             const paidAmt = itemHistory.reduce((sum: number, h: any) => sum + Number(h.amount_opname), 0);
 
-            const rabWorker = workers.find(w => w.id === item.worker_id);
             const lastWorker = lastWorkerMap[item.id];
 
             return {
@@ -207,8 +206,8 @@ const OpnameForm: React.FC = () => {
               paid_amount: paidAmt,
               input_percentage: 0,
               calculated_amount: 0,
-              worker_id: item.worker_id || lastWorker?.id || '',
-              worker_name: rabWorker?.name || lastWorker?.name || ''
+              worker_id: lastWorker?.id || '',
+              worker_name: lastWorker?.name || ''
             };
           })
           .filter(Boolean) as RABNode[];

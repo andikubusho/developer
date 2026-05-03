@@ -46,7 +46,6 @@ interface RABNode {
   harga_rab: number | null; // This will be the SUM of material + wage
   harga_pasar: number | null;
   material_id: string | null;
-  worker_id: string | null;
   urutan: number;
   is_manual: boolean;   // true = input total langsung, false = pakai koefisien
   isExpanded: boolean;
@@ -117,7 +116,6 @@ const RABForm: React.FC = () => {
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
   const [existingRabs, setExistingRabs] = useState<any[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
-  const [workers, setWorkers] = useState<any[]>([]);
   const [loadingExisting, setLoadingExisting] = useState(false);
   const [showSyncSuccess, setShowSyncSuccess] = useState(false);
 
@@ -179,16 +177,14 @@ const RABForm: React.FC = () => {
 
     const fetchAllData = async () => {
       try {
-        const [projData, rabData, matData, workerData] = await Promise.all([
+        const [projData, rabData, matData] = await Promise.all([
           api.get('projects', 'select=id,name,location&order=name.asc'),
           api.get('rab_projects', 'select=id,nama_proyek,lokasi,created_at&order=created_at.desc'),
-          api.get('materials', 'select=id,name,unit,harga_satuan&order=name.asc'),
-          api.get('worker_masters', 'status=eq.active&order=name.asc')
+          api.get('materials', 'select=id,name,unit,harga_satuan&order=name.asc')
         ]);
         setProjects(projData || []);
         setExistingRabs(rabData || []);
         setMaterials(matData || []);
-        setWorkers(workerData || []);
 
         if (editId) {
           const [rabProj, itemsData] = await Promise.all([
@@ -855,8 +851,8 @@ const RABForm: React.FC = () => {
               ? (node.harga_rab || 0)
               : (node.material_price || 0) + (node.wage_price || 0),
             harga_pasar: node.harga_pasar,
-            urutan: i,
-            worker_id: node.worker_id
+            is_manual: node.is_manual || false,
+            urutan: i
           };
           if (node.material_id) data.material_id = node.material_id;
           const res = await api.insert('rab_items', data);
@@ -972,20 +968,6 @@ const RABForm: React.FC = () => {
                   />
                 )}
               </div>
-            </TD>
-
-            {/* MANDOR */}
-            <TD className="px-4 py-3 border-r border-white/40 w-44">
-              {isLevel2 && (
-                <select
-                  value={node.worker_id || ''}
-                  onChange={(e) => updateNode(node.id, { worker_id: e.target.value || null })}
-                  className="bg-transparent border-none focus:ring-0 w-full text-xs font-bold text-gray-900"
-                >
-                  <option value="">-- Mandor/Subkon --</option>
-                  {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                </select>
-              )}
             </TD>
 
             {/* KOEFF — hanya mode koefisien, Level 3 */}
@@ -1362,7 +1344,6 @@ const RABForm: React.FC = () => {
               <TR className="bg-white/60 text-text-primary text-[10px] font-black uppercase tracking-[0.2em] sticky top-0 z-10 border-b border-white/40">
                 <TH className="px-4 py-5 border-r border-white/20 w-16">No</TH>
                 <TH className="px-4 py-5 border-r border-white/20">Uraian Pekerjaan</TH>
-                <TH className="px-4 py-5 border-r border-white/20 w-44">Mandor/Subkon</TH>
                 <TH className="px-4 py-5 border-r border-white/20 w-24">Koeff</TH>
                 <TH className="px-4 py-5 border-r border-white/20 w-32">Volume</TH>
                 <TH className="px-4 py-5 border-r border-white/20 w-24">Satuan</TH>
