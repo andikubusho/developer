@@ -378,7 +378,14 @@ const ConsultantSchedulePage: React.FC = () => {
                           openEditModal(s);
                         }}
                       >
-                        <span className="truncate">{s.consultant?.name}</span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="truncate">{s.consultant?.name}</span>
+                          {s.position && (
+                            <span className="text-[7px] sm:text-[8px] opacity-70 font-medium truncate italic">
+                              {s.position}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
