@@ -249,14 +249,27 @@ const ConsultantSchedulePage: React.FC = () => {
   };
 
   const getStaffColor = (name: string) => {
+    if (!name) return 'bg-slate-100 text-slate-700 border-slate-200';
+    
     const colors = [
       'bg-accent-lavender/30 text-accent-dark border-accent-lavender/40',
       'bg-emerald-100 text-emerald-700 border-emerald-200',
       'bg-amber-100 text-amber-700 border-amber-200',
       'bg-rose-100 text-rose-700 border-rose-200',
       'bg-sky-100 text-sky-700 border-sky-200',
+      'bg-purple-100 text-purple-700 border-purple-200',
+      'bg-orange-100 text-orange-700 border-orange-200',
+      'bg-lime-100 text-lime-700 border-lime-200',
+      'bg-indigo-100 text-indigo-700 border-indigo-200',
+      'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
     ];
-    const index = name.length % colors.length;
+
+    // Simple hash based on name characters
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
     return colors[index];
   };
 
