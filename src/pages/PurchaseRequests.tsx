@@ -63,6 +63,8 @@ const PurchaseRequests: React.FC = () => {
     name: string;
   } | null>(null);
 
+  const [editingPRId, setEditingPRId] = useState<string | null>(null);
+
   const fetchInitialData = async () => {
     setLoading(true);
     try {
@@ -179,20 +181,29 @@ const PurchaseRequests: React.FC = () => {
 
     setSubmitting(true);
     try {
-      await api.insert('purchase_requests', {
+      const data = {
         project_id: selectedRab.project_id,
         unit_id: selectedRab.unit_id,
         material_id: prItems[0].material_id, // Main material
-        items: prItems.map(i => ({ material_id: i.material_id, quantity: i.quantity })),
+        items: prItems.map(i => ({ material_id: i.material_id, quantity: i.quantity, name: i.name, unit: i.unit })),
         item_name: description || `${prItems.length} Item Material`,
-        status: 'PENDING'
-      });
+        status: editingPRId ? undefined : 'PENDING' // Keep status if editing, or set to PENDING for new
+      };
+
+      if (editingPRId) {
+        await api.update('purchase_requests', editingPRId, data);
+        alert('PR Berhasil Diperbarui!');
+      } else {
+        await api.insert('purchase_requests', data);
+        alert('PR Berhasil Diajukan!');
+      }
+      
       setIsModalOpen(false);
       resetForm();
       fetchInitialData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error submitting PR:', err);
-      alert('Gagal menyimpan PR');
+      alert(`Gagal menyimpan PR: ${err.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -200,6 +211,7 @@ const PurchaseRequests: React.FC = () => {
 
   const resetForm = () => {
     setSelectedRab(null);
+    setEditingPRId(null);
     setForm({
       material_id: '',
       quantity: 1,
@@ -210,28 +222,26 @@ const PurchaseRequests: React.FC = () => {
   };
 
   const [detailPR, setDetailPR] = useState<any | null>(null);
-  const [editPR, setEditPR] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState({ quantity: 1, description: '', status: 'PENDING' });
 
-  const handleSaveEditPR = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editPR) return;
-    try {
-      await api.update('purchase_requests', editPR.id, {
-        items: [{ material_id: editPR.material_id, quantity: editForm.quantity }],
-        item_name: editForm.description,
-        status: editForm.status,
-      });
-      setRequests(prev => prev.map(r => r.id === editPR.id ? {
-        ...r,
-        items: [{ material_id: r.material_id, quantity: editForm.quantity }],
-        item_name: editForm.description,
-        status: editForm.status,
-      } : r));
-      setEditPR(null);
-    } catch (err: any) {
-      alert(`Gagal menyimpan: ${err.message}`);
-    }
+  const handleEditPR = (req: any) => {
+    setEditingPRId(req.id);
+    
+    // Find matching RAB (ideally we should store rab_project_id in PR, but we find by project & unit as fallback)
+    const rab = rabs.find(r => r.project_id === req.project_id && r.unit_id === req.unit_id);
+    setSelectedRab(rab || null);
+    
+    setDescription(req.item_name || '');
+    
+    // Map items from PR back to prItems format
+    const mappedItems = (req.items || []).map((item: any) => ({
+      material_id: item.material_id,
+      quantity: item.quantity || item.qty,
+      name: item.materialName || item.name || 'Material',
+      unit: item.unit || '-'
+    }));
+    
+    setPrItems(mappedItems);
+    setIsModalOpen(true);
   };
 
   const handleDeletePR = async (e: React.MouseEvent, id: string) => {
@@ -420,7 +430,7 @@ const PurchaseRequests: React.FC = () => {
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50 rounded-lg"
-                        onClick={(e) => { e.stopPropagation(); setEditPR(req); setEditForm({ quantity: req.items?.[0]?.quantity || req.quantity || 0, description: req.item_name || '', status: req.status }); }}>
+                        onClick={(e) => { e.stopPropagation(); handleEditPR(req); }}>
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 rounded-lg"
@@ -498,59 +508,11 @@ const PurchaseRequests: React.FC = () => {
         </Modal>
       )}
 
-      {/* Edit Modal (Single Item for now) */}
-      {editPR && (
-        <Modal isOpen={!!editPR} onClose={() => setEditPR(null)} title="Edit Purchase Request" size="sm">
-          <form onSubmit={handleSaveEditPR} className="space-y-4">
-            <div className="p-3 bg-slate-50 rounded-xl">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Material Utama</p>
-              <p className="text-sm font-bold text-slate-700">{editPR.master?.name || 'Material Deleted'}</p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Kuantitas Item 1</label>
-              <Input
-                type="number"
-                className="h-12 rounded-xl font-bold"
-                value={editForm.quantity}
-                onChange={(e) => setEditForm({ ...editForm, quantity: parseFloat(e.target.value) || 0 })}
-                min="0.1"
-                step="0.1"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Status</label>
-              <select
-                className="w-full h-12 glass-input rounded-xl px-4 text-sm font-bold focus:outline-none"
-                value={editForm.status}
-                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-              >
-                <option value="PENDING">PENDING</option>
-                <option value="APPROVED">APPROVED</option>
-                <option value="REJECTED">REJECTED</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">Keterangan</label>
-              <textarea
-                className="w-full p-4 glass-input rounded-xl text-sm font-medium focus:outline-none"
-                value={editForm.description}
-                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <Button type="button" variant="ghost" className="h-11 rounded-xl" onClick={() => setEditPR(null)}>Batal</Button>
-              <Button type="submit" className="h-11 rounded-xl px-6 font-black shadow-premium">Simpan</Button>
-            </div>
-          </form>
-        </Modal>
-      )}
 
       <Modal
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); resetForm(); }}
-        title="Buat Purchase Request (Budget Controlled)"
+        title={editingPRId ? "Edit Purchase Request" : "Buat Purchase Request (Budget Controlled)"}
         size="5xl"
       >
         <form onSubmit={handleSubmit} className="space-y-8 px-2 pb-2">
