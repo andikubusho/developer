@@ -392,7 +392,7 @@ const PurchaseOrders: React.FC = () => {
                     </TD>
                     <TD className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button title="Detail" onClick={() => handleViewDetail(order)} className="p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 transition-colors">
+                        <button title="Detail" onClick={() => setViewingOrder(order)} className="p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 transition-colors">
                           <Eye className="w-4 h-4" />
                         </button>
                         <button title="Edit" onClick={() => { setSelectedOrder(order); setIsModalOpen(true); }} className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors">

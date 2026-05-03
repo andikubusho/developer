@@ -282,6 +282,8 @@ export interface PurchaseRequest {
 export interface PRItemForPO {
   prId: string;
   project_id: string;
+  rab_project_id?: string;
+  rabKeterangan?: string;
   material_id: string;
   quantity: number;
   projectName: string;
