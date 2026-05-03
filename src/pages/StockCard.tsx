@@ -109,14 +109,16 @@ const StockCard: React.FC = () => {
       if (usageIds.length > 0) {
         try {
           const usageDetails = await api.get('material_usages', 
-            `id=in.(${usageIds.join(',')})&select=id,rab_item:rab_items(uraian),worker:worker_masters(name)`
+            `id=in.(${usageIds.join(',')})&select=id,rab_item:rab_items(uraian),worker:worker_masters(name),rab:rab_projects(nama_proyek,keterangan,unit:units(unit_number))`
           );
-          const usageMap: Record<string, { uraian: string, workerName: string }> = {};
+          const usageMap: Record<string, { uraian: string, workerName: string, projectTitle: string }> = {};
           (usageDetails || []).forEach((u: any) => {
             if (u.id) {
+              const unitPart = u.rab?.unit?.unit_number ? ` (${u.rab.unit.unit_number})` : '';
               usageMap[u.id] = { 
                 uraian: u.rab_item?.uraian || '',
-                workerName: u.worker?.name || ''
+                workerName: u.worker?.name || '',
+                projectTitle: u.rab ? `${u.rab.nama_proyek || 'RAB'}${unitPart} - ${u.rab.keterangan || 'Tanpa Judul'}` : ''
               };
             }
           });
@@ -124,6 +126,7 @@ const StockCard: React.FC = () => {
           moveData.forEach((m: any) => {
             if (m.sumber === 'USAGE' && usageMap[m.reference_id]) {
               m.uraian_pekerjaan = usageMap[m.reference_id].uraian;
+              m.project_title = usageMap[m.reference_id].projectTitle;
               if (!m.worker && usageMap[m.reference_id].workerName) {
                 m.worker = { name: usageMap[m.reference_id].workerName };
               }
@@ -173,7 +176,7 @@ const StockCard: React.FC = () => {
       rows.push([
         formatDate(m.tanggal),
         m.tipe === 'IN' ? 'MASUK' : m.tipe === 'OUT' ? 'KELUAR' : 'PENYESUAIAN',
-        `${m.work_description || m.uraian_pekerjaan ? `${m.work_description || m.uraian_pekerjaan} ` : ''}${m.keterangan || m.sumber}${m.worker_name || m.worker?.name ? ` (Mandor: ${m.worker_name || m.worker.name})` : ''}`,
+        `${m.project_title ? `[${m.project_title}] ` : ''}${m.work_description || m.uraian_pekerjaan ? `${m.work_description || m.uraian_pekerjaan} ` : ''}${m.keterangan || m.sumber}${m.worker_name || m.worker?.name ? ` (Mandor: ${m.worker_name || m.worker.name})` : ''}`,
         m.tipe === 'IN' ? m.qty : 0,
         m.tipe === 'OUT' ? m.qty : 0,
         runningBalance
@@ -398,14 +401,19 @@ const StockCard: React.FC = () => {
                                m.sumber === 'OPNAME' ? 'Penyesuaian Opname' : m.sumber}
                             </span>
                              <span className="text-xs font-black text-slate-700 uppercase leading-tight truncate max-w-[300px]">
-                              {m.work_description || m.uraian_pekerjaan || m.keterangan || (
+                              {m.project_title || m.work_description || m.uraian_pekerjaan || m.keterangan || (
                                 m.sumber === 'GR' ? `PO #${m.reference_id}` : 
                                 m.sumber === 'USAGE' ? `Keluar #${m.reference_id}` : 
                                 `${m.sumber} #${m.reference_id}`
                               )}
                             </span>
                             <div className="flex flex-wrap gap-1.5 mt-1.5">
-                              {(m.work_description || m.uraian_pekerjaan) && m.keterangan && (
+                              {m.project_title && (m.work_description || m.uraian_pekerjaan) && (
+                                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                                  {m.work_description || m.uraian_pekerjaan}
+                                </span>
+                              )}
+                              {(m.work_description || m.uraian_pekerjaan || m.project_title) && m.keterangan && (
                                 <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
                                   #{m.reference_id}
                                 </span>
