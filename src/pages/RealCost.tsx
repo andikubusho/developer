@@ -558,8 +558,8 @@ const RealCostPage: React.FC = () => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
               ) : isMounted ? (
-                <div className="relative w-full">
-                  <ResponsiveContainer width="100%" aspect={1.5}>
+                <div className="relative w-full h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={[

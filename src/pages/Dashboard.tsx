@@ -597,35 +597,47 @@ const Dashboard: React.FC = () => {
             <Card title="Calon Konsumen Terbaru" subtitle="Peluang penjualan yang masuk hari ini">
               <Table>
                 <THead>
-                  <TR isHoverable={false}>
-                    <TH>Nama Konsumen</TH>
-                    <TH>Status</TH>
-                    <TH>Tanggal</TH>
-                    <TH className="text-right">Aksi</TH>
+                  <TR isHoverable={false} className="bg-slate-50/50">
+                    <TH className="px-6 py-4">Konsumen</TH>
+                    <TH className="px-6 py-4 text-center">Status</TH>
+                    <TH className="px-6 py-4">Tanggal</TH>
+                    <TH className="text-right px-6 py-4">Aksi</TH>
                   </TR>
                 </THead>
                 <TBody>
-                  {recentLeads.map((lead) => (
-                    <TR key={lead.id}>
-                      <TD>
-                        <p className="font-black text-text-primary">{lead.name}</p>
-                        <p className="text-xs text-text-secondary font-bold">{lead.phone}</p>
+                  {recentLeads.length === 0 ? (
+                    <TR><TD colSpan={4} className="py-20 text-center text-text-muted font-bold italic opacity-30">Belum ada leads hari ini</TD></TR>
+                  ) : recentLeads.map((lead) => (
+                    <TR key={lead.id} className="group hover:bg-accent-lavender/[0.03] transition-all border-b border-white/40 last:border-0">
+                      <TD className="py-5 px-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-accent-lavender/10 flex items-center justify-center text-accent-lavender font-black shadow-glass group-hover:scale-105 transition-transform">
+                            {lead.name?.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-black text-text-primary tracking-tight truncate">{lead.name}</p>
+                            <p className="text-[10px] font-bold text-text-muted mt-0.5 tracking-wide">{lead.phone || '-'}</p>
+                          </div>
+                        </div>
                       </TD>
-                      <TD>
+                      <TD className="py-5 text-center">
                         <span className={cn(
-                          'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest',
-                          lead.status === 'hot' ? 'bg-rose-100/50 text-rose-600' :
-                          lead.status === 'medium' ? 'bg-amber-100/50 text-amber-600' :
-                          'bg-accent-lavender/30/50 text-accent-dark'
+                          "px-4 py-1.5 rounded-pill text-[9px] font-black uppercase tracking-[0.1em] shadow-3d-inset inline-block",
+                          lead.status === 'HOT' || lead.status === 'hot' ? "bg-rose-50 text-rose-600 border border-rose-100" : 
+                          lead.status === 'WARM' || lead.status === 'medium' ? "bg-amber-50 text-amber-600 border border-amber-100" : "bg-slate-100 text-slate-600"
                         )}>
                           {lead.status}
                         </span>
                       </TD>
-                      <TD className="text-text-muted font-bold">{formatDate(lead.date)}</TD>
-                      <TD className="text-right">
-                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl hover:bg-white/40">
-                          <MessageSquare className="w-4 h-4 text-primary" />
-                        </Button>
+                      <TD className="py-5 text-[11px] font-black text-text-secondary italic">
+                        {formatDate(lead.date)}
+                      </TD>
+                      <TD className="py-5 text-right px-6">
+                        <div className="flex justify-end gap-2">
+                           <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl hover:bg-white hover:shadow-3d transition-all text-accent-lavender" onClick={() => navigate('/leads')}>
+                              <ChevronRight className="w-4 h-4" />
+                           </Button>
+                        </div>
                       </TD>
                     </TR>
                   ))}
@@ -771,7 +783,8 @@ const Dashboard: React.FC = () => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-lavender"></div>
                 </div>
               ) : isMounted ? (
-                <ResponsiveContainer width="100%" aspect={1.6}>
+                <div className="w-full h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={pieData}
@@ -792,6 +805,7 @@ const Dashboard: React.FC = () => {
                     />
                   </PieChart>
                 </ResponsiveContainer>
+              </div>
               ) : null}
               <div className="flex flex-wrap justify-center gap-6 mt-8">
                 {pieData.map((entry, index) => (
