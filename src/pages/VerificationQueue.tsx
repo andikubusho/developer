@@ -163,10 +163,23 @@ const VerificationQueue: React.FC = () => {
 
       if (item.isOrphan) {
         // Orphaned payment — create cash_flow entry then mark verified
-        await api.update('payments', item.reference_id, { status: 'verified' });
+        // Fix: Find and mark ALL duplicate pending payments as verified to prevent "ghost" entries
+        const duplicates = await api.get('payments', 
+          `sale_id=eq.${item.payment?.sale?.id}&amount=eq.${item.amount}&payment_date=eq.${item.date}&status=eq.pending`
+        );
+        
+        if (duplicates && duplicates.length > 0) {
+          await Promise.all(duplicates.map((p: any) => 
+            api.update('payments', p.id, { status: 'verified' })
+          ));
+        } else {
+          await api.update('payments', item.reference_id, { status: 'verified' });
+        }
+
         if (item.payment?.installment_id) {
           await api.update('installments', item.payment.installment_id, { status: 'paid', paid_at: new Date().toISOString() });
         }
+
         await api.insert('cash_flow', {
           date: item.date,
           description: item.description,
@@ -181,6 +194,19 @@ const VerificationQueue: React.FC = () => {
       } else {
         // Normal cash_flow item
         const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
+        
+        // Fix: Also clear duplicates for normal items if they are payments
+        if (item.reference_type === 'payment') {
+           const duplicates = await api.get('payments', 
+            `sale_id=eq.${item.payment?.sale?.id}&amount=eq.${item.amount}&payment_date=eq.${item.date}&status=eq.pending`
+          );
+          if (duplicates && duplicates.length > 0) {
+            await Promise.all(duplicates.map((p: any) => 
+              api.update('payments', p.id, { status: 'verified' })
+            ));
+          }
+        }
+
         await api.update(table, item.reference_id, { status: 'verified' });
 
         if (item.reference_type === 'payment' && item.payment?.installment_id) {
