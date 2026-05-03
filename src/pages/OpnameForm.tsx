@@ -149,11 +149,21 @@ const OpnameForm: React.FC = () => {
       if (opnameIds.length > 0) {
         opnameMasters = await api.get('project_opnames', `id=in.(${opnameIds.join(',')})`);
       }
-      const validOpnameIds = new Set(
-        (opnameMasters || [])
-          .filter((m: any) => m.status === 'approved' || m.status === 'paid')
-          .map((m: any) => m.id)
-      );
+      const validOpnameMasters = (opnameMasters || []).filter((m: any) => m.status === 'approved' || m.status === 'paid');
+      const validOpnameIds = new Set(validOpnameMasters.map((m: any) => m.id));
+
+      // Map to store last worker for each rab_item_id
+      const lastWorkerMap: Record<string, { id: string, name: string }> = {};
+      validOpnameMasters.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      validOpnameMasters.forEach(m => {
+        // Find which items were in this opname
+        const itemsInOpname = (allOpnameItems || []).filter((oi: any) => oi.opname_id === m.id);
+        itemsInOpname.forEach((oi: any) => {
+          if (m.worker_id) {
+            lastWorkerMap[oi.rab_item_id] = { id: m.worker_id, name: m.worker_name };
+          }
+        });
+      });
 
       // 4. Construct Tree
       const buildTree = (parentId: string | null, level: number): RABNode[] => {
@@ -179,6 +189,8 @@ const OpnameForm: React.FC = () => {
             const paidPct = itemHistory.reduce((sum: number, h: any) => sum + Number(h.percentage_opname), 0);
             const paidAmt = itemHistory.reduce((sum: number, h: any) => sum + Number(h.amount_opname), 0);
 
+            const lastWorker = lastWorkerMap[item.id];
+
             return {
               id: item.id,
               parent_id: item.parent_id,
@@ -194,8 +206,8 @@ const OpnameForm: React.FC = () => {
               paid_amount: paidAmt,
               input_percentage: 0,
               calculated_amount: 0,
-              worker_id: '',
-              worker_name: ''
+              worker_id: lastWorker?.id || '',
+              worker_name: lastWorker?.name || ''
             };
           })
           .filter(Boolean) as RABNode[];
