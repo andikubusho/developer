@@ -274,7 +274,7 @@ const ConsultantSchedulePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div id="printable-schedule" className="space-y-6">
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page { 
@@ -290,17 +290,21 @@ const ConsultantSchedulePage: React.FC = () => {
           header, nav, aside, footer, button, .print-hidden {
             display: none !important;
           }
+          #printable-schedule {
+            zoom: 0.6 !important; /* Scale entire content including header */
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
           #calendar-content {
             border: none !important;
             box-shadow: none !important;
             padding: 0 !important;
             margin: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            zoom: 0.65; /* Better for Chrome/Edge print engine */
           }
           .print-compact-row {
-            min-height: 20mm !important;
+            min-height: 15mm !important;
             height: auto !important; 
             padding: 1px !important;
           }
@@ -309,19 +313,18 @@ const ConsultantSchedulePage: React.FC = () => {
             padding: 1px 2px !important;
             line-height: 1 !important;
             margin-bottom: 1px !important;
-            border-width: 0.5px !important;
           }
           h1, h2 {
             margin-bottom: 2px !important;
             margin-top: 0 !important;
-            font-size: 18pt !important;
+            font-size: 16pt !important;
             text-align: center !important;
           }
         }
       `}} />
       
-      <div className="hidden print:block text-center mb-4">
-        <h1 className="text-xl font-bold text-text-primary uppercase">Jadwal Konsultan Property Abadi Lestari Mandiri</h1>
+      <div className="hidden print:block text-center mb-2">
+        <h1 className="text-lg font-bold text-text-primary uppercase">Jadwal Konsultan Property Abadi Lestari Mandiri</h1>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
