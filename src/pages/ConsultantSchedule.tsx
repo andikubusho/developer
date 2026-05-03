@@ -278,8 +278,8 @@ const ConsultantSchedulePage: React.FC = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page { 
-            size: landscape; 
-            margin: 10mm !important; 
+            size: portrait; 
+            margin: 5mm !important; 
           }
           body {
             background: white !important;
@@ -295,15 +295,17 @@ const ConsultantSchedulePage: React.FC = () => {
           table {
             width: 100% !important;
             border-collapse: collapse !important;
+            table-layout: fixed !important;
           }
           th, td {
             border: 1px solid #ccc !important;
-            padding: 8px !important;
+            padding: 2px 4px !important;
+            word-wrap: break-word !important;
           }
           h1, h2 {
-            margin-bottom: 5mm !important;
+            margin-bottom: 2mm !important;
             margin-top: 0 !important;
-            font-size: 16pt !important;
+            font-size: 14pt !important;
             text-align: center !important;
           }
         }
@@ -353,12 +355,12 @@ const ConsultantSchedulePage: React.FC = () => {
       </div>
 
       <div className="hidden print:block">
-        <table className="w-full border-collapse border border-slate-300 text-[10px]">
+        <table className="w-full border-collapse border border-slate-300 text-[8px]">
           <thead>
             <tr>
-              <th className="border border-slate-300 p-2 bg-slate-50 w-24">Tanggal</th>
-              <th className="border border-slate-300 p-2 bg-slate-50 w-24">Hari</th>
-              <th className="border border-slate-300 p-2 bg-slate-50">Konsultan & Tugas</th>
+              <th className="border border-slate-300 p-1 bg-slate-50 w-[40px]">Tgl</th>
+              <th className="border border-slate-300 p-1 bg-slate-50 w-[60px]">Hari</th>
+              <th className="border border-slate-300 p-1 bg-slate-50">Konsultan & Tugas</th>
             </tr>
           </thead>
           <tbody>
@@ -371,14 +373,14 @@ const ConsultantSchedulePage: React.FC = () => {
 
               return (
                 <tr key={day}>
-                  <td className="border border-slate-300 p-2 text-center font-bold">{day}</td>
-                  <td className="border border-slate-300 p-2 text-center">{['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date.getDay()]}</td>
-                  <td className="border border-slate-300 p-2">
-                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <td className="border border-slate-300 p-1 text-center font-bold">{day}</td>
+                  <td className="border border-slate-300 p-1 text-center">{['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date.getDay()]}</td>
+                  <td className="border border-slate-300 p-1">
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                       {daySchedules.map(s => (
                         <div key={s.id} className="flex gap-1 items-baseline">
                           <span className="font-bold whitespace-nowrap">{s.consultant?.name}:</span>
-                          <span className="text-slate-600">{s.position}</span>
+                          <span className="text-slate-600 italic text-[7px]">{s.position}</span>
                         </div>
                       ))}
                     </div>
