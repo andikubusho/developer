@@ -130,6 +130,7 @@ const VerificationQueue: React.FC = () => {
 
       const orphanItems: CashFlowItem[] = dedupedOrphans.map((p: any) => {
           const sale = p.sale_id ? (saleMap[p.sale_id] || null) : null;
+          const bank = p.bank_account_id ? (bankData || []).find((b: any) => b.id === p.bank_account_id) || null : null;
           return {
             id: p.id,
             date: p.payment_date,
@@ -137,13 +138,18 @@ const VerificationQueue: React.FC = () => {
             amount: p.amount,
             type: 'in' as const,
             category: 'Pembayaran Unit',
-            bank_account_id: null,
+            bank_account_id: p.bank_account_id,
             status: 'pending' as CfStatus,
             reference_id: p.id,
             reference_type: 'payment' as const,
             isOrphan: true,
-            bank: null,
-            payment: { id: p.id, payment_method: p.payment_method, installment_id: p.installment_id || null, sale },
+            bank,
+            payment: { 
+              id: p.id, 
+              payment_method: p.payment_method, 
+              installment_id: p.installment_id || null, 
+              sale 
+            },
             deposit: null,
           };
         });
@@ -190,7 +196,7 @@ const VerificationQueue: React.FC = () => {
           status: 'verified',
           reference_id: item.reference_id,
           reference_type: 'payment',
-          bank_account_id: null,
+          bank_account_id: item.bank_account_id,
         });
       } else {
         // Normal cash_flow item

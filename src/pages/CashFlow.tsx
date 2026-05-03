@@ -56,7 +56,7 @@ const CashFlowPage: React.FC = () => {
 
   const fetchCashFlow = async () => {
     try {
-      const data = await api.get('cash_flow', 'select=*&order=date.desc,created_at.desc');
+      const data = await api.get('cash_flow', 'status=eq.verified&order=date.desc,created_at.desc');
       setCashFlow(data || []);
     } catch (error) {
       console.error('Error fetching cash flow:', error);

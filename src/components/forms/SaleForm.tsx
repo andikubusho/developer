@@ -278,7 +278,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         for (const pay of values.initial_payments) {
           if (pay.amount > 0) {
             const bankId = pay.type === 'Transfer Bank' ? toUuid(pay.bank_id) : null;
-            const payResult = await api.insert('payments', {
+            await api.insert('payments', {
               sale_id: newSaleId,
               amount: pay.amount,
               payment_date: pay.date,
@@ -286,20 +286,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
               bank_account_id: bankId,
               status: 'pending',
             });
-            const paymentId = payResult?.[0]?.id;
-            if (paymentId) {
-              await api.insert('cash_flow', {
-                date: pay.date,
-                description: `Pembayaran ${pay.type} - ${customerName} (Unit ${unitNumber})`,
-                type: 'in',
-                category: 'Penjualan Unit',
-                amount: pay.amount,
-                bank_account_id: bankId,
-                reference_id: paymentId,
-                reference_type: 'payment',
-                status: 'pending',
-              });
-            }
           }
         }
       }
