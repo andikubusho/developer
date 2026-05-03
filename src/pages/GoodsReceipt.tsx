@@ -115,7 +115,7 @@ const GoodsReceipt: React.FC = () => {
     }
     
     try {
-      // Loop through selected items and insert GR
+      for (const it of selectedItems) {
         // DB TRIGGER trg_material_in handles stock update and movement log
         await api.insert('goods_receipts', {
           tanggal: form.tanggal,
