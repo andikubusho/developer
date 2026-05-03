@@ -49,18 +49,19 @@ const OpnameForm: React.FC = () => {
   const { profile } = useAuth();
   
   const [projects, setProjects] = useState<Project[]>([]);
-  const [units, setUnits] = useState<any[]>([]);
+  const [unitRabs, setUnitRabs] = useState<any[]>([]);
   const [globalRabs, setGlobalRabs] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedUnitId, setSelectedUnitId] = useState('');
   const [workerName, setWorkerName] = useState('');
   const [opnameDate, setOpnameDate] = useState(new Date().toISOString().split('T')[0]);
-  
+
   const [tree, setTree] = useState<RABNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentRabId, setCurrentRabId] = useState<string | null>(null);
+  const [currentUnitId, setCurrentUnitId] = useState<string | null>(null);
   const [workers, setWorkers] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkWorker, setBulkWorker] = useState<{id: string, name: string} | null>(null);
@@ -97,18 +98,21 @@ const OpnameForm: React.FC = () => {
 
   const loadUnits = async () => {
     try {
-      const [unitsData, rabProjectsForUnits] = await Promise.all([
-        api.get('units', `project_id=eq.${selectedProjectId}&order=unit_number.asc`),
-        api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=not.is.null`)
+      const [unitsData, rabsWithUnit, gRabs] = await Promise.all([
+        api.get('units', `project_id=eq.${selectedProjectId}&select=id,unit_number,type&order=unit_number.asc`),
+        api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=not.is.null&select=id,nama_proyek,keterangan,unit_id&order=unit_id.asc`),
+        api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=is.null&order=nama_proyek.asc`)
       ]);
-      
-      const unitsWithRAB = (unitsData || []).map((u: any) => ({
-        ...u,
-        hasRAB: (rabProjectsForUnits || []).some((rp: any) => rp.unit_id === u.id)
-      }));
-      setUnits(unitsWithRAB);
 
-      const gRabs = await api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=is.null`);
+      const unitMap: Record<string, any> = {};
+      (unitsData || []).forEach((u: any) => { unitMap[u.id] = u; });
+
+      const enriched = (rabsWithUnit || []).map((r: any) => ({
+        ...r,
+        unit: unitMap[r.unit_id] || null
+      }));
+
+      setUnitRabs(enriched);
       setGlobalRabs(gRabs || []);
     } catch (err) {
       console.error('Error loading units:', err);
@@ -130,12 +134,14 @@ const OpnameForm: React.FC = () => {
       if (!rabData || rabData.length === 0) {
         setTree([]);
         setCurrentRabId(null);
+        setCurrentUnitId(null);
         setLoading(false);
         return;
       }
 
       const rabProjectId = rabData[0].id;
       setCurrentRabId(rabProjectId);
+      setCurrentUnitId(rabData[0].unit_id || null);
 
       // 2. Fetch all items and opname history
       const [items, allOpnameItems] = await Promise.all([
@@ -336,7 +342,7 @@ const OpnameForm: React.FC = () => {
         const master = await api.insert('project_opnames', {
           date: opnameDate,
           project_id: selectedProjectId,
-          unit_id: selectedUnitId.startsWith('RAB_') ? null : selectedUnitId,
+          unit_id: currentUnitId || null,
           rab_project_id: currentRabId,
           worker_id: firstItem.worker_id,
           worker_name: firstItem.worker_name,
@@ -570,25 +576,23 @@ const OpnameForm: React.FC = () => {
               
               {globalRabs.length > 0 && (
                 <optgroup label="🌐 PEKERJAAN GLOBAL / FASUM">
-                  {globalRabs.map(gr => (
-                    <option key={gr.id} value={`RAB_${gr.id}`} className="text-blue-700 font-bold">
-                       {gr.nama_proyek} - {gr.keterangan || 'Tanpa Judul'}
+                  {globalRabs.map((gr: any) => (
+                    <option key={gr.id} value={`RAB_${gr.id}`}>
+                      {gr.nama_proyek}{gr.keterangan ? ` - ${gr.keterangan}` : ''}
                     </option>
                   ))}
                 </optgroup>
               )}
 
-              <optgroup label="🏠 UNIT PROPERTY">
-                {units.map(u => (
-                  <option 
-                    key={u.id} 
-                    value={u.id}
-                    style={u.hasRAB ? { color: '#059669', fontWeight: 'bold' } : {}}
-                  >
-                    {u.hasRAB ? '✅ ' : ''}{u.unit_number} - {u.type}
-                  </option>
-                ))}
-              </optgroup>
+              {unitRabs.length > 0 && (
+                <optgroup label="🏠 UNIT PROPERTY">
+                  {unitRabs.map((r: any) => (
+                    <option key={r.id} value={`RAB_${r.id}`}>
+                      {r.unit ? `${r.unit.unit_number} - ${r.unit.type}` : 'Unit'}{r.nama_proyek || r.keterangan ? ` · ${r.nama_proyek || r.keterangan}` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
 
