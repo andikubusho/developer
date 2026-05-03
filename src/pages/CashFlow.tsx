@@ -231,10 +231,10 @@ const CashFlowPage: React.FC = () => {
                       </div>
                       <div className="text-[10px] text-text-muted mt-0.5">{item.bank?.account_number || 'Tunai'}</div>
                     </TD>
-                    <TD className="px-6 py-4">
+                    <td className="px-6 py-4">
                       <div className="text-sm font-medium text-text-primary">{item.category}</div>
-                      <div className="text-xs text-text-secondary max-w-xs truncate">{item.description}</div>
-                    </TD>
+                      <div className="text-xs text-text-secondary">{item.description}</div>
+                    </td>
                     <TD className="px-6 py-4 text-sm font-bold text-green-600 text-right">{item.type === 'in' ? formatCurrency(item.amount) : '-'}</TD>
                     <TD className="px-6 py-4 text-sm font-bold text-red-600 text-right">{item.type === 'out' ? formatCurrency(item.amount) : '-'}</TD>
                     <TD className="px-6 py-4 text-center">
