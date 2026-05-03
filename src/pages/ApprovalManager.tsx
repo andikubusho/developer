@@ -19,6 +19,7 @@ import { Modal } from '../components/ui/Modal';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { formatDate, formatCurrency, cn } from '../lib/utils';
 import { api } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface PR {
   id: string;
@@ -33,6 +34,7 @@ interface PR {
 
 const ApprovalManager: React.FC = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [prs, setPrs] = useState<PR[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPR, setSelectedPR] = useState<PR | null>(null);
@@ -85,6 +87,23 @@ const ApprovalManager: React.FC = () => {
     try {
       setLoading(true);
       await api.update('purchase_requests', id, { status });
+      
+      // Notify if approved
+      if (status === 'APPROVED') {
+        try {
+          const pr = prs.find(p => p.id === id);
+          await api.insert('notifications', {
+            target_divisions: ['teknik', 'audit'],
+            title: 'PR Disetujui Manager',
+            message: `PR #${id.substring(0, 8)} untuk ${pr?.projectName || 'Proyek'} telah disetujui oleh ${profile?.full_name}`,
+            sender_name: profile?.full_name || 'Manager',
+            metadata: { type: 'teknik_pr_approved', pr_id: id }
+          });
+        } catch (notifErr) {
+          console.error('Failed to send PR approval notification:', notifErr);
+        }
+      }
+
       alert(`Berhasil ${status === 'APPROVED' ? 'menyetujui' : 'menolak'} PR.`);
       setIsModalOpen(false);
       fetchPRs();

@@ -25,6 +25,7 @@ import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { api } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { Project } from '../types';
 
@@ -37,6 +38,7 @@ interface MasterMaterial {
 
 const PurchaseRequests: React.FC = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [requests, setRequests] = useState<any[]>([]);
   const [rabs, setRabs] = useState<any[]>([]);
   const [unitMap, setUnitMap] = useState<Record<string, any>>({});
@@ -205,6 +207,19 @@ const PurchaseRequests: React.FC = () => {
         alert('PR Berhasil Diperbarui!');
       } else {
         await api.insert('purchase_requests', data);
+        
+        // Notify Manager
+        try {
+          await api.insert('notifications', {
+            target_divisions: ['teknik', 'audit'],
+            title: 'Pengajuan Material (PR) Baru',
+            message: `${profile?.full_name} membuat pengajuan material baru untuk proyek: ${selectedRab?.nama_proyek || 'Proyek'}`,
+            sender_name: profile?.full_name || 'Warehouse',
+            metadata: { type: 'teknik_pr_new' }
+          });
+        } catch (notifErr) {
+          console.error('Failed to send PR notification:', notifErr);
+        }
         alert('PR Berhasil Diajukan!');
       }
       

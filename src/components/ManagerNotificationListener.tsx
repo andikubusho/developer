@@ -55,8 +55,14 @@ const ManagerNotificationListener: React.FC = () => {
         (payload) => {
           const newNotif = payload.new as Notification;
           
-          // Check if this notification is for this user's division
-          if (newNotif.target_divisions.includes(profile.division)) {
+          // Granular check: Does this role have this specific notification type enabled?
+          const notificationType = newNotif.metadata?.type || 'unknown';
+          const isEnabled = profile?.role_data?.notification_settings?.[notificationType] === true;
+
+          // If not granularly enabled, check the legacy boolean as fallback (optional, but safer for transition)
+          const isLegacyEnabled = profile?.role_data?.receive_notifications && !profile?.role_data?.notification_settings;
+
+          if ((isEnabled || isLegacyEnabled) && newNotif.target_divisions.includes(profile.division)) {
             setNotifications(prev => [newNotif, ...prev].slice(0, 3));
             
             // Optional: Play subtle sound
@@ -115,7 +121,8 @@ const ManagerNotificationListener: React.FC = () => {
                 <div>
                   <h3 className="text-sm font-black tracking-tight leading-none">{notif.title}</h3>
                   <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">
-                    Marketing Update
+                    {notif.metadata?.type?.startsWith('teknik') ? 'Logistik Update' : 
+                     notif.metadata?.type?.startsWith('keuangan') ? 'Keuangan Update' : 'Marketing Update'}
                   </span>
                 </div>
               </div>

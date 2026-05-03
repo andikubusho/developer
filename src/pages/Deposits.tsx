@@ -212,6 +212,19 @@ const Deposits: React.FC = () => {
         await api.update('deposits', selectedDeposit.id, payload);
       } else {
         await api.insert('deposits', payload);
+        
+        // Notify Manager
+        try {
+          await api.insert('notifications', {
+            target_divisions: ['marketing', 'keuangan'],
+            title: 'Titipan Baru',
+            message: `${profile?.full_name} menginput titipan baru sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(formData.amount)} dari ${formData.name}`,
+            sender_name: profile?.full_name || 'Marketing',
+            metadata: { type: 'marketing_deposit' }
+          });
+        } catch (notifErr) {
+          console.error('Failed to send deposit notification:', notifErr);
+        }
       }
       await fetchDeposits();
       setIsModalOpen(false);

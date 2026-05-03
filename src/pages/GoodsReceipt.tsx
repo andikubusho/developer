@@ -131,6 +131,19 @@ const GoodsReceipt: React.FC = () => {
       // For now, mark as COMPLETED if any receipt made
       await api.update('purchase_orders', selectedPO.id, { status: 'COMPLETED' });
 
+      // Notify
+      try {
+        await api.insert('notifications', {
+          target_divisions: ['teknik', 'audit', 'keuangan'],
+          title: 'Penerimaan Barang',
+          message: `${selectedItems.length} item material dari PO #${selectedPO.po_number} telah diterima oleh Gudang`,
+          sender_name: 'Gudang',
+          metadata: { type: 'teknik_receipt', po_id: selectedPO.id }
+        });
+      } catch (notifErr) {
+        console.error('Failed to send receipt notification:', notifErr);
+      }
+
       setIsModalOpen(false);
       fetchData();
     } catch (err) {

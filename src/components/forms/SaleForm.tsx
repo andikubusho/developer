@@ -264,6 +264,25 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       const saleData = initialData ? await api.update('sales', initialData.id, salePayload) : await api.insert('sales', salePayload);
       if (!saleData?.[0]) throw new Error('Gagal simpan.');
       const newSaleId = saleData[0].id;
+
+      // Notify relevant divisions
+      if (!initialData) {
+        try {
+          const customerName = rawCustomers.find(c => c.id === finalCustomerId)?.full_name 
+            || rawLeads.find(l => l.id === finalCustomerId)?.name 
+            || 'Konsumen';
+            
+          await api.insert('notifications', {
+            target_divisions: ['marketing', 'keuangan', 'audit'],
+            title: 'Penjualan Baru',
+            message: `${profile?.full_name} berhasil melakukan closing penjualan kepada ${customerName} senilai ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(salePayload.final_price)}`,
+            sender_name: profile?.full_name || 'Marketing',
+            metadata: { type: 'marketing_sale', sale_id: newSaleId }
+          });
+        } catch (notifErr) {
+          console.error('Failed to send sale notification:', notifErr);
+        }
+      }
       if (isValidUuid(values.unit_id)) {
         await api.update('units', values.unit_id, { status: 'sold' });
       }

@@ -186,8 +186,20 @@ const UserManagement: React.FC = () => {
     division: 'marketing' as UserRole,
     authorized_divisions: [] as UserRole[],
     permissions: {} as Record<string, Capabilities>,
-    receive_notifications: false
+    receive_notifications: false,
+    notification_settings: {} as Record<string, boolean>
   });
+
+  const NOTIFICATION_TYPES = [
+    { key: 'marketing_lead', label: 'Lead Baru Masuk', division: 'marketing', description: 'Pop-up saat staf marketing menambah lead baru' },
+    { key: 'marketing_deposit', label: 'Titipan Baru', division: 'marketing', description: 'Pop-up saat ada input titipan konsumen' },
+    { key: 'marketing_sale', label: 'Penjualan Baru', division: 'marketing', description: 'Pop-up saat transaksi penjualan diinput' },
+    { key: 'keuangan_payment_new', label: 'Pembayaran Konsumen Baru', division: 'keuangan', description: 'Pop-up saat ada pembayaran masuk ke antrean verifikasi' },
+    { key: 'teknik_pr_new', label: 'Pengajuan Material (PR) Baru', division: 'teknik', description: 'Pop-up saat gudang membuat pengajuan baru' },
+    { key: 'teknik_pr_approved', label: 'PR Disetujui Manager', division: 'teknik', description: 'Pop-up saat manager menyetujui pengajuan' },
+    { key: 'teknik_po_new', label: 'PO Dibuat', division: 'teknik', description: 'Pop-up saat PO material diterbitkan' },
+    { key: 'teknik_receipt', label: 'Penerimaan Barang', division: 'teknik', description: 'Pop-up saat barang/material sampai di gudang' },
+  ];
 
   const divisionOptions: UserRole[] = ['admin', 'marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'];
 
@@ -245,7 +257,8 @@ const UserManagement: React.FC = () => {
       division: role.division,
       authorized_divisions: role.authorized_divisions || [],
       permissions: role.permissions,
-      receive_notifications: !!role.receive_notifications
+      receive_notifications: !!role.receive_notifications,
+      notification_settings: role.notification_settings || {}
     });
     setSelectedRole(role);
     setIsRoleModalOpen(true);
@@ -266,7 +279,8 @@ const UserManagement: React.FC = () => {
         division: primaryDivision, 
         authorized_divisions: roleForm.authorized_divisions,
         permissions: roleForm.permissions,
-        receive_notifications: roleForm.receive_notifications
+        receive_notifications: roleForm.receive_notifications,
+        notification_settings: roleForm.notification_settings
       };
 
       if (roleForm.id) {
@@ -713,20 +727,59 @@ const UserManagement: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 bg-accent-dark/5 rounded-xl border border-accent-dark/10 flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-black text-text-primary">Terima Notifikasi Real-time</h4>
-              <p className="text-[10px] text-text-secondary font-medium">Tampilkan pop-up instan saat staf menginput data baru</p>
+          <div className="bg-accent-dark/5 p-6 rounded-[2rem] border border-accent-dark/10 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-black text-text-primary uppercase tracking-widest">Konfigurasi Notifikasi & Pop-Up</h4>
+                <p className="text-[10px] text-text-secondary font-medium">Pilih jenis kejadian yang akan memunculkan pop-up real-time</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-text-muted uppercase">Aktifkan Semua</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={roleForm.receive_notifications}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      const allSettings: any = {};
+                      NOTIFICATION_TYPES.forEach(t => allSettings[t.key] = val);
+                      setRoleForm({ ...roleForm, receive_notifications: val, notification_settings: allSettings });
+                    }}
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-dark"></div>
+                </label>
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer"
-                checked={roleForm.receive_notifications}
-                onChange={(e) => setRoleForm({ ...roleForm, receive_notifications: e.target.checked })}
-              />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-dark"></div>
-            </label>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {['marketing', 'teknik', 'keuangan'].map(div => (
+                <div key={div} className="space-y-3">
+                  <h5 className="text-[10px] font-black text-accent-dark uppercase tracking-[0.2em] border-b border-accent-dark/10 pb-1">{div}</h5>
+                  <div className="space-y-2">
+                    {NOTIFICATION_TYPES.filter(t => t.division === div).map(t => (
+                      <label key={t.key} className="flex items-start gap-3 p-3 rounded-2xl bg-white/40 border border-white/60 hover:bg-white/60 transition-all cursor-pointer group">
+                        <input 
+                          type="checkbox"
+                          className="mt-1 w-4 h-4 rounded border-slate-300 text-accent-dark focus:ring-accent-dark/20"
+                          checked={!!roleForm.notification_settings[t.key]}
+                          onChange={(e) => {
+                            setRoleForm({
+                              ...roleForm,
+                              notification_settings: { ...roleForm.notification_settings, [t.key]: e.target.checked }
+                            });
+                          }}
+                        />
+                        <div className="flex-1">
+                          <p className="text-xs font-black text-text-primary group-hover:text-accent-dark transition-colors">{t.label}</p>
+                          <p className="text-[9px] text-text-secondary leading-tight mt-0.5">{t.description}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
           
           <div className="border-t border-white/40 pt-4">

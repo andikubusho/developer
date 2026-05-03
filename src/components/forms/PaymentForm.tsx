@@ -7,6 +7,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { api } from '../../lib/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 const paymentSchema = z.object({
   sale_id: z.string().min(1, 'Pilih transaksi'),
@@ -27,6 +28,7 @@ interface PaymentFormProps {
 }
 
 export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, onSuccess, onCancel }) => {
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [installments, setInstallments] = useState<{ id: string; due_date: string; amount: number }[]>([]);
   const [banks, setBanks] = useState<{ id: string; bank_name: string; account_number: string; account_holder: string }[]>([]);
@@ -144,6 +146,20 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
       } else {
         // Mode Insert Baru
         await api.insert('payments', payload);
+
+        // Notify Keuangan
+        try {
+          const customerName = sales.find(s => s.id === values.sale_id)?.customer?.full_name || 'Pelanggan';
+          await api.insert('notifications', {
+            target_divisions: ['keuangan'],
+            title: 'Pembayaran Konsumen Baru',
+            message: `${profile?.full_name} menginput pembayaran baru dari ${customerName} senilai ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(values.amount)}`,
+            sender_name: profile?.full_name || 'Marketing',
+            metadata: { type: 'keuangan_payment_new' }
+          });
+        } catch (notifErr) {
+          console.error('Failed to send payment notification:', notifErr);
+        }
       }
       
       onSuccess();

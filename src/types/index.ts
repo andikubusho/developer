@@ -30,7 +30,8 @@ export interface Role {
   division: UserRole;
   authorized_divisions: UserRole[];
   permissions: Record<string, Capabilities>;
-  receive_notifications?: boolean;
+  receive_notifications?: boolean; // Keep for backward compatibility during transition if needed
+  notification_settings?: Record<string, boolean>;
   created_at: string;
 }
 

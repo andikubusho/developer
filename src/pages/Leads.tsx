@@ -202,7 +202,10 @@ const Leads: React.FC = () => {
             title: 'Lead Baru Masuk',
             message: `${profile?.full_name} menambahkan lead baru: ${formData.name}`,
             sender_name: profile?.full_name || 'Staff',
-            metadata: { type: 'leads' }
+            metadata: { 
+              type: 'marketing_lead',
+              lead_id: formData.id // Optional but helpful
+            }
           });
         } catch (notifErr) {
           console.error('Failed to send manager notification:', notifErr);

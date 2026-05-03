@@ -3,6 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { api } from '../../lib/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { PRItemForPO } from '../../types';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -44,6 +45,7 @@ interface POFormProps {
 }
 
 export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, initialPR, initialOrder, initialPRItems }) => {
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [masters, setMasters] = useState<any[]>([]);
@@ -332,6 +334,19 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         rab_project_id: initialPRItems![0].rab_project_id,
         items: poItems // Store all items in JSONB
       });
+
+      // Notify
+      try {
+        await api.insert('notifications', {
+          target_divisions: ['teknik', 'audit', 'keuangan'],
+          title: 'Purchase Order (PO) Dibuat',
+          message: `${profile?.full_name} menerbitkan PO baru #${po_number} untuk proyek ${projectLabel || 'Proyek'}`,
+          sender_name: profile?.full_name || 'Purchasing',
+          metadata: { type: 'teknik_po_new', po_number }
+        });
+      } catch (notifErr) {
+        console.error('Failed to send PO notification:', notifErr);
+      }
 
       onSuccess();
     } catch (error: any) {
