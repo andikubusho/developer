@@ -109,16 +109,24 @@ const StockCard: React.FC = () => {
       if (usageIds.length > 0) {
         try {
           const usageDetails = await api.get('material_usages', 
-            `id=in.(${usageIds.join(',')})&select=id,rab_item:rab_items(uraian)`
+            `id=in.(${usageIds.join(',')})&select=id,rab_item:rab_items(uraian),worker:worker_masters(name)`
           );
-          const usageMap: Record<string, string> = {};
+          const usageMap: Record<string, { uraian: string, workerName: string }> = {};
           (usageDetails || []).forEach((u: any) => {
-            if (u.id) usageMap[u.id] = u.rab_item?.uraian || '';
+            if (u.id) {
+              usageMap[u.id] = { 
+                uraian: u.rab_item?.uraian || '',
+                workerName: u.worker?.name || ''
+              };
+            }
           });
           
           moveData.forEach((m: any) => {
             if (m.sumber === 'USAGE' && usageMap[m.reference_id]) {
-              m.uraian_pekerjaan = usageMap[m.reference_id];
+              m.uraian_pekerjaan = usageMap[m.reference_id].uraian;
+              if (!m.worker && usageMap[m.reference_id].workerName) {
+                m.worker = { name: usageMap[m.reference_id].workerName };
+              }
             }
           });
         } catch (e) {
