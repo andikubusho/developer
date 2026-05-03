@@ -128,19 +128,19 @@ const PurchaseOrders: React.FC = () => {
       ]);
 
       const projMap: Record<string, string> = {};
-      (projData || []).forEach((p: any) => { projMap[p.id] = p.name; });
+      (projData || []).filter(Boolean).forEach((p: any) => { if (p.id) projMap[p.id] = p.name; });
 
       const supplierMap: Record<string, string> = {};
-      (supplierData || []).forEach((s: any) => { supplierMap[s.id] = s.name; });
+      (supplierData || []).filter(Boolean).forEach((s: any) => { if (s.id) supplierMap[s.id] = s.name; });
 
       const matMap: Record<string, any> = {};
-      (materialData || []).forEach((m: any) => { matMap[m.id] = m; });
+      (materialData || []).filter(Boolean).forEach((m: any) => { if (m.id) matMap[m.id] = m; });
 
       const unitMap: Record<string, string> = {};
-      (unitData || []).forEach((u: any) => { unitMap[u.id] = u.unit_number; });
+      (unitData || []).filter(Boolean).forEach((u: any) => { if (u.id) unitMap[u.id] = u.unit_number; });
 
       // Enrich POs
-      const enrichedPOs = (poData || []).map((po: any) => ({
+      const enrichedPOs = (poData || []).filter(Boolean).map((po: any) => ({
         ...po,
         project: { name: projMap[po.project_id] || '-' },
         supplier: { name: supplierMap[po.supplier_id] || '-' },
@@ -148,12 +148,11 @@ const PurchaseOrders: React.FC = () => {
       setOrders(enrichedPOs);
       
       // Flatten items from APPROVED/ordered PRs that don't have POs yet
-      // (Actually showing only APPROVED for PO creation)
       const approvedItems: PRItemForPO[] = [];
-      (prData || []).forEach((pr: any) => {
+      (prData || []).filter(Boolean).forEach((pr: any) => {
         const prStatus = (pr.status || '').toUpperCase();
         if (prStatus === 'APPROVED') {
-          (pr.items || []).forEach((item: any) => {
+          (pr.items || []).filter(Boolean).forEach((item: any) => {
             const mat = matMap[item.material_id] || null;
             approvedItems.push({
               prId: pr.id,
