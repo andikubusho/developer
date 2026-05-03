@@ -80,6 +80,11 @@ const Dashboard: React.FC = () => {
   const [materialStock, setMaterialStock] = useState<any[]>([]);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [activeSpks, setActiveSpks] = useState<any[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     // Instant Hydration from Cache
@@ -765,7 +770,7 @@ const Dashboard: React.FC = () => {
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-lavender"></div>
                 </div>
-              ) : (
+              ) : isMounted ? (
                 <ResponsiveContainer width="100%" aspect={1.6}>
                   <PieChart>
                     <Pie
@@ -787,7 +792,7 @@ const Dashboard: React.FC = () => {
                     />
                   </PieChart>
                 </ResponsiveContainer>
-              )}
+              ) : null}
               <div className="flex flex-wrap justify-center gap-6 mt-8">
                 {pieData.map((entry, index) => (
                   <div key={index} className="flex items-center gap-2">

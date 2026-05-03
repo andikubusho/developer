@@ -44,6 +44,11 @@ const RealCostPage: React.FC = () => {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   const [data, setData] = useState({
     rabTotal: 0,
@@ -552,7 +557,7 @@ const RealCostPage: React.FC = () => {
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-              ) : (
+              ) : isMounted ? (
                 <div className="relative w-full">
                   <ResponsiveContainer width="100%" aspect={1.5}>
                     <PieChart>
@@ -577,7 +582,7 @@ const RealCostPage: React.FC = () => {
                     <div className="text-2xl font-black italic tracking-tighter">{formatCurrency(data.totalActual)}</div>
                   </div>
                 </div>
-              )}
+              ) : null}
 
               <div className="space-y-4">
                  <div className="p-4 rounded-2xl bg-white/60 border border-white/80 flex items-center justify-between">

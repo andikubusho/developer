@@ -58,7 +58,7 @@ const Layout: React.FC = () => {
         </header>
 
         <div id="main-content" className="flex-1 px-4 py-8 md:px-10 md:py-12 overflow-y-auto overflow-x-hidden transition-all duration-300 print:p-0 print:overflow-visible scrollbar-hide">
-          <div className="max-w-[1600px] mx-auto space-y-8 md:space-y-12 print:max-w-none print:space-y-0">
+          <div className="max-w-[1600px] mx-auto space-y-8 md:space-y-12 print:max-w-none print:space-y-0 min-w-0">
             <ErrorBoundary key={location.pathname}>
               <Suspense fallback={<PageLoader />}>
                 <Outlet />
