@@ -173,7 +173,7 @@ const StockCard: React.FC = () => {
       rows.push([
         formatDate(m.tanggal),
         m.tipe === 'IN' ? 'MASUK' : m.tipe === 'OUT' ? 'KELUAR' : 'PENYESUAIAN',
-        `${m.uraian_pekerjaan ? `${m.uraian_pekerjaan} ` : ''}${m.keterangan || m.sumber}${m.worker?.name ? ` (Mandor: ${m.worker.name})` : ''}`,
+        `${m.work_description || m.uraian_pekerjaan ? `${m.work_description || m.uraian_pekerjaan} ` : ''}${m.keterangan || m.sumber}${m.worker_name || m.worker?.name ? ` (Mandor: ${m.worker_name || m.worker.name})` : ''}`,
         m.tipe === 'IN' ? m.qty : 0,
         m.tipe === 'OUT' ? m.qty : 0,
         runningBalance
@@ -398,21 +398,21 @@ const StockCard: React.FC = () => {
                                m.sumber === 'OPNAME' ? 'Penyesuaian Opname' : m.sumber}
                             </span>
                              <span className="text-xs font-black text-slate-700 uppercase leading-tight truncate max-w-[300px]">
-                              {m.uraian_pekerjaan || m.keterangan || (
+                              {m.work_description || m.uraian_pekerjaan || m.keterangan || (
                                 m.sumber === 'GR' ? `PO #${m.reference_id}` : 
                                 m.sumber === 'USAGE' ? `Keluar #${m.reference_id}` : 
                                 `${m.sumber} #${m.reference_id}`
                               )}
                             </span>
                             <div className="flex flex-wrap gap-1.5 mt-1.5">
-                              {m.uraian_pekerjaan && m.keterangan && (
+                              {(m.work_description || m.uraian_pekerjaan) && m.keterangan && (
                                 <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
                                   #{m.reference_id}
                                 </span>
                               )}
-                              {m.worker?.name && (
+                              {(m.worker_name || m.worker?.name) && (
                                 <span className="text-[10px] font-bold text-accent-lavender flex items-center gap-1.5 bg-accent-lavender/5 w-fit px-2 py-0.5 rounded-full border border-accent-lavender/10">
-                                  <UserCheck className="w-2.5 h-2.5" /> {m.worker.name}
+                                  <UserCheck className="w-2.5 h-2.5" /> {m.worker_name || m.worker.name}
                                 </span>
                               )}
                             </div>
