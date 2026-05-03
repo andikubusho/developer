@@ -47,6 +47,7 @@ const ConstructionProgressPage: React.FC = () => {
   
   const [progressItems, setProgressItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isInputMode, setIsInputMode] = useState(false);
   const [tree, setTree] = useState<RABNode[]>([]);
   
@@ -189,6 +190,19 @@ const ConstructionProgressPage: React.FC = () => {
       fetchProgressHistory();
     } catch (err: any) {
       alert(`Gagal: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Hapus laporan progress ini?')) return;
+    try {
+      setLoading(true);
+      await api.delete('construction_progress', id);
+      fetchProgressHistory();
+    } catch (err: any) {
+      alert(`Gagal menghapus: ${err.message}`);
     } finally {
       setLoading(false);
     }
