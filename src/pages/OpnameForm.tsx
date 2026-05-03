@@ -389,6 +389,8 @@ const OpnameForm: React.FC = () => {
                   {node.uraian}
                 </span>
               </div>
+            <TD className="px-4 py-3 text-center font-bold text-xs text-text-muted">
+              {node.volume ? `${node.volume} ${node.satuan || ''}` : '-'}
             </TD>
             <TD className="px-4 py-3 text-right font-bold text-sm text-text-secondary">
               {totalBudget > 0 ? formatCurrency(totalBudget) : '-'}
@@ -605,6 +607,7 @@ const OpnameForm: React.FC = () => {
                 <Square className="w-4 h-4 opacity-30" />
               </TH>
               <TH className="px-6 py-4">Uraian Pekerjaan</TH>
+              <TH className="px-6 py-4 text-center">Volume</TH>
               <TH className="px-6 py-4 text-right">Pagu RAB Upah</TH>
               <TH className="px-6 py-4 text-center">Progress Lalu</TH>
               <TH className="px-6 py-4 text-right">Sisa Pagu</TH>
@@ -615,9 +618,9 @@ const OpnameForm: React.FC = () => {
           </THead>
           <TBody>
             {loading ? (
-              <TR><TD colSpan={8} className="px-6 py-20 text-center"><div className="animate-spin rounded-full h-10 w-10 border-b-4 border-primary mx-auto"></div></TD></TR>
+              <TR><TD colSpan={9} className="px-6 py-20 text-center"><div className="animate-spin rounded-full h-10 w-10 border-b-4 border-primary mx-auto"></div></TD></TR>
             ) : tree.length === 0 ? (
-              <TR><TD colSpan={8} className="px-6 py-20 text-center text-text-secondary font-bold italic">Pilih Proyek & Unit untuk memuat data</TD></TR>
+              <TR><TD colSpan={9} className="px-6 py-20 text-center text-text-secondary font-bold italic">Pilih Proyek & Unit untuk memuat data</TD></TR>
             ) : (
               renderRows(tree)
             )}
