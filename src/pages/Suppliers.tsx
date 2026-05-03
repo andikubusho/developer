@@ -103,8 +103,8 @@ const Suppliers: React.FC = () => {
   };
 
   const filteredSuppliers = suppliers.filter(s => 
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.contact_person.toLowerCase().includes(search.toLowerCase())
+    (s.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (s.contact_person || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -192,9 +192,9 @@ const Suppliers: React.FC = () => {
                   <TD className="font-black text-text-primary">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-accent-lavender/10 flex items-center justify-center text-primary text-xs">
-                        {s.name.substring(0, 2).toUpperCase()}
+                        {(s.name || '??').substring(0, 2).toUpperCase()}
                       </div>
-                      {s.name}
+                      {s.name || '-'}
                     </div>
                   </TD>
                   <TD className="font-bold text-text-secondary">

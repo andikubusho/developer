@@ -133,7 +133,7 @@ const WorkerMaster: React.FC = () => {
                   <TD className="px-6 py-5">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/10 to-accent-lavender/20 flex items-center justify-center text-primary font-black text-lg shadow-sm border border-white">
-                        {item.name.charAt(0).toUpperCase()}
+                        {(item.name || '?').charAt(0).toUpperCase()}
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-black text-text-primary leading-tight">{item.name}</span>

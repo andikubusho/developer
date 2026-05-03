@@ -244,7 +244,7 @@ const MasterMaterial: React.FC = () => {
   };
 
   const filteredMaterials = materials.filter(m => 
-    m.name.toLowerCase().includes(search.toLowerCase()) ||
+    (m.name || '').toLowerCase().includes(search.toLowerCase()) ||
     (m.code || '').toLowerCase().includes(search.toLowerCase())
   );
 
