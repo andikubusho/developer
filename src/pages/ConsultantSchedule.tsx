@@ -266,22 +266,39 @@ const ConsultantSchedulePage: React.FC = () => {
         @media print {
           @page { 
             size: landscape; 
-            margin: 5mm !important; 
+            margin: 0 !important; 
           }
           body {
             background: white !important;
             -webkit-print-color-adjust: exact;
+            margin: 0;
+            padding: 0;
+          }
+          header, nav, aside, footer, button, .print-hidden {
+            display: none !important;
+          }
+          #calendar-content {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 5mm !important;
+            margin: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
           }
           .print-compact-row {
-            min-height: 95px !important;
-            height: 95px !important;
-            padding: 4px !important;
+            min-height: auto !important;
+            height: 32mm !important; 
+            padding: 2px !important;
             overflow: hidden !important;
           }
           .print-schedule-item {
-            font-size: 8px !important;
-            padding: 1px 4px !important;
-            margin-bottom: 2px !important;
+            font-size: 7px !important;
+            padding: 0px 2px !important;
+            margin-bottom: 1px !important;
+          }
+          h1, h2 {
+            margin-bottom: 5px !important;
+            margin-top: 0 !important;
           }
         }
       `}} />
