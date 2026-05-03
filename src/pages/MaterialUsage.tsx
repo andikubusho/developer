@@ -70,7 +70,8 @@ const MaterialUsage: React.FC = () => {
           : '';
         return {
           ...r,
-          label: `${r.nama_proyek}${unitLabel} - ${r.keterangan || 'Tanpa Judul'}`,
+          label: `${r.nama_proyek || 'RAB'}${unitLabel} - ${r.keterangan || 'Tanpa Judul'}`,
+          value: r.id, // CRITICAL: SearchableSelect needs value!
           unit: (r.unit_id && unitsMap[r.unit_id]) ? unitsMap[r.unit_id] : null
         };
       });
@@ -512,12 +513,14 @@ const MaterialUsage: React.FC = () => {
                 ) : history.map((h, i) => (
                   <tr key={i} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-4 py-4">
-                      <div className="font-black text-slate-700 uppercase text-xs">{h.rab?.nama_proyek}</div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{new Date(h.tanggal).toLocaleDateString('id-ID')}</div>
+                      <div className="font-black text-slate-700 uppercase text-xs">{h.rab?.nama_proyek || '-'}</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                        {h.tanggal ? new Date(h.tanggal).toLocaleDateString('id-ID') : '-'}
+                      </div>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="font-bold text-slate-800">{h.material?.name}</div>
-                      <div className="text-[10px] font-black text-emerald-600 uppercase">Merk: {h.variant?.merk}</div>
+                      <div className="font-bold text-slate-800">{h.material?.name || 'Material'}</div>
+                      <div className="text-[10px] font-black text-emerald-600 uppercase">Merk: {h.variant?.merk || '-'}</div>
                     </td>
                     <td className="px-4 py-4 text-right font-black text-rose-600">
                       - {formatNumber(h.qty)} <span className="text-[10px] uppercase text-slate-400 font-bold">{h.material?.unit}</span>
