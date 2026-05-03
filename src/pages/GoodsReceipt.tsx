@@ -116,8 +116,8 @@ const GoodsReceipt: React.FC = () => {
     
     try {
       // Loop through selected items and insert GR
-      for (const it of selectedItems) {
-        const grResponse = await api.insert('goods_receipts', {
+        // DB TRIGGER trg_material_in handles stock update and movement log
+        await api.insert('goods_receipts', {
           tanggal: form.tanggal,
           po_id: selectedPO.id,
           material_id: it.material_id,
@@ -125,27 +125,6 @@ const GoodsReceipt: React.FC = () => {
           qty: it.qty_received,
           worker_id: form.worker_id || null
         });
-
-        // Ambil stok terbaru varian ini untuk akurasi saldo (mencegah race condition sederhana)
-        const vRows = await api.get('material_variants', `id=eq.${it.id_variant}&select=stok`);
-        const currentStok = Number(vRows?.[0]?.stok) || 0;
-        const newStok = currentStok + it.qty_received;
-
-        // CATAT MUTASI STOK
-        await api.insert('stock_movements', {
-          id_variant: it.id_variant,
-          tanggal: new Date().toISOString(),
-          tipe: 'IN',
-          qty: it.qty_received,
-          saldo_setelah: newStok,
-          sumber: 'GR',
-          reference_id: grResponse?.[0]?.id || 'Manual',
-          keterangan: `PO: ${selectedPO.po_number}`,
-          worker_id: form.worker_id || null
-        });
-
-        // UPDATE STOK FISIK
-        await api.update('material_variants', it.id_variant, { stok: newStok });
       }
 
       // Update PO status if all items received (simplified)
@@ -166,20 +145,7 @@ const GoodsReceipt: React.FC = () => {
     if (!confirm(`Batalkan penerimaan barang "${gr.material?.name}"? Stok akan dikurangi kembali.`)) return;
 
     try {
-      setLoading(true);
-      // 1. Hapus Log Mutasi Terkait agar Kartu Stok sinkron
-      const movements = await api.get('stock_movements', `sumber=eq.GR&reference_id=eq.${gr.id}`);
-      if (movements && movements.length > 0) {
-        await api.delete('stock_movements', movements[0].id);
-      }
-
-      // 2. Kembalikan Saldo Stok di Material Variants
-      const vRows = await api.get('material_variants', `id=eq.${gr.id_variant}&select=stok`);
-      const currentStok = Number(vRows?.[0]?.stok) || 0;
-      const restoredStok = currentStok - Number(gr.qty); // Kurangi lagi karena ini pembatalan penerimaan
-      await api.update('material_variants', gr.id_variant, { stok: restoredStok });
-
-      // 3. Hapus data GR
+      // DB TRIGGER trg_material_in_delete handles stock reversal and movement log
       await api.delete('goods_receipts', gr.id);
       
       // 4. Kembalikan status PO ke PENDING agar muncul lagi di antrean terima

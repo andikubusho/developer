@@ -188,7 +188,8 @@ const MaterialUsage: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const usageResponse = await api.insert('material_usages', {
+      // DB TRIGGER trg_material_out handles stock update and movement log
+      await api.insert('material_usages', {
         tanggal: form.tanggal,
         rab_project_id: form.rab_project_id || null,
         rab_item_id: form.rab_item_id || null,
@@ -198,30 +199,6 @@ const MaterialUsage: React.FC = () => {
         worker_id: form.worker_id || null,
         worker_name: workers.find(w => w.id === form.worker_id)?.name || null,
         keterangan: form.keterangan
-      });
-
-      // CATAT MUTASI STOK (Untuk Kartu Stok)
-      // Kita catat manual agar referensi lebih informatif (Nama Proyek & Unit)
-      const project = projects.find(p => p.id === form.rab_project_id);
-      const item = rabItems.find(it => it.id === form.rab_item_id);
-      const selectedWorker = workers.find(w => w.id === form.worker_id);
-      const referenceLabel = `${project?.nama_proyek || 'UMUM'}${project?.unit ? ` (${project.unit.unit_number})` : ''} - ${item?.uraian || 'Pemakaian'}${selectedWorker ? ` | Mandor: ${selectedWorker.name}` : ''}`;
-
-      await api.insert('stock_movements', {
-        id_variant: parseInt(form.id_variant),
-        tanggal: new Date().toISOString(),
-        tipe: 'OUT',
-        qty: form.qty,
-        saldo_setelah: (selectedVariant?.stok || 0) - form.qty,
-        sumber: 'USAGE',
-        reference_id: usageResponse?.[0]?.id || 'Manual',
-        keterangan: referenceLabel,
-        worker_id: form.worker_id || null
-      });
-
-      // Update stok akhir di tabel varian (jika trigger DB tidak melakukannya)
-      await api.update('material_variants', parseInt(form.id_variant), {
-        stok: (selectedVariant?.stok || 0) - form.qty
       });
 
       alert('Pemakaian material berhasil dicatat!');
@@ -240,20 +217,7 @@ const MaterialUsage: React.FC = () => {
     if (!confirm(`Batalkan pemakaian material "${usage.material?.name}"? Stok akan dikembalikan ke gudang.`)) return;
 
     try {
-      setLoading(true);
-      // 1. Hapus Log Mutasi Terkait agar Kartu Stok sinkron
-      const movements = await api.get('stock_movements', `sumber=eq.USAGE&reference_id=eq.${usage.id}`);
-      if (movements && movements.length > 0) {
-        await api.delete('stock_movements', movements[0].id);
-      }
-
-      // 2. Kembalikan Saldo Stok di Material Variants (Ditambah lagi)
-      const vRows = await api.get('material_variants', `id=eq.${usage.id_variant}&select=stok`);
-      const currentStok = Number(vRows?.[0]?.stok) || 0;
-      const restoredStok = currentStok + Number(usage.qty);
-      await api.update('material_variants', usage.id_variant, { stok: restoredStok });
-
-      // 3. Hapus data Usage
+      // DB TRIGGER trg_material_out_delete handles stock reversal and movement log
       await api.delete('material_usages', usage.id);
       
       await fetchInitialData();
