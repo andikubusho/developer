@@ -279,53 +279,31 @@ const ConsultantSchedulePage: React.FC = () => {
         @media print {
           @page { 
             size: landscape; 
-            margin: 5mm !important; 
+            margin: 10mm !important; 
           }
           body {
             background: white !important;
             -webkit-print-color-adjust: exact;
-            margin: 0;
-            padding: 0;
           }
           header, nav, aside, footer, button, .print-hidden {
             display: none !important;
           }
           #printable-schedule {
-            zoom: 0.55 !important; 
+            zoom: 1 !important; 
             width: 100% !important;
-            height: auto !important;
-            margin: 0 !important;
-            padding: 0 !important;
           }
-          #printable-schedule > * {
-            margin-top: 0 !important;
-            margin-bottom: 0 !important;
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
           }
-          #calendar-content {
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          .print-compact-row {
-            min-height: 10mm !important;
-            height: auto !important; 
-            padding: 1px !important;
-          }
-          .print-schedule-item {
-            font-size: 6px !important;
-            padding: 0px 1px !important;
-            line-height: 1 !important;
-            margin-bottom: 1px !important;
-          }
-          .print-day-header {
-            padding: 2px !important;
-            font-size: 8px !important;
+          th, td {
+            border: 1px solid #ccc !important;
+            padding: 8px !important;
           }
           h1, h2 {
-            margin-bottom: 1mm !important;
+            margin-bottom: 5mm !important;
             margin-top: 0 !important;
-            font-size: 14pt !important;
+            font-size: 16pt !important;
             text-align: center !important;
           }
         }
@@ -374,8 +352,49 @@ const ConsultantSchedulePage: React.FC = () => {
         </div>
       </div>
 
-      <Card id="calendar-content" className="p-6 border-none shadow-none sm:border sm:shadow-premium print:p-0 print:border-none print:shadow-none">
-        <div className="flex items-center justify-between gap-4 mb-4 sm:mb-8 print:mb-4 px-2 sm:px-0">
+      <div className="hidden print:block">
+        <table className="w-full border-collapse border border-slate-300 text-[10px]">
+          <thead>
+            <tr>
+              <th className="border border-slate-300 p-2 bg-slate-50 w-24">Tanggal</th>
+              <th className="border border-slate-300 p-2 bg-slate-50 w-24">Hari</th>
+              <th className="border border-slate-300 p-2 bg-slate-50">Konsultan & Tugas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {days.map(day => {
+              const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+              const dateStr = date.toISOString().split('T')[0];
+              const daySchedules = schedules.filter(s => s.date.startsWith(dateStr));
+              
+              if (daySchedules.length === 0) return null;
+
+              return (
+                <tr key={day}>
+                  <td className="border border-slate-300 p-2 text-center font-bold">{day}</td>
+                  <td className="border border-slate-300 p-2 text-center">{['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date.getDay()]}</td>
+                  <td className="border border-slate-300 p-2">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      {daySchedules.map(s => (
+                        <div key={s.id} className="flex gap-1 items-baseline">
+                          <span className="font-bold whitespace-nowrap">{s.consultant?.name}:</span>
+                          <span className="text-slate-600">{s.position}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div className="mt-4 text-[10px] text-right text-slate-400">
+          Dicetak pada: {new Date().toLocaleString('id-ID')}
+        </div>
+      </div>
+
+      <Card id="calendar-content" className="p-6 border-none shadow-none sm:border sm:shadow-premium print:hidden">
+        <div className="flex items-center justify-between gap-4 mb-4 sm:mb-8 px-2 sm:px-0">
           <h2 className="text-base sm:text-xl font-black text-text-primary uppercase tracking-wider">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
