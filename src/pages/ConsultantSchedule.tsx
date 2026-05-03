@@ -374,11 +374,17 @@ const ConsultantSchedulePage: React.FC = () => {
                   <td className="border border-slate-300 p-1 text-center font-bold">{day}</td>
                   <td className="border border-slate-300 p-1 text-center">{['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date.getDay()]}</td>
                   <td className="border border-slate-300 p-1">
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                    <div className="flex flex-wrap gap-1">
                       {daySchedules.map(s => (
-                        <div key={s.id} className="flex gap-1 items-baseline">
-                          <span className="font-bold whitespace-nowrap">{s.consultant?.name}:</span>
-                          <span className="text-slate-600 italic text-[7px]">{s.position}</span>
+                        <div 
+                          key={s.id} 
+                          className={cn(
+                            "px-1.5 py-0.5 rounded border text-[7px] flex gap-1 items-baseline",
+                            getStaffColor(s.consultant?.name || '')
+                          )}
+                        >
+                          <span className="font-black whitespace-nowrap">{s.consultant?.name}</span>
+                          <span className="opacity-80 italic text-[6px]">{s.position}</span>
                         </div>
                       ))}
                     </div>
