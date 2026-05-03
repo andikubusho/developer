@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth, Division } from '../contexts/AuthContext';
 import { ShoppingCart, HardHat, Landmark, Building2, ShieldCheck, UserCheck, Calculator, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { cn } from '../lib/utils';
 import { ALL_DIVISIONS } from '../types';
@@ -8,6 +9,7 @@ import { ALL_DIVISIONS } from '../types';
 import { useEffect } from 'react';
 
 const DivisionSelection: React.FC = () => {
+  const navigate = useNavigate();
   const { setDivision, profile } = useAuth();
 
   useEffect(() => {
@@ -16,6 +18,7 @@ const DivisionSelection: React.FC = () => {
     const allowed = profile?.role_data?.authorized_divisions || [];
     if (allowed.length === 1) {
       setDivision(allowed[0] as Division);
+      navigate('/');
     }
   }, [profile, setDivision]);
 
@@ -93,7 +96,10 @@ const DivisionSelection: React.FC = () => {
             .map((div) => (
             <button
               key={div.id}
-              onClick={() => setDivision(div.id)}
+              onClick={() => {
+                setDivision(div.id);
+                navigate('/');
+              }}
               className="group text-left focus:outline-none transition-all duration-500 hover:-translate-y-2"
             >
               <Card className="h-full p-4 sm:p-8 bg-white/40 border-white/70 shadow-glass group-hover:bg-white/60 group-hover:shadow-glass-2 transition-all">
