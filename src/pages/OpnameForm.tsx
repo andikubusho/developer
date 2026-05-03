@@ -353,6 +353,25 @@ const OpnameForm: React.FC = () => {
     }
   };
 
+  const handleSelectAll = () => {
+    const allLeafIds: string[] = [];
+    const traverse = (nodes: RABNode[]) => {
+      nodes.forEach(node => {
+        if (node.level === 3 || node.is_manual) {
+          allLeafIds.push(node.id);
+        }
+        if (node.children.length > 0) traverse(node.children);
+      });
+    };
+    traverse(tree);
+
+    if (allLeafIds.length > 0 && selectedIds.size === allLeafIds.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(allLeafIds));
+    }
+  };
+
   const renderRows = (nodes: RABNode[], depth: number = 0) => {
     return nodes.map(node => {
       const isLevel3 = node.level === 3;
@@ -605,7 +624,17 @@ const OpnameForm: React.FC = () => {
           <THead>
             <TR className="bg-white/60 text-text-primary text-[10px] font-black uppercase tracking-[0.2em] border-b border-white/40">
               <TH className="px-6 py-4 w-10">
-                <Square className="w-4 h-4 opacity-30" />
+                <button 
+                  onClick={handleSelectAll} 
+                  className="hover:scale-110 transition-transform flex items-center justify-center"
+                  title="Pilih Semua"
+                >
+                  {selectedIds.size > 0 ? (
+                    <CheckSquare className="w-5 h-5 text-primary" />
+                  ) : (
+                    <Square className="w-5 h-5 opacity-20" />
+                  )}
+                </button>
               </TH>
               <TH className="px-6 py-4">Uraian Pekerjaan</TH>
               <TH className="px-6 py-4 text-center">Volume</TH>
