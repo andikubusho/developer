@@ -291,11 +291,15 @@ const ConsultantSchedulePage: React.FC = () => {
             display: none !important;
           }
           #printable-schedule {
-            zoom: 0.6 !important; /* Scale entire content including header */
+            zoom: 0.55 !important; 
             width: 100% !important;
             height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
+          }
+          #printable-schedule > * {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
           }
           #calendar-content {
             border: none !important;
@@ -304,20 +308,24 @@ const ConsultantSchedulePage: React.FC = () => {
             margin: 0 !important;
           }
           .print-compact-row {
-            min-height: 15mm !important;
+            min-height: 10mm !important;
             height: auto !important; 
             padding: 1px !important;
           }
           .print-schedule-item {
-            font-size: 8px !important;
-            padding: 1px 2px !important;
+            font-size: 6px !important;
+            padding: 0px 1px !important;
             line-height: 1 !important;
             margin-bottom: 1px !important;
           }
+          .print-day-header {
+            padding: 2px !important;
+            font-size: 8px !important;
+          }
           h1, h2 {
-            margin-bottom: 2px !important;
+            margin-bottom: 1mm !important;
             margin-top: 0 !important;
-            font-size: 16pt !important;
+            font-size: 14pt !important;
             text-align: center !important;
           }
         }
@@ -384,7 +392,7 @@ const ConsultantSchedulePage: React.FC = () => {
         <div className="overflow-x-auto scrollbar-hide -mx-2 sm:mx-0">
           <div className="grid grid-cols-7 gap-px bg-white/50 border border-white/40 rounded-xl overflow-hidden min-w-[350px]">
             {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map(day => (
-              <div key={day} className="bg-white/30 p-2 sm:p-3 text-center text-[9px] sm:text-xs font-black text-text-secondary uppercase tracking-widest">
+              <div key={day} className="bg-white/30 p-2 sm:p-3 text-center text-[9px] sm:text-xs font-black text-text-secondary uppercase tracking-widest print-day-header">
                 {day}
               </div>
             ))}
@@ -407,7 +415,7 @@ const ConsultantSchedulePage: React.FC = () => {
                       <div 
                         key={s.id} 
                         className={cn(
-                          "text-[8px] sm:text-[10px] px-1 sm:px-2 py-0.5 sm:py-1 rounded border truncate font-black flex justify-between items-center group cursor-pointer hover:brightness-95 print:py-0.5 print:text-[9px]",
+                          "text-[8px] sm:text-[10px] px-1 sm:px-2 py-0.5 sm:py-1 rounded border truncate font-black flex justify-between items-center group cursor-pointer hover:brightness-95 print-schedule-item",
                           getStaffColor(s.consultant?.name || '')
                         )}
                         onClick={(e) => {
