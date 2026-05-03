@@ -278,7 +278,7 @@ const ConsultantSchedulePage: React.FC = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page { 
-            size: portrait; 
+            size: landscape; 
             margin: 5mm !important; 
           }
           body {
@@ -295,12 +295,10 @@ const ConsultantSchedulePage: React.FC = () => {
           table {
             width: 100% !important;
             border-collapse: collapse !important;
-            table-layout: fixed !important;
           }
           th, td {
             border: 1px solid #ccc !important;
-            padding: 2px 4px !important;
-            word-wrap: break-word !important;
+            padding: 1px 4px !important;
           }
           h1, h2 {
             margin-bottom: 2mm !important;
