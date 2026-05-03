@@ -18,7 +18,7 @@ export const Card: React.FC<CardProps> = ({ children, className, title, subtitle
             {subtitle && <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{subtitle}</p>}
           </div>
         )}
-        <div className="p-8 flex-1">{children}</div>
+        <div className="p-8 flex-1 min-w-0">{children}</div>
       </div>
     </div>
   );
