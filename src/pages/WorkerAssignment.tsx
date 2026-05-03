@@ -33,10 +33,11 @@ interface RABNode {
 const WorkerAssignment: React.FC = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [units, setUnits] = useState<any[]>([]);
+  const [unitRabs, setUnitRabs] = useState<any[]>([]);
+  const [globalRabs, setGlobalRabs] = useState<any[]>([]);
   const [workers, setWorkers] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
-  const [selectedUnitId, setSelectedUnitId] = useState('');
+  const [selectedUnitId, setSelectedUnitId] = useState(''); // value: RAB_${id}
   const [tree, setTree] = useState<RABNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -69,15 +70,23 @@ const WorkerAssignment: React.FC = () => {
   };
 
   const loadUnits = async () => {
-    const data = await api.get('units', `project_id=eq.${selectedProjectId}&order=unit_number.asc`);
-    setUnits(data || []);
+    const [unitsData, rabsWithUnit, gRabs] = await Promise.all([
+      api.get('units', `project_id=eq.${selectedProjectId}&select=id,unit_number,type&order=unit_number.asc`),
+      api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=not.is.null&select=id,nama_proyek,keterangan,unit_id&order=unit_id.asc`),
+      api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=is.null&order=nama_proyek.asc`)
+    ]);
+    const unitMap: Record<string, any> = {};
+    (unitsData || []).forEach((u: any) => { unitMap[u.id] = u; });
+    setUnitRabs((rabsWithUnit || []).map((r: any) => ({ ...r, unit: unitMap[r.unit_id] || null })));
+    setGlobalRabs(gRabs || []);
   };
 
   const loadRABTree = async () => {
     try {
       setLoading(true);
-      const rabData = await api.get('rab_projects', `project_id=eq.${selectedProjectId}&unit_id=eq.${selectedUnitId}`);
-      
+      const rabId = selectedUnitId.replace('RAB_', '');
+      const rabData = await api.get('rab_projects', `id=eq.${rabId}`);
+
       if (!rabData || rabData.length === 0) {
         setTree([]);
         setLoading(false);
@@ -246,8 +255,25 @@ const WorkerAssignment: React.FC = () => {
               disabled={!selectedProjectId}
               className="w-full h-12 glass-input rounded-xl px-4 font-bold disabled:opacity-50"
             >
-              <option value="">-- Pilih Unit --</option>
-              {units.map(u => <option key={u.id} value={u.id}>{u.unit_number}</option>)}
+              <option value="">-- Pilih Unit / Pekerjaan --</option>
+              {globalRabs.length > 0 && (
+                <optgroup label="🌐 PEKERJAAN GLOBAL / FASUM">
+                  {globalRabs.map((r: any) => (
+                    <option key={r.id} value={`RAB_${r.id}`}>
+                      {r.nama_proyek}{r.keterangan ? ` - ${r.keterangan}` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {unitRabs.length > 0 && (
+                <optgroup label="🏠 UNIT PROPERTY">
+                  {unitRabs.map((r: any) => (
+                    <option key={r.id} value={`RAB_${r.id}`}>
+                      {r.unit ? `${r.unit.unit_number} - ${r.unit.type}` : 'Unit'}{r.nama_proyek || r.keterangan ? ` · ${r.nama_proyek || r.keterangan}` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
         </Card>
