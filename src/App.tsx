@@ -49,6 +49,7 @@ const MaterialUsage = lazy(() => import('./pages/MaterialUsage.tsx'));
 const StockCard = lazy(() => import('./pages/StockCard.tsx'));
 const ApprovalManager = lazy(() => import('./pages/ApprovalManager.tsx'));
 const WorkerMaster = lazy(() => import('./pages/WorkerMaster'));
+const WorkerAssignment = lazy(() => import('./pages/WorkerAssignment'));
 
 // Keuangan
 const KPRDisbursement = lazy(() => import('./pages/KPRDisbursement'));
@@ -152,6 +153,7 @@ export default function App() {
               <Route path="stock-card" element={<StockCard />} />
               <Route path="approval-manager" element={<ApprovalManager />} />
               <Route path="worker-master" element={<WorkerMaster />} />
+              <Route path="worker-assignment" element={<WorkerAssignment />} />
               
               {/* Keuangan */}
               <Route path="verification-queue" element={<VerificationQueue />} />

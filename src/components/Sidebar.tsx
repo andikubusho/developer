@@ -111,6 +111,7 @@ const menuItems = [
   { name: 'Input Opname Baru', icon: Plus, path: '/opname/new', divisions: ['teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },
   { name: 'Histori Opname', icon: History, path: '/opname', divisions: ['teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },
   { name: 'Progress Bangun', icon: HardHat, path: '/construction-progress', divisions: ['marketing', 'teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },
+  { name: 'Penugasan Mandor', icon: UserCheck, path: '/worker-assignment', divisions: ['teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },
   { name: 'Real Cost', icon: BarChart3, path: '/real-cost', divisions: ['teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },
 
   // Teknik - DATA MASTER
