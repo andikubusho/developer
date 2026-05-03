@@ -389,6 +389,7 @@ const OpnameForm: React.FC = () => {
                   {node.uraian}
                 </span>
               </div>
+            </TD>
             <TD className="px-4 py-3 text-center font-bold text-xs text-text-muted">
               {node.volume ? `${node.volume} ${node.satuan || ''}` : '-'}
             </TD>
