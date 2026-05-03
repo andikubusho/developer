@@ -15,7 +15,8 @@ import {
   ChevronDown,
   Trash2,
   CheckCircle2,
-  Clock
+  Clock,
+  Printer
 } from 'lucide-react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { Button } from '../components/ui/Button';
@@ -89,6 +90,83 @@ const OpnamePage: React.FC = () => {
 
   const toggleExpand = (id: string) => {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handlePrint = (opname: any) => {
+    // Basic print logic: open a new window with a simple report layout
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const itemsHtml = (opname.items || []).map((item: any) => `
+      <tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">${item.rab_items?.uraian || '-'}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${Number(item.percentage_opname).toFixed(1)}%</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(item.amount_opname)}</td>
+      </tr>
+    `).join('');
+
+    const totalAmt = (opname.items || []).reduce((sum: number, item: any) => sum + Number(item.amount_opname), 0);
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Laporan Opname - ${opname.worker_name}</title>
+          <style>
+            body { font-family: sans-serif; padding: 40px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background-color: #f2f2f2; }
+            .header { text-align: center; margin-bottom: 40px; }
+            .meta { margin-bottom: 20px; }
+            .footer { margin-top: 60px; display: flex; justify-content: space-between; }
+            .sign { border-top: 1px solid #000; width: 200px; text-align: center; padding-top: 5px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>LAPORAN OPNAME PROYEK</h1>
+            <p>Bukti Progress Pekerjaan & Pengajuan Upah</p>
+          </div>
+          <div class="meta">
+            <p><strong>Tanggal:</strong> ${formatDate(opname.date)}</p>
+            <p><strong>Proyek:</strong> ${opname.project?.name}</p>
+            <p><strong>Unit:</strong> ${opname.unit?.unit_number || 'Umum'}</p>
+            <p><strong>Mandor:</strong> ${opname.worker_name}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="border: 1px solid #ddd; padding: 8px;">Uraian Pekerjaan</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">Progress</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">Nilai</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colspan="2" style="border: 1px solid #ddd; padding: 8px; text-align: right;">TOTAL</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(totalAmt)}</th>
+              </tr>
+            </tfoot>
+          </table>
+          <div class="footer">
+            <div>
+              <p>Diajukan oleh,</p>
+              <br><br><br>
+              <div class="sign">${opname.worker_name}</div>
+            </div>
+            <div>
+              <p>Disetujui oleh,</p>
+              <br><br><br>
+              <div class="sign">Project Manager</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   const filteredOpnames = opnames.filter(o => 
@@ -219,6 +297,14 @@ const OpnamePage: React.FC = () => {
                       </TD>
                       <TD className="px-6 py-4 text-right">
                          <div className="flex items-center justify-end gap-2">
+                           <Button 
+                             variant="ghost" 
+                             size="sm" 
+                             className="text-blue-500 hover:bg-blue-50"
+                             onClick={() => handlePrint(o)}
+                           >
+                             <Printer className="w-4 h-4" />
+                           </Button>
                            {canVoid && o.status !== 'cancelled' && o.status !== 'paid' && (
                              <Button 
                               variant="ghost" 
