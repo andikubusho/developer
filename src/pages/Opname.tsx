@@ -79,13 +79,13 @@ const OpnamePage: React.FC = () => {
       alert('Record yang sudah dibayar tidak dapat dibatalkan.');
       return;
     }
-    if (!window.confirm('Batalkan data progress ini?')) return;
+    if (!window.confirm('HAPUS PERMANEN data progress ini? Persentase akan dikembalikan ke saldo RAB. Tindakan ini tidak dapat dibatalkan.')) return;
 
     try {
-      await api.update('project_opnames', id, { status: 'cancelled' });
+      await api.delete('project_opnames', id);
       fetchOpnameHistory();
     } catch (err: any) {
-      alert(`Gagal: ${err.message}`);
+      alert(`Gagal menghapus: ${err.message}`);
     }
   };
 
