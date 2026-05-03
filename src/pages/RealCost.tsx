@@ -436,8 +436,10 @@ const RealCostPage: React.FC = () => {
                       {data.rabProjects.map((rp: any) => (
                         <TR key={rp.id} className="hover:bg-white/40 transition-colors border-b border-white/20">
                           <TD className="px-4 py-4">
-                            <div className="font-bold text-sm text-text-primary">{rp.nama_proyek || rp.rab_name || 'RAB Unit'}</div>
-                            <div className="text-[10px] text-text-muted font-medium italic">{rp.keterangan || '-'}</div>
+                            <div className="font-bold text-sm text-text-primary">
+                              {rp.nama_proyek || rp.rab_name || 'RAB Unit'}
+                              {rp.keterangan && <span className="ml-1 text-text-muted font-medium">- {rp.keterangan}</span>}
+                            </div>
                           </TD>
                           <TD className="px-4 py-4 text-right font-black text-sm">{formatCurrency(rp.totalBudget)}</TD>
                           <TD className="px-4 py-4 text-right font-black text-sm text-primary">{formatCurrency(rp.totalActual)}</TD>
@@ -482,7 +484,10 @@ const RealCostPage: React.FC = () => {
                   {data.rabProjects.map((rp: any) => (
                     <div key={rp.id} className="space-y-4">
                       <div className="flex items-center justify-between p-4 rounded-2xl bg-white/60 border border-white/80">
-                         <span className="font-black text-sm uppercase italic tracking-tight">{rp.nama_proyek || rp.rab_name || 'RAB Project'}</span>
+                         <span className="font-black text-sm uppercase italic tracking-tight">
+                           {rp.nama_proyek || rp.rab_name || 'RAB Project'}
+                           {rp.keterangan && <span className="ml-2 opacity-60 text-[10px]">({rp.keterangan})</span>}
+                         </span>
                          <span className="text-xs font-black text-primary bg-primary/10 px-3 py-1 rounded-full">{rp.totalPhysical.toFixed(1)}% Fisik</span>
                       </div>
                       
