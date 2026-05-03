@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   Clock
 } from 'lucide-react';
+import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -221,6 +222,91 @@ const RealCostPage: React.FC = () => {
     }
   };
 
+  const handlePrint = (targetData?: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const isRecap = !targetData;
+    const title = isRecap ? `Rekapitulasi Real Cost - ${projects.find(p => p.id === selectedProjectId)?.name || 'Proyek'}` : `Detail Real Cost - ${targetData.nama_proyek || targetData.rab_name}`;
+
+    let content = `
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
+            .title { font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.025em; }
+            .subtitle { font-size: 14px; color: #64748b; margin-top: 4px; font-weight: 600; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+            th { background: #f8fafc; text-align: left; padding: 12px 16px; border-bottom: 2px solid #e2e8f0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; }
+            td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-weight: 600; }
+            .text-right { text-align: right; }
+            .font-black { font-weight: 900; }
+            .text-primary { color: #6366f1; }
+            .text-emerald { color: #059669; }
+            .text-rose { color: #e11d48; }
+            .summary-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px; }
+            .stat { padding: 20px; background: #f8fafc; border-radius: 12px; }
+            .stat-label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; }
+            .stat-value { font-size: 18px; font-weight: 900; margin-top: 4px; }
+            @media print {
+              @page { margin: 2cm; }
+              body { padding: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">${title}</div>
+            <div class="subtitle">Dicetak pada: ${new Date().toLocaleString('id-ID')}</div>
+          </div>
+
+          <div class="summary-box">
+            <div class="stat"><div class="stat-label">Total Anggaran</div><div class="stat-value">${formatCurrency(isRecap ? data.rabTotal : targetData.totalBudget)}</div></div>
+            <div class="stat"><div class="stat-label">Realisasi Biaya</div><div class="stat-value">${formatCurrency(isRecap ? data.totalActual : targetData.totalActual)}</div></div>
+            <div class="stat"><div class="stat-label">Progress Fisik</div><div class="stat-value text-emerald">${(isRecap ? data.physicalProgress : targetData.totalPhysical).toFixed(1)}%</div></div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>${isRecap ? 'Unit / Pekerjaan' : 'Item Pekerjaan'}</th>
+                <th class="text-right">Budget</th>
+                <th class="text-right">Actual</th>
+                <th class="text-right">Variance</th>
+                <th class="text-right">Progress</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(isRecap ? data.rabProjects : targetData.items).map((item: any) => {
+                const name = isRecap ? (item.nama_proyek || item.rab_name || 'RAB') : item.uraian;
+                const budget = isRecap ? item.totalBudget : item.iBudget;
+                const actual = isRecap ? item.totalActual : item.iActual;
+                const variance = budget - actual;
+                const progress = isRecap ? item.totalPhysical : item.iProgressFisik;
+                return `
+                  <tr>
+                    <td>${name}</td>
+                    <td class="text-right">${formatCurrency(budget)}</td>
+                    <td class="text-right">${formatCurrency(actual)}</td>
+                    <td class="text-right ${variance < 0 ? 'text-rose' : 'text-emerald'}">${formatCurrency(variance)}</td>
+                    <td class="text-right font-black">${progress.toFixed(1)}%</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+          <script>window.onload = function() { window.print(); window.close(); }</script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(content);
+    printWindow.document.close();
+  };
+
   const chartData = [
     { name: 'RAB (Budget)', value: data.rabTotal },
     { name: 'Actual Cost', value: data.totalActual }
@@ -296,70 +382,160 @@ const RealCostPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <Card className="lg:col-span-2 p-8 bg-white/40 backdrop-blur-xl shadow-3d border-white/60">
-           <div className="flex items-center justify-between mb-8">
-             <h3 className="text-xl font-black italic tracking-tight uppercase">Komparasi Per Item Pekerjaan</h3>
-             <div className="flex gap-2">
-                <div className="flex items-center gap-2 text-[10px] font-black text-text-muted uppercase"><div className="w-3 h-3 bg-primary rounded" /> Budget</div>
-                <div className="flex items-center gap-2 text-[10px] font-black text-text-muted uppercase"><div className="w-3 h-3 bg-emerald-500 rounded" /> Actual</div>
-             </div>
+           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+              <div>
+                <h3 className="text-xl font-black italic tracking-tight uppercase">
+                  {selectedFilter ? 'Detail Komparasi Per Item' : 'Rekapitulasi Real Cost Proyek'}
+                </h3>
+                {selectedFilter && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setSelectedFilter('')}
+                    className="mt-2 text-primary font-bold hover:bg-primary/10 rounded-xl px-4 h-8 flex items-center gap-2"
+                  >
+                    <ArrowLeft size={14} /> Kembali ke Rekap Proyek
+                  </Button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                 <Button 
+                   variant="outline" 
+                   size="sm" 
+                   onClick={() => handlePrint()}
+                   className="rounded-xl font-bold bg-white/60 border-white/80"
+                 >
+                   <TrendingUp className="w-4 h-4 mr-2" /> Cetak Rekap
+                 </Button>
+                 <Button 
+                   variant="outline" 
+                   size="sm" 
+                   onClick={() => handlePrint()}
+                   className="rounded-xl font-bold bg-white/60 border-white/80"
+                 >
+                   <BarChart3 className="w-4 h-4 mr-2" /> Export PDF
+                 </Button>
+              </div>
            </div>
            
-           <div className="space-y-8 max-h-[600px] overflow-y-auto pr-4 scrollbar-hide">
-              {data.rabProjects.map((rp: any) => (
-                <div key={rp.id} className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-2xl bg-white/60 border border-white/80">
-                     <span className="font-black text-sm uppercase italic tracking-tight">{rp.rab_name || 'RAB Project'}</span>
-                     <span className="text-xs font-black text-primary bg-primary/10 px-3 py-1 rounded-full">{rp.totalPhysical.toFixed(1)}% Fisik</span>
-                  </div>
-                  
-                  <div className="grid gap-3">
-                    {rp.items.map((item: any) => (
-                      <div key={item.id} className="p-5 rounded-2xl bg-white/30 border border-white/40 hover:bg-white/50 transition-all group">
-                         <div className="flex justify-between items-start mb-3">
-                           <div>
-                             <div className="font-bold text-sm text-text-primary">{item.uraian}</div>
-                             <div className="text-[9px] font-black text-text-muted uppercase mt-1 tracking-widest">Bobot: {(item.weight * 100).toFixed(2)}%</div>
-                           </div>
-                           <div className="text-right">
-                             <div className={cn("text-sm font-black italic", item.iActual > item.iBudget ? "text-rose-600" : "text-emerald-600")}>
-                               {formatCurrency(item.iActual)}
-                             </div>
-                             <div className="text-[9px] font-black text-text-muted">Budget: {formatCurrency(item.iBudget)}</div>
-                           </div>
-                         </div>
-                         
-                         <div className="grid grid-cols-2 gap-4 items-center">
-                            <div className="space-y-1">
-                               <div className="flex justify-between text-[9px] font-black uppercase text-text-muted mb-1">
-                                 <span>Progress Fisik</span>
-                                 <span>{item.iProgressFisik}%</span>
-                               </div>
-                               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                 <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${item.iProgressFisik}%` }} />
-                               </div>
+           <div className="space-y-6 max-h-[600px] overflow-y-auto pr-4 scrollbar-hide">
+              {!selectedFilter ? (
+                /* VIEW 1: REKAPITULASI PROYEK (LIST UNIT/RAB) */
+                <div className="overflow-x-auto">
+                  <Table>
+                    <THead>
+                      <TR className="bg-slate-100/50 text-[10px] font-black uppercase tracking-widest text-text-muted">
+                        <TH className="px-4 py-4">Unit / Pekerjaan</TH>
+                        <TH className="px-4 py-4 text-right">Budget</TH>
+                        <TH className="px-4 py-4 text-right">Actual</TH>
+                        <TH className="px-4 py-4 text-right">Progress</TH>
+                        <TH className="px-4 py-4 text-center">Aksi</TH>
+                      </TR>
+                    </THead>
+                    <TBody>
+                      {data.rabProjects.map((rp: any) => (
+                        <TR key={rp.id} className="hover:bg-white/40 transition-colors border-b border-white/20">
+                          <TD className="px-4 py-4">
+                            <div className="font-bold text-sm text-text-primary">{rp.nama_proyek || rp.rab_name || 'RAB Unit'}</div>
+                            <div className="text-[10px] text-text-muted font-medium italic">{rp.keterangan || '-'}</div>
+                          </TD>
+                          <TD className="px-4 py-4 text-right font-black text-sm">{formatCurrency(rp.totalBudget)}</TD>
+                          <TD className="px-4 py-4 text-right font-black text-sm text-primary">{formatCurrency(rp.totalActual)}</TD>
+                          <TD className="px-4 py-4 text-right">
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-xs font-black text-emerald-600 italic">{rp.totalPhysical.toFixed(1)}%</span>
+                              <div className="w-20 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                <div className="bg-emerald-500 h-full" style={{ width: `${rp.totalPhysical}%` }} />
+                              </div>
                             </div>
-                            <div className="space-y-1">
-                               <div className="flex justify-between text-[9px] font-black uppercase text-text-muted mb-1">
-                                 <span>Pemakaian Dana</span>
-                                 <span>{((item.iActual / item.iBudget) * 100).toFixed(1)}%</span>
-                               </div>
-                               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                 <div className={cn("h-full rounded-full transition-all", item.iActual > item.iBudget ? "bg-rose-500" : "bg-primary")} style={{ width: `${Math.min((item.iActual / item.iBudget) * 100, 100)}%` }} />
-                               </div>
+                          </TD>
+                          <TD className="px-4 py-4">
+                            <div className="flex items-center justify-center gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => setSelectedFilter(rp.unit_id ? `unit:${rp.unit_id}` : `rab:${rp.id}`)}
+                                className="h-8 w-8 p-0 rounded-xl hover:bg-primary/10 text-primary"
+                                title="Lihat Detail"
+                              >
+                                <Eye size={16} />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handlePrint(rp)}
+                                className="h-8 w-8 p-0 rounded-xl hover:bg-emerald-50 text-emerald-600"
+                                title="Cetak Detail"
+                              >
+                                <TrendingUp size={16} />
+                              </Button>
                             </div>
-                         </div>
-
-                         {item.iActual > item.iBudget && (
-                           <div className="mt-3 flex items-center gap-2 text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg">
-                              <AlertCircle size={12} />
-                              <span className="text-[9px] font-black uppercase tracking-widest">Over Budget: {formatCurrency(item.iActual - item.iBudget)}</span>
-                           </div>
-                         )}
-                      </div>
-                    ))}
-                  </div>
+                          </TD>
+                        </TR>
+                      ))}
+                    </TBody>
+                  </Table>
                 </div>
-              ))}
+              ) : (
+                /* VIEW 2: DETAIL ITEM PEKERJAAN (KOMPARASI) */
+                <div className="space-y-8">
+                  {data.rabProjects.map((rp: any) => (
+                    <div key={rp.id} className="space-y-4">
+                      <div className="flex items-center justify-between p-4 rounded-2xl bg-white/60 border border-white/80">
+                         <span className="font-black text-sm uppercase italic tracking-tight">{rp.nama_proyek || rp.rab_name || 'RAB Project'}</span>
+                         <span className="text-xs font-black text-primary bg-primary/10 px-3 py-1 rounded-full">{rp.totalPhysical.toFixed(1)}% Fisik</span>
+                      </div>
+                      
+                      <div className="grid gap-3">
+                        {rp.items.map((item: any) => (
+                          <div key={item.id} className="p-5 rounded-2xl bg-white/30 border border-white/40 hover:bg-white/50 transition-all group">
+                             <div className="flex justify-between items-start mb-3">
+                               <div>
+                                 <div className="font-bold text-sm text-text-primary">{item.uraian}</div>
+                                 <div className="text-[9px] font-black text-text-muted uppercase mt-1 tracking-widest">Bobot: {(item.weight * 100).toFixed(2)}%</div>
+                               </div>
+                               <div className="text-right">
+                                 <div className={cn("text-sm font-black italic", item.iActual > item.iBudget ? "text-rose-600" : "text-emerald-600")}>
+                                   {formatCurrency(item.iActual)}
+                                 </div>
+                                 <div className="text-[9px] font-black text-text-muted">Budget: {formatCurrency(item.iBudget)}</div>
+                               </div>
+                             </div>
+                             
+                             <div className="grid grid-cols-2 gap-4 items-center">
+                                <div className="space-y-1">
+                                   <div className="flex justify-between text-[9px] font-black uppercase text-text-muted mb-1">
+                                     <span>Progress Fisik</span>
+                                     <span>{item.iProgressFisik}%</span>
+                                   </div>
+                                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                     <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${item.iProgressFisik}%` }} />
+                                   </div>
+                                </div>
+                                <div className="space-y-1">
+                                   <div className="flex justify-between text-[9px] font-black uppercase text-text-muted mb-1">
+                                     <span>Pemakaian Dana</span>
+                                     <span>{((item.iActual / item.iBudget) * 100).toFixed(1)}%</span>
+                                   </div>
+                                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                     <div className={cn("h-full rounded-full transition-all", item.iActual > item.iBudget ? "bg-rose-500" : "bg-primary")} style={{ width: `${Math.min((item.iActual / item.iBudget) * 100, 100)}%` }} />
+                                   </div>
+                                </div>
+                             </div>
+
+                             {item.iActual > item.iBudget && (
+                               <div className="mt-3 flex items-center gap-2 text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg">
+                                  <AlertCircle size={12} />
+                                  <span className="text-[9px] font-black uppercase tracking-widest">Over Budget: {formatCurrency(item.iActual - item.iBudget)}</span>
+                               </div>
+                             )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
            </div>
         </Card>
 
