@@ -300,18 +300,20 @@ const ConsultantSchedulePage: React.FC = () => {
           }
           .print-compact-row {
             min-height: auto !important;
-            height: 32mm !important; 
-            padding: 2px !important;
+            height: 27mm !important; 
+            padding: 1px !important;
             overflow: hidden !important;
           }
           .print-schedule-item {
-            font-size: 7px !important;
+            font-size: 6.5px !important;
             padding: 0px 2px !important;
+            line-height: 1 !important;
             margin-bottom: 1px !important;
           }
           h1, h2 {
-            margin-bottom: 5px !important;
+            margin-bottom: 2px !important;
             margin-top: 0 !important;
+            font-size: 14pt !important;
           }
         }
       `}} />
