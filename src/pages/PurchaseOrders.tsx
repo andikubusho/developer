@@ -118,13 +118,14 @@ const PurchaseOrders: React.FC = () => {
       }
 
       // Fetch all necessary data for enrichment
-      const [poData, prData, projData, supplierData, materialData, unitData] = await Promise.all([
+      const [poData, prData, projData, supplierData, materialData, unitData, rabData] = await Promise.all([
         api.get('purchase_orders', 'select=*&order=created_at.desc'),
         api.get('purchase_requests', 'select=*&order=created_at.desc'),
         api.get('projects', 'select=id,name'),
         api.get('material_suppliers', 'select=id,name'),
         api.get('materials', 'select=id,name,unit,code'),
         api.get('units', 'select=id,unit_number'),
+        api.get('rab_projects', 'select=id,nama_proyek,keterangan'),
       ]);
 
       const projMap: Record<string, string> = {};
@@ -138,6 +139,9 @@ const PurchaseOrders: React.FC = () => {
 
       const unitMap: Record<string, string> = {};
       (unitData || []).filter(Boolean).forEach((u: any) => { if (u.id) unitMap[u.id] = u.unit_number; });
+
+      const rabMap: Record<string, string> = {};
+      (rabData || []).filter(Boolean).forEach((r: any) => { if (r.id) rabMap[r.id] = r.keterangan; });
 
       // Enrich POs
       const enrichedPOs = (poData || []).filter(Boolean).map((po: any) => ({
@@ -162,6 +166,7 @@ const PurchaseOrders: React.FC = () => {
               quantity: item.quantity,
               projectName: projMap[pr.project_id] || 'Unknown',
               unitNumber: unitMap[pr.unit_id] || '-',
+              rabKeterangan: rabMap[pr.rab_project_id] || '',
               master: mat,
               createdAt: pr.created_at
             });
@@ -428,7 +433,7 @@ const PurchaseOrders: React.FC = () => {
           Object.values(
             approvedPRItems.reduce((groups: any, item) => {
               if (!groups[item.prId]) {
-                groups[item.prId] = { prId: item.prId, projectName: item.projectName, unitNumber: item.unitNumber, createdAt: item.createdAt, items: [] };
+                groups[item.prId] = { prId: item.prId, projectName: item.projectName, unitNumber: item.unitNumber, rabKeterangan: item.rabKeterangan, createdAt: item.createdAt, items: [] };
               }
               groups[item.prId].items.push(item);
               return groups;
@@ -441,7 +446,14 @@ const PurchaseOrders: React.FC = () => {
                   <span className="px-2.5 py-1 rounded-lg bg-accent-dark text-white text-[11px] font-black tracking-widest">
                     PR-{group.prId.slice(0, 6).toUpperCase()}
                   </span>
-                  <span className="font-bold text-text-primary text-sm">{group.projectName}</span>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-text-primary text-sm">{group.projectName}</span>
+                    {group.rabKeterangan && (
+                      <span className="text-[10px] font-bold text-text-muted uppercase tracking-tight italic -mt-1 opacity-60">
+                        {group.rabKeterangan}
+                      </span>
+                    )}
+                  </div>
                   {group.unitNumber && group.unitNumber !== '-' && (
                     <span className="text-xs text-text-secondary">· Unit {group.unitNumber}</span>
                   )}
