@@ -206,6 +206,7 @@ const MaterialUsage: React.FC = () => {
       setForm(f => ({ ...f, qty: 0, keterangan: '' })); // Reset form partial
       fetchInitialData();
       if (form.rab_project_id) fetchRabMaterials(form.rab_project_id);
+      if (form.material_id) fetchVariants(form.material_id); // Refresh stock display
     } catch (err) {
       console.error('Error saving usage:', err);
       alert('Gagal mencatat pemakaian material');
@@ -221,7 +222,8 @@ const MaterialUsage: React.FC = () => {
       // DB TRIGGER trg_material_out_delete handles stock reversal and movement log
       await api.delete('material_usages', usage.id);
       
-      await fetchInitialData();
+      fetchInitialData();
+      if (usage.material_id) fetchVariants(usage.material_id); // Refresh stock display
     } catch (err) {
       console.error('Error deleting usage:', err);
       alert('Gagal membatalkan pemakaian.');
