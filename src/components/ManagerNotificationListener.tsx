@@ -99,7 +99,9 @@ const ManagerNotificationListener: React.FC = () => {
       if (!effectiveRole?.receive_notifications) return false;
       
       const targetDivs = (n.target_divisions || []).map(d => d.toLowerCase());
-      if (!targetDivs.some(d => userDivisions.includes(d))) return false;
+      const hasMatchingDivision = targetDivs.some(d => userDivisions.includes(d));
+      
+      if (!isAdmin && !hasMatchingDivision) return false;
       
       // 4. Cek filter spesifik per jenis kejadian
       const type = n.metadata?.type || 'unknown';
@@ -127,6 +129,7 @@ const ManagerNotificationListener: React.FC = () => {
         { event: 'INSERT', schema: 'public', table: 'notifications' },
         (payload) => {
           const newNotif = payload.new as Notification;
+          if (import.meta.env.DEV) console.log('🔔 Received Real-time Notif:', newNotif);
           
           // Filter real-time logic
           if (isAdmin) {
@@ -138,7 +141,12 @@ const ManagerNotificationListener: React.FC = () => {
           if (!effectiveRole?.receive_notifications) return;
           
           const targetDivs = (newNotif.target_divisions || []).map(d => d.toLowerCase());
-          if (!targetDivs.some(d => userDivisions.includes(d))) return;
+          const hasMatchingDivision = targetDivs.some(d => userDivisions.includes(d));
+          
+          if (!isAdmin && !hasMatchingDivision) {
+            if (import.meta.env.DEV) console.log('🚫 Notif rejected: No matching division', { targetDivs, userDivisions });
+            return;
+          }
           
           const type = newNotif.metadata?.type || 'unknown';
           const settings = effectiveRole?.notification_settings as Record<string, boolean> | undefined;
