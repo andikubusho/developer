@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Bell, X, User, Info } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
 import { Card } from './ui/Card';
@@ -13,7 +14,7 @@ interface Notification {
   message: string;
   sender_name: string;
   target_divisions: string[];
-  read_by: string[];
+  read_by: string[] | null;
   created_at: string;
   metadata?: any;
 }
@@ -21,59 +22,65 @@ interface Notification {
 const ManagerNotificationListener: React.FC = () => {
   const { profile, division } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  // Resolve division: role_data.division is most reliable, fallback to auth state
-  const userDivision = (profile?.role_data as any)?.division || division;
-
-  const fetchUnread = useCallback(async () => {
-    if (!profile?.id || !userDivision) return;
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .contains('target_divisions', [userDivision])
-        .not('read_by', 'cs', `{${profile.id}}`)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (!error && data) {
-        setNotifications(data);
-      }
-    } catch (err) {
-      console.error('Error fetching notifications:', err);
-    }
-  }, [profile?.id, userDivision]);
+  // Fresh role data fetched at mount to avoid stale auth context
+  const [roleData, setRoleData] = useState<any>(null);
 
   useEffect(() => {
-    // Gate: role must have receive_notifications enabled
-    if (!profile?.role_data?.receive_notifications) return;
-    if (!userDivision) return;
+    const roleId = (profile as any)?.role_id;
+    if (!roleId) return;
+    api.get('roles', `select=*&id=eq.${roleId}`).then(data => {
+      if (data.length > 0) setRoleData(data[0]);
+    });
+  }, [profile?.id]);
+
+  const effectiveRole = roleData || (profile?.role_data as any);
+
+  // Collect all divisions (primary + authorized) to handle multi-division roles
+  const userDivisions: string[] = useMemo(() => {
+    const primary: string | undefined = effectiveRole?.division;
+    const authorized: string[] = effectiveRole?.authorized_divisions || [];
+    const ctx = division as string | null;
+    return [...new Set([primary, ...authorized, ctx].filter(Boolean))] as string[];
+  }, [effectiveRole, division]);
+
+  const fetchUnread = useCallback(async () => {
+    if (!profile?.id || userDivisions.length === 0) return;
+    if (!effectiveRole?.receive_notifications) return;
+
+    // ov = overlaps (&&): notification targets ANY of user's divisions
+    // or=(read_by.is.null,...) handles NULL default on new rows (Bug 1 fix)
+    const divParam = userDivisions.join(',');
+    const data = await api.get(
+      'notifications',
+      `select=*&target_divisions=ov.{${divParam}}&or=(read_by.is.null,read_by.not.cs.{${profile.id}})&order=created_at.desc&limit=5`
+    );
+    setNotifications(data);
+  }, [profile?.id, userDivisions, effectiveRole?.receive_notifications]);
+
+  useEffect(() => {
+    if (!effectiveRole?.receive_notifications) return;
+    if (userDivisions.length === 0) return;
 
     fetchUnread();
-
-    // Poll every 30 seconds as fallback (in case realtime drops)
     const pollInterval = setInterval(fetchUnread, 30_000);
 
-    // Subscribe to realtime inserts
     const channel = supabase
-      .channel(`notifications-${profile.id}`)
+      .channel(`notifications-${profile!.id}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications' },
         (payload) => {
           const newNotif = payload.new as Notification;
 
-          // Must target this user's division
-          if (!newNotif.target_divisions.includes(userDivision)) return;
+          // Must target at least one of user's divisions
+          if (!newNotif.target_divisions.some(d => userDivisions.includes(d))) return;
 
-          // Opt-out granular check: show unless explicitly disabled for this type
           const notificationType = newNotif.metadata?.type || 'unknown';
-          const settings = profile?.role_data?.notification_settings as Record<string, boolean> | undefined;
+          const settings = effectiveRole?.notification_settings as Record<string, boolean> | undefined;
           const isTypeEnabled = !settings || settings[notificationType] !== false;
 
           if (isTypeEnabled) {
             setNotifications(prev => {
-              // Avoid duplicates
               if (prev.some(n => n.id === newNotif.id)) return prev;
               return [newNotif, ...prev].slice(0, 5);
             });
@@ -87,7 +94,7 @@ const ManagerNotificationListener: React.FC = () => {
       clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
-  }, [profile, userDivision, fetchUnread]);
+  }, [effectiveRole, userDivisions, fetchUnread, profile?.id]);
 
   const markAsRead = async (id: string) => {
     if (!profile) return;
