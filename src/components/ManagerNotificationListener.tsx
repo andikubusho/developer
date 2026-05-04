@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, X, User, ExternalLink, Info } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Bell, X, User, Info } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
@@ -19,52 +19,64 @@ interface Notification {
 }
 
 const ManagerNotificationListener: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, division } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  useEffect(() => {
-    // Only active if user role is configured to receive notifications
-    if (!profile?.role_data?.receive_notifications) return;
+  // Resolve division: role_data.division is most reliable, fallback to auth state
+  const userDivision = (profile?.role_data as any)?.division || division;
 
-    // Fetch initial unread notifications
-    const fetchUnread = async () => {
+  const fetchUnread = useCallback(async () => {
+    if (!profile?.id || !userDivision) return;
+    try {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .contains('target_divisions', [profile.division])
+        .contains('target_divisions', [userDivision])
         .not('read_by', 'cs', `{${profile.id}}`)
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(5);
 
       if (!error && data) {
         setNotifications(data);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  }, [profile?.id, userDivision]);
+
+  useEffect(() => {
+    // Gate: role must have receive_notifications enabled
+    if (!profile?.role_data?.receive_notifications) return;
+    if (!userDivision) return;
 
     fetchUnread();
 
-    // Subscribe to new notifications
+    // Poll every 30 seconds as fallback (in case realtime drops)
+    const pollInterval = setInterval(fetchUnread, 30_000);
+
+    // Subscribe to realtime inserts
     const channel = supabase
-      .channel('manager-notifications')
+      .channel(`notifications-${profile.id}`)
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications'
-        },
+        { event: 'INSERT', schema: 'public', table: 'notifications' },
         (payload) => {
           const newNotif = payload.new as Notification;
-          
-          // Granular check: Does this role have this specific notification type enabled?
+
+          // Must target this user's division
+          if (!newNotif.target_divisions.includes(userDivision)) return;
+
+          // Opt-out granular check: show unless explicitly disabled for this type
           const notificationType = newNotif.metadata?.type || 'unknown';
-          const isEnabled = profile?.role_data?.notification_settings?.[notificationType] === true;
+          const settings = profile?.role_data?.notification_settings as Record<string, boolean> | undefined;
+          const isTypeEnabled = !settings || settings[notificationType] !== false;
 
-          // If not granularly enabled, check the legacy boolean as fallback (optional, but safer for transition)
-          const isLegacyEnabled = profile?.role_data?.receive_notifications && !profile?.role_data?.notification_settings;
-
-          if ((isEnabled || isLegacyEnabled) && newNotif.target_divisions.includes(profile.division)) {
-            setNotifications(prev => [newNotif, ...prev].slice(0, 3));
+          if (isTypeEnabled) {
+            setNotifications(prev => {
+              // Avoid duplicates
+              if (prev.some(n => n.id === newNotif.id)) return prev;
+              return [newNotif, ...prev].slice(0, 5);
+            });
             playNotificationSound();
           }
         }
@@ -72,20 +84,18 @@ const ManagerNotificationListener: React.FC = () => {
       .subscribe();
 
     return () => {
+      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
-  }, [profile]);
+  }, [profile, userDivision, fetchUnread]);
 
   const markAsRead = async (id: string) => {
     if (!profile) return;
-    
     try {
-      // Use atomic RPC to append user ID to read_by array
       const { error } = await supabase.rpc('mark_notification_read', {
         notification_id: id,
         user_id: profile.id
       });
-
       if (!error) {
         setNotifications(prev => prev.filter(n => n.id !== id));
       }
@@ -99,15 +109,14 @@ const ManagerNotificationListener: React.FC = () => {
   return (
     <div className="fixed bottom-6 right-6 z-[10000] flex flex-col gap-3 w-full max-w-sm pointer-events-none">
       {notifications.map((notif, index) => (
-        <Card 
+        <Card
           key={notif.id}
           className={cn(
-            "pointer-events-auto bg-white/80 backdrop-blur-2xl border-white/40 shadow-2xl overflow-hidden animate-in slide-in-from-right duration-500",
-            index === 0 ? "scale-100 opacity-100" : "scale-95 opacity-80"
+            'pointer-events-auto bg-white/80 backdrop-blur-2xl border-white/40 shadow-2xl overflow-hidden animate-in slide-in-from-right duration-500',
+            index === 0 ? 'scale-100 opacity-100' : 'scale-95 opacity-80'
           )}
         >
           <div className="absolute top-0 left-0 w-1 h-full bg-accent-dark" />
-          
           <div className="p-4">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2 text-accent-dark">
@@ -117,15 +126,12 @@ const ManagerNotificationListener: React.FC = () => {
                 <div>
                   <h3 className="text-sm font-black tracking-tight leading-none">{notif.title}</h3>
                   <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">
-                    {notif.metadata?.type?.startsWith('teknik') ? 'Logistik Update' : 
+                    {notif.metadata?.type?.startsWith('teknik') ? 'Logistik Update' :
                      notif.metadata?.type?.startsWith('keuangan') ? 'Keuangan Update' : 'Marketing Update'}
                   </span>
                 </div>
               </div>
-              <button 
-                onClick={() => markAsRead(notif.id)}
-                className="text-text-muted hover:text-text-primary transition-colors p-1"
-              >
+              <button onClick={() => markAsRead(notif.id)} className="text-text-muted hover:text-text-primary transition-colors p-1">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -139,9 +145,9 @@ const ManagerNotificationListener: React.FC = () => {
                 <User className="w-3 h-3" />
                 <span>Oleh: {notif.sender_name}</span>
               </div>
-              <Button 
-                size="sm" 
-                variant="ghost" 
+              <Button
+                size="sm"
+                variant="ghost"
                 className="h-7 text-[10px] font-black uppercase tracking-widest gap-1 text-accent-dark hover:bg-accent-dark/10"
                 onClick={() => markAsRead(notif.id)}
               >
