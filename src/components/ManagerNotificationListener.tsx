@@ -36,7 +36,7 @@ const ManagerNotificationListener: React.FC = () => {
     } catch {}
   }, []);
 
-  // Fetch fresh role data saat profile berubah
+  // Selalu fetch fresh role data dari DB (jangan pakai cache profile.role_data yang bisa stale)
   useEffect(() => {
     if (!profile?.id) return;
 
@@ -46,16 +46,10 @@ const ManagerNotificationListener: React.FC = () => {
     }
 
     setRoleReady(false);
+    setRoleData(null);
 
-    // Prioritas 1: role_data dari join AuthContext
-    if ((profile as any)?.role_data) {
-      setRoleData((profile as any).role_data);
-      setRoleReady(true);
-      return;
-    }
-
-    // Prioritas 2: fetch by role_id (UUID FK)
-    const roleId = (profile as any)?.role_id;
+    // Coba by role_id dulu (FK UUID paling akurat)
+    const roleId = profile?.role_id;
     if (roleId) {
       api.get('roles', `select=*&id=eq.${roleId}`)
         .then(data => { if (data?.length > 0) setRoleData(data[0]); })
@@ -64,10 +58,10 @@ const ManagerNotificationListener: React.FC = () => {
       return;
     }
 
-    // Prioritas 3: fetch by division (profile.role = division string)
+    // Fallback: fetch by division — ambil role pertama yang match divisi ini
     const divisionName = (profile as any)?.role;
     if (divisionName && divisionName !== 'admin') {
-      api.get('roles', `select=*&division=eq.${divisionName}&receive_notifications=eq.true&limit=1`)
+      api.get('roles', `select=*&division=eq.${divisionName}&order=created_at.desc&limit=1`)
         .then(data => { if (data?.length > 0) setRoleData(data[0]); })
         .catch(err => console.error('Error fetching role by division:', err))
         .finally(() => setRoleReady(true));
@@ -75,7 +69,7 @@ const ManagerNotificationListener: React.FC = () => {
     }
 
     setRoleReady(true);
-  }, [profile?.id, (profile as any)?.role_id, (profile as any)?.role, isAdmin]);
+  }, [profile?.id, profile?.role_id, isAdmin]);
 
   // effectiveRole: data role yang aktif (utamakan roleData yang baru di-fetch)
   const effectiveRole = roleData;
