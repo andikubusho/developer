@@ -176,6 +176,7 @@ const FollowUps: React.FC = () => {
         description: formData.description,
         status: formData.status,
         date_time: formData.date_time,
+        consultant_id: formData.consultant_id || null,
         is_appointment: formData.is_appointment,
         appointment_date: appointmentDate,
         reminder_frequency: formData.reminder_frequency,
