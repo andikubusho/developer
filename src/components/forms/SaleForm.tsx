@@ -113,7 +113,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [p, u, pli, c, l, m, pr, d, ba] = await Promise.all([
+        const [p, u, pli, c, l, m, pr, d, ba, inst] = await Promise.all([
           api.get('projects', 'select=id,name'),
           api.get('units', 'select=*'),
           api.get('price_list_items', 'select=*'),
@@ -122,7 +122,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           api.get('consultants', 'select=id,name'),
           api.get('promos', 'select=id,name,value'),
           api.get('deposits', 'select=id,name,amount,phone,consultant_id&status=eq.verified'),
-          api.get('bank_accounts', 'select=*')
+          api.get('bank_accounts', 'select=*'),
+          initialData?.id ? api.get('installments', `sale_id=eq.${initialData.id}&order=due_date.asc`) : Promise.resolve([])
         ]);
         const pliData = pli || [];
         const processedUnits = (u || []).map((unit: any) => {
@@ -151,6 +152,15 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         setConsultantStaff(m || []);
         setPromos(pr || []);
         setBankAccounts(ba || []);
+        
+        if (inst && inst.length > 0) {
+          replaceInstallments(inst.map((i: any) => ({
+            due_date: i.due_date,
+            amount: Number(i.amount),
+            status: i.status || 'unpaid'
+          })));
+        }
+
         setHasLoadedMasterData(true);
       } catch (error) { console.error(error); } finally { setLoading(false); }
     };
