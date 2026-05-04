@@ -265,9 +265,9 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         return;
       }
 
-      const total_price = (values.quantity || 0) * (values.unit_price || 0);
-      const ppn_amount = values.include_ppn ? Math.round(total_price * 0.11) : 0;
-      const grand_total = total_price + ppn_amount;
+      const base_price = (values.quantity || 0) * (values.unit_price || 0);
+      const ppn_amount = values.include_ppn ? Math.round(base_price * 0.11) : 0;
+      const grand_total = base_price + ppn_amount;
 
       const poItem = {
         material_id: values.material_id,
@@ -275,7 +275,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         variant_id: finalVariantId,
         quantity: values.quantity,
         unit_price: values.unit_price,
-        subtotal: total_price,
+        subtotal: base_price,
         pr_id: values.pr_id
       };
 
@@ -284,10 +284,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         supplier_id: Number(values.supplier_id),
         date: values.order_date,
         due_date: values.due_date,
-        total_price,
-        include_ppn: values.include_ppn,
-        ppn_rate: "11",
-        ppn_amount,
+        total_price: grand_total,
         rab_project_id: values.rab_project_id,
         items: [poItem]
       };
@@ -377,10 +374,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         supplier_id: Number(batchSupplier),
         date: batchOrderDate,
         due_date: batchDueDate,
-        total_price: subtotalTotal,
-        include_ppn: includePpn,
-        ppn_rate: "11",
-        ppn_amount,
+        total_price: grand_total,
         items: poItems
       };
 
