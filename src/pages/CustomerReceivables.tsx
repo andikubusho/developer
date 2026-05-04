@@ -93,11 +93,9 @@ const CustomerReceivables: React.FC = () => {
 
           const sisaPiutang = Math.max(0,
             (Number(sale.final_price) || 0)
-            - (Number(sale.booking_fee) || 0)
-            - (Number(sale.dp_amount) || 0)
-            - (Number(sale.deposit_amount) || 0)
             - totalPaid
             - totalKprReceived
+            - (Number(sale.deposit_amount) || 0)
           );
 
           const overdueInstallments = saleInstallments.filter(
@@ -195,7 +193,7 @@ const CustomerReceivables: React.FC = () => {
       body: filtered.map(r => [
         r.customerName, r.unitNumber, r.projectName,
         r.paymentMethod === 'kpr' ? 'KPR' : 'Bertahap',
-        formatCurrency(r.finalPrice), formatCurrency(r.totalPaid + r.totalKprReceived),
+        formatCurrency(r.finalPrice), formatCurrency(r.totalPaid + r.totalKprReceived + r.depositAmount),
         formatCurrency(r.sisaPiutang),
         r.sisaPiutang <= 0 ? 'Lunas' : r.hasOverdue ? 'Overdue' : 'Berjalan'
       ]),
@@ -211,9 +209,10 @@ const CustomerReceivables: React.FC = () => {
   };
 
   const progressPct = (r: ReceivableRow) => {
-    const total = r.finalPrice - r.bookingFee - r.dpAmount - r.depositAmount;
+    const total = r.finalPrice;
     if (total <= 0) return 100;
-    return Math.min(100, Math.round(((r.totalPaid + r.totalKprReceived) / total) * 100));
+    const paid = r.totalPaid + r.totalKprReceived + r.depositAmount;
+    return Math.min(100, Math.round((paid / total) * 100));
   };
 
   return (
@@ -337,7 +336,7 @@ const CustomerReceivables: React.FC = () => {
                           )}>{r.paymentMethod === 'kpr' ? 'KPR' : 'Bertahap'}</span>
                         </TD>
                         <TD className="px-4 py-4 text-sm font-bold text-text-primary text-right">{formatCurrency(r.finalPrice)}</TD>
-                        <TD className="px-4 py-4 text-sm font-bold text-emerald-600 text-right">{formatCurrency(r.totalPaid + r.totalKprReceived)}</TD>
+                        <TD className="px-4 py-4 text-sm font-bold text-emerald-600 text-right">{formatCurrency(r.totalPaid + r.totalKprReceived + r.depositAmount)}</TD>
                         <TD className="px-4 py-4 text-sm font-black text-accent-dark text-right">{formatCurrency(r.sisaPiutang)}</TD>
                         <TD className="px-4 py-4 w-32">
                           <div className="flex items-center gap-2">
@@ -363,13 +362,11 @@ const CustomerReceivables: React.FC = () => {
                                 <h4 className="text-xs font-black text-text-primary uppercase tracking-widest">Ringkasan Finansial</h4>
                                 <div className="bg-white/60 p-4 rounded-xl border border-white/60 space-y-2 text-sm">
                                   <div className="flex justify-between"><span className="text-text-secondary">Harga Final</span><span className="font-bold">{formatCurrency(r.finalPrice)}</span></div>
-                                  {r.bookingFee > 0 && <div className="flex justify-between text-emerald-600"><span>Booking Fee</span><span>-{formatCurrency(r.bookingFee)}</span></div>}
-                                  {r.dpAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Down Payment</span><span>-{formatCurrency(r.dpAmount)}</span></div>}
-                                  {r.depositAmount > 0 && <div className="flex justify-between text-blue-600"><span>Titipan</span><span>-{formatCurrency(r.depositAmount)}</span></div>}
-                                  {r.totalPaid > 0 && <div className="flex justify-between text-emerald-600"><span>Pembayaran Diterima</span><span>-{formatCurrency(r.totalPaid)}</span></div>}
-                                  {r.totalKprReceived > 0 && <div className="flex justify-between text-blue-600"><span>KPR Dicairkan</span><span>-{formatCurrency(r.totalKprReceived)}</span></div>}
+                                  {r.depositAmount > 0 && <div className="flex justify-between text-blue-600"><span>Titipan Terpakai</span><span>-{formatCurrency(r.depositAmount)}</span></div>}
+                                  {r.totalPaid > 0 && <div className="flex justify-between text-emerald-600"><span>Total Pembayaran Diverifikasi</span><span>-{formatCurrency(r.totalPaid)}</span></div>}
+                                  {r.totalKprReceived > 0 && <div className="flex justify-between text-blue-600"><span>Pencairan KPR Diterima</span><span>-{formatCurrency(r.totalKprReceived)}</span></div>}
                                   <div className="flex justify-between border-t border-white/60 pt-2 font-black text-accent-dark">
-                                    <span>Sisa Piutang</span><span>{formatCurrency(r.sisaPiutang)}</span>
+                                    <span>Total Sisa Piutang</span><span>{formatCurrency(r.sisaPiutang)}</span>
                                   </div>
                                 </div>
                               </div>
