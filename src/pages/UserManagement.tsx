@@ -492,7 +492,7 @@ const UserManagement: React.FC = () => {
           onClick={() => setActiveTab('users')}
           className={cn(
             "flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black transition-all relative z-10 uppercase tracking-widest",
-            activeTab === 'users' ? "text-white" : "text-text-secondary hover:text-text-primary"
+            activeTab === 'users' ? "text-accent-lavender" : "text-text-secondary hover:text-text-primary"
           )}
         >
           <UsersIcon className="w-4 h-4" />
@@ -502,14 +502,14 @@ const UserManagement: React.FC = () => {
           onClick={() => setActiveTab('roles')}
           className={cn(
             "flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black transition-all relative z-10 uppercase tracking-widest",
-            activeTab === 'roles' ? "text-white" : "text-text-secondary hover:text-text-primary"
+            activeTab === 'roles' ? "text-accent-lavender" : "text-text-secondary hover:text-text-primary"
           )}
         >
           <LayoutGrid className="w-4 h-4" />
           Jabatan
         </button>
         <motion.div
-          className="absolute top-1.5 bottom-1.5 bg-accent-dark rounded-pill shadow-glass z-0"
+          className="absolute top-1.5 bottom-1.5 bg-white/60 border border-white/80 rounded-pill shadow-glass z-0"
           initial={false}
           animate={{
             x: activeTab === 'users' ? 0 : '100%',

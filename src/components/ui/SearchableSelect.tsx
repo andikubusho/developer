@@ -125,12 +125,12 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                     className={cn(
                       'w-full text-left px-4 py-3 rounded-xl text-sm font-black transition-all flex items-center justify-between group',
                       option.value === value 
-                        ? 'bg-accent-dark text-white' 
+                        ? 'bg-accent-lavender/20 text-accent-lavender' 
                         : cn('text-slate-600 hover:bg-slate-50 hover:text-accent-dark', option.className)
                     )}
                   >
                     {option.label}
-                    {option.value === value && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                    {option.value === value && <div className="w-1.5 h-1.5 rounded-full bg-accent-lavender animate-pulse" />}
                   </button>
                 ))
               ) : (

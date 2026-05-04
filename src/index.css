@@ -179,11 +179,11 @@
   }
   .tab-pill.active {
     background: var(--color-accent-lavender);
-    color: white;
-    filter: brightness(1.1);
+    color: var(--color-accent-dark); /* Changed from white to dark */
+    filter: brightness(1.2);
     box-shadow: 
-      0 10px 20px rgba(139, 119, 255, 0.4),
-      inset 0 4px 6px rgba(255, 255, 255, 0.3);
+      0 10px 20px rgba(99, 102, 241, 0.2),
+      inset 0 4px 6px rgba(255, 255, 255, 0.4);
   }
 
   /* 3D Input (Recessed) */
@@ -235,5 +235,16 @@
   input, select, textarea {
     background-color: rgba(255, 255, 255, 0.5) !important;
     color: var(--color-text-primary) !important;
+  }
+
+  /* Force Dark Text on Selected/Active States across the app */
+  .active, [data-state="active"], .selected, [aria-selected="true"] {
+    color: var(--color-accent-lavender) !important;
+    filter: brightness(0.8) !important;
+  }
+
+  /* Specific fix for white text on light backgrounds */
+  .text-white {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
   }
 }

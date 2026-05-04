@@ -385,20 +385,23 @@ const StockCard: React.FC = () => {
                   className={cn(
                     "w-full text-left p-4 rounded-2xl transition-all duration-300 border-2 group",
                     selectedVariantId === v.id.toString()
-                      ? "bg-accent-lavender border-accent-lavender shadow-glow-lavender text-white"
-                      : "bg-slate-50 border-transparent hover:border-slate-200 text-text-primary"
+                      ? "bg-accent-lavender/20 border-accent-lavender shadow-glow-lavender"
+                      : "bg-slate-50 border-transparent hover:border-slate-200"
                   )}
                 >
                   <p className={cn(
                     "text-[10px] font-black uppercase tracking-tighter mb-1",
-                    selectedVariantId === v.id.toString() ? "text-white/70" : "text-emerald-600"
+                    selectedVariantId === v.id.toString() ? "text-accent-lavender" : "text-emerald-600"
                   )}>
                     {v.master?.code || 'NO CODE'}
                   </p>
-                  <p className="font-black text-xs leading-tight">{v.merk}</p>
+                  <p className={cn(
+                    "font-black text-xs leading-tight",
+                    selectedVariantId === v.id.toString() ? "text-accent-dark" : "text-text-primary"
+                  )}>{v.merk}</p>
                   <p className={cn(
                     "text-[10px] font-bold mt-1",
-                    selectedVariantId === v.id.toString() ? "text-white/60" : "text-slate-400"
+                    selectedVariantId === v.id.toString() ? "text-accent-lavender/80" : "text-text-secondary"
                   )}>
                     {v.master?.name}
                   </p>
