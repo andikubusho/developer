@@ -23,7 +23,7 @@ const poSchema = z.object({
   due_date: z.string().min(1, 'Tanggal jatuh tempo harus diisi'),
   pr_id: z.string().optional(),
   rab_project_id: z.string().optional(),
-  include_ppn: z.boolean().default(false),
+  include_ppn: z.boolean(),
 });
 
 type POFormValues = z.infer<typeof poSchema>;
@@ -267,7 +267,6 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
 
       const base_price = (values.quantity || 0) * (values.unit_price || 0);
       const ppn_amount = values.include_ppn ? Math.round(base_price * 0.11) : 0;
-      const grand_total = base_price + ppn_amount;
 
       const selectedVariant = variants.find((v: any) => v.id === finalVariantId);
       const variantMerk = isNewVariant ? newVariant.merk : (selectedVariant?.merk || '');
@@ -289,7 +288,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         supplier_id: Number(values.supplier_id),
         date: values.order_date,
         due_date: values.due_date,
-        total_price: grand_total,
+        total_price: base_price,  // subtotal sebelum PPN; grand total = total_price + ppn_amount
         include_ppn: values.include_ppn,
         ppn_rate: '11',
         ppn_amount,
@@ -382,13 +381,12 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
 
       const subtotalTotal = grandTotal; // from the loop
       const ppn_amount = includePpn ? Math.round(subtotalTotal * 0.11) : 0;
-      const grand_total = subtotalTotal + ppn_amount;
 
       const poData = {
         supplier_id: Number(batchSupplier),
         date: batchOrderDate,
         due_date: batchDueDate,
-        total_price: grand_total,
+        total_price: subtotalTotal,  // subtotal sebelum PPN; grand total = total_price + ppn_amount
         include_ppn: includePpn,
         ppn_rate: '11',
         ppn_amount,
