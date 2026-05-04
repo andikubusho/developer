@@ -393,11 +393,11 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       } else {
         await api.insert('purchase_orders', {
           id: crypto.randomUUID(),
-          project_id: itemDetails[0].material_id ? itemDetails[0].material_id : (initialPRItems?.[0]?.project_id), // Fallback
+          project_id: initialPRItems?.[0]?.project_id,
           ...poData,
           po_number,
           status: 'PENDING',
-          rab_project_id: itemDetails[0].pr_id ? (initialPRItems?.find(p => p.prId === itemDetails[0].pr_id)?.rab_project_id) : undefined,
+          rab_project_id: initialPRItems?.find((p: PRItemForPO) => p.prId === itemDetails[0]?.pr_id)?.rab_project_id,
         });
       }
 
