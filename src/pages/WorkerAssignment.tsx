@@ -269,7 +269,9 @@ const WorkerAssignment: React.FC = () => {
                 <optgroup label="🏠 UNIT PROPERTY">
                   {unitRabs.map((r: any) => (
                     <option key={r.id} value={`RAB_${r.id}`}>
-                      {r.unit ? `${r.unit.unit_number} - ${r.unit.type}` : 'Unit'}{r.nama_proyek || r.keterangan ? ` · ${r.nama_proyek || r.keterangan}` : ''}
+                      {r.unit ? `${r.unit.unit_number} - ${r.unit.type}` : 'Unit'}
+                      {r.keterangan ? ` [${r.keterangan}]` : ''}
+                      {r.nama_proyek && r.nama_proyek !== r.keterangan ? ` · ${r.nama_proyek}` : ''}
                     </option>
                   ))}
                 </optgroup>
