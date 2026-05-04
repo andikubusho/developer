@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar, User, Home, MapPin, DollarSign, Tag, Clock, Briefcase } from 'lucide-react';
-import { formatCurrency, cn } from '../../lib/utils';
+import { formatCurrency, formatDate, cn } from '../../lib/utils';
 
 interface SaleDetailProps {
   sale: any;
@@ -155,7 +155,7 @@ export const SaleDetail: React.FC<SaleDetailProps> = ({ sale }) => {
               <div key={idx} className="flex items-center justify-between p-3 bg-white/30 rounded-xl">
                 <div className="flex items-center gap-3">
                   <span className="w-6 h-6 flex items-center justify-center bg-white rounded-xl text-[10px] font-black text-text-muted border border-white/40">{idx + 1}</span>
-                  <span className="text-sm font-bold text-text-primary">{inst.date}</span>
+                  <span className="text-sm font-bold text-text-primary">{formatDate(inst.due_date)}</span>
                 </div>
                 <span className="font-black text-text-primary text-sm">{formatCurrency(inst.amount)}</span>
               </div>
