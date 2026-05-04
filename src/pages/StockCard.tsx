@@ -146,6 +146,65 @@ const StockCard: React.FC = () => {
     }
   };
 
+  const syncLegacyData = async () => {
+    if (!confirm('Apakah Anda yakin ingin mensinkronkan semua data lama? Proses ini mungkin memakan waktu.')) return;
+    try {
+      setLoading(true);
+      console.log('🚀 Memulai Sinkronisasi...');
+      
+      // 1. Ambil data
+      const [allGR, allUsage, allMovements, allVariants] = await Promise.all([
+        api.get('goods_receipts'),
+        api.get('material_usages'),
+        api.get('stock_movements'),
+        api.get('material_variants')
+      ]);
+
+      const existingMovements = new Set((allMovements || []).map((m: any) => `${m.sumber}:${m.reference_id}`));
+      let added = 0;
+
+      // 2. Sync GR
+      for (const gr of allGR) {
+        if (!existingMovements.has(`GR:${gr.id}`)) {
+          await api.insert('stock_movements', {
+            tanggal: gr.tanggal, id_variant: gr.id_variant, qty: gr.qty, tipe: 'IN', sumber: 'GR', reference_id: gr.id, keterangan: 'Sync Data Lama'
+          });
+          added++;
+        }
+      }
+
+      // 3. Sync Usage
+      for (const u of allUsage) {
+        if (!existingMovements.has(`USAGE:${u.id}`)) {
+          await api.insert('stock_movements', {
+            tanggal: u.tanggal, id_variant: u.id_variant, qty: u.qty, tipe: 'OUT', sumber: 'USAGE', reference_id: u.id, keterangan: 'Sync Data Lama'
+          });
+          added++;
+        }
+      }
+
+      // 4. Recalculate Stocks
+      const latestMoves = await api.get('stock_movements');
+      const stockMap: Record<string, number> = {};
+      latestMoves.forEach((m: any) => {
+        stockMap[m.id_variant] = (stockMap[m.id_variant] || 0) + (m.tipe === 'IN' ? Number(m.qty) : -Number(m.qty));
+      });
+
+      for (const v of allVariants) {
+        const calc = stockMap[v.id] || 0;
+        if (Number(v.stok) !== calc) await api.update('material_variants', v.id, { stok: calc });
+      }
+
+      alert(`Sinkronisasi Selesai! ${added} mutasi baru ditambahkan.`);
+      fetchVariants();
+    } catch (err) {
+      console.error(err);
+      alert('Gagal sinkronisasi data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleExport = () => {
     if (!variantInfo || movements.length === 0) {
       alert('Tidak ada data untuk diekspor');
@@ -229,6 +288,15 @@ const StockCard: React.FC = () => {
             disabled={!selectedVariantId || movements.length === 0}
           >
             <FileSpreadsheet className="w-5 h-5 mr-2 text-emerald-600" /> Export Excel
+          </Button>
+          <Button 
+            variant="ghost"
+            size="sm"
+            className="text-[10px] font-black text-slate-400 hover:text-accent-lavender"
+            onClick={syncLegacyData}
+            disabled={loading}
+          >
+            <RefreshCw className={cn("w-3 h-3 mr-1", loading && "animate-spin")} /> Sync Data Lama
           </Button>
         </div>
       </div>
