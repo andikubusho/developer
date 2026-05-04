@@ -245,7 +245,7 @@ const UserManagement: React.FC = () => {
       viewAll: false
     });
     
-    setRoleForm({ id: '', name: '', division: 'marketing', authorized_divisions: [], permissions: initialPerms });
+    setRoleForm({ id: '', name: '', division: 'marketing', authorized_divisions: [], permissions: initialPerms, receive_notifications: false, notification_settings: {} });
     setSelectedRole(null);
     setIsRoleModalOpen(true);
   };
@@ -409,8 +409,8 @@ const UserManagement: React.FC = () => {
   const handleUpdateUserPermissions = async (menuKey: string, cap: keyof Capabilities, val: boolean) => {
     if (!selectedProfile) return;
     const newPerms = {
-      ...selectedProfile.permissions,
-      [menuKey]: { 
+      ...(selectedProfile.permissions || {}),
+      [menuKey]: {
         ...(selectedProfile.permissions?.[menuKey] || { 
           view: false, 
           create: false, 
