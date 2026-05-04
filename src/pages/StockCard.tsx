@@ -14,7 +14,8 @@ import {
   HardHat,
   UserCheck,
   Info,
-  Package
+  Package,
+  Trash2
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
