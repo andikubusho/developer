@@ -107,71 +107,95 @@ const Payments: React.FC = () => {
               </TR>
             </THead>
             <TBody>
-              {loading ? (
-                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-muted">Sinkronisasi data...</TD></TR>
-              ) : filteredSchedule.length === 0 ? (
-                <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">Tidak ada tagihan tertunggak.</TD></TR>
-              ) : (
-                filteredSchedule.map((inst: any) => {
-                  const isOverdue = new Date(inst.due_date) < new Date() && inst.status === 'unpaid';
-                  
-                  return (
-                    <TR key={inst.id} className="hover:bg-white/30 transition-colors">
-                      <TD className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-accent-lavender/20 flex items-center justify-center text-accent-dark font-black text-[10px]">
-                            {inst.sale?.customer?.full_name?.charAt(0) || 'C'}
-                          </div>
-                          <div>
-                            <div className="font-bold text-text-primary text-xs leading-tight">{inst.sale?.customer?.full_name}</div>
-                            <div className="text-[9px] text-text-muted font-bold uppercase tracking-wider">
-                              {inst.sale?.unit?.unit_number} • {inst.sale?.unit?.project?.name}
+                {loading ? (
+                  <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-muted font-bold uppercase tracking-widest text-[10px]">Sinkronisasi data...</TD></TR>
+                ) : filteredSchedule.length === 0 ? (
+                  <TR><TD colSpan={5} className="px-6 py-10 text-center text-text-secondary">Tidak ada tagihan tertunggak.</TD></TR>
+                ) : (
+                  Object.values(filteredSchedule.reduce((acc: any, item: any) => {
+                    const key = item.sale_id || 'unknown';
+                    if (!acc[key]) acc[key] = { 
+                      customer: item.sale?.customer?.full_name || 'Tanpa Nama',
+                      unit: item.sale?.unit?.unit_number || 'Tanpa Unit',
+                      project: item.sale?.unit?.project?.name || '-',
+                      items: [] 
+                    };
+                    acc[key].items.push(item);
+                    return acc;
+                  }, {})).map((group: any) => (
+                    <React.Fragment key={group.customer + group.unit}>
+                      {/* GROUP HEADER */}
+                      <TR className="bg-accent-lavender/5">
+                        <TD colSpan={5} className="px-6 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-accent-dark font-black text-xs border border-accent-lavender/20">
+                              {group.customer.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-black text-text-primary text-sm tracking-tight">{group.customer}</div>
+                              <div className="text-[10px] font-bold text-accent-dark uppercase tracking-widest">
+                                {group.unit} • {group.project}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </TD>
-                      <TD className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar className={cn("w-3.5 h-3.5", isOverdue ? "text-rose-500" : "text-text-muted")} />
-                          <span className={cn("text-[11px] font-bold", isOverdue ? "text-rose-600" : "text-text-secondary")}>
-                            {formatDate(inst.due_date)}
-                          </span>
-                        </div>
-                      </TD>
-                      <TD className="px-6 py-4 text-right">
-                        <div className="text-xs font-black text-text-primary">
-                          {formatCurrency(inst.amount)}
-                        </div>
-                      </TD>
-                      <TD className="px-6 py-4 text-center">
-                        {inst.isPendingPayment ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black bg-amber-50 text-amber-600 uppercase">
-                            <Clock className="w-3 h-3" /> Menunggu Verifikasi
-                          </span>
-                        ) : isOverdue ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black bg-rose-50 text-rose-600 uppercase">
-                            <AlertCircle className="w-3 h-3" /> Terlambat
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black bg-slate-50 text-text-muted uppercase border border-slate-100">
-                            Belum Bayar
-                          </span>
-                        )}
-                      </TD>
-                      <TD className="px-6 py-4 text-right">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="h-8 px-4 text-[10px] font-black uppercase tracking-widest rounded-xl border-accent-dark text-accent-dark hover:bg-accent-dark hover:text-white transition-all"
-                          onClick={() => navigate('/consumer-payments')}
-                        >
-                          Bayar
-                        </Button>
-                      </TD>
-                    </TR>
-                  );
-                })
-              )}
+                        </TD>
+                      </TR>
+                      
+                      {/* GROUP ITEMS */}
+                      {group.items.map((inst: any) => {
+                        const isOverdue = new Date(inst.due_date) < new Date() && inst.status === 'unpaid';
+                        return (
+                          <TR key={inst.id} className="hover:bg-slate-50/50 transition-colors border-l-4 border-l-transparent hover:border-l-accent-dark">
+                            <TD className="px-6 py-4 pl-16">
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-3.5 h-3.5 text-text-muted" />
+                                <span className="text-[11px] font-bold text-text-secondary">Cicilan #{group.items.indexOf(inst) + 1}</span>
+                              </div>
+                            </TD>
+                            <TD className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <Calendar className={cn("w-3.5 h-3.5", isOverdue ? "text-rose-500" : "text-text-muted")} />
+                                <span className={cn("text-[11px] font-bold", isOverdue ? "text-rose-600" : "text-text-secondary")}>
+                                  {formatDate(inst.due_date)}
+                                </span>
+                              </div>
+                            </TD>
+                            <TD className="px-6 py-4 text-right">
+                              <div className="text-sm font-black text-text-primary">
+                                {formatCurrency(inst.amount)}
+                              </div>
+                            </TD>
+                            <TD className="px-6 py-4 text-center">
+                              {inst.isPendingPayment ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black bg-amber-50 text-amber-600 uppercase">
+                                  <Clock className="w-3 h-3" /> Menunggu Verifikasi
+                                </span>
+                              ) : isOverdue ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black bg-rose-50 text-rose-600 uppercase border border-rose-100">
+                                  <AlertCircle className="w-3 h-3" /> Terlambat
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black bg-slate-50 text-text-muted uppercase border border-slate-100">
+                                  Belum Bayar
+                                </span>
+                              )}
+                            </TD>
+                            <TD className="px-6 py-4 text-right">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="h-8 px-4 text-[10px] font-black uppercase tracking-widest rounded-xl border-accent-dark text-accent-dark hover:bg-accent-dark hover:text-white transition-all shadow-sm"
+                                onClick={() => navigate('/consumer-payments')}
+                              >
+                                Bayar
+                              </Button>
+                            </TD>
+                          </TR>
+                        );
+                      })}
+                    </React.Fragment>
+                  ))
+                )}
             </TBody>
           </Table>
         </div>
