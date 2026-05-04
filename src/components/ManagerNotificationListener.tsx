@@ -34,15 +34,30 @@ const ManagerNotificationListener: React.FC = () => {
     } catch {}
   }, []);
 
-  // Fetch fresh role data by role name (profile.role = nama role, bukan UUID)
+  // Fetch fresh role data - prioritaskan role_id (ID numerik) jika ada
   useEffect(() => {
     if (isAdmin) return;
+    
+    // Gunakan role_id jika ada (lebih akurat), fallback ke role (nama string)
+    const roleId = profile?.role_id;
     const roleName = (profile as any)?.role;
-    if (!roleName) return;
-    api.get('roles', `select=*&name=eq.${encodeURIComponent(roleName)}`).then(data => {
-      if (data.length > 0) setRoleData(data[0]);
-    });
-  }, [profile?.id, isAdmin]);
+    
+    let query = '';
+    if (roleId) {
+      query = `select=*&id=eq.${roleId}`;
+    } else if (roleName) {
+      query = `select=*&name=eq.${encodeURIComponent(roleName)}`;
+    } else {
+      return;
+    }
+
+    api.get('roles', query).then(data => {
+      if (data && data.length > 0) {
+        setRoleData(data[0]);
+        console.log('Notification Listener: Role data loaded', data[0].name);
+      }
+    }).catch(err => console.error('Notification Listener: Role fetch error', err));
+  }, [profile?.id, profile?.role_id, isAdmin]);
 
   // effectiveRole: prioritaskan data segar dari DB, fallback ke data join dari auth
   const effectiveRole = roleData || (profile?.role_data as any);
@@ -50,10 +65,13 @@ const ManagerNotificationListener: React.FC = () => {
   // Kumpulkan semua division user (primary + authorized + dari context)
   const userDivisions: string[] = useMemo(() => {
     if (isAdmin) return [];
-    const primary: string | undefined = effectiveRole?.division;
-    const authorized: string[] = effectiveRole?.authorized_divisions || [];
+    const primary = effectiveRole?.division;
+    const authorized = Array.isArray(effectiveRole?.authorized_divisions) ? effectiveRole.authorized_divisions : [];
     const ctx = division as string | null;
-    return [...new Set([primary, ...authorized, ctx].filter(Boolean))] as string[];
+    
+    const all = [...new Set([primary, ...authorized, ctx].filter(Boolean))] as string[];
+    console.log('Notification Listener: User Divisions', all);
+    return all;
   }, [isAdmin, effectiveRole, division]);
 
   const fetchUnread = useCallback(async () => {

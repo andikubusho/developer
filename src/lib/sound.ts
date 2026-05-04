@@ -4,6 +4,7 @@ let isAudioPrimed = false;
 if (typeof window !== 'undefined') {
   notificationAudio = new Audio('/notification.mp3');
   notificationAudio.load();
+  notificationAudio.volume = 1.0;
 
   // Function to "prime" or unlock audio on first interaction
   const primeAudio = () => {
@@ -15,14 +16,14 @@ if (typeof window !== 'undefined') {
         notificationAudio!.pause();
         notificationAudio!.currentTime = 0;
         isAudioPrimed = true;
-        console.log('Audio primed and unlocked');
+        console.log('🔔 Notification Audio: Primed and unlocked');
         // Remove listeners once primed
         window.removeEventListener('click', primeAudio);
         window.removeEventListener('keydown', primeAudio);
         window.removeEventListener('touchstart', primeAudio);
       })
-      .catch(() => {
-        // Still blocked, will try again on next interaction
+      .catch((err) => {
+        console.warn('🔔 Notification Audio: Unlock failed, will retry on next click', err);
       });
   };
 
@@ -32,18 +33,28 @@ if (typeof window !== 'undefined') {
 }
 
 export const playNotificationSound = () => {
-  if (!notificationAudio) return;
+  if (!notificationAudio) {
+    console.warn('🔔 Notification Audio: Audio object not initialized');
+    return;
+  }
   
   try {
     notificationAudio.currentTime = 0;
+    notificationAudio.muted = false;
+    notificationAudio.volume = 1.0;
+    
     const playPromise = notificationAudio.play();
     
     if (playPromise !== undefined) {
-      playPromise.catch(error => {
-        console.warn('Playback blocked by browser. Please click on the page first.', error);
-      });
+      playPromise
+        .then(() => console.log('🔔 Notification Audio: Playing...'))
+        .catch(error => {
+          console.warn('🔔 Notification Audio: Playback blocked by browser.', error);
+          // Fallback to vibration if possible
+          if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+        });
     }
   } catch (err) {
-    console.warn('Notification sound failed:', err);
+    console.warn('🔔 Notification Audio: Exception in play()', err);
   }
 };
