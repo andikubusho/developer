@@ -46,23 +46,36 @@ const ManagerNotificationListener: React.FC = () => {
     }
 
     setRoleReady(false);
-    
-    // SELALU fetch fresh role data dari DB untuk memastikan pengaturan notifikasi terbaru aktif
-    const roleId = profile?.role_id;
-    if (!roleId) {
+
+    // Prioritas 1: role_data dari join AuthContext
+    if ((profile as any)?.role_data) {
+      setRoleData((profile as any).role_data);
       setRoleReady(true);
       return;
     }
 
-    api.get('roles', `select=*&id=eq.${roleId}`)
-      .then(data => {
-        if (data && data.length > 0) {
-          setRoleData(data[0]);
-        }
-      })
-      .catch(err => console.error('Error fetching fresh role:', err))
-      .finally(() => setRoleReady(true));
-  }, [profile?.id, profile?.role_id, isAdmin]);
+    // Prioritas 2: fetch by role_id (UUID FK)
+    const roleId = (profile as any)?.role_id;
+    if (roleId) {
+      api.get('roles', `select=*&id=eq.${roleId}`)
+        .then(data => { if (data?.length > 0) setRoleData(data[0]); })
+        .catch(err => console.error('Error fetching role by id:', err))
+        .finally(() => setRoleReady(true));
+      return;
+    }
+
+    // Prioritas 3: fetch by division (profile.role = division string)
+    const divisionName = (profile as any)?.role;
+    if (divisionName && divisionName !== 'admin') {
+      api.get('roles', `select=*&division=eq.${divisionName}&receive_notifications=eq.true&limit=1`)
+        .then(data => { if (data?.length > 0) setRoleData(data[0]); })
+        .catch(err => console.error('Error fetching role by division:', err))
+        .finally(() => setRoleReady(true));
+      return;
+    }
+
+    setRoleReady(true);
+  }, [profile?.id, (profile as any)?.role_id, (profile as any)?.role, isAdmin]);
 
   // effectiveRole: data role yang aktif (utamakan roleData yang baru di-fetch)
   const effectiveRole = roleData;
@@ -75,8 +88,10 @@ const ManagerNotificationListener: React.FC = () => {
       ? effectiveRole.authorized_divisions.map((d: string) => d.toLowerCase())
       : [];
     const ctx = (division as string || '').toLowerCase();
-    return [...new Set([primary, ...authorized, ctx].filter(Boolean))];
-  }, [isAdmin, effectiveRole, division]);
+    // Fallback: gunakan profile.role (division string) jika role data belum tersedia
+    const profileRole = ((profile as any)?.role || '').toLowerCase();
+    return [...new Set([primary, ...authorized, ctx, profileRole].filter(Boolean))];
+  }, [isAdmin, effectiveRole, division, profile]);
 
   const fetchUnread = useCallback(async () => {
     if (!profile?.id || !roleReady) return;
@@ -95,8 +110,8 @@ const ManagerNotificationListener: React.FC = () => {
       // 2. Admin lihat semua
       if (isAdmin) return true;
       
-      // 3. Cek pengaturan role (Harus aktif & punya divisi yang cocok)
-      if (!effectiveRole?.receive_notifications) return false;
+      // 3. Cek pengaturan role — jika role ditemukan dan receive_notifications=false, skip
+      if (effectiveRole && !effectiveRole.receive_notifications) return false;
       
       const targetDivs = (n.target_divisions || []).map(d => d.toLowerCase());
       const hasMatchingDivision = targetDivs.some(d => userDivisions.includes(d));
@@ -115,8 +130,10 @@ const ManagerNotificationListener: React.FC = () => {
   useEffect(() => {
     if (!profile?.id || !roleReady) return;
 
-    // Gate untuk non-admin
-    if (!isAdmin && !effectiveRole?.receive_notifications) return;
+    // Gate untuk non-admin:
+    // Blokir hanya jika role ditemukan dan receive_notifications=false
+    // (jika role null = tidak bisa tentukan, biarkan lewat agar tidak silent fail)
+    if (!isAdmin && effectiveRole && !effectiveRole.receive_notifications) return;
     if (!isAdmin && userDivisions.length === 0) return;
 
     fetchUnread();
@@ -138,7 +155,7 @@ const ManagerNotificationListener: React.FC = () => {
             return;
           }
 
-          if (!effectiveRole?.receive_notifications) return;
+          if (effectiveRole && !effectiveRole.receive_notifications) return;
           
           const targetDivs = (newNotif.target_divisions || []).map(d => d.toLowerCase());
           const hasMatchingDivision = targetDivs.some(d => userDivisions.includes(d));
@@ -199,9 +216,16 @@ const ManagerNotificationListener: React.FC = () => {
               <div>
                 <h3 className="text-lg font-black tracking-tight leading-tight">{current.title}</h3>
                 <span className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-0.5 block">
-                  {current.metadata?.type?.startsWith('teknik') ? 'Logistik Update' :
-                   current.metadata?.type?.startsWith('keuangan') ? 'Keuangan Update' : 
-                   current.metadata?.type?.startsWith('audit') ? 'Audit Alert' : 'Marketing Update'}
+                  {(() => {
+                    const divs: string[] = current.target_divisions || [];
+                    if (divs.includes('teknik')) return 'Logistik Update';
+                    if (divs.includes('keuangan')) return 'Keuangan Update';
+                    if (divs.includes('audit')) return 'Audit Update';
+                    if (divs.includes('hrd')) return 'HRD Update';
+                    if (divs.includes('accounting')) return 'Accounting Update';
+                    if (divs.includes('marketing')) return 'Marketing Update';
+                    return 'System Update';
+                  })()}
                 </span>
               </div>
             </div>

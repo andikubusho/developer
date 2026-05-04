@@ -417,7 +417,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
           title: 'Purchase Order (PO) Dibuat',
           message: `${profile?.full_name} menerbitkan PO baru #${po_number} untuk proyek ${projectLabel || 'Proyek'}`,
           sender_name: profile?.full_name || 'Purchasing',
-          metadata: { type: 'teknik_po_new', po_number }
+          metadata: { type: 'teknik_po_created', po_number }
         });
       } catch (notifErr) {
         console.error('Failed to send PO notification:', notifErr);
