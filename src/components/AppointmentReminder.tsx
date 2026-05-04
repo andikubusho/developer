@@ -6,6 +6,7 @@ import { FollowUp } from '../types';
 import { cn, formatDateTime } from '../lib/utils';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
+import { playNotificationSound } from '../lib/sound';
 
 const POPUP_LOCK_KEY = 'appointment_reminder_lock';
 const LOCK_EXPIRY_MS = 70000; // 70 seconds (slightly above polling interval)
@@ -56,6 +57,7 @@ const AppointmentReminder: React.FC = () => {
           // Acquire lock
           localStorage.setItem(lockKey, JSON.stringify({ timestamp: currentTime }));
           setActiveReminder(reminder);
+          playNotificationSound();
         }
       } catch (err) {
         console.error('Reminder Check Failed:', err);

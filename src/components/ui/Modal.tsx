@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
+import { playNotificationSound } from '../../lib/sound';
 
 interface ModalProps {
   isOpen: boolean;
@@ -7,6 +8,7 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
+  playSound?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -15,7 +17,14 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   size = 'md',
+  playSound = false,
 }) => {
+  React.useEffect(() => {
+    if (isOpen && playSound) {
+      playNotificationSound();
+    }
+  }, [isOpen, playSound]);
+
   if (!isOpen) return null;
 
   const sizes = {

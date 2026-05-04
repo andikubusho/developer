@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
+import { playNotificationSound } from '../lib/sound';
 
 interface Notification {
   id: string;
@@ -64,12 +65,7 @@ const ManagerNotificationListener: React.FC = () => {
 
           if ((isEnabled || isLegacyEnabled) && newNotif.target_divisions.includes(profile.division)) {
             setNotifications(prev => [newNotif, ...prev].slice(0, 3));
-            
-            // Optional: Play subtle sound
-            try {
-              const audio = new Audio('/notification.mp3');
-              audio.play().catch(() => {});
-            } catch (e) {}
+            playNotificationSound();
           }
         }
       )

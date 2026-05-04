@@ -1617,7 +1617,14 @@ export const materialStockLogs = pgTable("material_stock_logs", {
 });
 
 // === SCHEMAS ===
-export const insertMaterialSupplierSchema = createInsertSchema(materialSuppliers);
+export const insertMaterialSupplierSchema = createInsertSchema(materialSuppliers).extend({
+  name: z.string().min(1, "Nama supplier harus diisi"),
+  address: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  contactPerson: z.string().optional().nullable(),
+  bankName: z.string().optional().nullable(),
+  bankAccountNumber: z.string().optional().nullable(),
+});
 export const insertMaterialStockLogSchema = createInsertSchema(materialStockLogs);
 
 // === TYPES ===
