@@ -132,9 +132,7 @@ const ManagerNotificationListener: React.FC = () => {
   }, [isAdmin, effectiveRole, userDivisions, fetchUnread, profile?.id]);
 
   const markAsRead = async (id: string) => {
-    if (!profile) return;
-
-    // 1. Langsung hapus dari state & simpan ke dismissed (tidak menunggu DB)
+    // 1. Langsung hapus dari state & catat di dismissed guard
     setNotifications(prev => prev.filter((n: Notification) => n.id !== id));
     dismissedRef.current.add(id);
     try {
@@ -142,9 +140,9 @@ const ManagerNotificationListener: React.FC = () => {
       localStorage.setItem('propdev_dismissed_notifs', JSON.stringify(arr));
     } catch {}
 
-    // 2. Update DB via RPC (best-effort, gagal pun tidak masalah karena sudah di-guard)
+    // 2. Hapus permanen dari DB
     try {
-      await api.rpc('mark_notification_read', { notification_id: id, user_id: profile.id });
+      await api.delete('notifications', id);
     } catch {}
   };
 
