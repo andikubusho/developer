@@ -112,8 +112,9 @@ const VerificationQueue: React.FC = () => {
         return true;
       });
 
-      // Orphaned payments: pending payments with no cash_flow entry
-      const cfReferenceIds = new Set(rawItems.map(i => i.reference_id));
+      // Orphaned payments: pending payments with no cash_flow entry (checked against ALL cash_flow records)
+      const allCfRefRes = await api.get('cash_flow', 'select=reference_id');
+      const cfReferenceIds = new Set((allCfRefRes || []).map((i: any) => i.reference_id));
 
       // Deduplicate orphans: same sale_id + amount + payment_date → keep latest created_at
       const dedupedOrphans = Object.values(
@@ -235,17 +236,20 @@ const VerificationQueue: React.FC = () => {
         }
         // --- OVERPAYMENT LOGIC END ---
 
-        await api.insert('cash_flow', {
-          date: item.date,
-          description: item.description + auditNote,
-          amount: item.amount,
-          type: 'in',
-          category: item.category,
-          status: 'verified',
-          reference_id: item.reference_id,
-          reference_type: 'payment',
-          bank_account_id: item.bank_account_id,
-        });
+        const checkExisting = await api.get('cash_flow', `reference_id=eq.${item.reference_id}&reference_type=eq.payment`);
+        if (!checkExisting || checkExisting.length === 0) {
+          await api.insert('cash_flow', {
+            date: item.date,
+            description: item.description + auditNote,
+            amount: item.amount,
+            type: 'in',
+            category: item.category,
+            status: 'verified',
+            reference_id: item.reference_id,
+            reference_type: 'payment',
+            bank_account_id: item.bank_account_id,
+          });
+        }
       } else {
         // Normal cash_flow item
         const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
