@@ -20,7 +20,7 @@ export const Table: React.FC<React.HTMLAttributes<HTMLTableElement>> = ({ childr
 
 export const THead: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> = ({ children, className, ...props }) => {
   return (
-    <thead className={cn('bg-white/20 border-b border-white/20', className)} {...props}>
+    <thead className={cn('bg-black/5 border-b border-black/5', className)} {...props}>
       {children}
     </thead>
   );
@@ -38,7 +38,7 @@ export const TR: React.FC<React.HTMLAttributes<HTMLTableRowElement> & { isHovera
   return (
     <tr className={cn(
       'transition-all duration-300 etched-line',
-      isHoverable && 'hover:bg-white/40 hover:shadow-3d-inset',
+      isHoverable && 'hover:bg-black/5 hover:shadow-3d-inset',
       className
     )} {...props}>
       {children}
@@ -49,7 +49,7 @@ export const TR: React.FC<React.HTMLAttributes<HTMLTableRowElement> & { isHovera
 export const TH: React.FC<React.ThHTMLAttributes<HTMLTableCellElement>> = ({ children, className, ...props }) => {
   return (
     <th className={cn(
-      'px-8 py-5 text-[10px] font-black text-text-muted uppercase tracking-[0.2em]',
+      'px-8 py-5 text-[10px] font-black text-text-muted uppercase tracking-[0.2em] opacity-80',
       className
     )} {...props}>
       {children}

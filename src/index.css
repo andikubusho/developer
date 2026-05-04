@@ -4,20 +4,20 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   
   /* Color Tokens - Enhanced Liquid Glass 3D */
-  --color-page: #E0E5EC; /* Deeper soft gray for better glass contrast */
-  --color-glass-base: rgba(255, 255, 255, 0.45);
-  --color-glass-plate: rgba(255, 255, 255, 0.92);
-  --color-glass-border: rgba(255, 255, 255, 0.6);
+  --color-page: #D1D5DB; /* Solid light gray */
+  --color-glass-base: rgba(243, 244, 246, 0.6);
+  --color-glass-plate: #E5E7EB; /* Light gray for cards/plates */
+  --color-glass-border: rgba(156, 163, 175, 0.4);
   
   --color-accent-peach: #FF8F70;
   --color-accent-peach-glow: rgba(255, 143, 112, 0.6);
-  --color-accent-lavender: #8B77FF;
-  --color-accent-lavender-glow: rgba(139, 119, 255, 0.6);
-  --color-accent-dark: #2D3436;
+  --color-accent-lavender: #6366F1;
+  --color-accent-lavender-glow: rgba(99, 102, 241, 0.4);
+  --color-accent-dark: #1F2937;
   
-  --color-text-primary: #2D3436;
-  --color-text-secondary: #636E72;
-  --color-text-muted: #B2BEC3;
+  --color-text-primary: #111827; /* Darker black-gray for maximum contrast */
+  --color-text-secondary: #374151; /* Darker secondary text */
+  --color-text-muted: #4B5563; /* Much darker muted text for visibility */
   
   --shadow-3d-out: 
     20px 20px 40px rgba(163, 177, 198, 0.7),
@@ -40,9 +40,7 @@
 
 @layer base {
   body {
-    background: #EBECEF;
-    background-image: radial-gradient(circle at 0% 0%, rgba(255,255,255,0.8) 0%, transparent 50%),
-                      radial-gradient(circle at 100% 100%, rgba(200,200,210,0.3) 0%, transparent 50%);
+    background: var(--color-page);
     color: var(--color-text-primary);
     font-family: var(--font-sans);
     min-height: 100vh;
@@ -214,4 +212,28 @@
 
   .shadow-3d { box-shadow: var(--shadow-3d-out); }
   .shadow-3d-inset { box-shadow: var(--shadow-3d-in); }
+
+  /* Global Overrides for Light Gray Theme */
+  .bg-white, .bg-slate-50, .bg-slate-100 {
+    background-color: var(--color-glass-plate) !important;
+  }
+  
+  .text-text-muted, .text-slate-400, .text-text-secondary {
+    color: var(--color-text-secondary) !important;
+  }
+  
+  .border-white\/20, .border-slate-100, .border-slate-200 {
+    border-color: rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .etched-line {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  /* Ensure input fields stay readable */
+  input, select, textarea {
+    background-color: rgba(255, 255, 255, 0.5) !important;
+    color: var(--color-text-primary) !important;
+  }
 }
