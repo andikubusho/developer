@@ -63,20 +63,34 @@ const KPRDisbursementPage: React.FC = () => {
 
   const fetchSales = async () => {
     try {
-      const [salesRaw, customersData, unitsData] = await Promise.all([
-        api.get('sales', 'select=*&payment_method=eq.kpr'),
+      const [salesRaw, customersData, unitsData, existingDisb] = await Promise.all([
+        api.get('sales', 'select=*&payment_method=eq.kpr&status=eq.active'),
         api.get('customers', 'select=id,full_name'),
         api.get('units', 'select=id,unit_number'),
+        api.get('kpr_disbursement', 'select=sale_id,stage,status')
       ]);
+      
+      const finishedSaleIds = new Set(
+        (existingDisb || [])
+          .filter((d: any) => d.stage === 3 && d.status === 'received')
+          .map((d: any) => d.sale_id)
+      );
+
       const customerMap: Record<string, any> = {};
       (customersData || []).forEach((c: any) => { customerMap[c.id] = c; });
       const unitMap: Record<string, any> = {};
       (unitsData || []).forEach((u: any) => { unitMap[u.id] = u; });
-      setSales((salesRaw || []).map((s: any) => ({
-        ...s,
-        customer: s.customer_id ? (customerMap[s.customer_id] || null) : null,
-        unit: s.unit_id ? (unitMap[s.unit_id] || null) : null,
-      })));
+
+      const filteredSales = (salesRaw || [])
+        .filter((s: any) => !finishedSaleIds.has(s.id))
+        .map((s: any) => ({
+          ...s,
+          customer: s.customer_id ? (customerMap[s.customer_id] || null) : null,
+          unit: s.unit_id ? (unitMap[s.unit_id] || null) : null,
+        }))
+        .sort((a, b) => (a.customer?.full_name || '').localeCompare(b.customer?.full_name || ''));
+
+      setSales(filteredSales);
     } catch (error) {
       console.error('Error fetching sales:', error);
     }
