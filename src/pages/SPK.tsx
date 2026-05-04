@@ -122,7 +122,13 @@ const SPK: React.FC = () => {
     try {
       setSubmitting(true);
       // Exclude worker_id — it's a UI-only field used to populate contractor_name
-      const { worker_id, ...dataToSave } = formData as any;
+      // Convert empty date strings to null for timestamp columns
+      const { worker_id, ...rest } = formData as any;
+      const dataToSave = {
+        ...rest,
+        start_date: rest.start_date || null,
+        end_date: rest.end_date || null,
+      };
       if (editingSpk) {
         await api.update('spks', editingSpk.id, dataToSave);
       } else {
