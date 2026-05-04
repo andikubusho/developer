@@ -20,6 +20,8 @@ interface CashFlowItem {
     bank_name: string;
     account_number: string;
   };
+  reference_id?: string | null;
+  reference_type?: string | null;
 }
 
 const CashFlowPage: React.FC = () => {
@@ -63,13 +65,36 @@ const CashFlowPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Hapus data arus kas ini secara permanen?')) return;
+  const handleDelete = async (item: CashFlowItem) => {
+    if (!confirm('Hapus data arus kas ini? Status pembayaran terkait akan kembali ke antrean verifikasi.')) return;
     try {
-      await api.delete('cash_flow', id);
+      setLoading(true);
+      
+      // 1. If it's a verified payment/deposit, revert the source status
+      if (item.reference_id && item.reference_type) {
+        const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
+        await api.update(table, item.reference_id, { status: 'pending' });
+
+        // 2. If it's a payment, check if we need to revert an installment
+        if (item.reference_type === 'payment') {
+          const payments = await api.get('payments', `id=eq.${item.reference_id}`);
+          if (payments && payments[0] && payments[0].installment_id) {
+            await api.update('installments', payments[0].installment_id, {
+              status: 'unpaid',
+              paid_at: null
+            });
+          }
+        }
+      }
+
+      // 3. Delete the cash flow record
+      await api.delete('cash_flow', item.id);
+      
       await fetchCashFlow();
     } catch (error: any) {
       alert(`Gagal menghapus: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -238,7 +263,7 @@ const CashFlowPage: React.FC = () => {
                     <TD className="px-6 py-4 text-sm font-bold text-green-600 text-right">{item.type === 'in' ? formatCurrency(item.amount) : '-'}</TD>
                     <TD className="px-6 py-4 text-sm font-bold text-red-600 text-right">{item.type === 'out' ? formatCurrency(item.amount) : '-'}</TD>
                     <TD className="px-6 py-4 text-center">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(item.id)}>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={() => handleDelete(item)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </TD>

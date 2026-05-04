@@ -170,7 +170,6 @@ const VerificationQueue: React.FC = () => {
 
       if (item.isOrphan) {
         // Orphaned payment — create cash_flow entry then mark verified
-        // Fix: Find and mark ALL duplicate pending payments as verified to prevent "ghost" entries
         const duplicates = await api.get('payments', 
           `sale_id=eq.${item.payment?.sale?.id}&amount=eq.${item.amount}&payment_date=eq.${item.date}&status=eq.pending`
         );
@@ -183,13 +182,62 @@ const VerificationQueue: React.FC = () => {
           await api.update('payments', item.reference_id, { status: 'verified' });
         }
 
-        if (item.payment?.installment_id) {
-          await api.update('installments', item.payment.installment_id, { status: 'paid', paid_at: new Date().toISOString() });
+        // --- OVERPAYMENT LOGIC START ---
+        let currentExcess = item.amount;
+        const saleId = item.payment?.sale?.id;
+        let auditNote = "";
+        const customerName = item.payment?.sale?.customer?.full_name || 'Konsumen';
+        const unitNumber = item.payment?.sale?.unit?.unit_number || '-';
+
+        if (saleId) {
+          const distributionLog: string[] = [];
+          // Fetch all unpaid installments for this sale to apply payment (FIFO)
+          const installments = await api.get('installments', `sale_id=eq.${saleId}&status=eq.unpaid&order=due_date.asc`);
+          
+          if (installments && installments.length > 0) {
+            for (const inst of installments) {
+              if (currentExcess <= 0) break;
+
+              if (currentExcess >= Number(inst.amount)) {
+                await api.update('installments', inst.id, { 
+                  status: 'paid', 
+                  paid_at: new Date().toISOString(),
+                });
+                distributionLog.push(`Lunas Inst ${formatDate(inst.due_date)}`);
+                currentExcess -= Number(inst.amount);
+              } else {
+                const newAmount = Number(inst.amount) - currentExcess;
+                await api.update('installments', inst.id, { 
+                  amount: newAmount 
+                });
+                distributionLog.push(`Potong Inst ${formatDate(inst.due_date)} senilai ${formatCurrency(currentExcess)} (Sisa ${formatCurrency(newAmount)})`);
+                currentExcess = 0;
+              }
+            }
+          }
+
+          if (distributionLog.length > 0) {
+            auditNote = ` [Distribusi FIFO: ${distributionLog.join(', ')}]`;
+            
+            // Send Notification if overpayment happened (multiple items in log or remaining excess)
+            if (distributionLog.length > 1) {
+              try {
+                await api.insert('notifications', {
+                  target_divisions: ['marketing', 'keuangan'],
+                  title: 'Kelebihan Bayar (Manual)',
+                  message: `${customerName} (${unitNumber}) - Bayar ${formatCurrency(item.amount)} otomatis memotong beberapa cicilan.`,
+                  sender_name: profile?.full_name || 'System',
+                  metadata: { type: 'overpayment_manual', sale_id: saleId }
+                });
+              } catch (nErr) { console.error("Notification failed", nErr); }
+            }
+          }
         }
+        // --- OVERPAYMENT LOGIC END ---
 
         await api.insert('cash_flow', {
           date: item.date,
-          description: item.description,
+          description: item.description + auditNote,
           amount: item.amount,
           type: 'in',
           category: item.category,
@@ -202,7 +250,6 @@ const VerificationQueue: React.FC = () => {
         // Normal cash_flow item
         const table = item.reference_type === 'deposit' ? 'deposits' : 'payments';
         
-        // Fix: Also clear duplicates for normal items if they are payments
         if (item.reference_type === 'payment') {
            const duplicates = await api.get('payments', 
             `sale_id=eq.${item.payment?.sale?.id}&amount=eq.${item.amount}&payment_date=eq.${item.date}&status=eq.pending`
@@ -216,18 +263,97 @@ const VerificationQueue: React.FC = () => {
 
         await api.update(table, item.reference_id, { status: 'verified' });
 
-        if (item.reference_type === 'payment' && item.payment?.installment_id) {
-          await api.update('installments', item.payment.installment_id, {
-            status: 'paid',
-            paid_at: new Date().toISOString(),
-          });
+        const relatedCf = await api.get('cash_flow', `reference_id=eq.${item.reference_id}&status=eq.pending`);
+        
+        // Audit Trail for Description
+        let auditNote = "";
+        const customerName = item.payment?.sale?.customer?.full_name || 'Konsumen';
+        const unitNumber = item.payment?.sale?.unit?.unit_number || '-';
+
+        if (item.reference_type === 'payment' && item.payment?.sale?.id) {
+          const saleId = item.payment.sale.id;
+          let currentExcess = item.amount;
+          const distributionLog: string[] = [];
+
+          // 1. Handle the linked installment first if exists
+          if (item.payment.installment_id) {
+            const linkedInst = await api.get('installments', `id=eq.${item.payment.installment_id}`);
+            if (linkedInst && linkedInst[0]) {
+              const instAmount = Number(linkedInst[0].amount);
+              if (currentExcess >= instAmount) {
+                await api.update('installments', item.payment.installment_id, {
+                  status: 'paid',
+                  paid_at: new Date().toISOString(),
+                });
+                distributionLog.push(`Lunas Inst ${formatDate(linkedInst[0].due_date)}`);
+                currentExcess -= instAmount;
+              } else {
+                await api.update('installments', item.payment.installment_id, {
+                  amount: instAmount - currentExcess,
+                });
+                distributionLog.push(`Sebagian Inst ${formatDate(linkedInst[0].due_date)} (Sisa ${formatCurrency(instAmount - currentExcess)})`);
+                currentExcess = 0;
+              }
+            }
+          }
+
+          // 2. If there is still excess, apply to NEXT unpaid installments
+          if (currentExcess > 0) {
+            const nextInstallments = await api.get('installments', 
+              `sale_id=eq.${saleId}&status=eq.unpaid${item.payment.installment_id ? `&id=neq.${item.payment.installment_id}` : ''}&order=due_date.asc`
+            );
+            
+            if (nextInstallments && nextInstallments.length > 0) {
+              for (const inst of nextInstallments) {
+                if (currentExcess <= 0) break;
+                
+                const instAmount = Number(inst.amount);
+                if (currentExcess >= instAmount) {
+                  await api.update('installments', inst.id, {
+                    status: 'paid',
+                    paid_at: new Date().toISOString(),
+                  });
+                  distributionLog.push(`Lunas Inst ${formatDate(inst.due_date)} (dari excess)`);
+                  currentExcess -= instAmount;
+                } else {
+                  await api.update('installments', inst.id, {
+                    amount: instAmount - currentExcess,
+                  });
+                  distributionLog.push(`Potong Inst ${formatDate(inst.due_date)} senilai ${formatCurrency(currentExcess)}`);
+                  currentExcess = 0;
+                }
+              }
+            }
+            
+            // Send Notification for Overpayment
+            try {
+              await api.insert('notifications', {
+                target_divisions: ['marketing', 'keuangan'],
+                title: 'Kelebihan Pembayaran Konsumen',
+                message: `${customerName} (${unitNumber}) membayar ${formatCurrency(item.amount)}. Sisa kelebihan dialokasikan ke cicilan berikutnya.`,
+                sender_name: profile?.full_name || 'System',
+                metadata: { type: 'overpayment', sale_id: saleId, amount: item.amount }
+              });
+            } catch (nErr) { console.error("Notification failed", nErr); }
+          }
+          
+          if (distributionLog.length > 0) {
+            auditNote = ` [Distribusi: ${distributionLog.join(', ')}]`;
+          }
         }
 
-        const relatedCf = await api.get('cash_flow', `reference_id=eq.${item.reference_id}&status=eq.pending`);
         if (relatedCf && relatedCf.length > 0) {
-          await Promise.all(relatedCf.map((cf: any) => api.update('cash_flow', cf.id, { status: 'verified' })));
+          await Promise.all(relatedCf.map((cf: any) => 
+            api.update('cash_flow', cf.id, { 
+              status: 'verified',
+              description: cf.description + auditNote
+            })
+          ));
         } else {
-          await api.update('cash_flow', item.id, { status: 'verified' });
+          await api.update('cash_flow', item.id, { 
+            status: 'verified',
+            description: item.description + auditNote
+          });
         }
       }
 

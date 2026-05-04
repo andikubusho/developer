@@ -69,9 +69,22 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
     try {
       setFetchingInstallments(true);
       console.log('Fetching installments for sale:', saleId);
-      const data = await api.get('installments', `select=id,due_date,amount&sale_id=eq.${saleId}&status=eq.unpaid&order=due_date.asc`);
-      console.log('Installments found:', data?.length || 0);
-      setInstallments(data || []);
+      
+      // Fetch both unpaid installments AND pending payments to prevent double-entry
+      const [instData, pendingPayments] = await Promise.all([
+        api.get('installments', `select=id,due_date,amount&sale_id=eq.${saleId}&status=eq.unpaid&order=due_date.asc`),
+        api.get('payments', `select=installment_id&sale_id=eq.${saleId}&status=eq.pending`)
+      ]);
+
+      const pendingInstIds = new Set((pendingPayments || []).map((p: any) => p.installment_id).filter(Boolean));
+      
+      // Only show installments that are NOT in pending payments
+      const availableInstallments = (instData || []).filter((inst: any) => !pendingInstIds.has(inst.id));
+      
+      console.log('Installments found:', instData?.length || 0);
+      console.log('Available (not pending):', availableInstallments.length);
+      
+      setInstallments(availableInstallments);
     } catch (error) {
       console.error('Error fetching installments:', error);
     } finally {
