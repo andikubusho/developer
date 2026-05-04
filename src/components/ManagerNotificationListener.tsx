@@ -23,132 +23,121 @@ const ManagerNotificationListener: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [roleData, setRoleData] = useState<any>(null);
   const [roleReady, setRoleReady] = useState(false);
-  const dismissedRef = useRef<Set<string>>(new Set());
+
+  // Set ID yang sudah dibaca — diisi dari localStorage DAN dari read_by di DB
+  const readRef = useRef<Set<string>>(new Set());
 
   const isAdmin = profile?.role === 'admin';
 
-  // Muat dismissed IDs dari localStorage
+  // Muat dari localStorage saat mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem('propdev_dismissed_notifs');
-      if (stored) JSON.parse(stored).forEach((id: string) => dismissedRef.current.add(id));
+      if (stored) JSON.parse(stored).forEach((id: string) => readRef.current.add(id));
     } catch {}
   }, []);
 
-  // Fetch fresh role dari DB setiap kali profile berubah
+  // Fetch fresh role dari DB
   useEffect(() => {
     if (!profile?.id) return;
-
-    if (isAdmin) {
-      setRoleReady(true);
-      return;
-    }
+    if (isAdmin) { setRoleReady(true); return; }
 
     setRoleReady(false);
     setRoleData(null);
 
     const fetchRole = async () => {
       try {
-        // Prioritas 1: by role_id (UUID FK — paling akurat)
         if (profile.role_id) {
-          const data = await api.get('roles', `select=*&id=eq.${profile.role_id}`);
-          if (data?.length > 0) { setRoleData(data[0]); return; }
+          const d = await api.get('roles', `select=*&id=eq.${profile.role_id}`);
+          if (d?.length > 0) { setRoleData(d[0]); return; }
         }
-        // Prioritas 2: by authorized_divisions contains profile.role
-        // Fetch semua roles dan filter yang punya divisi ini
-        const divisionName = profile.role; // UserRole = division string
-        if (divisionName && divisionName !== 'admin') {
-          // Coba cocokkan lewat authorized_divisions array (cs = contains string)
-          const byAuth = await api.get('roles', `select=*&authorized_divisions=cs.["${divisionName}"]`);
+        const divName = profile.role;
+        if (divName && divName !== 'admin') {
+          const byAuth = await api.get('roles', `select=*&authorized_divisions=cs.["${divName}"]`);
           if (byAuth?.length > 0) {
-            // Pilih yang receive_notifications=true dulu, kalau tidak ada ambil yang pertama
             const withNotif = byAuth.find((r: any) => r.receive_notifications === true);
             setRoleData(withNotif || byAuth[0]);
             return;
           }
-          // Prioritas 3: by division field
-          const byDiv = await api.get('roles', `select=*&division=eq.${divisionName}&order=created_at.desc&limit=1`);
+          const byDiv = await api.get('roles', `select=*&division=eq.${divName}&order=created_at.desc&limit=1`);
           if (byDiv?.length > 0) { setRoleData(byDiv[0]); return; }
         }
       } catch (err) {
-        console.error('[Notif] Error fetching role:', err);
+        console.error('[Notif] role fetch error:', err);
       } finally {
         setRoleReady(true);
       }
     };
-
     fetchRole();
   }, [profile?.id, profile?.role_id, isAdmin]);
 
-  // Divisi user: gabungan authorized_divisions + division role + profile.role sebagai fallback
   const userDivisions: string[] = useMemo(() => {
     if (isAdmin) return [];
     const divs = new Set<string>();
-    if (Array.isArray(roleData?.authorized_divisions)) {
+    if (Array.isArray(roleData?.authorized_divisions))
       roleData.authorized_divisions.forEach((d: string) => divs.add(d.toLowerCase()));
-    }
     if (roleData?.division) divs.add(roleData.division.toLowerCase());
-    // Selalu sertakan profile.role sebagai fallback — ini yang paling reliable
     if (profile?.role && profile.role !== 'admin') divs.add(profile.role.toLowerCase());
     return [...divs].filter(Boolean);
   }, [isAdmin, roleData, profile?.role]);
 
-  // Apakah role ini boleh menerima notifikasi?
-  // true jika: tidak ada role data (izinkan by default), atau receive_notifications=true,
-  // atau minimal satu tipe notifikasi dicentang
   const canReceive = useMemo(() => {
     if (isAdmin) return true;
-    if (!roleData) return true; // tidak ada role data = jangan blokir (silent fail buruk)
+    if (!roleData) return true;
     if (roleData.receive_notifications) return true;
-    const settings = roleData.notification_settings as Record<string, boolean> | undefined;
-    if (settings && Object.values(settings).some(v => v === true)) return true;
-    return false;
+    const s = roleData.notification_settings as Record<string, boolean> | undefined;
+    return !!(s && Object.values(s).some(v => v === true));
   }, [isAdmin, roleData]);
 
-  // Apakah tipe notifikasi ini diizinkan untuk role ini?
-  const isTypeAllowed = useCallback((type: string): boolean => {
-    if (isAdmin) return true;
-    if (!roleData?.notification_settings) return true; // tidak ada setting = izinkan semua
-    const settings = roleData.notification_settings as Record<string, boolean>;
-    // undefined = tipe tidak dikenal → izinkan; false = dimatikan → blokir
-    return settings[type] !== false;
-  }, [isAdmin, roleData]);
+  // Ref ke fungsi filter terbaru — agar fetchUnread tidak perlu ikut dep shouldShow
+  const filterRef = useRef<(n: Notification) => boolean>(() => false);
 
-  // Filter satu notifikasi untuk user ini
-  const shouldShow = useCallback((n: Notification): boolean => {
-    if (dismissedRef.current.has(n.id)) return false;
+  filterRef.current = useCallback((n: Notification): boolean => {
+    // Sudah dibaca (DB atau localStorage)
+    if (readRef.current.has(n.id)) return false;
+    // read_by dari DB sudah mengandung user ID
+    if (profile?.id && (n.read_by || []).includes(profile.id)) return false;
     if (isAdmin) return true;
     if (!canReceive) return false;
     const targetDivs = (n.target_divisions || []).map((d: string) => d.toLowerCase());
     if (!targetDivs.some((d: string) => userDivisions.includes(d))) return false;
-    return isTypeAllowed(n.metadata?.type || 'system');
-  }, [isAdmin, canReceive, userDivisions, isTypeAllowed]);
+    if (!roleData?.notification_settings) return true;
+    const settings = roleData.notification_settings as Record<string, boolean>;
+    return settings[n.metadata?.type || 'system'] !== false;
+  }, [isAdmin, canReceive, userDivisions, roleData, profile?.id]);
 
+  // fetchUnread stabil — tidak berubah saat roleData/shouldShow berubah
+  // Gunakan merge agar notifikasi yang sedang tampil tidak hilang karena poll
   const fetchUnread = useCallback(async () => {
     if (!profile?.id || !roleReady) return;
-
     const since = new Date(Date.now() - 86_400_000).toISOString();
     let data: Notification[] = [];
     try {
       data = await api.get('notifications',
         `select=*&created_at=gte.${since}&order=created_at.desc&limit=50`);
-    } catch (err) {
-      console.error('[Notif] fetchUnread error:', err);
-      return;
-    }
+    } catch { return; }
 
-    const unread = data.filter(shouldShow);
-    setNotifications(unread.slice(0, 5));
-  }, [profile?.id, roleReady, shouldShow]);
+    const fresh = data.filter(n => filterRef.current(n));
 
-  // Subscribe realtime + polling
+    // MERGE: jangan timpa state yang ada, hanya tambah yang baru
+    setNotifications(prev => {
+      const alreadyRead = readRef.current;
+      // Hapus yang sudah dibaca dari state sekarang
+      const stillValid = prev.filter(n => !alreadyRead.has(n.id));
+      const shownIds = new Set(stillValid.map(n => n.id));
+      // Tambah notifikasi baru yang belum ada
+      const added = fresh.filter(n => !shownIds.has(n.id));
+      return [...stillValid, ...added].slice(0, 5);
+    });
+  }, [profile?.id, roleReady]); // Tidak bergantung pada shouldShow/filterRef
+
   useEffect(() => {
     if (!profile?.id || !roleReady) return;
     if (!isAdmin && !canReceive) return;
     if (!isAdmin && userDivisions.length === 0) return;
 
     fetchUnread();
-    const pollInterval = setInterval(fetchUnread, 30_000);
+    const poll = setInterval(fetchUnread, 30_000);
 
     const channel = supabase
       .channel(`notif-${profile.id}-${Date.now()}`)
@@ -156,7 +145,7 @@ const ManagerNotificationListener: React.FC = () => {
         { event: 'INSERT', schema: 'public', table: 'notifications' },
         (payload) => {
           const n = payload.new as Notification;
-          if (!shouldShow(n)) return;
+          if (!filterRef.current(n)) return;
           setNotifications(prev => {
             if (prev.some(x => x.id === n.id)) return prev;
             return [n, ...prev].slice(0, 5);
@@ -166,19 +155,32 @@ const ManagerNotificationListener: React.FC = () => {
       )
       .subscribe();
 
-    return () => {
-      clearInterval(pollInterval);
-      supabase.removeChannel(channel);
-    };
-  }, [profile?.id, roleReady, isAdmin, canReceive, userDivisions, fetchUnread, shouldShow]);
+    return () => { clearInterval(poll); supabase.removeChannel(channel); };
+  }, [profile?.id, roleReady, isAdmin, canReceive, userDivisions, fetchUnread]);
 
-  const dismiss = (id: string) => {
+  const dismiss = async (id: string) => {
+    // Hapus dari state dan tandai sebagai sudah dibaca
     setNotifications(prev => prev.filter(n => n.id !== id));
-    dismissedRef.current.add(id);
+    readRef.current.add(id);
+
+    // Simpan ke localStorage
     try {
       localStorage.setItem('propdev_dismissed_notifs',
-        JSON.stringify([...dismissedRef.current].slice(-200)));
+        JSON.stringify([...readRef.current].slice(-200)));
     } catch {}
+
+    // Tandai sebagai dibaca di DB lewat read_by — cegah re-appear di session lain
+    if (profile?.id) {
+      try {
+        const rows = await api.get('notifications', `select=read_by&id=eq.${id}`);
+        if (rows?.length > 0) {
+          const current = rows[0].read_by || [];
+          if (!current.includes(profile.id)) {
+            await api.update('notifications', id, { read_by: [...current, profile.id] });
+          }
+        }
+      } catch { /* non-critical */ }
+    }
   };
 
   if (notifications.length === 0) return null;
