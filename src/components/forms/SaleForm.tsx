@@ -216,18 +216,23 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
 
   const generateDefaultSchedule = (months: number) => {
     const sisa = finalPiutang;
-
     if (sisa <= 0) return;
     
     const amountPerMonth = Math.floor(sisa / months);
     const schedule = [];
-    const startDate = new Date();
+    const today = new Date();
     
     for (let i = 1; i <= months; i++) {
-      const dueDate = new Date(startDate);
-      dueDate.setMonth(startDate.getMonth() + i);
+      // Buat tanggal baru dengan menambah i bulan dari bulan sekarang
+      const d = new Date(today.getFullYear(), today.getMonth() + i, today.getDate());
+      
+      // Format manual YYYY-MM-DD agar tidak tergeser oleh timezone (UTC)
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      
       schedule.push({
-        due_date: dueDate.toISOString().split('T')[0],
+        due_date: `${year}-${month}-${day}`,
         amount: i === months ? sisa - (amountPerMonth * (months - 1)) : amountPerMonth,
         status: 'unpaid'
       });
@@ -485,7 +490,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
             {installmentFields.map((field, index) => (
               <div key={field.id} className="bg-white/60 p-4 rounded-2xl border border-blue-200/60 relative group flex items-end gap-4 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex-1">
-                  <Input label={`Jatuh Tempo #${index + 1}`} type="date" {...register(`installments.${index}.due_date`)} />
+                  <Input 
+                    label={`Jatuh Tempo #${index + 1} (${formatDate(watch(`installments.${index}.due_date`))})`} 
+                    type="date" 
+                    {...register(`installments.${index}.due_date`)} 
+                  />
                 </div>
                 <div className="flex-[2]">
                   <Controller 
