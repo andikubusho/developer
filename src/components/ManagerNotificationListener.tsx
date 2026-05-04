@@ -23,24 +23,24 @@ const ManagerNotificationListener: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [roleData, setRoleData] = useState<any>(null);
 
-  // Admin bypasses semua pengecekan — selalu terima semua notifikasi
   const isAdmin = (profile as any)?.role === 'admin';
 
-  // Fetch fresh role data saat mount (hindari data stale dari login)
+  // Fetch fresh role data by role name (profile.role = nama role, bukan UUID)
   useEffect(() => {
-    if (isAdmin) return; // admin tidak butuh role_data check
-    const roleId = (profile as any)?.role_id;
-    if (!roleId) return;
-    api.get('roles', `select=*&id=eq.${roleId}`).then(data => {
+    if (isAdmin) return;
+    const roleName = (profile as any)?.role;
+    if (!roleName) return;
+    api.get('roles', `select=*&name=eq.${encodeURIComponent(roleName)}`).then(data => {
       if (data.length > 0) setRoleData(data[0]);
     });
   }, [profile?.id, isAdmin]);
 
+  // effectiveRole: prioritaskan data segar dari DB, fallback ke data join dari auth
   const effectiveRole = roleData || (profile?.role_data as any);
 
-  // Kumpulkan semua division user (primary + authorized)
+  // Kumpulkan semua division user (primary + authorized + dari context)
   const userDivisions: string[] = useMemo(() => {
-    if (isAdmin) return []; // admin tidak pakai filter division
+    if (isAdmin) return [];
     const primary: string | undefined = effectiveRole?.division;
     const authorized: string[] = effectiveRole?.authorized_divisions || [];
     const ctx = division as string | null;
@@ -50,37 +50,41 @@ const ManagerNotificationListener: React.FC = () => {
   const fetchUnread = useCallback(async () => {
     if (!profile?.id) return;
 
-    if (isAdmin) {
-      // Admin: ambil semua notifikasi yang belum dibaca tanpa filter division
-      const data = await api.get(
-        'notifications',
-        `select=*&or=(read_by.is.null,read_by.not.cs.{${profile.id}})&order=created_at.desc&limit=5`
-      );
-      setNotifications(data);
-      return;
-    }
-
-    if (!effectiveRole?.receive_notifications) return;
-    if (userDivisions.length === 0) return;
-
-    // ov = overlaps (&&): cocok jika notifikasi menarget salah satu division user
-    // or=(read_by.is.null,...) menangani read_by NULL pada notifikasi baru
-    const divParam = userDivisions.join(',');
-    const data = await api.get(
+    // Fetch notifikasi 24 jam terakhir, filter di JS (hindari query PostgREST kompleks)
+    const since = new Date(Date.now() - 86_400_000).toISOString();
+    const data: Notification[] = await api.get(
       'notifications',
-      `select=*&target_divisions=ov.{${divParam}}&or=(read_by.is.null,read_by.not.cs.{${profile.id}})&order=created_at.desc&limit=5`
+      `select=*&created_at=gte.${since}&order=created_at.desc&limit=50`
     );
-    setNotifications(data);
-  }, [profile?.id, isAdmin, userDivisions, effectiveRole?.receive_notifications]);
+
+    const unread = data.filter(n => {
+      // Skip yang sudah dibaca oleh user ini
+      const readBy: string[] = n.read_by || [];
+      if (readBy.includes(profile.id)) return false;
+
+      // Admin: terima semua
+      if (isAdmin) return true;
+
+      // Non-admin: cek receive_notifications
+      if (!effectiveRole?.receive_notifications) return false;
+
+      // Cek apakah notifikasi menarget salah satu division user
+      if (!n.target_divisions.some(d => userDivisions.includes(d))) return false;
+
+      // Cek per-tipe notification_settings (opt-out: tampil kecuali dimatikan)
+      const type = n.metadata?.type || 'unknown';
+      const settings = effectiveRole?.notification_settings as Record<string, boolean> | undefined;
+      return !settings || settings[type] !== false;
+    });
+
+    setNotifications(unread.slice(0, 5));
+  }, [profile?.id, isAdmin, userDivisions, effectiveRole]);
 
   useEffect(() => {
-    // Gate untuk non-admin
-    if (!isAdmin) {
-      if (!effectiveRole?.receive_notifications) return;
-      if (userDivisions.length === 0) return;
-    }
-
     if (!profile?.id) return;
+    // Non-admin: tunggu effectiveRole terisi dan receive_notifications aktif
+    if (!isAdmin && !effectiveRole?.receive_notifications) return;
+    if (!isAdmin && userDivisions.length === 0) return;
 
     fetchUnread();
     const pollInterval = setInterval(fetchUnread, 30_000);
@@ -93,13 +97,11 @@ const ManagerNotificationListener: React.FC = () => {
         (payload) => {
           const newNotif = payload.new as Notification;
 
-          // Admin menerima semua, non-admin filter berdasarkan division
           if (!isAdmin && !newNotif.target_divisions.some(d => userDivisions.includes(d))) return;
 
-          const notificationType = newNotif.metadata?.type || 'unknown';
+          const type = newNotif.metadata?.type || 'unknown';
           const settings = effectiveRole?.notification_settings as Record<string, boolean> | undefined;
-          // Admin: tampilkan semua. Non-admin: opt-out (tampilkan kecuali dimatikan)
-          const isTypeEnabled = isAdmin || !settings || settings[notificationType] !== false;
+          const isTypeEnabled = isAdmin || !settings || settings[type] !== false;
 
           if (isTypeEnabled) {
             setNotifications(prev => {
@@ -135,7 +137,6 @@ const ManagerNotificationListener: React.FC = () => {
 
   if (notifications.length === 0) return null;
 
-  // Tampilkan hanya 1 notifikasi terbaru, sisanya antri
   const current = notifications[0];
   const queueCount = notifications.length - 1;
 
