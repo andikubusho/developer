@@ -205,6 +205,7 @@ const ManagerNotificationListener: React.FC = () => {
 
   const divLabel = (() => {
     const divs: string[] = current.target_divisions || [];
+    if (current.metadata?.type === 'follow_ups') return 'Follow Up Update';
     if (divs.includes('teknik')) return 'Logistik Update';
     if (divs.includes('keuangan')) return 'Keuangan Update';
     if (divs.includes('audit')) return 'Audit Update';

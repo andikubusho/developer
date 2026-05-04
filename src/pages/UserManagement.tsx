@@ -204,6 +204,7 @@ const UserManagement: React.FC = () => {
 
   const NOTIFICATION_TYPES = [
     { key: 'marketing_lead', label: 'Lead Baru Masuk', division: 'marketing', description: 'Pop-up saat staf marketing menambah lead baru' },
+    { key: 'follow_ups', label: 'Follow Up Baru', division: 'marketing', description: 'Pop-up saat staf melakukan follow up ke konsumen' },
     { key: 'marketing_deposit', label: 'Titipan Baru', division: 'marketing', description: 'Pop-up saat ada input titipan konsumen' },
     { key: 'marketing_sale', label: 'Penjualan Baru', division: 'marketing', description: 'Pop-up saat transaksi penjualan diinput' },
     
