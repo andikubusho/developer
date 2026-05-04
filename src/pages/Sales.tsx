@@ -233,6 +233,7 @@ const Sales: React.FC = () => {
                 <TR className="bg-white/20 text-[9px] text-text-muted uppercase tracking-wider font-black">
                   <TH className="px-3 py-4">Konsumen & Unit</TH>
                   <TH className="px-3 py-4 hidden md:table-cell">Tanggal</TH>
+                  <TH className="px-3 py-4 text-center">Metode</TH>
                   <TH className="px-3 py-4 text-center">Status</TH>
                   <TH className="px-3 py-4 text-right hidden sm:table-cell">Titipan</TH>
                   <TH className="px-3 py-4 text-right">Total Akhir</TH>
@@ -255,6 +256,14 @@ const Sales: React.FC = () => {
                     </TD>
                     <TD className="px-3 py-4 hidden md:table-cell">
                       <div className="text-[10px] font-bold text-text-secondary">{formatDate(sale.sale_date)}</div>
+                    </TD>
+                    <TD className="px-3 py-4 text-center">
+                      <span className={cn(
+                        "inline-block px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-tighter",
+                        sale.payment_method === 'kpr' ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"
+                      )}>
+                        {sale.payment_method === 'kpr' ? 'KPR' : 'Bertahap'}
+                      </span>
                     </TD>
                     <TD className="px-3 py-4 text-center">
                       <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider", sale.status === 'active' ? "bg-amber-50 text-amber-600 border border-amber-100" : sale.status === 'completed' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-white/40 text-text-muted border border-white/40")}>{sale.status}</span>
