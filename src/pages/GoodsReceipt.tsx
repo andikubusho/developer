@@ -158,7 +158,25 @@ const GoodsReceipt: React.FC = () => {
     if (!confirm(`Batalkan penerimaan barang "${gr.material?.name}"? Stok akan dikurangi kembali.`)) return;
 
     try {
-      // DB TRIGGER trg_material_in_delete handles stock reversal and movement log
+      setLoading(true);
+      
+      // 1. Hapus kartu stok (stock_movements)
+      try {
+        await api.delete('stock_movements', gr.id, 'reference_id');
+      } catch (e) { console.warn('Stock movement deletion failed or already handled by trigger'); }
+
+      // 2. Update saldo fisik (Reverse: Jika IN dihapus, maka stok dikurangi)
+      if (gr.id_variant && gr.qty) {
+        try {
+          const vData = await api.get('material_variants', `id=eq.${gr.id_variant}`);
+          if (vData.length > 0) {
+            const currentStock = Number(vData[0].stok || 0);
+            await api.update('material_variants', gr.id_variant, { stok: currentStock - Number(gr.qty) });
+          }
+        } catch (e) { console.error('Variant stock update failed'); }
+      }
+
+      // 3. Hapus data penerimaan
       await api.delete('goods_receipts', gr.id);
       
       // 4. Kembalikan status PO ke PENDING agar muncul lagi di antrean terima

@@ -219,7 +219,25 @@ const MaterialUsage: React.FC = () => {
     if (!confirm(`Batalkan pemakaian material "${usage.material?.name}"? Stok akan dikembalikan ke gudang.`)) return;
 
     try {
-      // DB TRIGGER trg_material_out_delete handles stock reversal and movement log
+      setLoading(true);
+
+      // 1. Hapus kartu stok (stock_movements)
+      try {
+        await api.delete('stock_movements', usage.id, 'reference_id');
+      } catch (e) { console.warn('Stock movement deletion failed or already handled by trigger'); }
+
+      // 2. Update saldo fisik (Reverse: Jika OUT dihapus, maka stok ditambah/dikembalikan)
+      if (usage.id_variant && usage.qty) {
+        try {
+          const vData = await api.get('material_variants', `id=eq.${usage.id_variant}`);
+          if (vData.length > 0) {
+            const currentStock = Number(vData[0].stok || 0);
+            await api.update('material_variants', usage.id_variant, { stok: currentStock + Number(usage.qty) });
+          }
+        } catch (e) { console.error('Variant stock update failed'); }
+      }
+
+      // 3. Hapus data pemakaian
       await api.delete('material_usages', usage.id);
       
       fetchInitialData();
