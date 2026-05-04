@@ -31,6 +31,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [installments, setInstallments] = useState<{ id: string; due_date: string; amount: number }[]>([]);
+  const [fetchingInstallments, setFetchingInstallments] = useState(false);
   const [banks, setBanks] = useState<{ id: string; bank_name: string; account_number: string; account_holder: string }[]>([]);
 
   const { register, handleSubmit, watch, setValue, control, reset, formState: { errors } } = useForm<PaymentFormValues>({
@@ -62,14 +63,19 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
     if (selectedSaleId) {
       fetchInstallments(selectedSaleId);
     }
-  }, [selectedSaleId]);
+  }, [selectedSaleId, initialData?.sale_id]);
 
   const fetchInstallments = async (saleId: string) => {
     try {
+      setFetchingInstallments(true);
+      console.log('Fetching installments for sale:', saleId);
       const data = await api.get('installments', `select=id,due_date,amount&sale_id=eq.${saleId}&status=eq.unpaid&order=due_date.asc`);
+      console.log('Installments found:', data?.length || 0);
       setInstallments(data || []);
     } catch (error) {
       console.error('Error fetching installments:', error);
+    } finally {
+      setFetchingInstallments(false);
     }
   };
 
@@ -185,13 +191,19 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
       />
       <Select 
         label="Cicilan (Opsional)" 
-        options={installments.map(i => ({ 
-          label: `Jatuh Tempo: ${i.due_date} - ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(i.amount)}`, 
-          value: i.id 
-        }))}
+        options={
+          fetchingInstallments 
+            ? [{ label: 'Memuat cicilan...', value: '' }] 
+            : installments.length > 0 
+              ? installments.map(i => ({ 
+                  label: `Jatuh Tempo: ${i.due_date} - ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(i.amount)}`, 
+                  value: i.id 
+                }))
+              : [{ label: 'Tidak ada cicilan belum bayar', value: '' }]
+        }
         {...register('installment_id')}
         error={errors.installment_id?.message}
-        disabled={!!initialData}
+        disabled={fetchingInstallments}
       />
       <div className="grid grid-cols-2 gap-4">
         <Controller

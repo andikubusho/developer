@@ -158,7 +158,7 @@ const Payments: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Riwayat Pembayaran</h1>
+            <h1 className="text-2xl font-bold text-text-primary">Schedule Pembayaran</h1>
             <p className="text-text-secondary">Semua pembayaran masuk — verifikasi dilakukan di menu Verifikasi Transaksi</p>
           </div>
         </div>
