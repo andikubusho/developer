@@ -787,14 +787,14 @@ const UserManagement: React.FC = () => {
             <div className="max-h-[50vh] overflow-y-auto border border-white/40 rounded-xl overflow-hidden">
               <Table className="w-full text-left border-collapse">
                 <THead>
-                  <TR className="text-[10px] uppercase font-black text-text-muted tracking-widest border-b">
-                    <TH className="py-3 px-4">Menu</TH>
-                    <TH className="py-3 px-1 text-center w-[60px]">View</TH>
-                    <TH className="py-3 px-1 text-center w-[60px]">Create</TH>
-                    <TH className="py-3 px-1 text-center w-[60px]">Edit</TH>
-                    <TH className="py-3 px-1 text-center w-[60px]">Delete</TH>
-                    <TH className="py-3 px-1 text-center w-[60px]">Print</TH>
-                    <TH className="py-3 px-1 text-center w-[60px]">Semua</TH>
+                  <TR className="text-[10px] uppercase font-black tracking-widest border-b bg-slate-50/50">
+                    <TH className="py-4 px-4 text-text-muted">Menu</TH>
+                    <TH className="py-4 px-1 text-center w-[70px] bg-blue-50/50 text-blue-600 border-x border-white">View</TH>
+                    <TH className="py-4 px-1 text-center w-[70px] bg-emerald-50/50 text-emerald-600 border-r border-white">Create</TH>
+                    <TH className="py-4 px-1 text-center w-[70px] bg-amber-50/50 text-amber-600 border-r border-white">Edit</TH>
+                    <TH className="py-4 px-1 text-center w-[70px] bg-rose-50/50 text-rose-600 border-r border-white">Delete</TH>
+                    <TH className="py-4 px-1 text-center w-[70px] bg-sky-50/50 text-sky-600 border-r border-white">Print</TH>
+                    <TH className="py-4 px-1 text-center w-[70px] bg-indigo-50/50 text-indigo-600 border-r border-white">Semua</TH>
                   </TR>
                 </THead>
                 <TBody>
