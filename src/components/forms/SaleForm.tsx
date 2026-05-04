@@ -259,8 +259,21 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       let finalCustomerId = values.customer_id;
       const lead = rawLeads.find(l => l.id === values.customer_id);
       if (lead) {
-        const newCustomer = await api.insert('customers', { full_name: lead.name, phone: lead.phone, address: 'Alamat belum diisi' });
-        if (newCustomer?.[0]) finalCustomerId = newCustomer[0].id;
+        // CHECK IF CUSTOMER ALREADY EXISTS WITH THIS PHONE
+        const cleanPhone = (p: string) => (p || "").replace(/\D/g, "").replace(/^62/, "0");
+        const existingCustomer = rawCustomers.find(c => cleanPhone(c.phone) === cleanPhone(lead.phone));
+        
+        if (existingCustomer) {
+          finalCustomerId = existingCustomer.id;
+        } else {
+          const newCustomer = await api.insert('customers', { 
+            full_name: lead.name, 
+            phone: lead.phone, 
+            address: 'Alamat belum diisi',
+            consultant_id: lead.consultant_id
+          });
+          if (newCustomer?.[0]) finalCustomerId = newCustomer[0].id;
+        }
       }
       const { initial_payments, installments, ...restValues } = values;
       const salePayload = {
