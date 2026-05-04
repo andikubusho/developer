@@ -206,11 +206,17 @@ const UserManagement: React.FC = () => {
     { key: 'marketing_lead', label: 'Lead Baru Masuk', division: 'marketing', description: 'Pop-up saat staf marketing menambah lead baru' },
     { key: 'marketing_deposit', label: 'Titipan Baru', division: 'marketing', description: 'Pop-up saat ada input titipan konsumen' },
     { key: 'marketing_sale', label: 'Penjualan Baru', division: 'marketing', description: 'Pop-up saat transaksi penjualan diinput' },
+    
     { key: 'keuangan_payment_new', label: 'Pembayaran Konsumen Baru', division: 'keuangan', description: 'Pop-up saat ada pembayaran masuk ke antrean verifikasi' },
+    { key: 'keuangan_cashflow_alert', label: 'Alert Arus Kas', division: 'keuangan', description: 'Notifikasi untuk pengeluaran besar atau saldo kritis' },
+    
     { key: 'teknik_pr_new', label: 'Pengajuan Material (PR) Baru', division: 'teknik', description: 'Pop-up saat gudang membuat pengajuan baru' },
-    { key: 'teknik_pr_approved', label: 'PR Disetujui Manager', division: 'teknik', description: 'Pop-up saat manager menyetujui pengajuan' },
-    { key: 'teknik_po_new', label: 'PO Dibuat', division: 'teknik', description: 'Pop-up saat PO material diterbitkan' },
+    { key: 'teknik_po_created', label: 'PO Dibuat', division: 'teknik', description: 'Pop-up saat PO material diterbitkan' },
     { key: 'teknik_receipt', label: 'Penerimaan Barang', division: 'teknik', description: 'Pop-up saat barang/material sampai di gudang' },
+    { key: 'teknik_pr_approved', label: 'PR Disetujui Manager', division: 'teknik', description: 'Pop-up saat manager menyetujui pengajuan' },
+
+    { key: 'audit_stock_mismatch', label: 'Selisih Stok Audit', division: 'audit', description: 'Pop-up saat ada temuan selisih stok saat opname' },
+    { key: 'audit_price_change', label: 'Perubahan Harga Master', division: 'audit', description: 'Pop-up jika ada perubahan harga material di master data' },
   ];
 
   const divisionOptions: UserRole[] = ['admin', 'marketing', 'teknik', 'keuangan', 'audit', 'hrd', 'accounting'];
@@ -793,8 +799,8 @@ const UserManagement: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {['marketing', 'teknik', 'keuangan'].map(div => (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {['marketing', 'teknik', 'keuangan', 'audit'].map(div => (
                 <div key={div} className="space-y-3">
                   <h5 className="text-[10px] font-black text-accent-dark uppercase tracking-[0.2em] border-b border-accent-dark/10 pb-1">{div}</h5>
                   <div className="space-y-2">

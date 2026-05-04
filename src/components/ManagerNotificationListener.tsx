@@ -184,53 +184,53 @@ const ManagerNotificationListener: React.FC = () => {
   const queueCount = notifications.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none px-6">
+    <div className="fixed top-6 right-6 z-[10000] flex flex-col items-end gap-4 pointer-events-none w-full max-w-md">
       <Card
         key={current.id}
-        className="pointer-events-auto w-full max-w-4xl bg-white/95 backdrop-blur-2xl border-white/50 shadow-2xl overflow-hidden animate-in slide-in-from-top duration-400"
+        className="pointer-events-auto w-full bg-white/95 backdrop-blur-2xl border-white/50 shadow-2xl overflow-hidden animate-in slide-in-from-right duration-400"
       >
-        <div className="absolute top-0 left-0 w-4 h-full bg-accent-dark" />
-        <div className="p-10 pl-16">
-          <div className="flex items-start justify-between mb-7">
-            <div className="flex items-center gap-5 text-accent-dark">
-              <div className="w-20 h-20 rounded-2xl bg-accent-dark/10 flex items-center justify-center">
-                <Bell className="w-10 h-10" />
+        <div className="absolute top-0 left-0 w-2 h-full bg-accent-dark" />
+        <div className="p-6 pl-8">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3 text-accent-dark">
+              <div className="w-12 h-12 rounded-xl bg-accent-dark/10 flex items-center justify-center">
+                <Bell className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-3xl font-black tracking-tight leading-tight">{current.title}</h3>
-                <span className="text-sm font-black text-text-muted uppercase tracking-widest mt-1 block">
+                <h3 className="text-lg font-black tracking-tight leading-tight">{current.title}</h3>
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-0.5 block">
                   {current.metadata?.type?.startsWith('teknik') ? 'Logistik Update' :
-                   current.metadata?.type?.startsWith('keuangan') ? 'Keuangan Update' : 'Marketing Update'}
+                   current.metadata?.type?.startsWith('keuangan') ? 'Keuangan Update' : 
+                   current.metadata?.type?.startsWith('audit') ? 'Audit Alert' : 'Marketing Update'}
                 </span>
               </div>
             </div>
-            <button onClick={() => markAsRead(current.id)} className="text-text-muted hover:text-text-primary transition-colors p-2">
-              <X className="w-8 h-8" />
+            <button onClick={() => markAsRead(current.id)} className="text-text-muted hover:text-text-primary transition-colors p-1">
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          <p className="text-xl text-text-primary font-medium leading-relaxed mb-8 bg-accent-dark/5 p-6 rounded-2xl border border-accent-dark/10 whitespace-pre-line">
+          <p className="text-sm text-text-primary font-bold leading-relaxed mb-4 bg-accent-dark/5 p-4 rounded-xl border border-accent-dark/10 whitespace-pre-line">
             {current.message}
           </p>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 text-base text-text-secondary font-bold">
-              <User className="w-6 h-6" />
-              <span>Oleh: {current.sender_name}</span>
+            <div className="flex items-center gap-2 text-xs text-text-secondary font-bold">
+              <User className="w-4 h-4" />
+              <span>{current.sender_name}</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {queueCount > 0 && (
-                <span className="text-sm font-black text-text-muted bg-gray-100 px-4 py-2 rounded-full">
-                  +{queueCount} lainnya
+                <span className="text-[10px] font-black text-text-muted bg-gray-100 px-2 py-1 rounded-full">
+                  +{queueCount}
                 </span>
               )}
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-12 px-6 text-base font-black uppercase tracking-widest gap-2 text-accent-dark hover:bg-accent-dark/10"
+                className="h-8 px-3 text-[10px] font-black uppercase tracking-widest gap-2 text-accent-dark hover:bg-accent-dark/10"
                 onClick={() => markAsRead(current.id)}
               >
-                <Info className="w-5 h-5" />
                 Selesai
               </Button>
             </div>
