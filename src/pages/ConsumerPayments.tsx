@@ -462,19 +462,19 @@ const ConsumerPayments: React.FC = () => {
 
         {/* Right: Quick Info / Stats */}
         <div className="space-y-6">
-          <Card className="p-6 bg-gradient-to-br from-accent-dark to-accent-dark/80 text-white border-none shadow-premium relative overflow-hidden">
+          <Card className="p-6 bg-slate-50 text-slate-900 border-2 border-slate-100 shadow-premium relative overflow-hidden">
             <div className="relative z-10">
-              <Calculator className="w-8 h-8 mb-4 opacity-50" />
-              <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-1">Total Tagihan Berjalan</h3>
-              <p className="text-3xl font-black mb-4">
+              <Calculator className="w-8 h-8 mb-4 text-accent-dark opacity-30" />
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-1 text-slate-400">Total Tagihan Berjalan</h3>
+              <p className="text-3xl font-black mb-4 text-slate-900">
                 {formatCurrency(sales.reduce((sum, s) => sum + ((s as any).unpaidAmount || 0), 0))}
               </p>
-              <div className="h-1 w-20 bg-white/30 rounded-full mb-4" />
-              <p className="text-[10px] font-bold text-white/70 leading-relaxed uppercase tracking-tighter">
-                Jumlah piutap cicilan bertahap yang belum terbayar dari seluruh transaksi aktif.
+              <div className="h-1 w-20 bg-accent-dark/20 rounded-full mb-4" />
+              <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-tighter">
+                Jumlah piutang cicilan bertahap yang belum terbayar dari seluruh transaksi aktif.
               </p>
             </div>
-            <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-accent-lavender/10 rounded-full blur-3xl" />
           </Card>
 
           <Card className="p-6 bg-white shadow-premium border-none">
