@@ -145,11 +145,14 @@ const Payments: React.FC = () => {
                       {group.items.map((inst: any) => {
                         const isOverdue = new Date(inst.due_date) < new Date() && inst.status === 'unpaid';
                         return (
-                          <TR key={inst.id} className="hover:bg-slate-50/50 transition-colors border-l-4 border-l-transparent hover:border-l-accent-dark">
+                          <TR key={inst.id} className={cn(
+                            "hover:bg-slate-50/50 transition-colors border-l-4",
+                            isOverdue ? "bg-rose-50/30 border-l-rose-500" : "border-l-transparent hover:border-l-accent-dark"
+                          )}>
                             <TD className="px-6 py-4 pl-16">
                               <div className="flex items-center gap-2">
-                                <Clock className="w-3.5 h-3.5 text-text-muted" />
-                                <span className="text-[11px] font-bold text-text-secondary">Cicilan #{group.items.indexOf(inst) + 1}</span>
+                                <Clock className={cn("w-3.5 h-3.5", isOverdue ? "text-rose-400" : "text-text-muted")} />
+                                <span className={cn("text-[11px] font-bold", isOverdue ? "text-rose-700" : "text-text-secondary")}>Cicilan #{group.items.indexOf(inst) + 1}</span>
                               </div>
                             </TD>
                             <TD className="px-6 py-4">
@@ -161,7 +164,7 @@ const Payments: React.FC = () => {
                               </div>
                             </TD>
                             <TD className="px-6 py-4 text-right">
-                              <div className="text-sm font-black text-text-primary">
+                              <div className={cn("text-sm font-black", isOverdue ? "text-rose-600" : "text-text-primary")}>
                                 {formatCurrency(inst.amount)}
                               </div>
                             </TD>
@@ -171,7 +174,7 @@ const Payments: React.FC = () => {
                                   <Clock className="w-3 h-3" /> Menunggu Verifikasi
                                 </span>
                               ) : isOverdue ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black bg-rose-50 text-rose-600 uppercase border border-rose-100">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black bg-rose-600 text-white uppercase shadow-sm">
                                   <AlertCircle className="w-3 h-3" /> Terlambat
                                 </span>
                               ) : (
