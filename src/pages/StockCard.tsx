@@ -196,7 +196,10 @@ const StockCard: React.FC = () => {
       }
 
       alert(`Sinkronisasi Selesai! ${added} mutasi baru ditambahkan.`);
-      fetchVariants();
+      await fetchVariants();
+      if (selectedVariantId) {
+        await fetchMovements(selectedVariantId);
+      }
     } catch (err) {
       console.error(err);
       alert('Gagal sinkronisasi data.');
