@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Bell, X, User, Info } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { api } from '../lib/api';
@@ -24,6 +24,15 @@ const ManagerNotificationListener: React.FC = () => {
   const [roleData, setRoleData] = useState<any>(null);
 
   const isAdmin = (profile as any)?.role === 'admin';
+
+  // ID notifikasi yang sudah di-dismiss — disimpan di localStorage agar persisten
+  const dismissedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('propdev_dismissed_notifs');
+      if (stored) JSON.parse(stored).forEach((id: string) => dismissedRef.current.add(id));
+    } catch {}
+  }, []);
 
   // Fetch fresh role data by role name (profile.role = nama role, bukan UUID)
   useEffect(() => {
@@ -58,7 +67,9 @@ const ManagerNotificationListener: React.FC = () => {
     );
 
     const unread = data.filter(n => {
-      // Skip yang sudah dibaca oleh user ini
+      // Skip yang sudah di-dismiss (localStorage guard)
+      if (dismissedRef.current.has(n.id)) return false;
+      // Skip yang sudah dibaca oleh user ini (DB guard)
       const readBy: string[] = n.read_by || [];
       if (readBy.includes(profile.id)) return false;
 
@@ -122,17 +133,19 @@ const ManagerNotificationListener: React.FC = () => {
 
   const markAsRead = async (id: string) => {
     if (!profile) return;
+
+    // 1. Langsung hapus dari state & simpan ke dismissed (tidak menunggu DB)
+    setNotifications(prev => prev.filter((n: Notification) => n.id !== id));
+    dismissedRef.current.add(id);
     try {
-      const { error } = await supabase.rpc('mark_notification_read', {
-        notification_id: id,
-        user_id: profile.id
-      });
-      if (!error) {
-        setNotifications(prev => prev.filter((n: Notification) => n.id !== id));
-      }
-    } catch (err) {
-      console.error('Failed to mark notification as read:', err);
-    }
+      const arr = [...dismissedRef.current].slice(-200);
+      localStorage.setItem('propdev_dismissed_notifs', JSON.stringify(arr));
+    } catch {}
+
+    // 2. Update DB via RPC (best-effort, gagal pun tidak masalah karena sudah di-guard)
+    try {
+      await api.rpc('mark_notification_read', { notification_id: id, user_id: profile.id });
+    } catch {}
   };
 
   if (notifications.length === 0) return null;
