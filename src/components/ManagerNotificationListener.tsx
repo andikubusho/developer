@@ -137,51 +137,51 @@ const ManagerNotificationListener: React.FC = () => {
   if (notifications.length === 0) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[10000] flex flex-col gap-3 w-full max-w-sm pointer-events-none">
+    <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-center gap-4 pointer-events-none px-4">
       {notifications.map((notif: Notification, index: number) => (
         <Card
           key={notif.id}
           className={cn(
-            'pointer-events-auto bg-white/80 backdrop-blur-2xl border-white/40 shadow-2xl overflow-hidden animate-in slide-in-from-right duration-500',
-            index === 0 ? 'scale-100 opacity-100' : 'scale-95 opacity-80'
+            'pointer-events-auto w-full max-w-lg bg-white/90 backdrop-blur-2xl border-white/50 shadow-2xl overflow-hidden animate-in slide-in-from-top duration-500',
+            index === 0 ? 'scale-100 opacity-100' : 'scale-95 opacity-70'
           )}
         >
-          <div className="absolute top-0 left-0 w-1 h-full bg-accent-dark" />
-          <div className="p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2 text-accent-dark">
-                <div className="w-8 h-8 rounded-lg bg-accent-dark/10 flex items-center justify-center">
-                  <Bell className="w-4 h-4" />
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-accent-dark" />
+          <div className="p-6 pl-8">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3 text-accent-dark">
+                <div className="w-11 h-11 rounded-xl bg-accent-dark/10 flex items-center justify-center">
+                  <Bell className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black tracking-tight leading-none">{notif.title}</h3>
-                  <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">
+                  <h3 className="text-base font-black tracking-tight leading-none">{notif.title}</h3>
+                  <span className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-0.5 block">
                     {notif.metadata?.type?.startsWith('teknik') ? 'Logistik Update' :
                      notif.metadata?.type?.startsWith('keuangan') ? 'Keuangan Update' : 'Marketing Update'}
                   </span>
                 </div>
               </div>
-              <button onClick={() => markAsRead(notif.id)} className="text-text-muted hover:text-text-primary transition-colors p-1">
-                <X className="w-4 h-4" />
+              <button onClick={() => markAsRead(notif.id)} className="text-text-muted hover:text-text-primary transition-colors p-1.5">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-text-primary font-medium leading-relaxed mb-4 bg-accent-dark/5 p-3 rounded-xl border border-accent-dark/5">
+            <p className="text-sm text-text-primary font-medium leading-relaxed mb-5 bg-accent-dark/5 p-4 rounded-xl border border-accent-dark/10">
               {notif.message}
             </p>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[10px] text-text-secondary font-bold">
-                <User className="w-3 h-3" />
+              <div className="flex items-center gap-2 text-xs text-text-secondary font-bold">
+                <User className="w-4 h-4" />
                 <span>Oleh: {notif.sender_name}</span>
               </div>
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 text-[10px] font-black uppercase tracking-widest gap-1 text-accent-dark hover:bg-accent-dark/10"
+                className="h-9 px-4 text-xs font-black uppercase tracking-widest gap-1.5 text-accent-dark hover:bg-accent-dark/10"
                 onClick={() => markAsRead(notif.id)}
               >
-                <Info className="w-3 h-3" />
+                <Info className="w-4 h-4" />
                 Selesai
               </Button>
             </div>
