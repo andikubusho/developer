@@ -1,60 +1,48 @@
-let notificationAudio: HTMLAudioElement | null = null;
-let isAudioPrimed = false;
+// Unlock audio context dengan user interaction pertama
+let unlocked = false;
+
+const unlock = () => {
+  if (unlocked) return;
+  // Buat AudioContext kosong untuk membuka autoplay gate browser
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioCtx) {
+      const ctx = new AudioCtx();
+      // Buat oscilator senyap sesaat untuk unlock
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      gain.gain.value = 0; // volume 0 — tidak terdengar
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(0);
+      osc.stop(0.001);
+      ctx.resume().then(() => { unlocked = true; });
+    }
+  } catch {}
+};
 
 if (typeof window !== 'undefined') {
-  notificationAudio = new Audio('/notification.mp3');
-  notificationAudio.load();
-  notificationAudio.volume = 1.0;
-
-  // Function to "prime" or unlock audio on first interaction
-  const primeAudio = () => {
-    if (isAudioPrimed || !notificationAudio) return;
-    
-    // Play and immediately pause to satisfy browser requirements
-    notificationAudio.play()
-      .then(() => {
-        notificationAudio!.pause();
-        notificationAudio!.currentTime = 0;
-        isAudioPrimed = true;
-        console.log('🔔 Notification Audio: Primed and unlocked');
-        // Remove listeners once primed
-        window.removeEventListener('click', primeAudio);
-        window.removeEventListener('keydown', primeAudio);
-        window.removeEventListener('touchstart', primeAudio);
-      })
-      .catch((err) => {
-        console.warn('🔔 Notification Audio: Unlock failed, will retry on next click', err);
-      });
-  };
-
-  window.addEventListener('click', primeAudio);
-  window.addEventListener('keydown', primeAudio);
-  window.addEventListener('touchstart', primeAudio);
+  window.addEventListener('click', unlock, { once: false });
+  window.addEventListener('keydown', unlock, { once: false });
+  window.addEventListener('touchstart', unlock, { once: false });
 }
 
 export const playNotificationSound = () => {
-  if (!notificationAudio) {
-    console.warn('🔔 Notification Audio: Audio object not initialized');
-    return;
-  }
-  
+  if (typeof window === 'undefined') return;
   try {
-    notificationAudio.currentTime = 0;
-    notificationAudio.muted = false;
-    notificationAudio.volume = 1.0;
-    
-    const playPromise = notificationAudio.play();
-    
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => console.log('🔔 Notification Audio: Playing...'))
-        .catch(error => {
-          console.warn('🔔 Notification Audio: Playback blocked by browser.', error);
-          // Fallback to vibration if possible
+    // Buat Audio baru setiap kali — hindari masalah state audio element lama
+    const audio = new Audio('/notification.mp3');
+    audio.volume = 1.0;
+    audio.play().catch(() => {
+      // Fallback: coba unlock dulu, lalu play setelah delay kecil
+      unlock();
+      setTimeout(() => {
+        const retry = new Audio('/notification.mp3');
+        retry.volume = 1.0;
+        retry.play().catch(() => {
           if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
         });
-    }
-  } catch (err) {
-    console.warn('🔔 Notification Audio: Exception in play()', err);
-  }
+      }, 200);
+    });
+  } catch {}
 };

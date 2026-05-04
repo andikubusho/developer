@@ -26,6 +26,8 @@ const ManagerNotificationListener: React.FC = () => {
 
   // Set ID yang sudah dibaca — diisi dari localStorage DAN dari read_by di DB
   const readRef = useRef<Set<string>>(new Set());
+  // Set ID yang sudah dibunyikan — agar bunyi tidak berulang saat polling
+  const playedRef = useRef<Set<string>>(new Set());
 
   const isAdmin = profile?.role === 'admin';
 
@@ -120,13 +122,20 @@ const ManagerNotificationListener: React.FC = () => {
     const fresh = data.filter(n => filterRef.current(n));
 
     // MERGE: jangan timpa state yang ada, hanya tambah yang baru
+    let hasNewNotif = false;
     setNotifications(prev => {
       const alreadyRead = readRef.current;
-      // Hapus yang sudah dibaca dari state sekarang
       const stillValid = prev.filter(n => !alreadyRead.has(n.id));
       const shownIds = new Set(stillValid.map(n => n.id));
-      // Tambah notifikasi baru yang belum ada
       const added = fresh.filter(n => !shownIds.has(n.id));
+      
+      // Bunyikan hanya untuk yang benar-benar baru (belum pernah berbunyi)
+      const toPlay = added.filter(n => !playedRef.current.has(n.id));
+      if (toPlay.length > 0) {
+        toPlay.forEach(n => playedRef.current.add(n.id));
+        setTimeout(() => playNotificationSound(), 300);
+      }
+      
       return [...stillValid, ...added].slice(0, 5);
     });
   }, [profile?.id, roleReady]); // Tidak bergantung pada shouldShow/filterRef
@@ -148,9 +157,15 @@ const ManagerNotificationListener: React.FC = () => {
           if (!filterRef.current(n)) return;
           setNotifications(prev => {
             if (prev.some(x => x.id === n.id)) return prev;
+            
+            // Bunyikan jika belum pernah
+            if (!playedRef.current.has(n.id)) {
+              playedRef.current.add(n.id);
+              playNotificationSound();
+            }
+            
             return [n, ...prev].slice(0, 5);
           });
-          playNotificationSound();
         }
       )
       .subscribe();
