@@ -179,7 +179,7 @@ const RABForm: React.FC = () => {
       try {
         const [projData, rabData, matData] = await Promise.all([
           api.get('projects', 'select=id,name,location&order=name.asc'),
-          api.get('rab_projects', 'select=id,nama_proyek,lokasi,created_at&order=created_at.desc'),
+          api.get('rab_projects', 'select=id,nama_proyek,lokasi,created_at,keterangan&order=created_at.desc'),
           api.get('materials', 'select=id,name,unit,harga_satuan&order=name.asc')
         ]);
         setProjects(projData || []);
@@ -1477,8 +1477,13 @@ const RABForm: React.FC = () => {
                       <Calculator className="w-5 h-5 text-accent-dark" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-text-primary">{r.nama_proyek}</h4>
-                      <p className="text-xs text-text-secondary flex items-center gap-1 mt-0.5">
+                      <h4 className="font-bold text-text-primary leading-tight">{r.nama_proyek}</h4>
+                      {r.keterangan && (
+                        <p className="text-[11px] font-bold text-accent-dark bg-accent-lavender/10 px-2 py-0.5 rounded-md mt-1 w-fit">
+                          {r.keterangan}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-text-secondary flex items-center gap-1 mt-1 font-medium">
                         <MapPin className="w-3 h-3" /> {r.lokasi || '-'} • {formatDate(r.created_at)}
                       </p>
                     </div>
