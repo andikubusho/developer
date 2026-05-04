@@ -285,6 +285,9 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         date: values.order_date,
         due_date: values.due_date,
         total_price: grand_total,
+        include_ppn: values.include_ppn,
+        ppn_rate: '11',
+        ppn_amount,
         rab_project_id: values.rab_project_id,
         items: [poItem]
       };
@@ -375,6 +378,9 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         date: batchOrderDate,
         due_date: batchDueDate,
         total_price: grand_total,
+        include_ppn: includePpn,
+        ppn_rate: '11',
+        ppn_amount,
         items: poItems
       };
 
