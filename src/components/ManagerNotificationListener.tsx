@@ -104,7 +104,7 @@ const ManagerNotificationListener: React.FC = () => {
       // 4. Cek filter spesifik per jenis kejadian
       const type = n.metadata?.type || 'unknown';
       const settings = effectiveRole?.notification_settings as Record<string, boolean> | undefined;
-      return !settings || settings[type] !== false;
+      return !settings || settings[type] !== false || type === 'system_test';
     });
 
     setNotifications(unread.slice(0, 5));
@@ -142,7 +142,7 @@ const ManagerNotificationListener: React.FC = () => {
           
           const type = newNotif.metadata?.type || 'unknown';
           const settings = effectiveRole?.notification_settings as Record<string, boolean> | undefined;
-          if (!settings || settings[type] !== false) {
+          if (!settings || settings[type] !== false || type === 'system_test') {
             setNotifications(prev => {
               if (prev.some((n: Notification) => n.id === newNotif.id)) return prev;
               return [newNotif, ...prev].slice(0, 5);

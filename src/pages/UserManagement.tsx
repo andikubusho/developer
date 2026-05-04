@@ -710,7 +710,7 @@ const UserManagement: React.FC = () => {
                   message: `Ini adalah pesan uji coba untuk jabatan: ${roleForm.name}.\nJika Anda melihat ini, berarti sistem pop-up sudah aktif.`,
                   sender_name: profile?.full_name || 'Admin',
                   target_divisions: targetDivs,
-                  metadata: { type: 'marketing_lead' } // Gunakan type yang umum
+                  metadata: { type: 'system_test' } 
                 });
                 alert('Sinyal tes terkirim ke divisi: ' + targetDivs.join(', '));
               } catch (err) {
