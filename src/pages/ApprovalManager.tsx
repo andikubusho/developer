@@ -43,14 +43,18 @@ const ApprovalManager: React.FC = () => {
   const fetchPRs = async () => {
     try {
       setLoading(true);
-      const [prData, projData, materialData] = await Promise.all([
+      const [prData, projData, materialData, rabData] = await Promise.all([
         api.get('purchase_requests', 'select=*&order=created_at.desc'),
         api.get('projects', 'select=id,name'),
         api.get('materials', 'select=id,name,unit'),
+        api.get('rab_projects', 'select=id,keterangan')
       ]);
 
       const projMap: Record<string, string> = {};
       (projData || []).forEach((p: any) => { projMap[p.id] = p.name; });
+
+      const rabMap: Record<string, string> = {};
+      (rabData || []).forEach((r: any) => { rabMap[r.id] = r.keterangan; });
 
       const matMap: Record<string, any> = {};
       (materialData || []).forEach((m: any) => { matMap[m.id] = m; });
@@ -58,6 +62,7 @@ const ApprovalManager: React.FC = () => {
       const enriched = (prData || []).map((pr: any) => ({
         ...pr,
         projectName: pr.project_id ? (projMap[pr.project_id] || 'Unknown') : '-',
+        rabTitle: pr.rab_project_id ? (rabMap[pr.rab_project_id] || '-') : '-',
         items: (pr.items || []).map((item: any) => {
           const mat = matMap[item.material_id];
           return {
@@ -271,6 +276,7 @@ const ApprovalManager: React.FC = () => {
               <TR isHoverable={false}>
                 <TH>ID & Tanggal</TH>
                 <TH>Proyek</TH>
+                <TH>Keterangan RAB</TH>
                 <TH>Nama Permintaan</TH>
                 <TH className="text-center">Jumlah Item</TH>
                 <TH>Status</TH>
@@ -305,6 +311,9 @@ const ApprovalManager: React.FC = () => {
                         <Building2 className="w-3.5 h-3.5 text-text-muted" />
                         <span className="font-bold text-text-primary text-sm">{pr.projectName}</span>
                       </div>
+                    </TD>
+                    <TD>
+                      <div className="font-bold text-text-primary text-xs uppercase italic">{pr.rabTitle}</div>
                     </TD>
                     <TD className="font-black text-text-primary text-sm">{pr.item_name}</TD>
                     <TD className="text-center font-bold text-text-secondary">{pr.items?.length || 0} Item</TD>
