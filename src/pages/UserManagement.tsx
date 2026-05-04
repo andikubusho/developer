@@ -7,7 +7,7 @@ import { Profile, UserRole, Capabilities, Role, ALL_DIVISIONS } from '../types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Shield, Trash2, Pencil, Plus, ArrowLeft, Check, UserPlus, ShieldCheck, ChevronRight, LayoutGrid, Users as UsersIcon } from 'lucide-react';
+import { Shield, Trash2, Pencil, Plus, ArrowLeft, Check, UserPlus, ShieldCheck, ChevronRight, LayoutGrid, Users as UsersIcon, Bell } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
@@ -815,7 +815,7 @@ const UserManagement: React.FC = () => {
             <h4 className="text-sm font-black text-text-primary mb-4">Konfigurasi Hak Akses Template</h4>
             <div className="max-h-[50vh] overflow-y-auto border border-white/40 rounded-xl overflow-hidden">
               <Table className="w-full text-left border-collapse">
-                <THead>
+                <THead className="sticky top-0 z-10 bg-slate-50/90 backdrop-blur-sm shadow-sm">
                   <TR className="text-[10px] uppercase font-black tracking-widest border-b bg-slate-50/50">
                     <TH className="py-4 px-4 text-text-muted">Menu</TH>
                     <TH className="py-4 px-1 text-center w-[70px] bg-blue-50/50 text-blue-600 border-x border-white">View</TH>
@@ -878,7 +878,7 @@ const UserManagement: React.FC = () => {
       >
         <div className="max-h-[70vh] overflow-y-auto rounded-xl border border-white/40">
           <Table className="w-full text-left border-collapse">
-            <THead>
+            <THead className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm shadow-sm">
               <TR className="text-[10px] uppercase font-black text-text-muted tracking-widest bg-white/40">
                 <TH className="py-4 px-4 w-1/2">Modul</TH>
                 <TH className="py-4 px-1 text-center w-[60px]">View</TH>

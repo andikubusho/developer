@@ -39,7 +39,7 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-accent-dark/20 backdrop-blur-md overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-accent-dark/20 backdrop-blur-md overflow-y-auto">
       <div 
         className={cn(
           'glass-card w-full my-8 overflow-hidden animate-in fade-in zoom-in duration-200',
