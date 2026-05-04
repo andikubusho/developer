@@ -692,6 +692,35 @@ const UserManagement: React.FC = () => {
         title={selectedRole ? `Edit Jabatan: ${selectedRole.name}` : "Tambah Jabatan Baru"}
         size="3xl"
       >
+        <div className="mb-6 flex justify-end">
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            className="text-[10px] font-black uppercase tracking-widest gap-2 bg-amber-50 text-amber-600 border-amber-200"
+            onClick={async () => {
+              try {
+                if (!roleForm.authorized_divisions.length && !roleForm.division) {
+                  alert('Pilih minimal satu divisi dulu');
+                  return;
+                }
+                const targetDivs = [...new Set([roleForm.division, ...roleForm.authorized_divisions])];
+                await api.insert('notifications', {
+                  title: 'Tes Notifikasi System',
+                  message: `Ini adalah pesan uji coba untuk jabatan: ${roleForm.name}.\nJika Anda melihat ini, berarti sistem pop-up sudah aktif.`,
+                  sender_name: profile?.full_name || 'Admin',
+                  target_divisions: targetDivs,
+                  metadata: { type: 'marketing_lead' } // Gunakan type yang umum
+                });
+                alert('Sinyal tes terkirim ke divisi: ' + targetDivs.join(', '));
+              } catch (err) {
+                alert('Gagal mengirim sinyal tes');
+              }
+            }}
+          >
+            <Bell className="w-3 h-3" /> Kirim Sinyal Tes Pop-up
+          </Button>
+        </div>
         <form onSubmit={handleSaveRole} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
