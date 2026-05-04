@@ -110,8 +110,7 @@ const ConsumerPayments: React.FC = () => {
 
   const handleEditPayment = (payment: any) => {
     if (payment.status === 'verified') {
-      alert('Pembayaran yang sudah diverifikasi tidak dapat diubah.');
-      return;
+      if (!confirm('Pembayaran ini SUDAH DIVERIFIKASI. Mengubah data ini mungkin akan mempengaruhi laporan Arus Kas. Lanjutkan?')) return;
     }
     setSelectedPayment(payment);
     setSelectedSale(payment.sale);
@@ -119,13 +118,24 @@ const ConsumerPayments: React.FC = () => {
   };
 
   const handleDeletePayment = async (payment: any) => {
-    if (payment.status === 'verified') {
-      alert('Pembayaran yang sudah diverifikasi tidak dapat dihapus.');
-      return;
-    }
-    if (!confirm('Hapus pembayaran ini?')) return;
+    const isVerified = payment.status === 'verified';
+    const msg = isVerified 
+      ? 'Pembayaran ini SUDAH DIVERIFIKASI. Menghapus ini akan menghapus data di Arus Kas juga. Lanjutkan?' 
+      : 'Hapus pembayaran ini?';
+      
+    if (!confirm(msg)) return;
+    
     try {
       setLoading(true);
+      
+      // Jika diverifikasi, hapus juga record di cash_flow
+      if (isVerified) {
+        const cfData = await api.get('cash_flow', `select=id&reference_id=eq.${payment.id}`);
+        if (cfData && cfData[0]) {
+          await api.delete('cash_flow', cfData[0].id);
+        }
+      }
+      
       await api.delete('payments', payment.id);
       await fetchData();
     } catch (err: any) {
@@ -430,16 +440,12 @@ const ConsumerPayments: React.FC = () => {
                           <button title="Cetak Kuitansi" onClick={() => handlePrint(payment)} className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 transition-colors">
                             <Printer className="w-4 h-4" />
                           </button>
-                          {payment.status !== 'verified' && (
-                            <>
-                              <button title="Edit" onClick={() => handleEditPayment(payment)} className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors">
-                                <Pencil className="w-4 h-4" />
-                              </button>
-                              <button title="Hapus" onClick={() => handleDeletePayment(payment)} className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
+                          <button title="Edit" onClick={() => handleEditPayment(payment)} className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors">
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button title="Hapus" onClick={() => handleDeletePayment(payment)} className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </TD>
                     </TR>
