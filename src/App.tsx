@@ -59,6 +59,7 @@ const CashFlow = lazy(() => import('./pages/CashFlow'));
 const PettyCash = lazy(() => import('./pages/PettyCash'));
 const BankMaster = lazy(() => import('./pages/BankMaster'));
 const CustomerReceivables = lazy(() => import('./pages/CustomerReceivables'));
+const ConsumerPayments = lazy(() => import('./pages/ConsumerPayments'));
 
 // Accounting
 const GeneralJournal = lazy(() => import('./pages/GeneralJournal'));
@@ -164,6 +165,7 @@ export default function App() {
               <Route path="petty-cash" element={<PettyCash />} />
               <Route path="bank-master" element={<BankMaster />} />
               <Route path="customer-receivables" element={<CustomerReceivables />} />
+              <Route path="consumer-payments" element={<ConsumerPayments />} />
               
               {/* Accounting */}
               <Route path="general-journal" element={<GeneralJournal />} />
