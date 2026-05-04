@@ -363,6 +363,11 @@ const VerificationQueue: React.FC = () => {
 
       await fetchData();
     } catch (error: any) {
+      if (error.message?.includes('409') || error.message?.includes('23505')) {
+        // Already exists / race condition, just refresh silently
+        await fetchData();
+        return;
+      }
       alert(`Gagal verifikasi: ${error.message}`);
     } finally {
       setLoading(false);
