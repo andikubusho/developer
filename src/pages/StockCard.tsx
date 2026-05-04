@@ -208,6 +208,35 @@ const StockCard: React.FC = () => {
     }
   };
 
+  const resetStockCards = async () => {
+    if (!confirm('PERINGATAN: Ini akan menghapus SELURUH riwayat mutasi di Kartu Stok. Data Penerimaan dan Pemakaian tidak akan dihapus, hanya kartu stoknya saja. Lanjutkan?')) return;
+    if (!confirm('Sekali lagi, apakah Anda benar-benar yakin ingin mengosongkan Kartu Stok?')) return;
+    
+    try {
+      setLoading(true);
+      // Ambil semua ID untuk dihapus (karena API delete butuh ID atau filter)
+      const all = await api.get('stock_movements', 'select=id');
+      for (const item of all) {
+        await api.delete('stock_movements', item.id);
+      }
+      
+      // Reset semua stok fisik di variant ke 0 sementara
+      const variants = await api.get('material_variants', 'select=id');
+      for (const v of variants) {
+        await api.update('material_variants', v.id, { stok: 0 });
+      }
+
+      alert('Kartu Stok telah dikosongkan. Silakan klik "Sync Data Lama" untuk membangun ulang.');
+      fetchVariants();
+      setMovements([]);
+    } catch (err) {
+      console.error(err);
+      alert('Gagal mengosongkan Kartu Stok.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleExport = () => {
     if (!variantInfo || movements.length === 0) {
       alert('Tidak ada data untuk diekspor');
@@ -300,6 +329,15 @@ const StockCard: React.FC = () => {
             disabled={loading}
           >
             <RefreshCw className={cn("w-3 h-3 mr-1", loading && "animate-spin")} /> Sync Data Lama
+          </Button>
+          <Button 
+            variant="ghost"
+            size="sm"
+            className="text-[10px] font-black text-rose-400 hover:text-rose-600"
+            onClick={resetStockCards}
+            disabled={loading}
+          >
+            <Trash2 className="w-3 h-3 mr-1" /> Hapus Semua
           </Button>
         </div>
       </div>
