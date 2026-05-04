@@ -30,6 +30,7 @@ interface PaymentFormProps {
 export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, onSuccess, onCancel }) => {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
+  const submittingRef = React.useRef(false);
   const [installments, setInstallments] = useState<{ id: string; due_date: string; amount: number }[]>([]);
   const [fetchingInstallments, setFetchingInstallments] = useState(false);
   const [banks, setBanks] = useState<{ id: string; bank_name: string; account_number: string; account_holder: string }[]>([]);
@@ -122,6 +123,8 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
   }, [selectedInstallmentId, installments, setValue, initialData]);
 
   const onSubmit = async (values: PaymentFormValues) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     try {
       setLoading(true);
       
@@ -187,6 +190,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
       alert(`Gagal menyimpan pembayaran: ${error.message || 'Terjadi kesalahan pada server'}`);
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   };
 
