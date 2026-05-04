@@ -9,7 +9,7 @@ import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { ConsultantSchedule, PropertyConsultant } from '../types';
-import { cn } from '../lib/utils';
+import { cn, formatDate, formatDateTime } from '../lib/utils';
 import { getMockData, saveMockData } from '../lib/storage';
 
 const ConsultantSchedulePage: React.FC = () => {
@@ -402,7 +402,7 @@ const ConsultantSchedulePage: React.FC = () => {
           </tbody>
         </table>
         <div className="mt-4 text-[10px] text-right text-slate-400">
-          Dicetak pada: {new Date().toLocaleString('id-ID')}
+          Dicetak pada: {formatDateTime(new Date())}
         </div>
       </div>
 
@@ -483,7 +483,7 @@ const ConsultantSchedulePage: React.FC = () => {
           <div className="p-4 bg-accent-lavender/20 rounded-xl border border-accent-lavender/30">
             <p className="text-xs font-semibold text-accent-dark uppercase tracking-wider mb-1">Tanggal Terpilih</p>
             <p className="text-lg font-bold text-text-primary">
-              {new Date(formData.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              {formatDate(formData.date)}
             </p>
           </div>
 

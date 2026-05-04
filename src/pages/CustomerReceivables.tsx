@@ -186,7 +186,7 @@ const CustomerReceivables: React.FC = () => {
     doc.setFontSize(16);
     doc.text('Laporan Piutang Konsumen', 14, 18);
     doc.setFontSize(9);
-    doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 24);
+    doc.text(`Dicetak: ${formatDate(new Date())}`, 14, 24);
     (doc as any).autoTable({
       startY: 30,
       head: [['Konsumen', 'Unit', 'Proyek', 'Metode', 'Harga Final', 'Sudah Bayar', 'Sisa Piutang', 'Status']],
@@ -402,7 +402,7 @@ const CustomerReceivables: React.FC = () => {
                                       return (
                                         <div key={i} className="flex items-center justify-between text-sm py-1.5 border-b border-white/40 last:border-0">
                                           <div>
-                                            <span className="font-bold text-text-primary">Cicilan {i + 1}</span>
+                                            <span className="font-bold text-text-primary">{inst.name || `Tagihan ${i + 1}`}</span>
                                             <span className="text-text-muted text-xs ml-2">{formatDate(inst.due_date)}</span>
                                           </div>
                                           <div className="flex items-center gap-3">

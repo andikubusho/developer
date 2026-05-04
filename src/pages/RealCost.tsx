@@ -26,7 +26,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
-import { formatCurrency, formatNumber, formatDate, cn } from '../lib/utils';
+import { formatCurrency, formatNumber, formatDate, formatDateTime, cn } from '../lib/utils';
 import { api } from '../lib/api';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, 
@@ -265,7 +265,7 @@ const RealCostPage: React.FC = () => {
         <body>
           <div class="header">
             <div class="title">${title}</div>
-            <div class="subtitle">Dicetak pada: ${new Date().toLocaleString('id-ID')}</div>
+            <div class="subtitle">Dicetak pada: ${formatDateTime(new Date())}</div>
           </div>
 
           <div class="summary-box">

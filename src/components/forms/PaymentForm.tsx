@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { CurrencyInput } from '../ui/CurrencyInput';
+import { DateInput } from '../ui/DateInput';
 import { api } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -73,7 +74,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
       
       // Fetch both unpaid installments AND pending payments to prevent double-entry
       const [instData, pendingPayments] = await Promise.all([
-        api.get('installments', `select=id,due_date,amount&sale_id=eq.${saleId}&status=eq.unpaid&order=due_date.asc`),
+        api.get('installments', `select=id,due_date,amount,name&sale_id=eq.${saleId}&status=eq.unpaid&order=due_date.asc`),
         api.get('payments', `select=installment_id&sale_id=eq.${saleId}&status=eq.pending`)
       ]);
 
@@ -128,14 +129,16 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
     try {
       setLoading(true);
       
-      // Sanitasi Payload: Pastikan semua UUID adalah null jika kosong
-      const cleanInstallmentId = values.installment_id && values.installment_id !== "" ? values.installment_id : null;
+      // Sanitasi Payload: Pastikan semua UUID valid atau null
+      const toUuid = (val: any) => (val && typeof val === 'string' && val.trim() !== '' && val !== 'undefined' && val !== 'null') ? val : null;
+      
+      const cleanInstallmentId = toUuid(values.installment_id);
       
       // Pastikan bank_account_id diambil langsung dari values jika metodenya Transfer Bank
-      const cleanBankId = values.payment_method === 'Transfer Bank' ? (values.bank_account_id || null) : null;
+      const cleanBankId = values.payment_method === 'Transfer Bank' ? toUuid(values.bank_account_id) : null;
 
       const payload = {
-        sale_id: values.sale_id,
+        sale_id: toUuid(values.sale_id),
         installment_id: cleanInstallmentId,
         bank_account_id: cleanBankId,
         amount: values.amount,
@@ -150,7 +153,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
         alert('PERINGATAN: Anda memilih Transfer Bank tapi ID Bank kosong!');
       }
 
-      if (initialData) {
+      if (initialData && initialData.id) {
         // Mode Update
         await api.update('payments', initialData.id, payload);
         
@@ -213,7 +216,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
             ? [{ label: 'Memuat cicilan...', value: '' }] 
             : installments.length > 0 
               ? installments.map(i => ({ 
-                  label: `Jatuh Tempo: ${i.due_date} - ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(i.amount)}`, 
+                  label: `${i.name || 'Cicilan'} - Jatuh Tempo: ${i.due_date} - ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(i.amount)}`, 
                   value: i.id 
                 }))
               : [{ label: 'Tidak ada cicilan belum bayar', value: '' }]
@@ -235,7 +238,17 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ sales, initialData, on
             />
           )}
         />
-        <Input label="Tanggal Bayar" type="date" {...register('payment_date')} error={errors.payment_date?.message} />
+        <Controller
+          name="payment_date"
+          control={control}
+          render={({ field }) => (
+            <DateInput
+              label="Tanggal Bayar"
+              value={field.value}
+              onChange={field.onChange}
+            />
+          )}
+        />
       </div>
       
       <Select 

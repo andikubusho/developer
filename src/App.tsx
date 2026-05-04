@@ -32,6 +32,7 @@ const MarketingMaster = lazy(() => import('./pages/ConsultantMaster'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const DocumentTemplates = lazy(() => import('./pages/DocumentTemplates'));
 const VerificationQueue = lazy(() => import('./pages/VerificationQueue'));
+const SaleAddons = lazy(() => import('./pages/SaleAddons'));
 
 // Teknik
 const RAB = lazy(() => import('./pages/RAB'));
@@ -137,6 +138,7 @@ export default function App() {
               <Route path="marketing-master" element={<MarketingMaster />} />
               <Route path="user-management" element={<UserManagement />} />
               <Route path="document-templates" element={<DocumentTemplates />} />
+              <Route path="sale-addons" element={<SaleAddons />} />
               
               {/* Teknik */}
               <Route path="rab" element={<RAB />} />

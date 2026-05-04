@@ -293,7 +293,7 @@ const RAB: React.FC = () => {
       const tree = buildTree(null);
       injectQty(tree);
 
-      const fmt = (n: number) => n > 0 ? `Rp ${Math.round(n).toLocaleString('id-ID')}` : '-';
+      const fmt = (n: number) => n > 0 ? `Rp ${formatNumber(Math.round(n))}` : '-';
       const labels = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T'];
 
       let rowsHtml = '';
@@ -386,7 +386,7 @@ const RAB: React.FC = () => {
               <strong>Proyek:</strong> ${rab.nama_proyek} &nbsp;|&nbsp;
               <strong>Unit:</strong> ${unitLabel} &nbsp;|&nbsp;
               <strong>Lokasi:</strong> ${rab.lokasi || '-'} &nbsp;|&nbsp;
-              <strong>Tanggal:</strong> ${new Date(rab.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}
+              <strong>Tanggal:</strong> ${formatDate(rab.created_at)}
             </div>
           </div>
         </div>

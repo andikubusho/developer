@@ -142,22 +142,35 @@ export const SaleDetail: React.FC<SaleDetailProps> = ({ sale }) => {
       </div>
 
       {/* INSTALLMENTS IF ANY */}
-      {sale.payment_method === 'installment' && sale.installments && sale.installments.length > 0 && (
+      {sale.installments && sale.installments.length > 0 && (
         <div className="glass-card rounded-xl p-6 border border-white/40 shadow-glass space-y-4">
           <div className="flex items-center gap-3 border-b border-white/20 pb-4">
             <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
               <Clock className="w-5 h-5" />
             </div>
-            <h3 className="font-black text-text-primary uppercase tracking-widest text-xs">Jadwal Cicilan (Rencana)</h3>
+            <h3 className="font-black text-text-primary uppercase tracking-widest text-xs">Rencana Tagihan Pembayaran</h3>
           </div>
           <div className="space-y-2">
             {sale.installments.map((inst: any, idx: number) => (
-              <div key={idx} className="flex items-center justify-between p-3 bg-white/30 rounded-xl">
+              <div key={idx} className="flex items-center justify-between p-3 bg-white/30 rounded-xl border border-white/40">
                 <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 flex items-center justify-center bg-white rounded-xl text-[10px] font-black text-text-muted border border-white/40">{idx + 1}</span>
-                  <span className="text-sm font-bold text-text-primary">{formatDate(inst.due_date)}</span>
+                  <div className="w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm border border-white/80">
+                    <span className="text-[8px] font-bold text-text-muted uppercase">Tagihan</span>
+                    <span className="text-xs font-black text-amber-600">{idx + 1}</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-black text-text-primary">{inst.name || `Tagihan ${idx + 1}`}</div>
+                    <div className="text-[10px] font-bold text-text-muted flex items-center gap-1">
+                      <Calendar className="w-3 h-3" /> Jatuh Tempo: {formatDate(inst.due_date)}
+                    </div>
+                  </div>
                 </div>
-                <span className="font-black text-text-primary text-sm">{formatCurrency(inst.amount)}</span>
+                <div className="text-right">
+                  <span className="font-black text-text-primary text-sm">{formatCurrency(inst.amount)}</span>
+                  {inst.status === 'paid' && (
+                    <div className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg mt-1 bg-emerald-50 text-emerald-600 inline-block">LUNAS</div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

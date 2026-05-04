@@ -7,7 +7,7 @@ import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { AuditLog } from '../types';
-import { formatDate, cn } from '../lib/utils';
+import { formatDate, formatDateTime, cn } from '../lib/utils';
 import { api } from '../lib/api';
 
 const AuditTransactionsPage: React.FC = () => {
@@ -161,7 +161,7 @@ const AuditTransactionsPage: React.FC = () => {
               ) : (
                 filteredLogs.map((item) => (
                   <TR key={item.id} className="hover:bg-white/30 transition-colors">
-                    <TD className="px-6 py-4 text-sm text-text-secondary">{new Date(item.timestamp).toLocaleString('id-ID')}</TD>
+                    <TD className="px-6 py-4 text-sm text-text-secondary">{formatDateTime(item.timestamp)}</TD>
                     <TD className="px-6 py-4 text-sm font-medium text-text-primary">{item.user?.full_name}</TD>
                     <TD className="px-6 py-4 text-sm text-text-secondary font-medium">{item.module}</TD>
                     <TD className="px-6 py-4">

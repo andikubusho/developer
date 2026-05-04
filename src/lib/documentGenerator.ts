@@ -2,7 +2,7 @@ import Docxtemplater from "docxtemplater";
 import PizZip from "pizzip";
 import { saveAs } from "file-saver";
 import { Sale } from "../types";
-import { formatCurrency } from "./utils";
+import { formatCurrency, formatDate } from "./utils";
 
 // Helper for Indonesian Terbilang (Numbers to Words)
 const terbilang = (nilai: number): string => {
@@ -75,11 +75,11 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
       booking_fee_terbilang: terbilang(sale.booking_fee || 0) + " Rupiah",
       dp_amount: formatCurrency((sale as any).dp_amount || 0),
       dp_terbilang: terbilang((sale as any).dp_amount || 0) + " Rupiah",
-      dp_date: (sale as any).dp_date ? new Date((sale as any).dp_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-",
+      dp_date: (sale as any).dp_date ? formatDate((sale as any).dp_date) : "-",
       
       pelunasan_amount: formatCurrency(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)),
       pelunasan_terbilang: terbilang(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)) + " Rupiah",
-      pelunasan_date: (sale as any).pelunasan_date ? new Date((sale as any).pelunasan_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-",
+      pelunasan_date: (sale as any).pelunasan_date ? formatDate((sale as any).pelunasan_date) : "-",
       
       kpr_amount: formatCurrency(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)),
       kpr_terbilang: terbilang(sale.final_price - (sale.booking_fee || 0) - ((sale as any).dp_amount || 0)) + " Rupiah",
@@ -93,7 +93,7 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
       price_original: formatCurrency(sale.total_price + sale.discount),
       price_original_terbilang: terbilang(sale.total_price + sale.discount) + " Rupiah",
       total_cicilan: formatCurrency((sale as any).installments?.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0) || 0),
-      booking_fee_date: sale.booking_fee_date ? new Date(sale.booking_fee_date).toLocaleDateString('id-ID') : "-",
+      booking_fee_date: sale.booking_fee_date ? formatDate(sale.booking_fee_date) : "-",
       final_price: formatCurrency(sale.final_price),
       discount: formatCurrency(sale.discount),
       
@@ -102,13 +102,13 @@ export const generateWordDocument = async (sale: Sale, templateBlob: Blob, filen
       
       // Konsultan Property & Tanggal
       nama_marketing: (sale.consultant as any)?.name || (sale.consultant as any)?.full_name || "Internal",
-      tanggal_hari_ini: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-      tanggal_transaksi: sale.sale_date ? new Date(sale.sale_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-",
+      tanggal_hari_ini: formatDate(new Date()),
+      tanggal_transaksi: sale.sale_date ? formatDate(sale.sale_date) : "-",
       
       // Jadwal Cicilan (Looping support in Word using {{#installments}} ... {{/installments}})
       installments: (sale as any).installments?.map((inst: any, index: number) => ({
         no: index + 1,
-        tgl: inst.due_date ? new Date(inst.due_date).toLocaleDateString('id-ID') : "-",
+        tgl: inst.due_date ? formatDate(inst.due_date) : "-",
         nilai: formatCurrency(inst.amount || 0)
       })) || []
     };

@@ -8,7 +8,7 @@ import { Unit } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { formatCurrency, formatNumber, cn } from '../lib/utils';
+import { formatCurrency, formatNumber, cn, formatDate } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
 import { UnitForm } from '../components/forms/UnitForm';
 import { useAuth } from '../contexts/AuthContext';
@@ -166,7 +166,7 @@ const Units: React.FC = () => {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Stok-Unit-${new Date().toLocaleDateString()}.pdf`);
+      pdf.save(`Stok-Unit-${formatDate(new Date()).replace(/\//g, '-')}.pdf`);
     } catch (error) {
       console.error('PDF Export Error:', error);
     } finally {

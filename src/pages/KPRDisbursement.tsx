@@ -245,6 +245,19 @@ const KPRDisbursementPage: React.FC = () => {
                 <option key={s.id} value={s.id}>{s.customer?.full_name} ({s.unit?.unit_number})</option>
               ))}
             </select>
+            {formData.sale_id && (
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-xl flex justify-between items-center">
+                <span className="text-[11px] font-bold text-blue-800 uppercase tracking-widest">Plafond KPR (Estimasi)</span>
+                <span className="text-sm font-black text-blue-900">
+                  {(() => {
+                    const selected = sales.find(s => s.id === formData.sale_id);
+                    if (!selected) return 'Rp 0';
+                    const plafond = (selected.final_price || 0) - (selected.booking_fee || 0) - (selected.dp_amount || 0);
+                    return formatCurrency(plafond);
+                  })()}
+                </span>
+              </div>
+            )}
           </div>
           <Input label="Nama Bank" placeholder="Contoh: Bank Mandiri, BTN, dll" value={formData.bank_name} onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })} required />
           <Input label="Nilai Pencairan (Rp)" type="number" placeholder="Rp 0" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })} required />

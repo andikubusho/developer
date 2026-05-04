@@ -32,6 +32,7 @@ const CashFlowPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAccount, setSelectedAccount] = useState('all'); // all, cash, [bank_id]
+  const [selectedMonth, setSelectedMonth] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -58,8 +59,42 @@ const CashFlowPage: React.FC = () => {
 
   const fetchCashFlow = async () => {
     try {
-      const data = await api.get('cash_flow', 'status=eq.verified&order=date.desc,created_at.desc');
-      setCashFlow(data || []);
+      const [data, payments, deposits, sales, kprDisbursements] = await Promise.all([
+        api.get('cash_flow', 'status=eq.verified&order=date.desc,created_at.desc'),
+        api.get('payments', 'select=id,sale_id'),
+        api.get('deposits', 'select=id,customer_name'),
+        api.get('sales', 'select=id,customer:customers(full_name)'),
+        api.get('kpr_disbursement', 'select=id,sale_id')
+      ]);
+
+      const salesMap: Record<string, string> = {};
+      (sales || []).forEach((s: any) => {
+        salesMap[s.id] = s.customer?.full_name || 'Tanpa Nama';
+      });
+
+      const customerMap: Record<string, string> = {};
+      
+      // Map from deposits
+      (deposits || []).forEach((d: any) => {
+        customerMap[d.id] = d.customer_name;
+      });
+
+      // Map from payments -> sale -> customer
+      (payments || []).forEach((p: any) => {
+        customerMap[p.id] = salesMap[p.sale_id] || '-';
+      });
+
+      // Map from kpr_disbursement -> sale -> customer
+      (kprDisbursements || []).forEach((k: any) => {
+        customerMap[k.id] = salesMap[k.sale_id] || '-';
+      });
+
+      const enrichedData = (data || []).map((item: any) => ({
+        ...item,
+        customerName: item.reference_id ? (customerMap[item.reference_id] || '-') : '-'
+      }));
+
+      setCashFlow(enrichedData);
     } catch (error) {
       console.error('Error fetching cash flow:', error);
     }
@@ -106,9 +141,13 @@ const CashFlowPage: React.FC = () => {
     const matchesSearch = item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.category.toLowerCase().includes(searchTerm.toLowerCase());
     
-    if (selectedAccount === 'all') return matchesSearch;
-    if (selectedAccount === 'cash') return matchesSearch && !item.bank_account_id;
-    return matchesSearch && item.bank_account_id === selectedAccount;
+    const matchesMonth = selectedMonth ? item.date.startsWith(selectedMonth) : true;
+
+    if (!matchesSearch || !matchesMonth) return false;
+
+    if (selectedAccount === 'all') return true;
+    if (selectedAccount === 'cash') return !item.bank_account_id;
+    return item.bank_account_id === selectedAccount;
   });
 
   const totalIn = filteredFlow.filter(i => i.type === 'in').reduce((sum, i) => sum + i.amount, 0);
@@ -135,7 +174,24 @@ const CashFlowPage: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline"><Calendar className="w-4 h-4 mr-2" /> Pilih Periode</Button>
+          <div className="relative flex items-center">
+            <Calendar className="absolute left-3 w-4 h-4 text-text-secondary pointer-events-none" />
+            <input 
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="pl-9 pr-4 py-2 h-10 rounded-xl border border-white/40 bg-white/50 text-sm font-medium text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-dark/20 hover:bg-white transition-all w-[180px] appearance-none cursor-pointer"
+            />
+            {selectedMonth && (
+              <button 
+                onClick={() => setSelectedMonth('')} 
+                className="absolute right-3 w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[10px] text-text-secondary hover:bg-rose-100 hover:text-rose-600"
+                title="Hapus Filter"
+              >
+                ✕
+              </button>
+            )}
+          </div>
           <Button>Export Laporan</Button>
         </div>
       </div>
@@ -227,6 +283,7 @@ const CashFlowPage: React.FC = () => {
               <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
                 <TH className="px-6 py-3 font-semibold">Tanggal</TH>
                 <TH className="px-6 py-3 font-semibold">Akun / Rekening</TH>
+                <TH className="px-6 py-3 font-semibold">Nama Konsumen</TH>
                 <TH className="px-6 py-3 font-semibold">Kategori & Deskripsi</TH>
                 <TH className="px-6 py-3 font-semibold text-right">Masuk (In)</TH>
                 <TH className="px-6 py-3 font-semibold text-right">Keluar (Out)</TH>
@@ -235,9 +292,9 @@ const CashFlowPage: React.FC = () => {
             </THead>
             <TBody>
               {loading ? (
-                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
+                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-muted">Memuat data...</TD></TR>
               ) : filteredFlow.length === 0 ? (
-                <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">Tidak ada data arus kas untuk akun ini.</TD></TR>
+                <TR><TD colSpan={7} className="px-6 py-10 text-center text-text-secondary">Tidak ada data arus kas untuk akun ini.</TD></TR>
               ) : (
                 filteredFlow.map((item) => (
                   <TR key={item.id} className="hover:bg-white/30 transition-colors">
@@ -255,6 +312,9 @@ const CashFlowPage: React.FC = () => {
                         )}
                       </div>
                       <div className="text-[10px] text-text-muted mt-0.5">{item.bank?.account_number || 'Tunai'}</div>
+                    </TD>
+                    <TD className="px-6 py-4">
+                      <div className="text-sm font-bold text-text-primary">{item.customerName || '-'}</div>
                     </TD>
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-text-primary">{item.category}</div>

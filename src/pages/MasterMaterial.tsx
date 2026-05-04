@@ -19,7 +19,7 @@ import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { api } from '../lib/api';
-import { cn } from '../lib/utils';
+import { cn, formatCurrency } from '../lib/utils';
 import * as XLSX from 'xlsx';
 
 interface MasterMaterialData {
@@ -356,7 +356,7 @@ const MasterMaterial: React.FC = () => {
                     </span>
                   </TD>
                   <TD className="px-6 py-4 text-right font-bold text-text-primary">
-                    {m.harga_satuan != null && m.harga_satuan > 0 ? `Rp ${m.harga_satuan.toLocaleString('id-ID')}` : '-'}
+                    {m.harga_satuan != null && m.harga_satuan > 0 ? formatCurrency(m.harga_satuan) : '-'}
                   </TD>
                   <TD className="px-6 py-4 text-center font-bold text-text-primary">
                     {m.min_stok ?? '-'}

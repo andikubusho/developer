@@ -5,9 +5,10 @@ import * as z from 'zod';
 import { Calendar, Wallet, Users, Briefcase, Plus, Trash2, Info } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { DateInput } from '../ui/DateInput';
 import { Select } from '../ui/Select';
 import { CurrencyInput } from '../ui/CurrencyInput';
-import { cn, formatCurrency } from '../../lib/utils';
+import { cn, formatCurrency, formatDate } from '../../lib/utils';
 import { api } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -28,7 +29,9 @@ const saleSchema = z.object({
   final_price: z.number().min(0),
   payment_method: z.enum(['cash', 'kpr', 'installment']),
   booking_fee: z.number().min(0),
+  booking_fee_date: z.string().optional().nullable(),
   dp_amount: z.number().min(0),
+  dp_date: z.string().optional().nullable(),
   deposit_id: z.string().optional().nullable(),
   deposit_amount: z.number().min(0).optional().nullable(),
   installments: z.array(z.object({
@@ -59,7 +62,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const [verifiedDeposits, setVerifiedDeposits] = useState<any[]>([]);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
   const [hasLoadedMasterData, setHasLoadedMasterData] = useState(false);
-  const editCustomerSet = useRef(false);
 
   const { register, handleSubmit, watch, setValue, control, formState: { errors, isSubmitting } } = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
@@ -71,7 +73,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       total_price: 0,
       final_price: 0,
       booking_fee: 0,
+      booking_fee_date: new Date().toISOString().split('T')[0],
       dp_amount: 0,
+      dp_date: new Date().toISOString().split('T')[0],
       deposit_amount: 0,
       installments: [],
     }
@@ -92,6 +96,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const watchDepositAmount = (watch('deposit_amount') as number) || 0;
   const watchBookingFee = (watch('booking_fee') as number) || 0;
   const watchDpAmount = (watch('dp_amount') as number) || 0;
+  
+  const finalPiutang = Math.max(0, (watch('final_price') || 0) - watchDepositAmount - watchBookingFee - watchDpAmount);
+  const remainingAfterPayment = finalPiutang;
 
 
   useEffect(() => {
@@ -152,8 +159,12 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
     fetchData();
   }, [initialData]);
 
+  // Track whether edit-mode initial values have been fully applied
+  const isEditInitialized = useRef(false);
+
   useEffect(() => {
     // Edit mode: jangan reset deposit jika konsumen tidak berubah
+    if (initialData && !isEditInitialized.current) return; // Skip during init
     if (initialData && watchCustomerId === initialData.customer_id) return;
     const customer = rawCustomers.find(c => c.id === watchCustomerId) || rawLeads.find(l => l.id === watchCustomerId);
     if (customer && verifiedDeposits.length > 0) {
@@ -161,11 +172,12 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       const deposit = verifiedDeposits.find(d => cleanPhone(d.phone) === cleanPhone(customer.phone));
       if (deposit) { setValue('deposit_id', deposit.id); setValue('deposit_amount', deposit.amount); }
       else { setValue('deposit_id', null); setValue('deposit_amount', 0); }
-    } else { setValue('deposit_id', null); setValue('deposit_amount', 0); }
+    } else if (!initialData) { setValue('deposit_id', null); setValue('deposit_amount', 0); }
   }, [watchCustomerId, verifiedDeposits, rawCustomers, rawLeads, setValue]);
 
   useEffect(() => {
     // Edit mode: jangan override harga jika unit tidak berubah dari data asal
+    if (initialData && !isEditInitialized.current) return; // Skip during init
     if (initialData && watchUnitId === initialData.unit_id) return;
     const unit = units.find(u => u.id === watchUnitId);
     if (unit) setValue('price', unit.price || 0);
@@ -173,6 +185,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
 
   useEffect(() => {
     // Edit mode: jangan recalculate harga jika harga/diskon/promo tidak berubah dari data asal
+    if (initialData && !isEditInitialized.current) return; // Skip during init
     if (initialData &&
       watchPrice === initialData.price &&
       watchDiscount === initialData.discount &&
@@ -195,19 +208,28 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
     } else { setCustomers([]); }
   }, [watchConsultantId, rawCustomers, rawLeads, verifiedDeposits, hasLoadedMasterData]);
 
-  // Edit mode: re-apply select values after async options finish loading
+  // Edit mode: re-apply ALL select values after async options finish loading
   useEffect(() => {
     if (!hasLoadedMasterData || !initialData) return;
     setValue('consultant_id', initialData.consultant_id || '');
     setValue('project_id', initialData.project_id || '');
     setValue('unit_id', initialData.unit_id || '');
+    setValue('promo_id', initialData.promo_id || '');
+    setValue('payment_method', initialData.payment_method || 'cash');
   }, [hasLoadedMasterData]);
 
   // Edit mode: re-apply customer_id once customers list is populated
   useEffect(() => {
-    if (!initialData || !customers.length || editCustomerSet.current) return;
+    if (!initialData || !customers.length) return;
+    if (isEditInitialized.current) return; // Only run once
+    
+    // Set customer_id after customers are available
     setValue('customer_id', initialData.customer_id || '');
-    editCustomerSet.current = true;
+    
+    // Mark initialization as complete — all subsequent changes are user-initiated
+    setTimeout(() => {
+      isEditInitialized.current = true;
+    }, 200);
   }, [customers]);
 
   const watchPaymentMethod = watch('payment_method');
@@ -215,8 +237,40 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const totalInstallmentPlanned = watchInstallments.reduce((sum, inst) => sum + (inst.amount || 0), 0);
 
   const generateDefaultSchedule = (months: number) => {
+    // Validasi: pastikan harga sudah terisi
+    const currentFinalPrice = watch('final_price') || 0;
+    if (currentFinalPrice <= 0) {
+      alert('⚠️ Total Harga Akhir masih Rp 0. Pastikan unit sudah dipilih.');
+      return;
+    }
+
+    // Peringatan: booking fee atau DP belum diisi
+    if (watchBookingFee <= 0 && watchDpAmount <= 0) {
+      const lanjut = confirm(
+        '⚠️ PERINGATAN!\n\n' +
+        'Nilai Booking Fee dan Down Payment masih Rp 0.\n' +
+        'Jadwal cicilan akan dibuat berdasarkan TOTAL HARGA PENUH.\n\n' +
+        'Disarankan isi Booking Fee & DP terlebih dahulu agar jadwal cicilan akurat.\n\n' +
+        'Lanjutkan tetap buat jadwal?'
+      );
+      if (!lanjut) return;
+    } else if (watchBookingFee <= 0 || watchDpAmount <= 0) {
+      const belumIsi = watchBookingFee <= 0 ? 'Booking Fee' : 'Down Payment';
+      const lanjut = confirm(
+        `⚠️ PERINGATAN!\n\n` +
+        `Nilai ${belumIsi} masih Rp 0.\n` +
+        `Jadwal cicilan akan dihitung dari sisa piutang: ${formatCurrency(finalPiutang)}\n\n` +
+        `Pastikan ${belumIsi} sudah benar sebelum membuat jadwal.\n\n` +
+        `Lanjutkan?`
+      );
+      if (!lanjut) return;
+    }
+
     const sisa = finalPiutang;
-    if (sisa <= 0) return;
+    if (sisa <= 0) {
+      alert('✅ Sisa piutang sudah Rp 0. Tidak perlu jadwal cicilan.');
+      return;
+    }
     
     const amountPerMonth = Math.floor(sisa / months);
     const schedule = [];
@@ -232,6 +286,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       const day = String(d.getDate()).padStart(2, '0');
       
       schedule.push({
+        name: `Cicilan ${i}`,
         due_date: `${year}-${month}-${day}`,
         amount: i === months ? sisa - (amountPerMonth * (months - 1)) : amountPerMonth,
         status: 'unpaid'
@@ -302,21 +357,68 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       }
       if (values.deposit_id) await api.update('deposits', values.deposit_id, { status: 'used', sale_id: newSaleId });
 
-      // Save Installments Schedule
-      if (values.payment_method === 'installment' && installments && installments.length > 0) {
-        // If edit, clear old schedule first
-        if (initialData) {
-          await api.apiRequest(`installments?sale_id=eq.${newSaleId}`, { method: 'DELETE' });
-        }
+      // Save Installments Schedule (Now applicable to ALL payment methods for BF & DP)
+      if (initialData) {
+        await api.apiRequest(`installments?sale_id=eq.${newSaleId}`, { method: 'DELETE' });
+      }
 
-        const installmentPayload = installments.map((inst) => ({
+      let allInstallmentsToSave = [];
+
+      // 1. Selalu buat tagihan Booking Fee (Jika > 0)
+      if (values.booking_fee && values.booking_fee > 0) {
+        allInstallmentsToSave.push({
           sale_id: newSaleId,
+          name: 'Booking Fee',
+          due_date: values.booking_fee_date || values.sale_date,
+          amount: values.booking_fee,
+          status: 'unpaid'
+        });
+      }
+
+      // 2. Selalu buat tagihan Down Payment (Jika > 0)
+      if (values.dp_amount && values.dp_amount > 0) {
+        allInstallmentsToSave.push({
+          sale_id: newSaleId,
+          name: 'Down Payment',
+          due_date: values.dp_date || values.sale_date,
+          amount: values.dp_amount,
+          status: 'unpaid'
+        });
+      }
+
+      // 3. Logika sisa pelunasan berdasarkan metode bayar
+      if (values.payment_method === 'installment' && installments && installments.length > 0) {
+        // Gabungkan jadwal cicilan yang di-generate dari UI
+        const mappedInstallments = installments.map((inst, index) => ({
+          sale_id: newSaleId,
+          name: inst.name || `Cicilan ${index + 1}`,
           due_date: inst.due_date,
           amount: inst.amount,
           status: 'unpaid',
         }));
+        allInstallmentsToSave = [...allInstallmentsToSave, ...mappedInstallments];
+      } else if (values.payment_method === 'cash') {
+        // Untuk cash keras, sisa piutang dilunasi sekaligus
+        const currentFinalPrice = values.final_price || 0;
+        const currentBf = values.booking_fee || 0;
+        const currentDp = values.dp_amount || 0;
+        const depositAmt = (initialData?.deposit_amount) || watchDepositAmount || 0; // estimate deposit from state if missing
+        
+        const sisaCash = currentFinalPrice - currentBf - currentDp - depositAmt;
+        if (sisaCash > 0) {
+          allInstallmentsToSave.push({
+            sale_id: newSaleId,
+            name: 'Pelunasan Cash',
+            due_date: values.sale_date, // Harus lunas saat transaksi
+            amount: sisaCash,
+            status: 'unpaid'
+          });
+        }
+      }
 
-        await api.insert('installments', installmentPayload);
+      // 4. Save all installments
+      if (allInstallmentsToSave.length > 0) {
+        await api.insert('installments', allInstallmentsToSave);
       }
 
       // Auto-create SPK kontraktor untuk setiap penjualan baru
@@ -346,9 +448,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
     } catch (error: any) { alert(`Gagal: ${error.message}`); } finally { setLoading(false); }
   };
 
-  const finalPiutang = Math.max(0, (watch('final_price') || 0) - watchDepositAmount - watchBookingFee - watchDpAmount);
-  const remainingAfterPayment = finalPiutang;
-  
   // Dashboard Promo Helper
   const selectedPromo = promos.find(p => String(p.id) === String(watchPromoId));
 
@@ -358,13 +457,38 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       <div className="bg-white/40 p-5 rounded-[2rem] border border-white/60 shadow-sm space-y-4">
         <h3 className="text-xs font-black text-text-muted uppercase tracking-widest flex items-center gap-2"><Briefcase className="w-4 h-4 text-accent-dark" /> Data Utama Transaksi</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Input label="Tanggal Transaksi" type="date" {...register('sale_date')} />
-          <Select label="Konsultan Property" options={consultantStaff.map(m => ({ label: m.name, value: m.id }))} {...register('consultant_id')} disabled={profile?.role === 'marketing' && !!profile?.consultant_id} />
-          <Select label="Nama Konsumen" options={customers.map(c => ({ label: c.full_name, value: c.id }))} {...register('customer_id')} disabled={!watchConsultantId} className={cn(watchDepositAmount > 0 && "border-blue-500 bg-blue-50/30")} />
-          <Select label="Proyek" options={projects.map(p => ({ label: p.name, value: p.id }))} {...register('project_id')} />
+          <Controller name="sale_date" control={control} render={({ field }) => <DateInput label="Tanggal Transaksi" value={field.value} onChange={field.onChange} />} />
+          <Select label="Konsultan Property" options={(() => {
+            const opts = consultantStaff.map(m => ({ label: m.name, value: m.id }));
+            if (initialData?.consultant_id && !opts.find(o => o.value === initialData.consultant_id)) {
+              opts.unshift({ label: initialData.consultant?.name || 'Loading...', value: initialData.consultant_id });
+            }
+            return opts;
+          })()} {...register('consultant_id')} disabled={profile?.role === 'marketing' && !!profile?.consultant_id} />
+          <Select label="Nama Konsumen" options={(() => {
+            const opts = customers.map(c => ({ label: c.full_name, value: c.id }));
+            if (initialData?.customer_id && !opts.find(o => o.value === initialData.customer_id)) {
+              opts.unshift({ label: initialData.customer?.full_name || 'Loading...', value: initialData.customer_id });
+            }
+            return opts;
+          })()} {...register('customer_id')} disabled={!watchConsultantId} className={cn(watchDepositAmount > 0 && "border-blue-500 bg-blue-50/30")} />
+          <Select label="Proyek" options={(() => {
+            const opts = projects.map(p => ({ label: p.name, value: p.id }));
+            if (initialData?.project_id && !opts.find(o => o.value === initialData.project_id)) {
+              const projName = initialData.unit?.project?.name || 'Loading...';
+              opts.unshift({ label: projName, value: initialData.project_id });
+            }
+            return opts;
+          })()} {...register('project_id')} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-          <Select label="Pilih Unit / Blok" options={units.filter(u => u.project_id === watchProjectId).map(u => ({ label: u.unit_number, value: u.id }))} {...register('unit_id')} disabled={!watchProjectId} />
+          <Select label="Pilih Unit / Blok" options={(() => {
+            const opts = units.filter(u => u.project_id === watchProjectId).map(u => ({ label: u.unit_number, value: u.id }));
+            if (initialData?.unit_id && !opts.find(o => o.value === initialData.unit_id)) {
+              opts.unshift({ label: initialData.unit?.unit_number || 'Loading...', value: initialData.unit_id });
+            }
+            return opts;
+          })()} {...register('unit_id')} disabled={!watchProjectId} />
           <div className="md:col-span-3 bg-white/60 p-4 rounded-2xl border border-white/80 flex items-center justify-between">
             <span className="text-[10px] font-black text-text-muted uppercase tracking-wider">Metode Pembayaran Utama:</span>
             <div className="flex gap-10">
@@ -400,9 +524,19 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <Controller name="price" control={control} render={({ field }) => <CurrencyInput label="Harga Unit" value={field.value} readOnly className="bg-white/30" />} />
           <Controller name="discount" control={control} render={({ field }) => <CurrencyInput label="Discount" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} />} />
-          <Select label="Pilih Promo" options={promos.map(p => ({ label: p.name, value: p.id }))} {...register('promo_id')} />
+          <Select label="Pilih Promo" options={(() => {
+            const opts = promos.map(p => ({ label: p.name, value: p.id }));
+            if (initialData?.promo_id && !opts.find(o => o.value === initialData.promo_id)) {
+              opts.unshift({ label: initialData.promo?.name || 'Loading...', value: initialData.promo_id });
+            }
+            return opts;
+          })()} {...register('promo_id')} />
           <Controller name="booking_fee" control={control} render={({ field }) => <CurrencyInput label="Nilai Booking Fee" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} />} />
           <Controller name="dp_amount" control={control} render={({ field }) => <CurrencyInput label="Nilai Down Payment" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} />} />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Controller name="booking_fee_date" control={control} render={({ field }) => <DateInput label="Tanggal Booking Fee" value={field.value} onChange={field.onChange} />} />
+          <Controller name="dp_date" control={control} render={({ field }) => <DateInput label="Tanggal Down Payment" value={field.value} onChange={field.onChange} />} />
         </div>
 
         {/* FINANCIAL SUMMARY DASHBOARD */}
@@ -486,14 +620,15 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
             </div>
           </div>
 
+          {/* Helper for Indonesian Date Input */}
           <div className="space-y-3">
             {installmentFields.map((field, index) => (
               <div key={field.id} className="bg-white/60 p-4 rounded-2xl border border-blue-200/60 relative group flex items-end gap-4 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex-1">
-                  <Input 
-                    label={`Jatuh Tempo #${index + 1} (${formatDate(watch(`installments.${index}.due_date`))})`} 
-                    type="date" 
-                    {...register(`installments.${index}.due_date`)} 
+                  <Controller 
+                    name={`installments.${index}.due_date`}
+                    control={control}
+                    render={({ field }) => <DateInput label={`Jatuh Tempo #${index + 1}`} value={field.value} onChange={field.onChange} />}
                   />
                 </div>
                 <div className="flex-[2]">

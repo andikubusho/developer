@@ -8,7 +8,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { PriceListItem, Project } from '../types';
-import { formatCurrency, cn } from '../lib/utils';
+import { formatCurrency, cn, formatDate, formatDateTime, formatNumber } from '../lib/utils';
 import { PriceItemForm } from '../components/forms/PriceItemForm';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -194,7 +194,7 @@ const PriceList: React.FC = () => {
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       const projectName = projects.find(p => p.id === selectedProjectId)?.name || 'Proyek';
-      pdf.save(`Price-List-${projectName}-${new Date().toLocaleDateString('id-ID')}.pdf`);
+      pdf.save(`Price-List-${projectName}-${formatDate(new Date()).replace(/\//g, '-')}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Gagal membuat PDF. Silakan coba fitur Cetak (Print to PDF) sebagai alternatif.');
@@ -451,7 +451,7 @@ const PriceList: React.FC = () => {
             <div className="text-[6.5pt] text-right font-bold">
               <p>DAFTAR HARGA JUAL UNIT</p>
               <p>{projects.find(p => p.id === selectedProjectId)?.name.toUpperCase()}</p>
-              <p>Per Tanggal: {new Date().toLocaleDateString('id-ID')}</p>
+              <p>Per Tanggal: {formatDate(new Date())}</p>
             </div>
           </div>
         </div>
@@ -498,12 +498,12 @@ const PriceList: React.FC = () => {
                           <td colSpan={6} className="sold-cell">S O L D</td>
                         ) : (
                           <>
-                            <td className="text-right">{item.booking_fee.toLocaleString('id-ID')}</td>
-                            <td className="text-right font-black">{calc.dp_amount.toLocaleString('id-ID')}</td>
-                            <td className="text-right">{calc.angsuran_5.toLocaleString('id-ID')}</td>
-                            <td className="text-right">{calc.angsuran_10.toLocaleString('id-ID')}</td>
-                            <td className="text-right">{calc.angsuran_15.toLocaleString('id-ID')}</td>
-                            <td className="text-right font-black whitespace-nowrap">{item.harga_jual.toLocaleString('id-ID')}</td>
+                            <td className="text-right">{formatNumber(item.booking_fee)}</td>
+                            <td className="text-right font-black">{formatNumber(calc.dp_amount)}</td>
+                            <td className="text-right">{formatNumber(calc.angsuran_5)}</td>
+                            <td className="text-right">{formatNumber(calc.angsuran_10)}</td>
+                            <td className="text-right">{formatNumber(calc.angsuran_15)}</td>
+                            <td className="text-right font-black whitespace-nowrap">{formatNumber(item.harga_jual)}</td>
                           </>
                         )}
                       </tr>
@@ -546,7 +546,7 @@ const PriceList: React.FC = () => {
             <div className="pt-2 space-y-0.5 font-black text-[6pt]">
               <p>2. Harga sewaktu-waktu dapat berubah tanpa pemberitahuan</p>
               <p>3. Harga Berlaku per 1 Maret 2026</p>
-              <p className="pt-2 text-right italic font-normal text-[5.5pt]">Dicetak pada: {new Date().toLocaleString('id-ID')}</p>
+              <p className="pt-2 text-right italic font-normal text-[5.5pt]">Dicetak pada: {formatDateTime(new Date())}</p>
             </div>
           </div>
         </div>

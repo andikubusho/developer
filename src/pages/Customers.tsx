@@ -10,6 +10,7 @@ import { Input } from '../components/ui/Input';
 import { CustomerForm } from '../components/forms/CustomerForm';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
+import { formatDateTime } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import ConsultantDataFilter from '../components/ConsultantDataFilter';
 import { useCanViewAll } from '../hooks/usePermissions';
@@ -101,7 +102,7 @@ const Customers: React.FC = () => {
         consultant_id: customer.consultant_id,
         status: 'hot',
         source: 'Dibatalkan dari Konsumen',
-        description: `Dikonversi balik dari data Konsumen pada ${new Date().toLocaleString()}`,
+        description: `Dikonversi balik dari data Konsumen pada ${formatDateTime(new Date())}`,
         date: new Date().toISOString()
       });
 

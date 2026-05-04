@@ -64,8 +64,9 @@ const Payments: React.FC = () => {
   };
 
   const filteredSchedule = installments.filter((item: any) =>
-    item.sale?.customer?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.sale?.unit?.unit_number?.toLowerCase().includes(searchTerm.toLowerCase())
+    !item.isPendingPayment && 
+    (item.sale?.customer?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.sale?.unit?.unit_number?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -152,7 +153,9 @@ const Payments: React.FC = () => {
                             <TD className="px-6 py-4 pl-16">
                               <div className="flex items-center gap-2">
                                 <Clock className={cn("w-3.5 h-3.5", isOverdue ? "text-rose-400" : "text-text-muted")} />
-                                <span className={cn("text-[11px] font-bold", isOverdue ? "text-rose-700" : "text-text-secondary")}>Cicilan #{group.items.indexOf(inst) + 1}</span>
+                                <span className={cn("text-[11px] font-bold", isOverdue ? "text-rose-700" : "text-text-secondary")}>
+                                  {inst.name || `Tagihan #${group.items.indexOf(inst) + 1}`}
+                                </span>
                               </div>
                             </TD>
                             <TD className="px-6 py-4">

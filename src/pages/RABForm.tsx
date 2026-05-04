@@ -25,7 +25,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { api } from '../lib/api';
-import { formatCurrency, cn, formatDate } from '../lib/utils';
+import { formatCurrency, cn, formatDate, formatNumber } from '../lib/utils';
 import * as XLSX from 'xlsx';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -135,7 +135,7 @@ const RABForm: React.FC = () => {
   const fmtIDR = (val: number | null | undefined) => {
     if (val == null) return '';
     if (val === 0) return '0';
-    return val.toLocaleString('id-ID');
+    return formatNumber(val);
   };
 
   // Fetch units when project changes
@@ -1537,7 +1537,7 @@ const RABForm: React.FC = () => {
                     className="w-full text-left px-3 py-2 rounded-lg hover:bg-accent-lavender/10 transition-colors"
                   >
                     <div className="text-xs font-bold text-text-primary">{m.name}</div>
-                    <div className="text-[10px] text-text-muted">{m.unit} · {m.harga_satuan ? `Rp ${Number(m.harga_satuan).toLocaleString('id-ID')}` : '-'}</div>
+                    <div className="text-[10px] text-text-muted">{m.unit} · {m.harga_satuan ? formatCurrency(m.harga_satuan) : '-'}</div>
                   </button>
                 ))
               }

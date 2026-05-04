@@ -6,7 +6,7 @@ import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { MarketingDocument } from '../types';
-import { formatDate } from '../lib/utils';
+import { formatDate, formatDateTime } from '../lib/utils';
 import { api } from '../lib/api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -100,7 +100,7 @@ const SitePlan: React.FC = () => {
     const doc = new jsPDF();
     doc.text('DAFTAR DOKUMEN SITE PLAN', 14, 15);
     doc.setFontSize(10);
-    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
+    doc.text(`Dicetak pada: ${formatDateTime(new Date())}`, 14, 22);
     
     autoTable(doc, {
       startY: 30,
@@ -109,7 +109,7 @@ const SitePlan: React.FC = () => {
       headStyles: { fillColor: [79, 70, 229] }, // Indigo-600
     });
     
-    doc.save(`Daftar-Site-Plan-${new Date().toLocaleDateString('id-ID')}.pdf`);
+    doc.save(`Daftar-Site-Plan-${formatDate(new Date()).replace(/\//g, '-')}.pdf`);
   };
 
   return (

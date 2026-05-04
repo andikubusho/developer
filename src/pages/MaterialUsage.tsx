@@ -17,7 +17,7 @@ import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { SearchableSelect } from '../components/ui/SearchableSelect';
 import { api } from '../lib/api';
-import { formatNumber, cn } from '../lib/utils';
+import { formatNumber, cn, formatDate } from '../lib/utils';
 
 const MaterialUsage: React.FC = () => {
   const navigate = useNavigate();
@@ -535,7 +535,7 @@ const MaterialUsage: React.FC = () => {
                     <td className="px-4 py-4">
                       <div className="font-black text-slate-700 uppercase text-xs">{h.rab?.nama_proyek || '-'}</div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                        {h.tanggal ? new Date(h.tanggal).toLocaleDateString('id-ID') : '-'}
+                        {h.tanggal ? formatDate(h.tanggal) : '-'}
                       </div>
                     </td>
                     <td className="px-4 py-4">
