@@ -22,66 +22,89 @@ interface Notification {
 const ManagerNotificationListener: React.FC = () => {
   const { profile, division } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  // Fresh role data fetched at mount to avoid stale auth context
   const [roleData, setRoleData] = useState<any>(null);
 
+  // Admin bypasses semua pengecekan — selalu terima semua notifikasi
+  const isAdmin = (profile as any)?.role === 'admin';
+
+  // Fetch fresh role data saat mount (hindari data stale dari login)
   useEffect(() => {
+    if (isAdmin) return; // admin tidak butuh role_data check
     const roleId = (profile as any)?.role_id;
     if (!roleId) return;
     api.get('roles', `select=*&id=eq.${roleId}`).then(data => {
       if (data.length > 0) setRoleData(data[0]);
     });
-  }, [profile?.id]);
+  }, [profile?.id, isAdmin]);
 
   const effectiveRole = roleData || (profile?.role_data as any);
 
-  // Collect all divisions (primary + authorized) to handle multi-division roles
+  // Kumpulkan semua division user (primary + authorized)
   const userDivisions: string[] = useMemo(() => {
+    if (isAdmin) return []; // admin tidak pakai filter division
     const primary: string | undefined = effectiveRole?.division;
     const authorized: string[] = effectiveRole?.authorized_divisions || [];
     const ctx = division as string | null;
     return [...new Set([primary, ...authorized, ctx].filter(Boolean))] as string[];
-  }, [effectiveRole, division]);
+  }, [isAdmin, effectiveRole, division]);
 
   const fetchUnread = useCallback(async () => {
-    if (!profile?.id || userDivisions.length === 0) return;
-    if (!effectiveRole?.receive_notifications) return;
+    if (!profile?.id) return;
 
-    // ov = overlaps (&&): notification targets ANY of user's divisions
-    // or=(read_by.is.null,...) handles NULL default on new rows (Bug 1 fix)
+    if (isAdmin) {
+      // Admin: ambil semua notifikasi yang belum dibaca tanpa filter division
+      const data = await api.get(
+        'notifications',
+        `select=*&or=(read_by.is.null,read_by.not.cs.{${profile.id}})&order=created_at.desc&limit=5`
+      );
+      setNotifications(data);
+      return;
+    }
+
+    if (!effectiveRole?.receive_notifications) return;
+    if (userDivisions.length === 0) return;
+
+    // ov = overlaps (&&): cocok jika notifikasi menarget salah satu division user
+    // or=(read_by.is.null,...) menangani read_by NULL pada notifikasi baru
     const divParam = userDivisions.join(',');
     const data = await api.get(
       'notifications',
       `select=*&target_divisions=ov.{${divParam}}&or=(read_by.is.null,read_by.not.cs.{${profile.id}})&order=created_at.desc&limit=5`
     );
     setNotifications(data);
-  }, [profile?.id, userDivisions, effectiveRole?.receive_notifications]);
+  }, [profile?.id, isAdmin, userDivisions, effectiveRole?.receive_notifications]);
 
   useEffect(() => {
-    if (!effectiveRole?.receive_notifications) return;
-    if (userDivisions.length === 0) return;
+    // Gate untuk non-admin
+    if (!isAdmin) {
+      if (!effectiveRole?.receive_notifications) return;
+      if (userDivisions.length === 0) return;
+    }
+
+    if (!profile?.id) return;
 
     fetchUnread();
     const pollInterval = setInterval(fetchUnread, 30_000);
 
     const channel = supabase
-      .channel(`notifications-${profile!.id}`)
+      .channel(`notifications-${profile.id}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications' },
         (payload) => {
           const newNotif = payload.new as Notification;
 
-          // Must target at least one of user's divisions
-          if (!newNotif.target_divisions.some(d => userDivisions.includes(d))) return;
+          // Admin menerima semua, non-admin filter berdasarkan division
+          if (!isAdmin && !newNotif.target_divisions.some(d => userDivisions.includes(d))) return;
 
           const notificationType = newNotif.metadata?.type || 'unknown';
           const settings = effectiveRole?.notification_settings as Record<string, boolean> | undefined;
-          const isTypeEnabled = !settings || settings[notificationType] !== false;
+          // Admin: tampilkan semua. Non-admin: opt-out (tampilkan kecuali dimatikan)
+          const isTypeEnabled = isAdmin || !settings || settings[notificationType] !== false;
 
           if (isTypeEnabled) {
             setNotifications(prev => {
-              if (prev.some(n => n.id === newNotif.id)) return prev;
+              if (prev.some((n: Notification) => n.id === newNotif.id)) return prev;
               return [newNotif, ...prev].slice(0, 5);
             });
             playNotificationSound();
@@ -94,7 +117,7 @@ const ManagerNotificationListener: React.FC = () => {
       clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
-  }, [effectiveRole, userDivisions, fetchUnread, profile?.id]);
+  }, [isAdmin, effectiveRole, userDivisions, fetchUnread, profile?.id]);
 
   const markAsRead = async (id: string) => {
     if (!profile) return;
@@ -104,7 +127,7 @@ const ManagerNotificationListener: React.FC = () => {
         user_id: profile.id
       });
       if (!error) {
-        setNotifications(prev => prev.filter(n => n.id !== id));
+        setNotifications(prev => prev.filter((n: Notification) => n.id !== id));
       }
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
@@ -115,7 +138,7 @@ const ManagerNotificationListener: React.FC = () => {
 
   return (
     <div className="fixed bottom-6 right-6 z-[10000] flex flex-col gap-3 w-full max-w-sm pointer-events-none">
-      {notifications.map((notif, index) => (
+      {notifications.map((notif: Notification, index: number) => (
         <Card
           key={notif.id}
           className={cn(
