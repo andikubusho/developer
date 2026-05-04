@@ -232,9 +232,12 @@ const ConsumerPayments: React.FC = () => {
       <div class="receipt-container">
         <div class="watermark">ORIGINAL RECEIPT</div>
         <div class="header">
-          <div class="logo-section">
-            <h1>PT. ABADI LAND MAKMUR</h1>
-            <p>Property Development & Construction</p>
+          <div class="logo-section" style="display:flex;align-items:center;gap:15px">
+            <img src="/logo-perusahaan.png" style="height:50px;width:auto" onerror="this.style.display='none'" />
+            <div>
+              <h1>PT. ABADI LESTARI MANDIRI</h1>
+              <p>Property Development & Construction</p>
+            </div>
           </div>
           <div class="receipt-title">
             <h2>KUITANSI</h2>
