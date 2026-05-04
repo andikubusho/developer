@@ -455,6 +455,24 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
                 type="button" 
                 variant="outline" 
                 size="sm" 
+                onClick={() => generateDefaultSchedule(12)}
+                className="rounded-xl border-blue-300 text-blue-900 hover:bg-blue-100 font-bold text-[10px]"
+              >
+                Auto 12 Bln
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={() => generateDefaultSchedule(18)}
+                className="rounded-xl border-blue-300 text-blue-900 hover:bg-blue-100 font-bold text-[10px]"
+              >
+                Auto 18 Bln
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
                 onClick={() => appendInstallment({ due_date: new Date().toISOString().split('T')[0], amount: 0, status: 'unpaid' })}
                 className="rounded-xl border-blue-300 text-blue-900 hover:bg-blue-100 font-bold gap-2"
               >
