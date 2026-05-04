@@ -38,14 +38,16 @@ const ConsumerPayments: React.FC = () => {
         unitsData, 
         projectsData, 
         installmentsData,
-        paymentsRaw
+        paymentsRaw,
+        allVerifiedPayments
       ] = await Promise.all([
         api.get('sales', 'select=*&status=neq.cancelled&order=sale_date.desc'),
         api.get('customers', 'select=id,full_name'),
         api.get('units', 'select=id,unit_number,project_id'),
         api.get('projects', 'select=id,name'),
         api.get('installments', 'select=id,sale_id,status,amount&status=eq.unpaid'),
-        api.get('payments', 'select=*&order=payment_date.desc&limit=20')
+        api.get('payments', 'select=*&order=payment_date.desc&limit=20'),
+        api.get('payments', 'select=sale_id,amount&status=eq.verified')
       ]);
 
       const customerMap: Record<string, any> = {};
@@ -64,13 +66,20 @@ const ConsumerPayments: React.FC = () => {
         unpaidInstallmentsMap[inst.sale_id] = (unpaidInstallmentsMap[inst.sale_id] || 0) + (Number(inst.amount) || 0);
       });
 
+      const paidAmountMap: Record<string, number> = {};
+      (allVerifiedPayments || []).forEach((p: any) => {
+        paidAmountMap[p.sale_id] = (paidAmountMap[p.sale_id] || 0) + (Number(p.amount) || 0);
+      });
+
       const saleMap: Record<string, any> = {};
       const enrichedSales = (salesRaw || []).map((s: any) => {
         const enriched = {
           ...s,
           customer: s.customer_id ? (customerMap[s.customer_id] || null) : null,
           unit: s.unit_id ? (unitMap[s.unit_id] || null) : null,
-          unpaidAmount: unpaidInstallmentsMap[s.id] || 0
+          unpaidAmount: s.payment_method === 'installment' 
+            ? (unpaidInstallmentsMap[s.id] || 0)
+            : Math.max(0, Number(s.final_price) - (paidAmountMap[s.id] || 0))
         };
         saleMap[s.id] = enriched;
         return enriched;

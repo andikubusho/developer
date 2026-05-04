@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Calendar, Wallet, Info, Star, CreditCard, Users, Banknote, Briefcase, Plus, Trash2 } from 'lucide-react';
+import { Calendar, Wallet, Users, Briefcase, Plus, Trash2, Info } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
@@ -31,12 +31,6 @@ const saleSchema = z.object({
   dp_amount: z.number().min(0),
   deposit_id: z.string().optional().nullable(),
   deposit_amount: z.number().min(0).optional().nullable(),
-  initial_payments: z.array(z.object({
-    type: z.string(),
-    amount: z.number().min(0),
-    date: z.string(),
-    bank_id: z.string().optional().nullable(),
-  })).optional().nullable(),
   installments: z.array(z.object({
     due_date: z.string(),
     amount: z.number().min(0),
@@ -78,17 +72,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
       final_price: 0,
       booking_fee: 0,
       dp_amount: 0,
-      initial_payments: [
-        { type: 'Transfer Bank', amount: 0, date: new Date().toISOString().split('T')[0], bank_id: null }
-      ],
       deposit_amount: 0,
       installments: [],
     }
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "initial_payments"
   });
 
   const { fields: installmentFields, append: appendInstallment, remove: removeInstallment, replace: replaceInstallments } = useFieldArray({
@@ -106,8 +92,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const watchDepositAmount = (watch('deposit_amount') as number) || 0;
   const watchBookingFee = (watch('booking_fee') as number) || 0;
   const watchDpAmount = (watch('dp_amount') as number) || 0;
-  const watchPayments = watch('initial_payments') || [];
-  const totalInitialPayment = watchPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -230,7 +215,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const totalInstallmentPlanned = watchInstallments.reduce((sum, inst) => sum + (inst.amount || 0), 0);
 
   const generateDefaultSchedule = (months: number) => {
-    const sisa = remainingAfterPayment;
+    const sisa = finalPiutang;
+
     if (sisa <= 0) return;
     
     const amountPerMonth = Math.floor(sisa / months);
@@ -275,7 +261,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           if (newCustomer?.[0]) finalCustomerId = newCustomer[0].id;
         }
       }
-      const { initial_payments, installments, ...restValues } = values;
+      const { installments, ...restValues } = values;
       const salePayload = {
         ...restValues,
         customer_id: finalCustomerId,
@@ -310,27 +296,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
         await api.update('units', values.unit_id, { status: 'sold' });
       }
       if (values.deposit_id) await api.update('deposits', values.deposit_id, { status: 'used', sale_id: newSaleId });
-
-      if (!initialData && values.initial_payments && values.initial_payments.length > 0) {
-        const customerName = rawCustomers.find(c => c.id === finalCustomerId)?.full_name
-          || rawLeads.find(l => l.id === finalCustomerId)?.name
-          || 'Konsumen';
-        const unitNumber = units.find(u => u.id === values.unit_id)?.unit_number || values.unit_id;
-
-        for (const pay of values.initial_payments) {
-          if (pay.amount > 0) {
-            const bankId = pay.type === 'Transfer Bank' ? toUuid(pay.bank_id) : null;
-            await api.insert('payments', {
-              sale_id: newSaleId,
-              amount: pay.amount,
-              payment_date: pay.date,
-              payment_method: pay.type,
-              bank_account_id: bankId,
-              status: 'pending',
-            });
-          }
-        }
-      }
 
       // Save Installments Schedule
       if (values.payment_method === 'installment' && installments && installments.length > 0) {
@@ -377,7 +342,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   };
 
   const finalPiutang = Math.max(0, (watch('final_price') || 0) - watchDepositAmount - watchBookingFee - watchDpAmount);
-  const remainingAfterPayment = Math.max(0, finalPiutang - totalInitialPayment);
+  const remainingAfterPayment = finalPiutang;
   
   // Dashboard Promo Helper
   const selectedPromo = promos.find(p => String(p.id) === String(watchPromoId));
@@ -456,92 +421,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
             </div>
           </div>
           {watchDepositAmount > 0 && <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] px-5 py-1.5 font-black uppercase tracking-[0.2em] rounded-bl-3xl shadow-lg">⭐ TITIPAN TERDETEKSI</div>}
-        </div>
-      </div>
-
-      {/* PAYMENT SECTION: REALITA UANG MASUK (MULTI-PAYMENT) */}
-      <div className="bg-amber-50/50 p-6 rounded-[2.5rem] border-2 border-amber-200 shadow-sm space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h3 className="text-sm font-black text-amber-900 flex items-center gap-2 uppercase tracking-widest"><CreditCard className="w-5 h-5" /> Realita Penerimaan Uang (Cash Flow)</h3>
-            <p className="text-[10px] text-amber-700 font-medium italic">* Bisa input beberapa kali transfer atau campur tunai.</p>
-          </div>
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="sm" 
-            onClick={() => append({ type: 'Transfer Bank', amount: 0, date: new Date().toISOString().split('T')[0], bank_id: null })}
-            className="rounded-xl border-amber-300 text-amber-900 hover:bg-amber-100 font-bold gap-2"
-          >
-            <Plus className="w-4 h-4" /> Tambah Pembayaran
-          </Button>
-        </div>
-
-        <div className="space-y-4">
-          {fields.map((field, index) => (
-            <div key={field.id} className="bg-white/60 p-5 rounded-3xl border border-amber-200/60 relative group animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-                <div className="md:col-span-2">
-                  <Select 
-                    label={`Tipe #${index + 1}`}
-                    options={[
-                      { label: 'Transfer Bank', value: 'Transfer Bank' },
-                      { label: 'Tunai / Cash', value: 'Tunai' }
-                    ]}
-                    {...register(`initial_payments.${index}.type`)}
-                  />
-                </div>
-                <div className="md:col-span-3">
-                  <Controller 
-                    name={`initial_payments.${index}.amount`} 
-                    control={control} 
-                    render={({ field }) => <CurrencyInput label="Nilai Bayar" value={field.value} onValueChange={(v) => field.onChange(v.floatValue || 0)} placeholder="Rp 0" />} 
-                  />
-                </div>
-                <div className="md:col-span-3">
-                  <Input label="Tanggal" type="date" {...register(`initial_payments.${index}.date`)} />
-                </div>
-                <div className="md:col-span-3">
-                  {watch(`initial_payments.${index}.type`) === 'Transfer Bank' ? (
-                    <Select 
-                      label="Ke Rekening" 
-                      options={bankAccounts.map(b => ({ 
-                        label: `${b.bank_name} - ${b.account_number} (${b.bank_name || 'PT. ALM'})`, 
-                        value: b.id 
-                      }))} 
-                      {...register(`initial_payments.${index}.bank_id`)} 
-                    />
-                  ) : (
-                    <div className="h-[42px] flex items-center px-4 bg-amber-100/50 rounded-xl border border-amber-200 text-[10px] font-bold text-amber-800 uppercase">Pembayaran Tunai</div>
-                  )}
-                </div>
-                <div className="md:col-span-1 flex justify-end">
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => remove(index)} 
-                    disabled={fields.length === 1}
-                    className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* CALCULATION OF TRUE REMAINING BALANCE */}
-        <div className="mt-6 pt-6 border-t border-amber-300 flex justify-between items-center">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Total Pembayaran Hari Ini:</span>
-            <span className="text-xl font-black text-amber-900">{formatCurrency(totalInitialPayment)}</span>
-          </div>
-          <div className="text-right flex flex-col items-end">
-            <span className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Sisa Piutang Setelah Bayar Hari Ini:</span>
-            <span className="text-2xl font-black text-amber-900">{formatCurrency(remainingAfterPayment)}</span>
-          </div>
         </div>
       </div>
 
