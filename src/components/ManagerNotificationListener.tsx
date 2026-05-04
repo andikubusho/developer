@@ -3,7 +3,6 @@ import { Bell, X, User, Info } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
-import { cn } from '../lib/utils';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { playNotificationSound } from '../lib/sound';
@@ -136,58 +135,67 @@ const ManagerNotificationListener: React.FC = () => {
 
   if (notifications.length === 0) return null;
 
+  // Tampilkan hanya 1 notifikasi terbaru, sisanya antri
+  const current = notifications[0];
+  const queueCount = notifications.length - 1;
+
   return (
-    <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-center gap-4 pointer-events-none px-4">
-      {notifications.map((notif: Notification, index: number) => (
-        <Card
-          key={notif.id}
-          className={cn(
-            'pointer-events-auto w-full max-w-lg bg-white/90 backdrop-blur-2xl border-white/50 shadow-2xl overflow-hidden animate-in slide-in-from-top duration-500',
-            index === 0 ? 'scale-100 opacity-100' : 'scale-95 opacity-70'
-          )}
-        >
-          <div className="absolute top-0 left-0 w-1.5 h-full bg-accent-dark" />
-          <div className="p-6 pl-8">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3 text-accent-dark">
-                <div className="w-11 h-11 rounded-xl bg-accent-dark/10 flex items-center justify-center">
-                  <Bell className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-black tracking-tight leading-none">{notif.title}</h3>
-                  <span className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-0.5 block">
-                    {notif.metadata?.type?.startsWith('teknik') ? 'Logistik Update' :
-                     notif.metadata?.type?.startsWith('keuangan') ? 'Keuangan Update' : 'Marketing Update'}
-                  </span>
-                </div>
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none px-4">
+      <Card
+        key={current.id}
+        className="pointer-events-auto w-full max-w-lg bg-white/95 backdrop-blur-2xl border-white/50 shadow-2xl overflow-hidden animate-in slide-in-from-top duration-400"
+      >
+        <div className="absolute top-0 left-0 w-1.5 h-full bg-accent-dark" />
+        <div className="p-6 pl-8">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3 text-accent-dark">
+              <div className="w-11 h-11 rounded-xl bg-accent-dark/10 flex items-center justify-center">
+                <Bell className="w-5 h-5" />
               </div>
-              <button onClick={() => markAsRead(notif.id)} className="text-text-muted hover:text-text-primary transition-colors p-1.5">
-                <X className="w-5 h-5" />
-              </button>
+              <div>
+                <h3 className="text-base font-black tracking-tight leading-tight">{current.title}</h3>
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-0.5 block">
+                  {current.metadata?.type?.startsWith('teknik') ? 'Logistik Update' :
+                   current.metadata?.type?.startsWith('keuangan') ? 'Keuangan Update' : 'Marketing Update'}
+                </span>
+              </div>
             </div>
+            <button onClick={() => markAsRead(current.id)} className="text-text-muted hover:text-text-primary transition-colors p-1.5">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-            <p className="text-sm text-text-primary font-medium leading-relaxed mb-5 bg-accent-dark/5 p-4 rounded-xl border border-accent-dark/10">
-              {notif.message}
-            </p>
+          {/* Pesan detail */}
+          <p className="text-sm text-text-primary font-medium leading-relaxed mb-5 bg-accent-dark/5 p-4 rounded-xl border border-accent-dark/10 whitespace-pre-line">
+            {current.message}
+          </p>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs text-text-secondary font-bold">
-                <User className="w-4 h-4" />
-                <span>Oleh: {notif.sender_name}</span>
-              </div>
+          {/* Footer */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs text-text-secondary font-bold">
+              <User className="w-4 h-4" />
+              <span>Oleh: {current.sender_name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {queueCount > 0 && (
+                <span className="text-[10px] font-black text-text-muted bg-gray-100 px-2 py-1 rounded-full">
+                  +{queueCount} lainnya
+                </span>
+              )}
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-9 px-4 text-xs font-black uppercase tracking-widest gap-1.5 text-accent-dark hover:bg-accent-dark/10"
-                onClick={() => markAsRead(notif.id)}
+                onClick={() => markAsRead(current.id)}
               >
                 <Info className="w-4 h-4" />
                 Selesai
               </Button>
             </div>
           </div>
-        </Card>
-      ))}
+        </div>
+      </Card>
     </div>
   );
 };
