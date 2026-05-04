@@ -58,7 +58,6 @@ const PurchaseOrders: React.FC = () => {
   const [selectedPR, setSelectedPR] = useState<any | null>(null);
   const [selectedPRItems, setSelectedPRItems] = useState<PRItemForPO[] | undefined>();
   const [selectedItemKeys, setSelectedItemKeys] = useState<Set<string>>(new Set());
-  const [poQueue, setPoQueue] = useState<any[]>([]);
 
   const toggleItem = (key: string) => {
     setSelectedItemKeys(prev => {
@@ -515,23 +514,18 @@ const PurchaseOrders: React.FC = () => {
       >
         <PurchaseOrderForm
           onSuccess={() => {
-            if (poQueue.length > 0) {
-              setSelectedPR(poQueue[0]);
-              setPoQueue(prev => prev.slice(1));
-            } else {
-              setIsModalOpen(false);
-              setSelectedPR(null);
-              setSelectedPRItems(undefined);
-              setSelectedOrder(undefined);
-              setSelectedItemKeys(new Set());
-              fetchOrders();
-            }
+            setIsModalOpen(false);
+            setSelectedPR(null);
+            setSelectedPRItems(undefined);
+            setSelectedOrder(undefined);
+            setSelectedItemKeys(new Set());
+            fetchOrders();
           }}
           onCancel={() => {
             setIsModalOpen(false);
             setSelectedPR(null);
+            setSelectedPRItems(undefined);
             setSelectedOrder(undefined);
-            setPoQueue([]);
             setSelectedItemKeys(new Set());
           }}
           initialPR={selectedPR}
