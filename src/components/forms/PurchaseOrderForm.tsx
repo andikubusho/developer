@@ -269,12 +269,17 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       const ppn_amount = values.include_ppn ? Math.round(base_price * 0.11) : 0;
       const grand_total = base_price + ppn_amount;
 
+      const selectedVariant = variants.find((v: any) => v.id === finalVariantId);
+      const variantMerk = isNewVariant ? newVariant.merk : (selectedVariant?.merk || '');
       const poItem = {
         material_id: values.material_id,
         material_name: masters.find(m => m.id === values.material_id)?.name || '-',
         variant_id: finalVariantId,
+        variant_name: variantMerk,
+        merk: variantMerk,
         quantity: values.quantity,
         unit_price: values.unit_price,
+        price: values.unit_price,
         subtotal: base_price,
         pr_id: values.pr_id
       };
@@ -358,12 +363,18 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         const subtotal = Number(detail.quantity) * detail.unitPrice;
         grandTotal += subtotal;
 
+        const batchVariantMerk = detail.isNewVariant
+          ? detail.newMerk
+          : (detail.variants.find((v: any) => v.id === variantId)?.merk || '');
         poItems.push({
           material_id: detail.material_id,
           material_name: detail.material_name || '-',
           variant_id: variantId,
+          variant_name: batchVariantMerk,
+          merk: batchVariantMerk,
           quantity: Number(detail.quantity),
           unit_price: detail.unitPrice,
+          price: detail.unitPrice,
           subtotal,
           pr_id: detail.pr_id
         });

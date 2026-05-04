@@ -664,8 +664,8 @@ const PurchaseOrders: React.FC = () => {
                             <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[10px] font-black uppercase">Pending</span>
                           )}
                         </TD>
-                        <TD className="text-right font-bold text-slate-700">{formatCurrency(item.price)}</TD>
-                        <TD className="text-right font-black text-slate-900">{formatCurrency(item.price * item.quantity)}</TD>
+                        <TD className="text-right font-bold text-slate-700">{formatCurrency(item.price ?? item.unit_price)}</TD>
+                        <TD className="text-right font-black text-slate-900">{formatCurrency((item.price ?? item.unit_price) * item.quantity)}</TD>
                       </TR>
                     );
                   }) : (
