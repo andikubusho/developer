@@ -1571,6 +1571,7 @@ export const purchaseRequests = pgTable("purchase_requests", {
 export const purchaseOrders = pgTable("purchase_orders", {
   id: text("id").primaryKey(),
   projectId: text("project_id").notNull(),
+  poNumber: text("po_number"),
   supplierId: integer("supplier_id"),
   date: timestamp("date"),
   dueDate: timestamp("due_date").notNull().defaultNow(),

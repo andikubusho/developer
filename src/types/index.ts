@@ -415,17 +415,26 @@ export interface Material {
   specification?: string;
 }
 
+export interface PurchaseOrderItem {
+  material_id: string;
+  material_name: string;
+  variant_id: string;
+  variant_name: string;
+  quantity: number;
+  unit: string;
+  price: number;
+}
+
 export interface PurchaseOrder {
   id: string;
   po_number: string;
   project_id: string;
-  material_id: string;
-  supplier: string;
-  quantity: number;
-  unit_price: number;
+  supplier_id: number;
+  items: PurchaseOrderItem[];
   total_price: number;
-  status: 'pending' | 'shipped' | 'received' | 'cancelled';
-  order_date: string;
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+  date: string;
+  due_date: string;
   created_at: string;
 }
 

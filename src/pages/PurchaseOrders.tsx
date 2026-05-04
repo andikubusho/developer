@@ -211,62 +211,97 @@ const PurchaseOrders: React.FC = () => {
     }
   };
 
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
   const handlePrint = (order: any) => {
     const win = window.open('', '_blank');
     if (!win) return;
 
     const itemsHtml = Array.isArray(order.items) 
-      ? order.items.map((item: any) => `
+      ? order.items.map((item: any, idx: number) => `
           <tr>
-            <td>${item.material_name}</td>
-            <td style="text-align:right">${item.quantity}</td>
-            <td style="text-align:right">${formatCurrency(item.unit_price)}</td>
-            <td style="text-align:right">${formatCurrency(item.subtotal)}</td>
+            <td style="text-align:center">${idx + 1}</td>
+            <td>
+              <div style="font-weight:bold">${item.material_name}</div>
+              <div style="font-size:10px;color:#666">Merk: ${item.variant_name || item.merk || '-'}</div>
+            </td>
+            <td style="text-align:center">${item.quantity} ${item.unit || ''}</td>
+            <td style="text-align:right">${formatCurrency(item.price || item.unit_price)}</td>
+            <td style="text-align:right;font-weight:bold">${formatCurrency(item.subtotal || (item.price * item.quantity))}</td>
           </tr>
         `).join('')
-      : `<tr><td>${order.materials?.name || '-'}</td><td style="text-align:right">${order.quantity}</td><td style="text-align:right">${formatCurrency(order.unit_price)}</td><td style="text-align:right">${formatCurrency(order.total_price)}</td></tr>`;
+      : `<tr><td style="text-align:center">1</td><td>${order.materials?.name || '-'}</td><td style="text-align:center">${order.quantity}</td><td style="text-align:right">${formatCurrency(order.unit_price)}</td><td style="text-align:right;font-weight:bold">${formatCurrency(order.total_price)}</td></tr>`;
 
     win.document.write(`
       <html><head><title>PO - ${order.po_number}</title>
       <style>
-        body{font-family:Arial,sans-serif;padding:32px;color:#333}
-        .header{display:flex;justify-content:between;border-bottom:2px solid #333;padding-bottom:16px;margin-bottom:24px}
-        h2{margin:0;color:#1a1a2e}
-        table{width:100%;border-collapse:collapse;margin-top:16px}
-        th,td{border:1px solid #ddd;padding:12px;text-align:left}
-        th{background:#f8f9fa;font-size:12px;text-transform:uppercase}
-        .footer{margin-top:32px;text-align:right;font-size:18px;font-weight:bold}
+        @page { size: A4; margin: 20mm; }
+        body{font-family:'Inter',Arial,sans-serif;padding:0;color:#1e293b;line-height:1.5}
+        .header{display:flex;justify-content:space-between;margin-bottom:40px;border-bottom:4px solid #0f172a;padding-bottom:20px}
+        .title{font-size:28px;font-weight:900;letter-spacing:-0.05em;margin:0;color:#0f172a}
+        .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:30px}
+        .info-box h3{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;margin-bottom:8px}
+        .info-box p{font-size:14px;font-weight:700;margin:0}
+        table{width:100%;border-collapse:collapse;margin:20px 0}
+        th{background:#f8fafc;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;padding:12px 15px;border-bottom:2px solid #e2e8f0;text-align:left}
+        td{padding:12px 15px;border-bottom:1px solid #f1f5f9;font-size:13px}
+        .total-section{margin-top:30px;padding:20px;background:#f8fafc;border-radius:12px;display:flex;justify-content:space-between;align-items:center}
+        .total-label{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:#64748b}
+        .total-amount{font-size:24px;font-weight:900;color:#0f172a}
+        .signature-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;margin-top:60px;text-align:center}
+        .signature-box{border-top:1px solid #cbd5e1;padding-top:10px;font-size:12px;font-weight:700;color:#64748b}
       </style>
       </head><body>
       <div class="header">
         <div>
-          <h2>PURCHASE ORDER</h2>
-          <p style="margin:4px 0">No. PO: <b>${order.po_number || '-'}</b></p>
+          <h1 class="title">PURCHASE ORDER</h1>
+          <p style="margin:4px 0;font-size:14px;color:#64748b">No: <span style="color:#0f172a;font-weight:900">${order.po_number || '-'}</span></p>
         </div>
         <div style="text-align:right">
-          <p style="margin:0">Tanggal: ${formatDate(order.date)}</p>
-          <p style="margin:0">Jatuh Tempo: ${formatDate(order.due_date)}</p>
+          <p style="margin:0;font-size:12px;color:#64748b">Tanggal: <b style="color:#1e293b">${formatDate(order.date || order.created_at)}</b></p>
+          <p style="margin:0;font-size:12px;color:#64748b">Jatuh Tempo: <b style="color:#1e293b">${formatDate(order.due_date)}</b></p>
         </div>
       </div>
-      <p><b>Proyek:</b> ${order.project?.name || '-'}</p>
-      <p><b>Supplier:</b> ${order.supplier?.name || '-'}</p>
+      
+      <div class="info-grid">
+        <div class="info-box">
+          <h3>Supplier / Vendor</h3>
+          <p>${order.supplier?.name || '-'}</p>
+          <div style="font-size:12px;color:#64748b;margin-top:4px">${order.supplier?.address || '-'}</div>
+        </div>
+        <div class="info-box">
+          <h3>Referensi Proyek</h3>
+          <p>${order.project?.name || '-'}</p>
+        </div>
+      </div>
+
       <table>
         <thead>
           <tr>
-            <th>Deskripsi Material</th>
-            <th style="text-align:right">Qty</th>
+            <th style="text-align:center;width:40px">No</th>
+            <th>Item Material & Spesifikasi</th>
+            <th style="text-align:center">Qty</th>
             <th style="text-align:right">Harga Satuan</th>
-            <th style="text-align:right">Total</th>
+            <th style="text-align:right">Subtotal</th>
           </tr>
         </thead>
         <tbody>
           ${itemsHtml}
         </tbody>
       </table>
-      <div class="footer">
-        Total: ${formatCurrency(order.total_price)}
+
+      <div class="total-section">
+        <span class="total-label">Grand Total Terbilang</span>
+        <span class="total-amount">${formatCurrency(order.total_price)}</span>
       </div>
-      <script>window.onload=()=>{window.print();window.close();}</script>
+
+      <div class="signature-grid">
+        <div class="signature-box">Dibuat Oleh</div>
+        <div class="signature-box">Disetujui Oleh</div>
+        <div class="signature-box">Vendor</div>
+      </div>
+
+      <script>window.onload=()=>{setTimeout(()=>{window.print();window.close();},500);}</script>
       </body></html>
     `);
     win.document.close();
@@ -294,10 +329,12 @@ const PurchaseOrders: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const filteredOrders = orders.filter(order => 
-    (order.po_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (order.supplier?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = (order.po_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (order.supplier?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'ALL' || (order.status || '').toUpperCase() === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-6">
@@ -312,8 +349,8 @@ const PurchaseOrders: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Purchase Orders</h1>
-            <p className="text-text-secondary">Kelola pemesanan material proyek</p>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Riwayat Purchase Order</h1>
+            <p className="text-slate-400 font-medium text-sm">Arsip dan pelacakan seluruh pesanan material</p>
           </div>
         </div>
         <Button onClick={() => {
@@ -332,10 +369,24 @@ const PurchaseOrders: React.FC = () => {
             <input
               type="text"
               placeholder="Cari PO atau supplier..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-white/40 focus:outline-none focus:border-accent-lavender transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-accent-lavender transition-all text-sm font-semibold"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+          </div>
+          <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border-2 border-slate-100">
+            {['ALL', 'PENDING', 'COMPLETED', 'CANCELLED'].map(s => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={cn(
+                  "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                  statusFilter === s ? "bg-white shadow-sm text-accent-dark ring-1 ring-slate-200" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                {s}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -584,7 +635,7 @@ const PurchaseOrders: React.FC = () => {
                       <TR key={i}>
                         <TD className="py-4">
                           <div className="font-bold text-slate-800">{item.material_name}</div>
-                          <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">Merk: {item.variant_name || item.merk}</div>
+                          <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">Merk: {item.variant_name || item.merk || '-'}</div>
                         </TD>
                         <TD className="text-right font-black text-slate-700">{item.quantity}</TD>
                         <TD className="text-right font-black text-emerald-600">

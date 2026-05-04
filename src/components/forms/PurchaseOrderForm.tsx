@@ -14,11 +14,11 @@ import { SearchableSelect } from '../ui/SearchableSelect';
 
 const poSchema = z.object({
   project_id: z.string().min(1, 'Proyek harus dipilih'),
-  material_id: z.string().min(1, 'Master Material harus dipilih'),
-  id_variant: z.number().optional(),
+  material_id: z.string().min(1, 'Master Material harus dipilih').optional(),
+  variant_id: z.number().optional(), // Changed from id_variant
   supplier_id: z.string().min(1, 'Supplier harus dipilih'),
-  quantity: z.number().min(1, 'Jumlah minimal 1'),
-  unit_price: z.number().min(0, 'Harga harus positif'),
+  quantity: z.number().min(1, 'Jumlah minimal 1').optional(),
+  unit_price: z.number().min(0, 'Harga harus positif').optional(),
   order_date: z.string(),
   due_date: z.string().min(1, 'Tanggal jatuh tempo harus diisi'),
   pr_id: z.string().optional(),
@@ -28,12 +28,17 @@ const poSchema = z.object({
 type POFormValues = z.infer<typeof poSchema>;
 
 interface ItemDetail {
+  material_id: string;
+  material_name: string;
+  quantity: number;
+  unit: string;
   variants: any[];
-  variantId?: number;
+  variant_id?: number; // Changed from variantId
   unitPrice: number;
   isNewVariant: boolean;
   newMerk: string;
   newSpek: string;
+  pr_id?: string;
 }
 
 interface POFormProps {
@@ -54,13 +59,44 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
   const [projects, setProjects] = useState<any[]>([]);
 
   // Batch mode state
-  const isBatchMode = !!(initialPRItems && initialPRItems.length > 0);
+  // Batch mode or Edit mode with multiple items
+  const isMultiItem = !!(initialPRItems && initialPRItems.length > 0) || !!(initialOrder?.items && Array.isArray(initialOrder.items));
   const [batchSupplier, setBatchSupplier] = useState('');
   const [batchOrderDate, setBatchOrderDate] = useState(new Date().toISOString().split('T')[0]);
   const [batchDueDate, setBatchDueDate] = useState(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-  const [itemDetails, setItemDetails] = useState<ItemDetail[]>(() =>
-    (initialPRItems || []).map(() => ({ variants: [], variantId: undefined, unitPrice: 0, isNewVariant: false, newMerk: '', newSpek: '' }))
-  );
+  const [itemDetails, setItemDetails] = useState<ItemDetail[]>(() => {
+    if (initialPRItems) {
+      return initialPRItems.map(item => ({
+        material_id: item.material_id,
+        material_name: item.master?.name || 'Material',
+        quantity: Number(item.quantity),
+        unit: item.master?.unit || '-',
+        variants: [],
+        variant_id: undefined,
+        unitPrice: 0,
+        isNewVariant: false,
+        newMerk: '',
+        newSpek: '',
+        pr_id: item.prId
+      }));
+    }
+    if (initialOrder?.items) {
+      return initialOrder.items.map((item: any) => ({
+        material_id: item.material_id,
+        material_name: item.material_name || 'Material',
+        quantity: Number(item.quantity),
+        unit: item.unit || '-',
+        variants: [],
+        variant_id: item.variant_id || item.id_variant,
+        unitPrice: Number(item.unit_price || item.price),
+        isNewVariant: false,
+        newMerk: '',
+        newSpek: '',
+        pr_id: item.pr_id
+      }));
+    }
+    return [];
+  });
 
   const fromPR = !!initialPR;
   const isEditMode = !!initialOrder;
@@ -75,9 +111,9 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       unit_price: Number(initialOrder?.unit_price) || 0,
       quantity: Number(initialOrder?.quantity) || Number(initialPR?.quantity) || 1,
       project_id: initialOrder?.project_id || initialPR?.project_id || '',
-      material_id: initialOrder?.material_id || initialPR?.material_id || '',
+      material_id: initialOrder?.material_id || initialPR?.material_id || undefined,
       supplier_id: initialOrder?.supplier_id ? String(initialOrder.supplier_id) : '',
-      id_variant: initialOrder?.id_variant ? Number(initialOrder.id_variant) : undefined,
+      variant_id: (initialOrder?.variant_id || initialOrder?.id_variant) ? Number(initialOrder.variant_id || initialOrder.id_variant) : undefined,
       pr_id: initialOrder?.pr_id || initialPR?.prId || undefined,
       rab_project_id: initialOrder?.rab_project_id || initialPR?.rab_project_id || undefined,
     },
@@ -101,8 +137,9 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
   }, [selectedMaterialId]);
 
   useEffect(() => {
-    if (initialOrder?.id_variant && variants.length > 0) {
-      setValue('id_variant', Number(initialOrder.id_variant));
+    const vId = initialOrder?.variant_id || initialOrder?.id_variant;
+    if (vId && variants.length > 0) {
+      setValue('variant_id', Number(vId));
     }
   }, [variants]);
 
@@ -117,27 +154,30 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       setSuppliers(supplierData);
       setProjects(projectData);
 
-      if (isBatchMode && initialPRItems) {
+      if (isMultiItem) {
+        const itemsToFetch = initialPRItems || initialOrder?.items || [];
         const variantResults = await Promise.all(
-          initialPRItems.map(item =>
+          itemsToFetch.map((item: any) =>
             api.get('material_variants', `material_id=eq.${item.material_id}&select=*&order=merk.asc`)
           )
         );
-        setItemDetails(initialPRItems.map((_, i) => ({
-          variants: variantResults[i] || [],
-          variantId: undefined,
-          unitPrice: 0,
-          isNewVariant: false,
-          newMerk: '',
-          newSpek: ''
+        setItemDetails(prev => prev.map((d, i) => ({
+          ...d,
+          variants: variantResults[i] || []
         })));
+
+        if (initialOrder) {
+          setBatchSupplier(String(initialOrder.supplier_id || ''));
+          setBatchOrderDate(toDateStr(initialOrder.date || initialOrder.order_date));
+          setBatchDueDate(toDateStr(initialOrder.due_date));
+        }
       } else if (initialOrder) {
         setValue('project_id', initialOrder.project_id || '');
         setValue('material_id', initialOrder.material_id || '');
         setValue('supplier_id', String(initialOrder.supplier_id || ''));
         setValue('quantity', Number(initialOrder.quantity) || 0);
-        setValue('unit_price', Number(initialOrder.unit_price) || 0);
-        setValue('order_date', toDateStr(initialOrder.order_date));
+        setValue('unit_price', Number(initialOrder.unit_price || initialOrder.price) || 0);
+        setValue('order_date', toDateStr(initialOrder.date || initialOrder.order_date));
         setValue('due_date', toDateStr(initialOrder.due_date));
         if (initialOrder.pr_id) setValue('pr_id', initialOrder.pr_id);
       } else if (initialPR) {
@@ -184,11 +224,11 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       if (idx !== undefined) {
         const newDetails = [...itemDetails];
         newDetails[idx].variants = newDetails[idx].variants.filter(v => v.id !== variantId);
-        newDetails[idx].variantId = undefined;
+        newDetails[idx].variant_id = undefined;
         setItemDetails(newDetails);
       } else {
         setVariants(prev => prev.filter(v => v.id !== variantId));
-        setValue('id_variant', undefined);
+        setValue('variant_id', undefined);
       }
     } catch (err) {
       console.error('Error deleting variant:', err);
@@ -199,7 +239,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
   const onSubmit = async (values: POFormValues) => {
     setLoading(true);
     try {
-      let finalVariantId = values.id_variant;
+      let finalVariantId = values.variant_id;
 
       if (isNewVariant) {
         if (!newVariant.merk) {
@@ -222,11 +262,11 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         return;
       }
 
-      const total_price = values.quantity * values.unit_price;
+      const total_price = (values.quantity || 0) * (values.unit_price || 0);
       const poItem = {
         material_id: values.material_id,
         material_name: masters.find(m => m.id === values.material_id)?.name || '-',
-        id_variant: finalVariantId,
+        variant_id: finalVariantId,
         quantity: values.quantity,
         unit_price: values.unit_price,
         subtotal: total_price,
@@ -275,25 +315,26 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
 
   const onBatchSubmit = async () => {
     if (!batchSupplier) { alert('Supplier harus dipilih'); return; }
+    if (itemDetails.length === 0) { alert('Minimal satu item harus ada dalam PO'); return; }
+    
     setLoading(true);
     try {
       const poItems = [];
-      const po_number = `PO-${Date.now().toString().slice(-8)}`;
+      const po_number = initialOrder?.po_number || `PO-${Date.now().toString().slice(-8)}`;
       let grandTotal = 0;
 
-      for (let i = 0; i < initialPRItems!.length; i++) {
-        const item = initialPRItems![i];
+      for (let i = 0; i < itemDetails.length; i++) {
         const detail = itemDetails[i];
-        let variantId = detail.variantId;
+        let variantId = detail.variant_id;
 
         if (detail.isNewVariant) {
           if (!detail.newMerk) {
-            alert(`Merk untuk "${item.master?.name}" harus diisi`);
+            alert(`Merk untuk "${detail.material_name}" harus diisi`);
             setLoading(false);
             return;
           }
           const created = await api.insert('material_variants', {
-            material_id: item.material_id,
+            material_id: detail.material_id,
             merk: detail.newMerk,
             spesifikasi: detail.newSpek,
             stok: 0
@@ -302,38 +343,49 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         }
 
         if (!variantId) {
-          alert(`Pilih varian untuk "${item.master?.name}"`);
+          alert(`Pilih varian untuk "${detail.material_name}"`);
           setLoading(false);
           return;
         }
 
-        const subtotal = Number(item.quantity) * detail.unitPrice;
+        const subtotal = Number(detail.quantity) * detail.unitPrice;
         grandTotal += subtotal;
 
         poItems.push({
-          material_id: item.material_id,
-          material_name: item.master?.name || '-',
-          id_variant: variantId,
-          quantity: Number(item.quantity),
+          material_id: detail.material_id,
+          material_name: detail.material_name || '-',
+          variant_id: variantId,
+          quantity: Number(detail.quantity),
           unit_price: detail.unitPrice,
           subtotal,
-          pr_id: item.prId
+          pr_id: detail.pr_id
         });
       }
 
-      // Insert as ONE PO
-      await api.insert('purchase_orders', {
-        id: crypto.randomUUID(),
-        project_id: initialPRItems![0].project_id,
-        supplier_id: Number(batchSupplier),
-        date: batchOrderDate,
-        due_date: batchDueDate,
-        po_number,
-        total_price: grandTotal,
-        status: 'PENDING',
-        rab_project_id: initialPRItems![0].rab_project_id,
-        items: poItems // Store all items in JSONB
-      });
+      // Update or Insert
+      if (initialOrder) {
+        await api.update('purchase_orders', initialOrder.id, {
+          project_id: initialOrder.project_id, // Lock project
+          supplier_id: Number(batchSupplier),
+          date: batchOrderDate,
+          due_date: batchDueDate,
+          total_price: grandTotal,
+          items: poItems
+        });
+      } else {
+        await api.insert('purchase_orders', {
+          id: crypto.randomUUID(),
+          project_id: itemDetails[0].material_id ? itemDetails[0].material_id : (initialPRItems?.[0]?.project_id), // Fallback
+          supplier_id: Number(batchSupplier),
+          date: batchOrderDate,
+          due_date: batchDueDate,
+          po_number,
+          total_price: grandTotal,
+          status: 'PENDING',
+          rab_project_id: itemDetails[0].pr_id ? (initialPRItems?.find(p => p.prId === itemDetails[0].pr_id)?.rab_project_id) : undefined,
+          items: poItems
+        });
+      }
 
       // Notify
       try {
@@ -372,9 +424,9 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
     );
   }
 
-  if (isBatchMode) {
-    const batchTotal = (initialPRItems || []).reduce(
-      (sum, item, i) => sum + Number(item.quantity) * (itemDetails[i]?.unitPrice || 0), 0
+  if (isMultiItem) {
+    const batchTotal = itemDetails.reduce(
+      (sum, item) => sum + Number(item.quantity) * (item.unitPrice || 0), 0
     );
     return (
       <div className="space-y-6 px-2 pb-2">
@@ -384,7 +436,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
             <Lock className="w-5 h-5" />
           </div>
           <span className="text-sm font-semibold tracking-tight">
-            Mode Batch: Membuat {initialPRItems!.length} PO sekaligus dari PR yang sama.
+            {initialOrder ? 'Mode Edit: Mengelola PO dengan beberapa item material.' : `Mode Batch: Membuat ${initialPRItems!.length} PO sekaligus dari PR yang sama.`}
           </span>
         </div>
 
@@ -468,8 +520,8 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
                     ) : (
                       <div className="flex gap-2">
                         <select
-                          value={detail.variantId ?? ''}
-                          onChange={e => updateItemDetail(i, { variantId: e.target.value ? Number(e.target.value) : undefined })}
+                          value={detail.variant_id ?? ''}
+                          onChange={e => updateItemDetail(i, { variant_id: e.target.value ? Number(e.target.value) : undefined })}
                           className="flex-1 h-12 rounded-xl bg-white border-2 border-slate-100 px-4 text-sm font-black text-slate-700 focus:outline-none focus:border-accent-lavender appearance-none cursor-pointer"
                         >
                           <option value="">Pilih Variant / Merk</option>
@@ -477,10 +529,10 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
                             <option key={v.id} value={v.id}>{v.merk}{v.spesifikasi ? ` (${v.spesifikasi})` : ''}</option>
                           ))}
                         </select>
-                        {detail.variantId && (
+                        {detail.variant_id && (
                           <button
                             type="button"
-                            onClick={() => handleDeleteVariant(detail.variantId!, i)}
+                            onClick={() => handleDeleteVariant(detail.variant_id!, i)}
                             className="w-12 h-12 flex items-center justify-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors border-2 border-rose-100"
                             title="Hapus Varian"
                           >
@@ -537,7 +589,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
             isLoading={loading}
             onClick={onBatchSubmit}
           >
-            Buat {initialPRItems!.length} PO
+            {initialOrder ? 'Simpan Perubahan PO' : `Buat ${initialPRItems!.length} PO`}
           </Button>
         </div>
       </div>
@@ -679,7 +731,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
               </div>
             ) : (
               <Controller
-              name="id_variant"
+              name="variant_id"
               control={control}
               render={({ field }) => (
                 <div className="flex gap-2">
@@ -708,7 +760,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
               )}
             />
             )}
-            {errors.id_variant && !isNewVariant && <p className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.id_variant.message}</p>}
+            {errors.variant_id && !isNewVariant && <p className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.variant_id.message}</p>}
           </div>
         </div>
       </div>
