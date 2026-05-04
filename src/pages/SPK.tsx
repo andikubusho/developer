@@ -121,18 +121,20 @@ const SPK: React.FC = () => {
     }
     try {
       setSubmitting(true);
+      // Exclude worker_id — it's a UI-only field used to populate contractor_name
+      const { worker_id, ...dataToSave } = formData as any;
       if (editingSpk) {
-        await api.update('spks', editingSpk.id, formData);
+        await api.update('spks', editingSpk.id, dataToSave);
       } else {
-        await api.insert('spks', { ...formData, id: crypto.randomUUID(), created_at: new Date().toISOString() });
+        await api.insert('spks', { ...dataToSave, id: crypto.randomUUID(), created_at: new Date().toISOString() });
       }
       setIsFormOpen(false);
       setEditingSpk(null);
       setFormData(EMPTY_FORM);
       fetchSpks();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving SPK:', err);
-      alert('Gagal menyimpan SPK');
+      alert(`Gagal menyimpan SPK: ${err?.message || err}`);
     } finally {
       setSubmitting(false);
     }
