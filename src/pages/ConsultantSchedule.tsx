@@ -23,8 +23,15 @@ const ConsultantSchedulePage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editingSchedule, setEditingSchedule] = useState<ConsultantSchedule | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const formatDateLocal = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: formatDateLocal(new Date()),
     staff_entries: [] as { consultant_id: string, position: string }[]
   });
 
@@ -159,7 +166,7 @@ const ConsultantSchedulePage: React.FC = () => {
     setIsFormEnabled(false);
     setEditingSchedule(null);
     setFormData({
-      date: new Date().toISOString().split('T')[0],
+      date: formatDateLocal(new Date()),
       staff_entries: []
     });
   };
@@ -364,7 +371,7 @@ const ConsultantSchedulePage: React.FC = () => {
           <tbody>
             {days.map(day => {
               const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-              const dateStr = date.toISOString().split('T')[0];
+              const dateStr = formatDateLocal(date);
               const daySchedules = schedules.filter(s => s.date.startsWith(dateStr));
               
               if (daySchedules.length === 0) return null;
@@ -425,7 +432,8 @@ const ConsultantSchedulePage: React.FC = () => {
               <div key={`blank-${i}`} className="bg-white p-2 sm:p-4 min-h-[60px] sm:min-h-[120px] print-compact-row"></div>
             ))}
             {days.map(day => {
-              const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0];
+              const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+              const dateStr = formatDateLocal(dateObj);
               const daySchedules = schedules.filter(s => s.date.startsWith(dateStr));
               
               return (

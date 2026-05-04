@@ -22,6 +22,8 @@ const ManagerNotificationListener: React.FC = () => {
   const { profile, division } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [roleData, setRoleData] = useState<any>(null);
+  // true setelah role data selesai di-load (mencegah gate tembak terlalu awal)
+  const [roleReady, setRoleReady] = useState(false);
 
   const isAdmin = (profile as any)?.role === 'admin';
 
@@ -34,50 +36,61 @@ const ManagerNotificationListener: React.FC = () => {
     } catch {}
   }, []);
 
-  // Fetch fresh role data - prioritaskan role_id (ID numerik) jika ada
+  // Fetch fresh role data saat profile berubah
   useEffect(() => {
-    if (isAdmin) return;
-    
-    // Gunakan role_id jika ada (lebih akurat), fallback ke role (nama string)
-    const roleId = profile?.role_id;
-    const roleName = (profile as any)?.role;
-    
-    let query = '';
-    if (roleId) {
-      query = `select=*&id=eq.${roleId}`;
-    } else if (roleName) {
-      query = `select=*&name=eq.${encodeURIComponent(roleName)}`;
-    } else {
+    if (!profile?.id) return;
+
+    if (isAdmin) {
+      // Admin tidak butuh role check
+      setRoleReady(true);
       return;
     }
 
-    api.get('roles', query).then(data => {
-      if (data && data.length > 0) {
-        setRoleData(data[0]);
-        console.log('Notification Listener: Role data loaded', data[0].name);
-      }
-    }).catch(err => console.error('Notification Listener: Role fetch error', err));
+    // Reset saat profile berubah
+    setRoleReady(false);
+    setRoleData(null);
+
+    // Jika profile.role_data sudah ada dari auth join — langsung pakai
+    if (profile.role_data) {
+      setRoleData(profile.role_data);
+      setRoleReady(true);
+      return;
+    }
+
+    // Fallback: fetch dari DB menggunakan role_id (UUID FK ke tabel roles)
+    // JANGAN gunakan profile.role karena itu adalah division ('teknik', bukan nama role)
+    const roleId = profile?.role_id;
+    if (!roleId) {
+      // User tidak punya role — tidak bisa terima notifikasi
+      setRoleReady(true);
+      return;
+    }
+
+    api.get('roles', `select=*&id=eq.${roleId}`)
+      .then(data => {
+        if (data && data.length > 0) setRoleData(data[0]);
+      })
+      .finally(() => setRoleReady(true));
   }, [profile?.id, profile?.role_id, isAdmin]);
 
-  // effectiveRole: prioritaskan data segar dari DB, fallback ke data join dari auth
+  // effectiveRole: data role yang aktif (dari fetch atau dari auth join)
   const effectiveRole = roleData || (profile?.role_data as any);
 
   // Kumpulkan semua division user (primary + authorized + dari context)
   const userDivisions: string[] = useMemo(() => {
     if (isAdmin) return [];
-    const primary = effectiveRole?.division;
-    const authorized = Array.isArray(effectiveRole?.authorized_divisions) ? effectiveRole.authorized_divisions : [];
+    const primary: string | undefined = effectiveRole?.division;
+    const authorized: string[] = Array.isArray(effectiveRole?.authorized_divisions)
+      ? effectiveRole.authorized_divisions
+      : [];
     const ctx = division as string | null;
-    
-    const all = [...new Set([primary, ...authorized, ctx].filter(Boolean))] as string[];
-    console.log('Notification Listener: User Divisions', all);
-    return all;
+    return [...new Set([primary, ...authorized, ctx].filter(Boolean))] as string[];
   }, [isAdmin, effectiveRole, division]);
 
   const fetchUnread = useCallback(async () => {
     if (!profile?.id) return;
 
-    // Fetch notifikasi 24 jam terakhir, filter di JS (hindari query PostgREST kompleks)
+    // Fetch notifikasi 24 jam terakhir, filter di JS
     const since = new Date(Date.now() - 86_400_000).toISOString();
     const data: Notification[] = await api.get(
       'notifications',
@@ -85,22 +98,12 @@ const ManagerNotificationListener: React.FC = () => {
     );
 
     const unread = data.filter(n => {
-      // Skip yang sudah di-dismiss (localStorage guard)
       if (dismissedRef.current.has(n.id)) return false;
-      // Skip yang sudah dibaca oleh user ini (DB guard)
       const readBy: string[] = n.read_by || [];
       if (readBy.includes(profile.id)) return false;
-
-      // Admin: terima semua
       if (isAdmin) return true;
-
-      // Non-admin: cek receive_notifications
       if (!effectiveRole?.receive_notifications) return false;
-
-      // Cek apakah notifikasi menarget salah satu division user
       if (!n.target_divisions.some(d => userDivisions.includes(d))) return false;
-
-      // Cek per-tipe notification_settings (opt-out: tampil kecuali dimatikan)
       const type = n.metadata?.type || 'unknown';
       const settings = effectiveRole?.notification_settings as Record<string, boolean> | undefined;
       return !settings || settings[type] !== false;
@@ -110,8 +113,10 @@ const ManagerNotificationListener: React.FC = () => {
   }, [profile?.id, isAdmin, userDivisions, effectiveRole]);
 
   useEffect(() => {
-    if (!profile?.id) return;
-    // Non-admin: tunggu effectiveRole terisi dan receive_notifications aktif
+    // Tunggu role selesai di-load dulu
+    if (!profile?.id || !roleReady) return;
+
+    // Gate untuk non-admin
     if (!isAdmin && !effectiveRole?.receive_notifications) return;
     if (!isAdmin && userDivisions.length === 0) return;
 
@@ -125,13 +130,10 @@ const ManagerNotificationListener: React.FC = () => {
         { event: 'INSERT', schema: 'public', table: 'notifications' },
         (payload) => {
           const newNotif = payload.new as Notification;
-
           if (!isAdmin && !newNotif.target_divisions.some(d => userDivisions.includes(d))) return;
-
           const type = newNotif.metadata?.type || 'unknown';
           const settings = effectiveRole?.notification_settings as Record<string, boolean> | undefined;
           const isTypeEnabled = isAdmin || !settings || settings[type] !== false;
-
           if (isTypeEnabled) {
             setNotifications(prev => {
               if (prev.some((n: Notification) => n.id === newNotif.id)) return prev;
@@ -147,18 +149,15 @@ const ManagerNotificationListener: React.FC = () => {
       clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
-  }, [isAdmin, effectiveRole, userDivisions, fetchUnread, profile?.id]);
+  }, [isAdmin, effectiveRole, userDivisions, fetchUnread, profile?.id, roleReady]);
 
   const markAsRead = async (id: string) => {
-    // 1. Langsung hapus dari state & catat di dismissed guard
     setNotifications(prev => prev.filter((n: Notification) => n.id !== id));
     dismissedRef.current.add(id);
     try {
       const arr = [...dismissedRef.current].slice(-200);
       localStorage.setItem('propdev_dismissed_notifs', JSON.stringify(arr));
     } catch {}
-
-    // 2. Hapus permanen dari DB
     try {
       await api.delete('notifications', id);
     } catch {}
@@ -177,7 +176,6 @@ const ManagerNotificationListener: React.FC = () => {
       >
         <div className="absolute top-0 left-0 w-4 h-full bg-accent-dark" />
         <div className="p-10 pl-16">
-          {/* Header */}
           <div className="flex items-start justify-between mb-7">
             <div className="flex items-center gap-5 text-accent-dark">
               <div className="w-20 h-20 rounded-2xl bg-accent-dark/10 flex items-center justify-center">
@@ -196,12 +194,10 @@ const ManagerNotificationListener: React.FC = () => {
             </button>
           </div>
 
-          {/* Pesan detail */}
           <p className="text-xl text-text-primary font-medium leading-relaxed mb-8 bg-accent-dark/5 p-6 rounded-2xl border border-accent-dark/10 whitespace-pre-line">
             {current.message}
           </p>
 
-          {/* Footer */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 text-base text-text-secondary font-bold">
               <User className="w-6 h-6" />
