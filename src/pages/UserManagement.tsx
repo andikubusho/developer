@@ -67,23 +67,35 @@ const PermissionToggle: React.FC<{
   hasAccess: boolean;
   onToggle: () => void;
   label: string;
-}> = ({ isAvail, hasAccess, onToggle, label }) => {
+  type?: 'view' | 'create' | 'edit' | 'delete' | 'print' | 'viewAll';
+}> = ({ isAvail, hasAccess, onToggle, label, type }) => {
+  const colorMap = {
+    view: 'bg-blue-600 border-blue-600',
+    create: 'bg-emerald-600 border-emerald-600',
+    edit: 'bg-amber-600 border-amber-600',
+    delete: 'bg-rose-600 border-rose-600',
+    print: 'bg-sky-600 border-sky-600',
+    viewAll: 'bg-indigo-600 border-indigo-600'
+  };
+
+  const activeColor = type ? colorMap[type] : 'bg-accent-dark border-accent-dark';
+
   return (
     <button
       type="button"
       disabled={!isAvail}
       onClick={onToggle}
       className={cn(
-        "w-6 h-6 rounded-md transition-all flex items-center justify-center mx-auto border-2 shadow-sm flex-shrink-0",
+        "w-7 h-7 rounded-full transition-all flex items-center justify-center mx-auto border-2 shadow-sm flex-shrink-0",
         !isAvail 
-          ? "bg-slate-100/50 border-slate-100 cursor-not-allowed opacity-30" 
+          ? "bg-slate-50 border-slate-100 cursor-not-allowed opacity-10" 
           : hasAccess 
-            ? "bg-accent-dark border-accent-dark text-white shadow-premium scale-110" 
-            : "bg-white border-slate-200 text-transparent hover:border-accent-dark/40 hover:bg-slate-50/50"
+            ? `${activeColor} text-white shadow-md scale-110` 
+            : "bg-white border-slate-400 text-transparent hover:border-accent-dark/40 hover:bg-slate-50"
       )}
       title={!isAvail ? "Fitur tidak tersedia" : hasAccess ? `Cabut Akses ${label}` : `Beri Akses ${label}`}
     >
-      {isAvail && <Check className="w-3.5 h-3.5 stroke-[3.5]" />}
+      {isAvail && <Check className={cn("w-4 h-4 stroke-[4]", hasAccess ? "opacity-100" : "opacity-0")} />}
     </button>
   );
 };
@@ -853,6 +865,7 @@ const UserManagement: React.FC = () => {
                                   hasAccess={!!roleForm.permissions[menu.key]?.[cap]}
                                   onToggle={() => updateRolePermission(menu.key, cap, !roleForm.permissions[menu.key]?.[cap])}
                                   label={`${cap} ${menu.label}`}
+                                  type={cap}
                                 />
                               </TD>
                             );
@@ -916,6 +929,7 @@ const UserManagement: React.FC = () => {
                               hasAccess={!!selectedProfile?.permissions?.[menu.key]?.[cap]}
                               onToggle={() => handleUpdateUserPermissions(menu.key, cap, !selectedProfile?.permissions?.[menu.key]?.[cap])}
                               label={`${cap} ${menu.label}`}
+                              type={cap}
                             />
                           </TD>
                         );
