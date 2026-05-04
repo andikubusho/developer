@@ -14,6 +14,7 @@ import { Modal } from '../components/ui/Modal';
 import { PaymentForm } from '../components/forms/PaymentForm';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
 import { api } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { Sale, Payment } from '../types';
 
 const ConsumerPayments: React.FC = () => {
@@ -29,6 +30,20 @@ const ConsumerPayments: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+
+    const channel = supabase
+      .channel('consumer-payments-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'installments' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchData = async () => {

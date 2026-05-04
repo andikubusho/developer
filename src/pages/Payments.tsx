@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
 import { api } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 const Payments: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +16,20 @@ const Payments: React.FC = () => {
 
   useEffect(() => {
     fetchSchedule();
+
+    const channel = supabase
+      .channel('schedule-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+        fetchSchedule();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'installments' }, () => {
+        fetchSchedule();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchSchedule = async () => {

@@ -7,8 +7,9 @@ import { Card } from '../components/ui/Card';
 import { Plus, Trash2, PenTool, CheckCircle, Clock } from 'lucide-react';
 import { api } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { CurrencyInput } from '../components/ui/CurrencyInput';
+import { DateInput } from '../components/ui/DateInput';
 
 interface AddonItem {
   id: string;
@@ -24,11 +25,18 @@ interface AddonItem {
   };
 }
 
+interface ScheduleInput {
+  amount: number;
+  due_date: string;
+  name_suffix: string;
+}
+
 interface AddonFormData {
   sale_id: string;
   name: string;
   description: string;
   price: number;
+  schedules: ScheduleInput[];
 }
 
 const SaleAddons: React.FC = () => {
@@ -37,7 +45,21 @@ const SaleAddons: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<AddonFormData>();
+  const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm<AddonFormData>({
+    defaultValues: {
+      schedules: [{ amount: 0, due_date: new Date().toISOString().split('T')[0], name_suffix: '' }]
+    }
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "schedules"
+  });
+
+  const watchPrice = watch('price') || 0;
+  const watchSchedules = watch('schedules') || [];
+  const totalScheduled = watchSchedules.reduce((sum, sch) => sum + (Number(sch.amount) || 0), 0);
+  const remainingPrice = watchPrice - totalScheduled;
 
   useEffect(() => {
     fetchData();
@@ -61,6 +83,11 @@ const SaleAddons: React.FC = () => {
 
   const onSubmit = async (data: AddonFormData) => {
     try {
+      if (Math.abs(remainingPrice) > 1) { // allow tiny floating point differences, though it's currency so it should be exact
+        alert(`Gagal: Total jadwal (Rp ${totalScheduled.toLocaleString('id-ID')}) tidak sama dengan Harga Pekerjaan (Rp ${data.price.toLocaleString('id-ID')}). Sisa: Rp ${remainingPrice.toLocaleString('id-ID')}`);
+        return;
+      }
+
       setLoading(true);
       
       // 1. Insert into sale_addons
@@ -73,15 +100,20 @@ const SaleAddons: React.FC = () => {
       });
 
       if (newAddon && newAddon[0]) {
-        // 2. Insert into installments
-        await api.insert('installments', {
-          sale_id: data.sale_id,
-          addon_id: newAddon[0].id,
-          name: `Addon: ${data.name}`,
-          amount: data.price,
-          due_date: new Date().toISOString().split('T')[0], // default to today
-          status: 'unpaid'
-        });
+        // 2. Insert multiple installments
+        for (let i = 0; i < data.schedules.length; i++) {
+          const sch = data.schedules[i];
+          const suffix = sch.name_suffix ? ` - ${sch.name_suffix}` : (data.schedules.length > 1 ? ` (Termin ${i + 1})` : '');
+          
+          await api.insert('installments', {
+            sale_id: data.sale_id,
+            addon_id: newAddon[0].id,
+            name: `Addon: ${data.name}${suffix}`,
+            amount: sch.amount,
+            due_date: sch.due_date,
+            status: 'unpaid'
+          });
+        }
       }
 
       setIsFormOpen(false);
@@ -98,8 +130,6 @@ const SaleAddons: React.FC = () => {
     if (!confirm('Hapus pekerjaan tambahan ini? Tagihan yang terkait akan otomatis terhapus dari Schedule Pembayaran Konsumen.')) return;
     try {
       setLoading(true);
-      // Because we set ON DELETE CASCADE on the addon_id column in installments,
-      // deleting the addon will automatically delete the related installment!
       await api.delete('sale_addons', id);
       await fetchData();
     } catch (error: any) {
@@ -123,49 +153,128 @@ const SaleAddons: React.FC = () => {
       </div>
 
       {isFormOpen && (
-        <Card className="p-6">
-          <h2 className="text-lg font-bold mb-4">Input Pekerjaan Tambahan</h2>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-2xl">
-            <Select
-              label="Transaksi Penjualan (Konsumen)"
-              options={sales.map(s => ({
-                label: `${s.customer?.full_name || '-'} (Unit: ${s.unit?.unit_number || '-'})`,
-                value: s.id
-              }))}
-              {...register('sale_id', { required: 'Pilih konsumen' })}
-              error={errors.sale_id?.message}
-            />
-            
-            <Input
-              label="Nama Pekerjaan"
-              placeholder="Contoh: Kanopi Depan, Teralis Jendela"
-              {...register('name', { required: 'Nama pekerjaan wajib diisi' })}
-              error={errors.name?.message}
-            />
+        <Card className="p-6 border-accent-lavender/30 shadow-3d">
+          <h2 className="text-lg font-bold mb-4">Input Pekerjaan Tambahan & Termin Tagihan</h2>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl">
+            <div className="space-y-4">
+              <Select
+                label="Transaksi Penjualan (Konsumen)"
+                options={sales.map(s => ({
+                  label: `${s.customer?.full_name || '-'} (Unit: ${s.unit?.unit_number || '-'})`,
+                  value: s.id
+                }))}
+                {...register('sale_id', { required: 'Pilih konsumen' })}
+                error={errors.sale_id?.message}
+              />
+              
+              <Input
+                label="Nama Pekerjaan"
+                placeholder="Contoh: Kanopi Depan, Teralis Jendela"
+                {...register('name', { required: 'Nama pekerjaan wajib diisi' })}
+                error={errors.name?.message}
+              />
 
-            <Controller
-              name="price"
-              control={control}
-              rules={{ required: 'Harga wajib diisi' }}
-              render={({ field }) => (
-                <CurrencyInput
-                  label="Harga Pekerjaan (Rp)"
-                  value={field.value}
-                  onValueChange={(values) => field.onChange(values.floatValue || 0)}
-                  error={errors.price?.message}
-                />
-              )}
-            />
+              <Controller
+                name="price"
+                control={control}
+                rules={{ required: 'Harga wajib diisi', min: 1 }}
+                render={({ field }) => (
+                  <CurrencyInput
+                    label="Harga Pekerjaan Total (Rp)"
+                    value={field.value}
+                    onValueChange={(values) => field.onChange(values.floatValue || 0)}
+                    error={errors.price?.message}
+                  />
+                )}
+              />
 
-            <Input
-              label="Deskripsi Tambahan"
-              placeholder="Catatan khusus mengenai pekerjaan ini"
-              {...register('description')}
-            />
+              <Input
+                label="Deskripsi Tambahan"
+                placeholder="Catatan khusus mengenai pekerjaan ini"
+                {...register('description')}
+              />
+            </div>
 
-            <div className="pt-4 flex justify-end gap-2">
+            <div className="border-t border-slate-200 pt-6 mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-text-primary">Jadwal Pembayaran / Termin</h3>
+                <div className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 flex gap-4">
+                  <span>Total Harga: <span className="text-accent-dark font-black">{formatCurrency(watchPrice)}</span></span>
+                  <span className={remainingPrice === 0 ? "text-emerald-600" : "text-rose-600"}>
+                    Sisa: <span className="font-black">{formatCurrency(remainingPrice)}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="flex flex-wrap sm:flex-nowrap gap-3 items-start p-3 bg-slate-50/50 border border-slate-100 rounded-xl relative group">
+                    <div className="w-full sm:w-1/3">
+                      <Controller
+                        name={`schedules.${index}.amount`}
+                        control={control}
+                        rules={{ required: true, min: 1 }}
+                        render={({ field: cField }) => (
+                          <CurrencyInput
+                            label={`Nominal Termin ${index + 1}`}
+                            value={cField.value}
+                            onValueChange={(values) => cField.onChange(values.floatValue || 0)}
+                          />
+                        )}
+                      />
+                    </div>
+                    <div className="w-full sm:w-1/3">
+                      <Controller
+                        name={`schedules.${index}.due_date`}
+                        control={control}
+                        rules={{ required: true }}
+                        render={({ field: cField }) => (
+                          <DateInput
+                            label="Jatuh Tempo"
+                            value={cField.value}
+                            onChange={cField.onChange}
+                          />
+                        )}
+                      />
+                    </div>
+                    <div className="w-full sm:flex-1">
+                      <Input
+                        label="Keterangan (Opsional)"
+                        placeholder="Cth: DP, Pelunasan"
+                        {...register(`schedules.${index}.name_suffix`)}
+                      />
+                    </div>
+                    
+                    {fields.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => remove(index)}
+                        className="absolute -right-2 -top-2 w-6 h-6 bg-white border border-rose-200 rounded-full text-rose-500 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Hapus termin ini"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-3 text-xs border-dashed"
+                onClick={() => append({ amount: remainingPrice > 0 ? remainingPrice : 0, due_date: new Date().toISOString().split('T')[0], name_suffix: '' })}
+              >
+                <Plus className="w-3 h-3 mr-1" /> Tambah Termin
+              </Button>
+            </div>
+
+            <div className="pt-4 flex justify-end gap-2 border-t border-slate-200 mt-6">
               <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Batal</Button>
-              <Button type="submit" disabled={loading}>Simpan & Buat Tagihan</Button>
+              <Button type="submit" disabled={loading || remainingPrice !== 0}>
+                {remainingPrice !== 0 ? 'Nominal Termin Belum Sesuai' : 'Simpan & Buat Tagihan'}
+              </Button>
             </div>
           </form>
         </Card>
