@@ -76,10 +76,10 @@ const PermissionToggle: React.FC<{
       className={cn(
         "w-6 h-6 rounded-md transition-all flex items-center justify-center mx-auto border-2 shadow-sm flex-shrink-0",
         !isAvail 
-          ? "bg-slate-100/50 border-slate-200 cursor-not-allowed opacity-40" 
+          ? "bg-slate-100/50 border-slate-100 cursor-not-allowed opacity-30" 
           : hasAccess 
-            ? "bg-white border-accent-dark text-accent-dark shadow-convex" 
-            : "bg-white border-slate-200 text-transparent hover:border-accent-dark/30 hover:shadow-sm"
+            ? "bg-accent-dark border-accent-dark text-white shadow-premium scale-110" 
+            : "bg-white border-slate-200 text-transparent hover:border-accent-dark/40 hover:bg-slate-50/50"
       )}
       title={!isAvail ? "Fitur tidak tersedia" : hasAccess ? `Cabut Akses ${label}` : `Beri Akses ${label}`}
     >

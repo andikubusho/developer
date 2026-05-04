@@ -1578,6 +1578,9 @@ export const purchaseOrders = pgTable("purchase_orders", {
   status: text("status").default("PENDING").notNull(),
   items: jsonb("items"), // Added to support multiple items in one PO
   totalPrice: numeric("total_price").default("0"),
+  includePpn: boolean("include_ppn").default(false).notNull(),
+  ppnRate: numeric("ppn_rate").default("11").notNull(),
+  ppnAmount: numeric("ppn_amount").default("0"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

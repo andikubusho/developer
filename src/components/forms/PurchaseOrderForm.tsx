@@ -23,6 +23,7 @@ const poSchema = z.object({
   due_date: z.string().min(1, 'Tanggal jatuh tempo harus diisi'),
   pr_id: z.string().optional(),
   rab_project_id: z.string().optional(),
+  include_ppn: z.boolean().default(false),
 });
 
 type POFormValues = z.infer<typeof poSchema>;
@@ -64,6 +65,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
   const [batchSupplier, setBatchSupplier] = useState('');
   const [batchOrderDate, setBatchOrderDate] = useState(new Date().toISOString().split('T')[0]);
   const [batchDueDate, setBatchDueDate] = useState(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [includePpn, setIncludePpn] = useState(initialOrder?.include_ppn ?? false);
   const [itemDetails, setItemDetails] = useState<ItemDetail[]>(() => {
     if (initialPRItems) {
       return initialPRItems.map(item => ({
@@ -116,6 +118,7 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       variant_id: (initialOrder?.variant_id || initialOrder?.id_variant) ? Number(initialOrder.variant_id || initialOrder.id_variant) : undefined,
       pr_id: initialOrder?.pr_id || initialPR?.prId || undefined,
       rab_project_id: initialOrder?.rab_project_id || initialPR?.rab_project_id || undefined,
+      include_ppn: initialOrder?.include_ppn ?? false,
     },
   });
 
@@ -263,6 +266,9 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
       }
 
       const total_price = (values.quantity || 0) * (values.unit_price || 0);
+      const ppn_amount = values.include_ppn ? Math.round(total_price * 0.11) : 0;
+      const grand_total = total_price + ppn_amount;
+
       const poItem = {
         material_id: values.material_id,
         material_name: masters.find(m => m.id === values.material_id)?.name || '-',
@@ -273,30 +279,31 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         pr_id: values.pr_id
       };
 
+      const poData = {
+        project_id: values.project_id,
+        supplier_id: Number(values.supplier_id),
+        date: values.order_date,
+        due_date: values.due_date,
+        total_price,
+        include_ppn: values.include_ppn,
+        ppn_rate: "11",
+        ppn_amount,
+        rab_project_id: values.rab_project_id,
+        items: [poItem]
+      };
+
       if (initialOrder) {
         await api.update('purchase_orders', initialOrder.id, {
-          project_id: values.project_id,
-          supplier_id: Number(values.supplier_id),
-          date: values.order_date,
-          due_date: values.due_date,
-          total_price,
-          status: initialOrder.status,
-          rab_project_id: values.rab_project_id,
-          items: [poItem]
+          ...poData,
+          status: initialOrder.status
         });
       } else {
         const po_number = `PO-${Date.now().toString().slice(-8)}`;
         await api.insert('purchase_orders', {
           id: crypto.randomUUID(),
-          project_id: values.project_id,
-          supplier_id: Number(values.supplier_id),
-          date: values.order_date,
-          due_date: values.due_date,
+          ...poData,
           po_number,
-          total_price,
-          status: 'PENDING',
-          rab_project_id: values.rab_project_id,
-          items: [poItem]
+          status: 'PENDING'
         });
       }
 
@@ -362,28 +369,35 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         });
       }
 
+      const subtotalTotal = grandTotal; // from the loop
+      const ppn_amount = includePpn ? Math.round(subtotalTotal * 0.11) : 0;
+      const grand_total = subtotalTotal + ppn_amount;
+
+      const poData = {
+        supplier_id: Number(batchSupplier),
+        date: batchOrderDate,
+        due_date: batchDueDate,
+        total_price: subtotalTotal,
+        include_ppn: includePpn,
+        ppn_rate: "11",
+        ppn_amount,
+        items: poItems
+      };
+
       // Update or Insert
       if (initialOrder) {
         await api.update('purchase_orders', initialOrder.id, {
-          project_id: initialOrder.project_id, // Lock project
-          supplier_id: Number(batchSupplier),
-          date: batchOrderDate,
-          due_date: batchDueDate,
-          total_price: grandTotal,
-          items: poItems
+          ...poData,
+          project_id: initialOrder.project_id // Lock project
         });
       } else {
         await api.insert('purchase_orders', {
           id: crypto.randomUUID(),
           project_id: itemDetails[0].material_id ? itemDetails[0].material_id : (initialPRItems?.[0]?.project_id), // Fallback
-          supplier_id: Number(batchSupplier),
-          date: batchOrderDate,
-          due_date: batchDueDate,
+          ...poData,
           po_number,
-          total_price: grandTotal,
           status: 'PENDING',
           rab_project_id: itemDetails[0].pr_id ? (initialPRItems?.find(p => p.prId === itemDetails[0].pr_id)?.rab_project_id) : undefined,
-          items: poItems
         });
       }
 
@@ -565,12 +579,44 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
           })}
         </div>
 
-        {/* Grand total */}
-        <div className="p-6 bg-slate-100 border-2 border-slate-200 rounded-[24px] flex justify-between items-center">
-          <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400">Total Estimasi Pembelian</p>
-          <p className="text-3xl font-black tracking-tighter">
-            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(batchTotal)}
-          </p>
+        {/* PPN Toggle & Calculation */}
+        <div className="p-6 bg-slate-100 border-2 border-slate-200 rounded-[24px] space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <input 
+                type="checkbox" 
+                id="batch_ppn"
+                checked={includePpn}
+                onChange={e => setIncludePpn(e.target.checked)}
+                className="w-6 h-6 rounded-lg text-accent-dark focus:ring-accent-dark/50 border-slate-300 cursor-pointer"
+              />
+              <label htmlFor="batch_ppn" className="text-sm font-black text-slate-700 cursor-pointer select-none">
+                Gunakan PPN (11%)
+              </label>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Subtotal</p>
+              <p className="font-bold text-slate-600">
+                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(batchTotal)}
+              </p>
+            </div>
+          </div>
+          
+          {includePpn && (
+            <div className="flex justify-between items-center pt-2 border-t border-slate-200 animate-in fade-in slide-in-from-top-2 duration-300">
+              <p className="text-xs font-black text-slate-500 uppercase tracking-widest">PPN 11%</p>
+              <p className="font-bold text-slate-600">
+                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Math.round(batchTotal * 0.11))}
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center pt-2 border-t-2 border-slate-200">
+            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400">Total Akhir (Grand Total)</p>
+            <p className="text-3xl font-black tracking-tighter">
+              {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(includePpn ? Math.round(batchTotal * 1.11) : batchTotal)}
+            </p>
+          </div>
         </div>
 
         {/* Actions */}
@@ -831,15 +877,56 @@ export const PurchaseOrderForm: React.FC<POFormProps> = ({ onSuccess, onCancel, 
         </div>
       </div>
 
-      <div className="p-8 bg-slate-100 border-2 border-slate-200 text-slate-900 rounded-[32px] shadow-sm relative overflow-hidden group">
+      <div className="p-8 bg-slate-100 border-2 border-slate-200 text-slate-900 rounded-[32px] shadow-sm relative overflow-hidden group space-y-4">
         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
           <Info className="w-24 h-24 -mr-8 -mt-8" />
         </div>
-        <div className="flex justify-between items-end relative z-10">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2">Total Estimasi Pembelian</p>
-            <p className="text-4xl font-black tracking-tighter">
+
+        <div className="flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-3">
+            <Controller
+              name="include_ppn"
+              control={control}
+              render={({ field }) => (
+                <input 
+                  type="checkbox" 
+                  id="include_ppn"
+                  checked={field.value}
+                  onChange={e => field.onChange(e.target.checked)}
+                  className="w-6 h-6 rounded-lg text-accent-dark focus:ring-accent-dark/50 border-slate-300 cursor-pointer"
+                />
+              )}
+            />
+            <label htmlFor="include_ppn" className="text-sm font-black text-slate-700 cursor-pointer select-none">
+              Gunakan PPN (11%)
+            </label>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Subtotal</p>
+            <p className="font-bold text-slate-600">
               {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(watch('quantity') * watch('unit_price') || 0)}
+            </p>
+          </div>
+        </div>
+
+        {watch('include_ppn') && (
+          <div className="flex justify-between items-center pt-2 border-t border-slate-200 relative z-10 animate-in fade-in slide-in-from-top-2 duration-300">
+            <p className="text-xs font-black text-slate-500 uppercase tracking-widest">PPN 11%</p>
+            <p className="font-bold text-slate-600">
+              {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Math.round((watch('quantity') * watch('unit_price') || 0) * 0.11))}
+            </p>
+          </div>
+        )}
+
+        <div className="flex justify-between items-end relative z-10 pt-2 border-t-2 border-slate-200">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Total Akhir (Grand Total)</p>
+            <p className="text-4xl font-black tracking-tighter">
+              {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
+                watch('include_ppn') 
+                  ? Math.round((watch('quantity') * watch('unit_price') || 0) * 1.11)
+                  : (watch('quantity') * watch('unit_price') || 0)
+              )}
             </p>
           </div>
           {initialPR?.prId && (

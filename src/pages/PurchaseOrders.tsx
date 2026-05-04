@@ -290,9 +290,21 @@ const PurchaseOrders: React.FC = () => {
         </tbody>
       </table>
 
-      <div class="total-section">
-        <span class="total-label">Grand Total Terbilang</span>
-        <span class="total-amount">${formatCurrency(order.total_price)}</span>
+      <div class="total-section" style="flex-direction:column;align-items:flex-end;gap:8px">
+        <div style="display:flex;justify-content:space-between;width:250px;font-size:12px;color:#64748b">
+          <span>SUBTOTAL</span>
+          <span style="font-weight:bold;color:#1e293b">${formatCurrency(order.total_price)}</span>
+        </div>
+        ${order.include_ppn ? `
+        <div style="display:flex;justify-content:space-between;width:250px;font-size:12px;color:#64748b">
+          <span>PPN ${order.ppn_rate}%</span>
+          <span style="font-weight:bold;color:#1e293b">${formatCurrency(order.ppn_amount)}</span>
+        </div>
+        ` : ''}
+        <div style="display:flex;justify-content:space-between;width:250px;padding-top:8px;border-top:2px solid #e2e8f0;margin-top:4px">
+          <span class="total-label" style="font-size:14px;color:#0f172a">GRAND TOTAL</span>
+          <span class="total-amount">${formatCurrency(Number(order.total_price || 0) + Number(order.ppn_amount || 0))}</span>
+        </div>
       </div>
 
       <div class="signature-grid">
@@ -430,7 +442,9 @@ const PurchaseOrders: React.FC = () => {
                         {order.due_date ? formatDate(order.due_date) : '-'}
                       </div>
                     </TD>
-                    <TD className="font-bold">{formatCurrency(order.total_price)}</TD>
+                    <TD className="font-bold">
+                      {formatCurrency(Number(order.total_price || 0) + Number(order.ppn_amount || 0))}
+                    </TD>
                     <TD>
                       <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${
                         order.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
@@ -671,9 +685,25 @@ const PurchaseOrders: React.FC = () => {
               </Table>
             </div>
 
-            <div className="p-6 bg-accent-dark text-white rounded-[24px] flex justify-between items-center shadow-xl">
-              <span className="text-xs font-black uppercase tracking-widest opacity-60">Total Pembelian</span>
-              <span className="text-2xl font-black">{formatCurrency(viewingOrder.total_price)}</span>
+            <div className="p-6 bg-slate-100 border-2 border-slate-200 rounded-[24px] space-y-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="font-black uppercase tracking-widest text-slate-400">Subtotal</span>
+                <span className="font-bold text-slate-600">{formatCurrency(viewingOrder.total_price)}</span>
+              </div>
+              
+              {viewingOrder.include_ppn && (
+                <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-200 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <span className="font-black uppercase tracking-widest text-slate-400">PPN {viewingOrder.ppn_rate}%</span>
+                  <span className="font-bold text-slate-600">{formatCurrency(viewingOrder.ppn_amount)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-3 border-t-2 border-slate-200">
+                <span className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">Total Akhir (Grand Total)</span>
+                <span className="text-3xl font-black text-slate-900">
+                  {formatCurrency(Number(viewingOrder.total_price || 0) + Number(viewingOrder.ppn_amount || 0))}
+                </span>
+              </div>
             </div>
 
             <div className="flex justify-end pt-2">
