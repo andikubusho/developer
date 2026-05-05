@@ -63,10 +63,11 @@ const VerificationQueue: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [cfData, bankData, allPendingPayments] = await Promise.all([
+      const [cfData, bankData, allPendingPayments, allPendingDeposits] = await Promise.all([
         api.get('cash_flow', `status=eq.${activeTab}&order=date.desc`),
         api.get('bank_accounts', 'select=id,bank_name,account_number'),
         activeTab === 'pending' ? api.get('payments', 'select=*&status=eq.pending&order=payment_date.desc') : Promise.resolve([]),
+        activeTab === 'pending' ? api.get('deposits', 'select=*&status=eq.pending&order=created_at.desc') : Promise.resolve([]),
       ]);
       const rawItems: CashFlowItem[] = cfData || [];
 
@@ -155,7 +156,30 @@ const VerificationQueue: React.FC = () => {
           };
         });
 
-      setItems([...unique, ...orphanItems]);
+      // Orphaned deposits: pending deposits with no cash_flow entry
+      const orphanDepositItems: CashFlowItem[] = (allPendingDeposits || [])
+        .filter((d: any) => !cfReferenceIds.has(d.id))
+        .map((d: any) => {
+          const bank = d.bank_account_id ? (bankData || []).find((b: any) => b.id === d.bank_account_id) || null : null;
+          return {
+            id: d.id,
+            date: d.date,
+            description: `Titipan Konsumen - ${d.name} (${d.submission || '-'})`,
+            amount: d.amount,
+            type: 'in' as const,
+            category: 'Titipan Konsumen',
+            bank_account_id: d.bank_account_id || null,
+            status: 'pending' as CfStatus,
+            reference_id: d.id,
+            reference_type: 'deposit' as const,
+            isOrphan: true,
+            bank,
+            payment: null,
+            deposit: { name: d.name, phone: d.phone },
+          };
+        });
+
+      setItems([...unique, ...orphanItems, ...orphanDepositItems]);
     } catch (error) {
       console.error('Error fetching verification queue:', error);
     } finally {
@@ -169,9 +193,26 @@ const VerificationQueue: React.FC = () => {
     try {
       setLoading(true);
 
-      if (item.isOrphan) {
+      if (item.isOrphan && item.reference_type === 'deposit') {
+        // Orphaned deposit — create cash_flow entry then mark deposit verified
+        await api.update('deposits', item.reference_id, { status: 'verified' });
+        const checkExisting = await api.get('cash_flow', `reference_id=eq.${item.reference_id}&reference_type=eq.deposit`);
+        if (!checkExisting || checkExisting.length === 0) {
+          await api.insert('cash_flow', {
+            date: item.date,
+            description: item.description,
+            amount: item.amount,
+            type: 'in',
+            category: 'Titipan Konsumen',
+            status: 'verified',
+            reference_id: item.reference_id,
+            reference_type: 'deposit',
+            bank_account_id: item.bank_account_id,
+          });
+        }
+      } else if (item.isOrphan) {
         // Orphaned payment — create cash_flow entry then mark verified
-        const duplicates = await api.get('payments', 
+        const duplicates = await api.get('payments',
           `sale_id=eq.${item.payment?.sale?.id}&amount=eq.${item.amount}&payment_date=eq.${item.date}&status=eq.pending`
         );
         
