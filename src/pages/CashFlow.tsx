@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, ArrowLeft, ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Calendar, Wallet, Landmark, Trash2, Plus, X } from 'lucide-react';
+import { Search, Filter, ArrowLeft, ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Calendar, Wallet, Landmark, Trash2, Plus, X, ChevronDown } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
@@ -25,7 +25,7 @@ interface CashFlowItem {
   reference_type?: string | null;
 }
 
-const KATEGORI_MASUK = [
+const DEFAULT_KATEGORI_MASUK = [
   'Penjualan Tunai',
   'Pembayaran Angsuran',
   'Uang Muka (DP)',
@@ -34,7 +34,7 @@ const KATEGORI_MASUK = [
   'Pendapatan Lain-lain',
 ];
 
-const KATEGORI_KELUAR = [
+const DEFAULT_KATEGORI_KELUAR = [
   'Biaya Operasional',
   'Gaji & Tunjangan',
   'Pembelian Material',
@@ -44,6 +44,9 @@ const KATEGORI_KELUAR = [
   'Cicilan / Hutang',
   'Biaya Lain-lain',
 ];
+
+const LS_KEY_IN  = 'propdev_cf_categories_in';
+const LS_KEY_OUT = 'propdev_cf_categories_out';
 
 const emptyForm = {
   tanggal: new Date().toISOString().split('T')[0],
@@ -68,9 +71,68 @@ const CashFlowPage: React.FC = () => {
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
 
+  // State kategori dinamis
+  const [kategoriMasuk, setKategoriMasuk] = useState<string[]>([]);
+  const [kategoriKeluar, setKategoriKeluar] = useState<string[]>([]);
+  const [kategoriDropdownOpen, setKategoriDropdownOpen] = useState(false);
+  const [inputKategoriBaru, setInputKategoriBaru] = useState('');
+  const kategoriDropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     fetchData();
+    loadKategori();
   }, []);
+
+  // Close dropdown saat klik di luar (pola identik SearchableSelect.tsx)
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (kategoriDropdownRef.current && !kategoriDropdownRef.current.contains(e.target as Node))
+        setKategoriDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const loadKategori = () => {
+    const parse = (key: string, defaults: string[]): string[] => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return [...defaults];
+        return JSON.parse(raw) as string[];
+      } catch { return [...defaults]; }
+    };
+    setKategoriMasuk(parse(LS_KEY_IN, DEFAULT_KATEGORI_MASUK));
+    setKategoriKeluar(parse(LS_KEY_OUT, DEFAULT_KATEGORI_KELUAR));
+  };
+
+  const saveKategori = (type: 'in' | 'out', list: string[]) =>
+    localStorage.setItem(type === 'in' ? LS_KEY_IN : LS_KEY_OUT, JSON.stringify(list));
+
+  const tambahKategori = (type: 'in' | 'out', nama: string) => {
+    const trimmed = nama.trim();
+    if (!trimmed) return;
+    const current = type === 'in' ? kategoriMasuk : kategoriKeluar;
+    if (current.some(k => k.toLowerCase() === trimmed.toLowerCase())) {
+      alert('Kategori sudah ada!');
+      return;
+    }
+    const updated = [...current, trimmed];
+    type === 'in' ? setKategoriMasuk(updated) : setKategoriKeluar(updated);
+    saveKategori(type, updated);
+    setInputKategoriBaru('');
+  };
+
+  const hapusKategori = (type: 'in' | 'out', nama: string) => {
+    const count = cashFlow.filter(i => i.type === type && i.category === nama).length;
+    const msg = count > 0
+      ? `Kategori "${nama}" dipakai di ${count} transaksi.\nHapus dari pilihan? (Data transaksi tidak berubah)`
+      : `Hapus kategori "${nama}"?`;
+    if (!confirm(msg)) return;
+    const updated = (type === 'in' ? kategoriMasuk : kategoriKeluar).filter(k => k !== nama);
+    type === 'in' ? setKategoriMasuk(updated) : setKategoriKeluar(updated);
+    saveKategori(type, updated);
+    if (form.kategori === nama) setForm(prev => ({ ...prev, kategori: '' }));
+  };
 
   const fetchData = async () => {
     try {
@@ -102,9 +164,7 @@ const CashFlowPage: React.FC = () => {
       ]);
 
       const salesMap: Record<string, string> = {};
-      (sales || []).forEach((s: any) => {
-        salesMap[s.id] = s.customer?.full_name || 'Tanpa Nama';
-      });
+      (sales || []).forEach((s: any) => { salesMap[s.id] = s.customer?.full_name || 'Tanpa Nama'; });
 
       const customerMap: Record<string, string> = {};
       (deposits || []).forEach((d: any) => { customerMap[d.id] = d.customer_name; });
@@ -148,6 +208,8 @@ const CashFlowPage: React.FC = () => {
   const openModal = (type: 'in' | 'out') => {
     setModalType(type);
     setForm({ ...emptyForm, tanggal: new Date().toISOString().split('T')[0] });
+    setKategoriDropdownOpen(false);
+    setInputKategoriBaru('');
     setModalOpen(true);
   };
 
@@ -202,7 +264,7 @@ const CashFlowPage: React.FC = () => {
     return bank ? `${bank.bank_name} - ${bank.account_number}` : 'Akun Bank';
   };
 
-  const kategoriList = modalType === 'in' ? KATEGORI_MASUK : KATEGORI_KELUAR;
+  const kategoriListAktif = modalType === 'in' ? kategoriMasuk : kategoriKeluar;
 
   return (
     <div className="space-y-6">
@@ -217,7 +279,6 @@ const CashFlowPage: React.FC = () => {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
-          {/* Filter bulan */}
           <div className="relative flex items-center">
             <Calendar className="absolute left-3 w-4 h-4 text-text-secondary pointer-events-none" />
             <input
@@ -227,24 +288,13 @@ const CashFlowPage: React.FC = () => {
               className="pl-9 pr-4 py-2 h-10 rounded-xl border border-white/40 bg-white/50 text-sm font-medium text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-dark/20 hover:bg-white transition-all w-[180px] appearance-none cursor-pointer"
             />
             {selectedMonth && (
-              <button
-                onClick={() => setSelectedMonth('')}
-                className="absolute right-3 w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[10px] text-text-secondary hover:bg-rose-100 hover:text-rose-600"
-                title="Hapus Filter"
-              >✕</button>
+              <button onClick={() => setSelectedMonth('')} className="absolute right-3 w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[10px] text-text-secondary hover:bg-rose-100 hover:text-rose-600" title="Hapus Filter">✕</button>
             )}
           </div>
-          {/* Tombol manual entry */}
-          <Button
-            onClick={() => openModal('in')}
-            className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-2 shadow-none border-0"
-          >
+          <Button onClick={() => openModal('in')} className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-2 shadow-none border-0">
             <Plus className="w-4 h-4" /> Pemasukan
           </Button>
-          <Button
-            onClick={() => openModal('out')}
-            className="h-10 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold flex items-center gap-2 shadow-none border-0"
-          >
+          <Button onClick={() => openModal('out')} className="h-10 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold flex items-center gap-2 shadow-none border-0">
             <Plus className="w-4 h-4" /> Pengeluaran
           </Button>
           <Button>Export Laporan</Button>
@@ -253,22 +303,12 @@ const CashFlowPage: React.FC = () => {
 
       {/* Account Selector */}
       <div className="flex flex-wrap gap-3">
-        <button
-          onClick={() => setSelectedAccount('all')}
-          className={cn("px-4 py-2 rounded-xl text-sm font-medium transition-all border", selectedAccount === 'all' ? "bg-accent-dark text-white border-accent-dark shadow-lg shadow-accent-dark/20" : "bg-white/50 text-text-secondary border-white/40 hover:bg-white")}
-        >Semua Akun</button>
-        <button
-          onClick={() => setSelectedAccount('cash')}
-          className={cn("px-4 py-2 rounded-xl text-sm font-medium transition-all border flex items-center gap-2", selectedAccount === 'cash' ? "bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20" : "bg-white/50 text-text-secondary border-white/40 hover:bg-white")}
-        >
+        <button onClick={() => setSelectedAccount('all')} className={cn("px-4 py-2 rounded-xl text-sm font-medium transition-all border", selectedAccount === 'all' ? "bg-accent-dark text-white border-accent-dark shadow-lg shadow-accent-dark/20" : "bg-white/50 text-text-secondary border-white/40 hover:bg-white")}>Semua Akun</button>
+        <button onClick={() => setSelectedAccount('cash')} className={cn("px-4 py-2 rounded-xl text-sm font-medium transition-all border flex items-center gap-2", selectedAccount === 'cash' ? "bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20" : "bg-white/50 text-text-secondary border-white/40 hover:bg-white")}>
           <Wallet className="w-4 h-4" /> Kas Besar
         </button>
         {banks.map(bank => (
-          <button
-            key={bank.id}
-            onClick={() => setSelectedAccount(bank.id)}
-            className={cn("px-4 py-2 rounded-xl text-sm font-medium transition-all border flex items-center gap-2", selectedAccount === bank.id ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20" : "bg-white/50 text-text-secondary border-white/40 hover:bg-white")}
-          >
+          <button key={bank.id} onClick={() => setSelectedAccount(bank.id)} className={cn("px-4 py-2 rounded-xl text-sm font-medium transition-all border flex items-center gap-2", selectedAccount === bank.id ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20" : "bg-white/50 text-text-secondary border-white/40 hover:bg-white")}>
             <Landmark className="w-4 h-4" /> {bank.bank_name}
           </button>
         ))}
@@ -278,9 +318,7 @@ const CashFlowPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6 bg-green-50 border-green-100">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
-              <ArrowUpCircle className="w-6 h-6" />
-            </div>
+            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600"><ArrowUpCircle className="w-6 h-6" /></div>
             <TrendingUp className="w-4 h-4 text-green-600" />
           </div>
           <p className="text-xs font-medium text-green-600 mb-1 uppercase tracking-wider">Masuk ({getAccountLabel()})</p>
@@ -288,9 +326,7 @@ const CashFlowPage: React.FC = () => {
         </Card>
         <Card className="p-6 bg-red-50 border-red-100">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-red-600">
-              <ArrowDownCircle className="w-6 h-6" />
-            </div>
+            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-red-600"><ArrowDownCircle className="w-6 h-6" /></div>
             <TrendingDown className="w-4 h-4 text-red-600" />
           </div>
           <p className="text-xs font-medium text-red-600 mb-1 uppercase tracking-wider">Keluar ({getAccountLabel()})</p>
@@ -298,9 +334,7 @@ const CashFlowPage: React.FC = () => {
         </Card>
         <Card className="p-6 bg-blue-50 border-blue-100">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
-              <TrendingUp className="w-6 h-6" />
-            </div>
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600"><TrendingUp className="w-6 h-6" /></div>
           </div>
           <p className="text-xs font-medium text-blue-600 mb-1 uppercase tracking-wider">Saldo Akhir ({getAccountLabel()})</p>
           <h3 className="text-2xl font-bold text-blue-900">{formatCurrency(netFlow)}</h3>
@@ -312,12 +346,7 @@ const CashFlowPage: React.FC = () => {
         <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4 bg-white/20">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <input
-              placeholder="Cari deskripsi atau kategori..."
-              className="w-full h-10 rounded-xl border border-white/40 pl-10 pr-4 text-sm focus:outline-none bg-white/50"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <input placeholder="Cari deskripsi atau kategori..." className="w-full h-10 rounded-xl border border-white/40 pl-10 pr-4 text-sm focus:outline-none bg-white/50" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <Button variant="outline" size="sm"><Filter className="w-4 h-4 mr-2" /> Filter Lanjutan</Button>
         </div>
@@ -346,22 +375,18 @@ const CashFlowPage: React.FC = () => {
                   <TD className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       {item.bank_account_id ? (
-                        <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-bold uppercase border border-blue-100">
-                          <Landmark className="w-3 h-3" /> {item.bank?.bank_name || 'Bank'}
-                        </span>
+                        <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-bold uppercase border border-blue-100"><Landmark className="w-3 h-3" /> {item.bank?.bank_name || 'Bank'}</span>
                       ) : (
-                        <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase border border-emerald-100">
-                          <Wallet className="w-3 h-3" /> Kas Besar
-                        </span>
+                        <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase border border-emerald-100"><Wallet className="w-3 h-3" /> Kas Besar</span>
                       )}
                     </div>
                     <div className="text-[10px] text-text-muted mt-0.5">{item.bank?.account_number || 'Tunai'}</div>
                   </TD>
                   <TD className="px-6 py-4">
                     <div className="text-sm font-bold text-text-primary">
-                      {item.reference_type === 'manual' ? (
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Manual</span>
-                      ) : (item.customerName || '-')}
+                      {item.reference_type === 'manual'
+                        ? <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Manual</span>
+                        : (item.customerName || '-')}
                     </div>
                   </TD>
                   <td className="px-6 py-4">
@@ -383,18 +408,10 @@ const CashFlowPage: React.FC = () => {
       </Card>
 
       {/* Modal Tambah Manual */}
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={modalType === 'in' ? 'Tambah Pemasukan Manual' : 'Tambah Pengeluaran Manual'}
-        size="lg"
-      >
+      <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setKategoriDropdownOpen(false); setInputKategoriBaru(''); }} title={modalType === 'in' ? 'Tambah Pemasukan Manual' : 'Tambah Pengeluaran Manual'} size="lg">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Badge tipe */}
-          <div className={cn(
-            "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest",
-            modalType === 'in' ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-700 border border-rose-200"
-          )}>
+          <div className={cn("inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest", modalType === 'in' ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-700 border border-rose-200")}>
             {modalType === 'in' ? <ArrowUpCircle className="w-4 h-4" /> : <ArrowDownCircle className="w-4 h-4" />}
             {modalType === 'in' ? 'Pemasukan' : 'Pengeluaran'}
           </div>
@@ -403,55 +420,107 @@ const CashFlowPage: React.FC = () => {
             {/* Tanggal */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Tanggal</label>
-              <input
-                type="date"
-                value={form.tanggal}
-                onChange={e => setForm({ ...form, tanggal: e.target.value })}
-                required
-                className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-accent-dark"
-              />
+              <input type="date" value={form.tanggal} onChange={e => setForm({ ...form, tanggal: e.target.value })} required className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-accent-dark" />
             </div>
 
             {/* Akun */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Akun / Rekening</label>
-              <select
-                value={form.bank_account_id}
-                onChange={e => setForm({ ...form, bank_account_id: e.target.value })}
-                className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-accent-dark bg-white"
-              >
+              <select value={form.bank_account_id} onChange={e => setForm({ ...form, bank_account_id: e.target.value })} className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-accent-dark bg-white">
                 <option value="">Kas Besar (Tunai)</option>
-                {banks.map(b => (
-                  <option key={b.id} value={b.id}>{b.bank_name} - {b.account_number}</option>
-                ))}
+                {banks.map(b => <option key={b.id} value={b.id}>{b.bank_name} - {b.account_number}</option>)}
               </select>
             </div>
           </div>
 
-          {/* Kategori */}
-          <div className="flex flex-col gap-1.5">
+          {/* Kategori — Custom Dropdown */}
+          <div className="flex flex-col gap-1.5 relative" ref={kategoriDropdownRef}>
             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Kategori</label>
-            <select
-              value={form.kategori}
-              onChange={e => setForm({ ...form, kategori: e.target.value })}
-              required
-              className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-accent-dark bg-white"
+
+            {/* Trigger */}
+            <button
+              type="button"
+              onClick={() => setKategoriDropdownOpen(p => !p)}
+              className={cn(
+                "h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-slate-700 bg-white flex items-center justify-between transition-all focus:outline-none",
+                kategoriDropdownOpen && "border-accent-dark ring-2 ring-accent-dark/10",
+                !form.kategori && "text-slate-400"
+              )}
             >
-              <option value="">-- Pilih Kategori --</option>
-              {kategoriList.map(k => <option key={k} value={k}>{k}</option>)}
-            </select>
+              <span className="truncate">{form.kategori || '-- Pilih Kategori --'}</span>
+              <ChevronDown className={cn("w-4 h-4 text-slate-400 flex-shrink-0 transition-transform duration-200", kategoriDropdownOpen && "rotate-180")} />
+            </button>
+
+            {/* Panel Dropdown */}
+            {kategoriDropdownOpen && (
+              <div className="absolute z-50 top-full left-0 w-full bg-white rounded-xl border-2 border-slate-100 shadow-xl overflow-hidden mt-1">
+                {/* Header */}
+                <div className="px-3 py-2 border-b border-slate-100 bg-slate-50">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pilih Kategori</p>
+                </div>
+
+                {/* List */}
+                <div className="max-h-48 overflow-y-auto py-1">
+                  {kategoriListAktif.length === 0 ? (
+                    <p className="px-4 py-3 text-xs text-slate-400 text-center">Belum ada kategori. Tambah di bawah.</p>
+                  ) : (
+                    kategoriListAktif.map(k => (
+                      <div
+                        key={k}
+                        className={cn(
+                          "flex items-center justify-between px-3 py-2 mx-1 rounded-lg group transition-colors cursor-pointer",
+                          form.kategori === k ? "bg-accent-dark/10 text-accent-dark" : "hover:bg-slate-50 text-slate-700"
+                        )}
+                      >
+                        <button
+                          type="button"
+                          className="flex-1 text-left text-sm font-bold truncate"
+                          onClick={() => { setForm(p => ({ ...p, kategori: k })); setKategoriDropdownOpen(false); }}
+                        >
+                          {k}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); hapusKategori(modalType, k); }}
+                          className="ml-2 w-5 h-5 flex items-center justify-center rounded-full text-slate-300 hover:bg-rose-50 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                          title={`Hapus kategori "${k}"`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Footer — Tambah Kategori Baru */}
+                <div className="px-3 py-2.5 border-t border-slate-100 bg-slate-50/80 flex gap-2">
+                  <input
+                    type="text"
+                    value={inputKategoriBaru}
+                    onChange={e => setInputKategoriBaru(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { e.preventDefault(); tambahKategori(modalType, inputKategoriBaru); }
+                    }}
+                    placeholder="Nama kategori baru..."
+                    className="flex-1 h-8 rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-accent-dark bg-white placeholder:text-slate-300"
+                    onClick={e => e.stopPropagation()}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => tambahKategori(modalType, inputKategoriBaru)}
+                    className="h-8 px-3 rounded-lg bg-accent-dark text-white text-xs font-black flex items-center gap-1 hover:brightness-110 transition-all flex-shrink-0"
+                  >
+                    <Plus className="w-3 h-3" /> Tambah
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Keterangan */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Keterangan / Deskripsi</label>
-            <textarea
-              value={form.deskripsi}
-              onChange={e => setForm({ ...form, deskripsi: e.target.value })}
-              rows={2}
-              placeholder="Keterangan tambahan (opsional)..."
-              className="rounded-xl border-2 border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-accent-dark resize-none"
-            />
+            <textarea value={form.deskripsi} onChange={e => setForm({ ...form, deskripsi: e.target.value })} rows={2} placeholder="Keterangan tambahan (opsional)..." className="rounded-xl border-2 border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-accent-dark resize-none" />
           </div>
 
           {/* Jumlah */}
@@ -468,25 +537,13 @@ const CashFlowPage: React.FC = () => {
               }}
               placeholder="0"
               required
-              className={cn(
-                "h-11 rounded-xl border-2 px-4 text-sm font-black focus:outline-none",
-                modalType === 'in' ? "border-slate-100 focus:border-emerald-500 text-emerald-700" : "border-slate-100 focus:border-rose-500 text-rose-700"
-              )}
+              className={cn("h-11 rounded-xl border-2 px-4 text-sm font-black focus:outline-none", modalType === 'in' ? "border-slate-100 focus:border-emerald-500 text-emerald-700" : "border-slate-100 focus:border-rose-500 text-rose-700")}
             />
           </div>
 
           <div className="flex gap-3 pt-2">
-            <Button type="button" variant="ghost" className="flex-1 h-11 rounded-xl" onClick={() => setModalOpen(false)}>
-              Batal
-            </Button>
-            <Button
-              type="submit"
-              isLoading={submitting}
-              className={cn(
-                "flex-1 h-11 rounded-xl font-black text-white border-0",
-                modalType === 'in' ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
-              )}
-            >
+            <Button type="button" variant="ghost" className="flex-1 h-11 rounded-xl" onClick={() => { setModalOpen(false); setKategoriDropdownOpen(false); setInputKategoriBaru(''); }}>Batal</Button>
+            <Button type="submit" isLoading={submitting} className={cn("flex-1 h-11 rounded-xl font-black text-white border-0", modalType === 'in' ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700")}>
               Simpan {modalType === 'in' ? 'Pemasukan' : 'Pengeluaran'}
             </Button>
           </div>
