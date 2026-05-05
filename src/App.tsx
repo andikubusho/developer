@@ -65,6 +65,7 @@ const CustomerReceivables = lazy(() => import('./pages/CustomerReceivables'));
 const ConsumerPayments = lazy(() => import('./pages/ConsumerPayments'));
 
 // Accounting
+const MasterAccount = lazy(() => import('./pages/MasterAccount'));
 const GeneralJournal = lazy(() => import('./pages/GeneralJournal'));
 const Ledger = lazy(() => import('./pages/Ledger'));
 const FinancialReports = lazy(() => import('./pages/FinancialReports'));
@@ -174,6 +175,7 @@ export default function App() {
               <Route path="consumer-payments" element={<ConsumerPayments />} />
               
               {/* Accounting */}
+              <Route path="master-account" element={<MasterAccount />} />
               <Route path="general-journal" element={<GeneralJournal />} />
               <Route path="ledger" element={<Ledger />} />
               <Route path="financial-reports" element={<FinancialReports />} />

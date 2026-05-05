@@ -725,6 +725,9 @@ export const MENU_KEYS = [
 
   { key: "petty-cash-teknik", label: "Petty Cash Teknik", group: "Teknik", category: "TEKNIK: KAS", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 
+  // ACCOUNTING
+  { key: "master-account", label: "Master Akun", group: "Accounting", category: "ACCOUNTING", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+
   // KEUANGAN
   { key: "petty-cash", label: "Petty Cash", group: "Keuangan", category: "FIN: MANAJEMEN KAS", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "cash-flow", label: "Cash Flow", group: "Keuangan", category: "FIN: MANAJEMEN KAS", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },

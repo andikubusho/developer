@@ -36,7 +36,8 @@ import {
   Briefcase,
   Landmark,
   PenTool,
-  Store
+  Store,
+  BookOpen
 } from 'lucide-react';
 import { useAuth, Division } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
@@ -69,6 +70,7 @@ const menuItems = [
   { name: 'Payroll', icon: Banknote, path: '/payroll', divisions: ['hrd', 'audit'], category: 'HRD & PAYROLL' },
 
   // Accounting
+  { name: 'Master Akun', icon: BookOpen, path: '/master-account', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
   { name: 'Jurnal Umum', icon: History, path: '/general-journal', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
   { name: 'Buku Besar', icon: FileSpreadsheet, path: '/ledger', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
   { name: 'Perpajakan', icon: Receipt, path: '/taxation', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
