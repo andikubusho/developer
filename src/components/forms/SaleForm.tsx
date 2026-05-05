@@ -540,6 +540,47 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           <Controller name="dp_date" control={control} render={({ field }) => <DateInput label="Tanggal Down Payment" value={field.value} onChange={field.onChange} />} />
         </div>
 
+        {/* SELECTOR TITIPAN MANUAL */}
+        <div className={cn("p-4 rounded-2xl border-2 transition-all", watchDepositAmount > 0 ? "bg-blue-50 border-blue-300" : "bg-slate-50 border-slate-200")}>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <Wallet className="w-4 h-4" /> Titipan / Deposit
+            </label>
+            {watchDepositAmount > 0 && (
+              <button type="button" onClick={() => { setValue('deposit_id', null); setValue('deposit_amount', 0); }}
+                className="text-[10px] font-black text-rose-500 hover:text-rose-700 uppercase tracking-widest">
+                × Hapus Titipan
+              </button>
+            )}
+          </div>
+          <select
+            value={watch('deposit_id') || ''}
+            onChange={e => {
+              const id = e.target.value;
+              if (!id) { setValue('deposit_id', null); setValue('deposit_amount', 0); return; }
+              const dep = verifiedDeposits.find(d => d.id === id);
+              if (dep) { setValue('deposit_id', dep.id); setValue('deposit_amount', dep.amount); }
+            }}
+            className={cn("w-full h-11 rounded-xl border-2 px-4 text-sm font-bold focus:outline-none bg-white transition-all",
+              watchDepositAmount > 0 ? "border-blue-400 text-blue-700" : "border-slate-200 text-slate-700")}
+          >
+            <option value="">— Tidak Ada Titipan —</option>
+            {verifiedDeposits.map(d => (
+              <option key={d.id} value={d.id}>
+                {d.name} ({d.phone}) — Rp {Number(d.amount).toLocaleString('id-ID')}
+              </option>
+            ))}
+          </select>
+          {watchDepositAmount > 0 && (
+            <p className="mt-1.5 text-xs font-black text-blue-700">
+              ✓ Titipan akan dipotong sebesar Rp {Number(watchDepositAmount).toLocaleString('id-ID')} dari total harga
+            </p>
+          )}
+          {verifiedDeposits.length === 0 && (
+            <p className="mt-1.5 text-[10px] text-slate-400 font-medium italic">Belum ada titipan yang terverifikasi untuk saat ini.</p>
+          )}
+        </div>
+
         {/* FINANCIAL SUMMARY DASHBOARD */}
         <div className={cn("p-6 rounded-[2.5rem] relative overflow-hidden border-2 transition-all", watchDepositAmount > 0 ? "bg-blue-50 border-blue-300" : "bg-white/50 border-white/80 shadow-inner")}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3">
