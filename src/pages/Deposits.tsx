@@ -45,7 +45,7 @@ const Deposits: React.FC = () => {
   });
   const [staff, setStaff] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
-  const [blokOptions, setBlokOptions] = useState<string[]>([]);
+  const [unitOptions, setUnitOptions] = useState<string[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -85,19 +85,19 @@ const Deposits: React.FC = () => {
     }
   };
 
-  const fetchBloks = async (projectId: string) => {
-    if (!projectId) { setBlokOptions([]); return; }
+  const fetchUnits = async (projectId: string) => {
+    if (!projectId) { setUnitOptions([]); return; }
     try {
-      const data = await api.get('price_list_items', `select=blok&project_id=eq.${projectId}&order=blok.asc`);
-      const unique = [...new Set((data || []).map((p: any) => p.blok).filter(Boolean))] as string[];
-      setBlokOptions(unique);
+      const data = await api.get('price_list_items', `select=blok,unit&project_id=eq.${projectId}&order=blok.asc,unit.asc`);
+      const formatted = (data || []).map((p: any) => `${p.blok} - ${p.unit}`);
+      setUnitOptions(formatted);
     } catch (err) {
-      console.error('Fetch Bloks Failed:', err);
+      console.error('Fetch Units Failed:', err);
     }
   };
 
   useEffect(() => {
-    fetchBloks(formData.project_id);
+    fetchUnits(formData.project_id);
   }, [formData.project_id]);
 
   useEffect(() => {
@@ -115,37 +115,21 @@ const Deposits: React.FC = () => {
     return () => controller.abort();
   }, [formData.consultant_id, isModalOpen]);
 
-  useEffect(() => {
-    if (selectedDeposit) {
-      setFormData({
-        date: selectedDeposit.date.split('T')[0],
-        name: selectedDeposit.name,
-        phone: selectedDeposit.phone,
-        amount: selectedDeposit.amount,
-        payment_type: selectedDeposit.payment_type,
-        bank_account_id: (selectedDeposit as any).bank_account_id || '',
-        submission: selectedDeposit.submission,
-        description: selectedDeposit.description || '',
-        consultant_id: (selectedDeposit as any).consultant_id || '',
-        project_id: (selectedDeposit as any).project_id || '',
-        blok: (selectedDeposit as any).blok || ''
-      });
-    } else {
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        name: '',
-        phone: '',
-        amount: 0,
-        payment_type: 'cash',
-        bank_account_id: '',
-        submission: '',
-        description: '',
-        consultant_id: profile?.consultant_id || '',
-        project_id: '',
-        blok: ''
-      });
-    }
-  }, [selectedDeposit, isModalOpen, profile]);
+  const resetForm = () => {
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      name: '',
+      phone: '',
+      amount: 0,
+      payment_type: 'cash',
+      bank_account_id: '',
+      submission: '',
+      description: '',
+      consultant_id: profile?.consultant_id || '',
+      project_id: '',
+      blok: ''
+    });
+  };
 
   const fetchDeposits = async () => {
     try {
@@ -171,6 +155,19 @@ const Deposits: React.FC = () => {
 
   const handleEdit = (deposit: Deposit) => {
     setSelectedDeposit(deposit);
+    setFormData({
+      date: (deposit.date || '').split('T')[0],
+      name: deposit.name || '',
+      phone: deposit.phone || '',
+      amount: deposit.amount || 0,
+      payment_type: deposit.payment_type || 'cash',
+      bank_account_id: (deposit as any).bank_account_id || '',
+      submission: deposit.submission || '',
+      description: deposit.description || '',
+      consultant_id: (deposit as any).consultant_id || '',
+      project_id: (deposit as any).project_id || '',
+      blok: (deposit as any).blok || ''
+    });
     setIsModalOpen(true);
   };
 
@@ -260,6 +257,7 @@ const Deposits: React.FC = () => {
         }
       }
       await fetchDeposits();
+      setSelectedDeposit(null);
       setIsModalOpen(false);
     } catch (error: any) {
       alert(`Gagal menyimpan: ${error.message}`);
@@ -304,7 +302,7 @@ const Deposits: React.FC = () => {
             <p className="text-[10px] sm:text-sm text-text-secondary font-medium uppercase tracking-widest">Dana Pra-SPK</p>
           </div>
         </div>
-        <Button size="sm" className="w-full sm:w-auto rounded-xl text-[10px] sm:text-sm py-3" onClick={() => { setSelectedDeposit(null); setIsModalOpen(true); }}>
+        <Button size="sm" className="w-full sm:w-auto rounded-xl text-[10px] sm:text-sm py-3" onClick={() => { setSelectedDeposit(null); resetForm(); setIsModalOpen(true); }}>
           <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Input Titipan
         </Button>
       </div>
@@ -349,6 +347,13 @@ const Deposits: React.FC = () => {
                       <TD className="px-3 py-4">
                         <div className="font-black text-text-primary text-xs whitespace-nowrap">{d.name}</div>
                         <div className="text-[10px] text-text-secondary sm:hidden whitespace-nowrap">{formatDate(d.date)}</div>
+                        {d.blok && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="px-1.5 py-0.5 rounded bg-accent-lavender/20 text-accent-dark text-[8px] font-black uppercase tracking-widest border border-accent-lavender/30">
+                              Unit: {d.blok}
+                            </span>
+                          </div>
+                        )}
                         <div className="text-[9px] text-accent-dark font-bold md:hidden">{(d as any).consultant?.name || '-'}</div>
                       </TD>
                       <TD className="px-3 py-4 text-[10px] font-black text-emerald-600 text-right whitespace-nowrap">{formatCurrency(d.amount)}</TD>
@@ -399,7 +404,7 @@ const Deposits: React.FC = () => {
         </div>
       </Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setSelectedDeposit(null); }} title={selectedDeposit ? 'Edit Titipan' : 'Input Titipan'}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedDeposit ? 'Edit Titipan' : 'Input Titipan'}>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Tanggal" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
@@ -437,16 +442,16 @@ const Deposits: React.FC = () => {
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-black text-text-secondary uppercase tracking-widest ml-4">Blok (Opsional)</label>
+              <label className="text-xs font-black text-text-secondary uppercase tracking-widest ml-4">Unit (Opsional)</label>
               <select
                 className="w-full h-11 rounded-pill glass-input px-6 text-sm focus:outline-none bg-white/50 border border-white/40"
                 value={formData.blok}
                 onChange={(e) => setFormData({ ...formData, blok: e.target.value })}
                 disabled={!formData.project_id}
               >
-                <option value="">{formData.project_id ? 'Pilih Blok...' : 'Pilih proyek dulu'}</option>
-                {blokOptions.map(b => (
-                  <option key={b} value={b}>{b}</option>
+                <option value="">{formData.project_id ? 'Pilih Unit...' : 'Pilih proyek dulu'}</option>
+                {unitOptions.map(u => (
+                  <option key={u} value={u}>{u}</option>
                 ))}
               </select>
             </div>
