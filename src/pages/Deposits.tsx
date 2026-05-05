@@ -18,7 +18,7 @@ const Deposits: React.FC = () => {
   const navigate = useNavigate();
   const { setDivision, profile } = useAuth();
   const [deposits, setDeposits] = useState<Deposit[]>([]);
-  const [editingDeposit, setEditingDeposit] = useState<Deposit | null>(null);
+  const [editingDeposit, setEditingDeposit] = useState<Deposit | null>(null); // kept for compat
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,9 +39,13 @@ const Deposits: React.FC = () => {
     bank_account_id: '',
     submission: '',
     description: '',
-    consultant_id: ''
+    consultant_id: '',
+    project_id: '',
+    blok: ''
   });
   const [staff, setStaff] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [blokOptions, setBlokOptions] = useState<string[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -49,8 +53,7 @@ const Deposits: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    await fetchStaff();
-    await fetchBanks();
+    await Promise.all([fetchStaff(), fetchBanks(), fetchProjects()]);
     await fetchDeposits();
     setLoading(false);
   };
@@ -73,9 +76,33 @@ const Deposits: React.FC = () => {
     }
   };
 
+  const fetchProjects = async () => {
+    try {
+      const data = await api.get('projects', 'select=id,name&order=name.asc');
+      setProjects(data || []);
+    } catch (err) {
+      console.error('Fetch Projects Failed:', err);
+    }
+  };
+
+  const fetchBloks = async (projectId: string) => {
+    if (!projectId) { setBlokOptions([]); return; }
+    try {
+      const data = await api.get('price_list_items', `select=blok&project_id=eq.${projectId}&order=blok.asc`);
+      const unique = [...new Set((data || []).map((p: any) => p.blok).filter(Boolean))] as string[];
+      setBlokOptions(unique);
+    } catch (err) {
+      console.error('Fetch Bloks Failed:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchBloks(formData.project_id);
+  }, [formData.project_id]);
+
   useEffect(() => {
     const controller = new AbortController();
-    
+
     if (isModalOpen && formData.consultant_id) {
       setLeads([]); 
       api.get('leads', `select=*&consultant_id=eq.${formData.consultant_id}&order=name.asc`, { signal: controller.signal })
@@ -99,7 +126,9 @@ const Deposits: React.FC = () => {
         bank_account_id: (selectedDeposit as any).bank_account_id || '',
         submission: selectedDeposit.submission,
         description: selectedDeposit.description || '',
-        consultant_id: (selectedDeposit as any).consultant_id || ''
+        consultant_id: (selectedDeposit as any).consultant_id || '',
+        project_id: (selectedDeposit as any).project_id || '',
+        blok: (selectedDeposit as any).blok || ''
       });
     } else {
       setFormData({
@@ -111,7 +140,9 @@ const Deposits: React.FC = () => {
         bank_account_id: '',
         submission: '',
         description: '',
-        consultant_id: profile?.consultant_id || ''
+        consultant_id: profile?.consultant_id || '',
+        project_id: '',
+        blok: ''
       });
     }
   }, [selectedDeposit, isModalOpen, profile]);
@@ -139,7 +170,7 @@ const Deposits: React.FC = () => {
   };
 
   const handleEdit = (deposit: Deposit) => {
-    setEditingDeposit(deposit);
+    setSelectedDeposit(deposit);
     setIsModalOpen(true);
   };
 
@@ -206,7 +237,9 @@ const Deposits: React.FC = () => {
         bank_account_id: formData.payment_type === 'bank' ? (formData.bank_account_id || null) : null,
         submission: formData.submission,
         consultant_id: formData.consultant_id || null,
-        description: formData.description
+        description: formData.description,
+        project_id: formData.project_id || null,
+        blok: formData.blok || null
       };
       if (selectedDeposit) {
         await api.update('deposits', selectedDeposit.id, payload);
@@ -366,7 +399,7 @@ const Deposits: React.FC = () => {
         </div>
       </Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedDeposit ? 'Edit Titipan' : 'Input Titipan'}>
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setSelectedDeposit(null); }} title={selectedDeposit ? 'Edit Titipan' : 'Input Titipan'}>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Tanggal" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
@@ -387,6 +420,36 @@ const Deposits: React.FC = () => {
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-text-secondary uppercase tracking-widest ml-4">Proyek (Opsional)</label>
+              <select
+                className="w-full h-11 rounded-pill glass-input px-6 text-sm focus:outline-none bg-white/50 border border-white/40"
+                value={formData.project_id}
+                onChange={(e) => setFormData({ ...formData, project_id: e.target.value, blok: '' })}
+              >
+                <option value="">Pilih Proyek...</option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-text-secondary uppercase tracking-widest ml-4">Blok (Opsional)</label>
+              <select
+                className="w-full h-11 rounded-pill glass-input px-6 text-sm focus:outline-none bg-white/50 border border-white/40"
+                value={formData.blok}
+                onChange={(e) => setFormData({ ...formData, blok: e.target.value })}
+                disabled={!formData.project_id}
+              >
+                <option value="">{formData.project_id ? 'Pilih Blok...' : 'Pilih proyek dulu'}</option>
+                {blokOptions.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="space-y-1.5">

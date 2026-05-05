@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -61,6 +61,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const [consultantStaff, setConsultantStaff] = useState<any[]>([]);
   const [promos, setPromos] = useState<any[]>([]);
   const [verifiedDeposits, setVerifiedDeposits] = useState<any[]>([]);
+  const [pliItems, setPliItems] = useState<any[]>([]);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
   const [hasLoadedMasterData, setHasLoadedMasterData] = useState(false);
 
@@ -101,6 +102,14 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const finalPiutang = Math.max(0, (watch('final_price') || 0) - watchDepositAmount - watchBookingFee - watchDpAmount);
   const remainingAfterPayment = finalPiutang;
 
+  // Deposits filtered to the selected unit's project+blok — falls back to all if no match
+  const filteredDeposits = useMemo(() => {
+    const pli = pliItems.find(p => p.unit_id === watchUnitId);
+    if (!pli || verifiedDeposits.length === 0) return verifiedDeposits;
+    const matching = verifiedDeposits.filter(d => d.project_id === pli.project_id && d.blok === pli.blok);
+    return matching.length > 0 ? matching : verifiedDeposits;
+  }, [pliItems, watchUnitId, verifiedDeposits]);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -114,7 +123,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
           api.get('leads', 'select=id,name,phone,consultant_id'),
           api.get('consultants', 'select=id,name'),
           api.get('promos', 'select=id,name,value'),
-          api.get('deposits', 'select=id,name,amount,phone,consultant_id&status=eq.verified'),
+          api.get('deposits', 'select=id,name,amount,phone,consultant_id,project_id,blok&status=eq.verified'),
           api.get('bank_accounts', 'select=*'),
           initialData?.id ? api.get('installments', `sale_id=eq.${initialData.id}&order=due_date.asc`) : Promise.resolve([])
         ]);
@@ -134,8 +143,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
             price: p.harga_jual,
             status: p.status
           }));
+        setPliItems(pliData);
         setProjects(p || []);
-        setUnits([...processedUnits, ...orphans].filter(unit => 
+        setUnits([...processedUnits, ...orphans].filter(unit =>
           ((unit.status === 'available' || !unit.status) && !unit.is_blocking) || 
           (initialData && unit.id === initialData.unit_id)
         ));
@@ -170,11 +180,15 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
     const customer = rawCustomers.find(c => c.id === watchCustomerId) || rawLeads.find(l => l.id === watchCustomerId);
     if (customer && verifiedDeposits.length > 0) {
       const cleanPhone = (p: string) => (p || "").replace(/\D/g, "").replace(/^62/, "0");
-      const deposit = verifiedDeposits.find(d => cleanPhone(d.phone) === cleanPhone(customer.phone));
+      const pli = pliItems.find(p => p.unit_id === watchUnitId);
+      // Prefer deposit matching project+blok+phone, then phone-only
+      const deposit = (pli
+        ? verifiedDeposits.find(d => d.project_id === pli.project_id && d.blok === pli.blok && cleanPhone(d.phone) === cleanPhone(customer.phone))
+        : null) || verifiedDeposits.find(d => cleanPhone(d.phone) === cleanPhone(customer.phone));
       if (deposit) { setValue('deposit_id', deposit.id); setValue('deposit_amount', deposit.amount); }
       else { setValue('deposit_id', null); setValue('deposit_amount', 0); }
     } else if (!initialData) { setValue('deposit_id', null); setValue('deposit_amount', 0); }
-  }, [watchCustomerId, verifiedDeposits, rawCustomers, rawLeads, setValue]);
+  }, [watchCustomerId, verifiedDeposits, rawCustomers, rawLeads, setValue, pliItems, watchUnitId]);
 
   useEffect(() => {
     // Edit mode: jangan override harga jika unit tidak berubah dari data asal
@@ -565,7 +579,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
               watchDepositAmount > 0 ? "border-blue-400 text-blue-700" : "border-slate-200 text-slate-700")}
           >
             <option value="">— Tidak Ada Titipan —</option>
-            {verifiedDeposits.map(d => (
+            {filteredDeposits.map(d => (
               <option key={d.id} value={d.id}>
                 {d.name} ({d.phone}) — Rp {Number(d.amount).toLocaleString('id-ID')}
               </option>
@@ -576,8 +590,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
               ✓ Titipan akan dipotong sebesar Rp {Number(watchDepositAmount).toLocaleString('id-ID')} dari total harga
             </p>
           )}
-          {verifiedDeposits.length === 0 && (
-            <p className="mt-1.5 text-[10px] text-slate-400 font-medium italic">Belum ada titipan yang terverifikasi untuk saat ini.</p>
+          {filteredDeposits.length === 0 && (
+            <p className="mt-1.5 text-[10px] text-slate-400 font-medium italic">Belum ada titipan yang terverifikasi untuk unit ini.</p>
           )}
         </div>
 

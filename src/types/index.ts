@@ -132,6 +132,8 @@ export interface Deposit {
   submission: string;
   description: string;
   consultant_id: string;
+  project_id?: string | null;
+  blok?: string | null;
 }
 
 export interface Promo {
