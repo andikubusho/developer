@@ -1,326 +1,277 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, DollarSign, ArrowLeft, Eye, Download, AlertTriangle, CheckCircle, TrendingDown, TrendingUp, Plus } from 'lucide-react';
+import {
+  Search, ArrowLeft, AlertTriangle, CheckCircle, TrendingDown, TrendingUp, RefreshCw, X, DollarSign
+} from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { Modal } from '../components/ui/Modal';
-import { useAuth } from '../contexts/AuthContext';
-import { formatCurrency, formatDate, cn } from '../lib/utils';
-import { AuditCostItem } from '../types';
+import { formatCurrency, cn } from '../lib/utils';
 import { api } from '../lib/api';
-import { getMockData, saveMockData } from '../lib/storage';
+
+interface CostAuditRow {
+  rab_project_id: string;
+  project_name: string;
+  project_id: string | null;
+  budget: number;
+  actual: number;          // sum dari purchase orders received untuk rab_project_id ini
+  variance: number;        // budget - actual (positif = hemat, negatif = over)
+  variance_percent: number;
+  status: 'safe' | 'warning' | 'over_budget';
+}
 
 const AuditCostsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isMockMode, division, setDivision } = useAuth();
-  const [costItems, setCostItems] = useState<AuditCostItem[]>([]);
+  const [rows, setRows] = useState<CostAuditRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    project_name: 'Grand Residence Phase 1',
-    category: '',
-    budget: 0,
-    actual: 0
-  });
+  const [filterStatus, setFilterStatus] = useState<'all' | 'safe' | 'warning' | 'over_budget'>('all');
 
-  useEffect(() => {
-    fetchCostAudit();
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
-  const fetchCostAudit = async () => {
-    setLoading(true);
-    if (isMockMode) {
-      const defaultCosts: AuditCostItem[] = [
-        {
-          id: '1',
-          project_name: 'Grand Residence Phase 1',
-          category: 'Pekerjaan Tanah',
-          budget: 500000000,
-          actual: 525000000,
-          variance: -25000000,
-          variance_percent: -5,
-          status: 'warning'
-        },
-        {
-          id: '2',
-          project_name: 'Grand Residence Phase 1',
-          category: 'Pekerjaan Struktur',
-          budget: 1200000000,
-          actual: 1150000000,
-          variance: 50000000,
-          variance_percent: 4.1,
-          status: 'safe'
-        },
-        {
-          id: '3',
-          project_name: 'Grand Residence Phase 1',
-          category: 'Pekerjaan Finishing',
-          budget: 800000000,
-          actual: 950000000,
-          variance: -150000000,
-          variance_percent: -18.75,
-          status: 'danger'
-        }
-      ];
-      setCostItems(getMockData<AuditCostItem>('audit_costs', defaultCosts));
-      setLoading(false);
-      return;
-    }
-
+  const fetchAll = async () => {
     try {
-      const data = await api.get('audit_costs', 'select=*&order=project_name.asc');
-      setCostItems(data || []);
-    } catch (error) {
-      console.error('Error fetching cost audit:', error);
+      setLoading(true);
+      const [rabProjects, rabItems, materials, purchaseOrders, projects] = await Promise.all([
+        api.get('rab_projects', 'select=id,project_id,nama_proyek,keterangan'),
+        api.get('rab_items', 'select=id,rab_project_id,parent_id,level,is_manual,volume,koeff,material_id,satuan,uraian'),
+        api.get('materials', 'select=id,name,price,unit'),
+        api.get('purchase_orders', 'select=id,rab_project_id,status,total_amount,items'),
+        api.get('projects', 'select=id,name'),
+      ]);
+
+      const projectMap: Record<string, string> = {};
+      (projects || []).forEach((p: any) => { projectMap[p.id] = p.name; });
+
+      const materialMap: Record<string, any> = {};
+      (materials || []).forEach((m: any) => { materialMap[m.id] = m; });
+
+      // Group rab_items per rab_project_id, hitung budget total
+      const itemsByRab: Record<string, any[]> = {};
+      (rabItems || []).forEach((it: any) => {
+        if (!it.rab_project_id) return;
+        (itemsByRab[it.rab_project_id] ||= []).push(it);
+      });
+
+      // Calculate budget per rab_project: sum harga × volume untuk semua leaf (level 3) items
+      const calcBudget = (items: any[]): number => {
+        // Build parent volume map
+        const itemMap: Record<string, any> = {};
+        items.forEach(it => { itemMap[it.id] = it; });
+        let total = 0;
+        items.forEach(it => {
+          if (it.level !== 3) return;
+          const parentVol = it.parent_id ? (Number(itemMap[it.parent_id]?.volume) || 1) : 1;
+          const vol = (Number(it.volume) || 0) || ((Number(it.koeff) || 0) * parentVol);
+          const mat = it.material_id ? materialMap[it.material_id] : null;
+          const price = Number(mat?.price) || 0;
+          total += vol * price;
+        });
+        return total;
+      };
+
+      // Calculate actual per rab_project: sum total_amount dari PO yang RECEIVED/APPROVED untuk rab_project_id ini
+      const actualByRab: Record<string, number> = {};
+      (purchaseOrders || []).forEach((po: any) => {
+        if (!po.rab_project_id) return;
+        if (po.status !== 'RECEIVED' && po.status !== 'APPROVED' && po.status !== 'COMPLETED') return;
+        actualByRab[po.rab_project_id] = (actualByRab[po.rab_project_id] || 0) + (Number(po.total_amount) || 0);
+      });
+
+      const built: CostAuditRow[] = (rabProjects || []).map((r: any) => {
+        const items = itemsByRab[r.id] || [];
+        const budget = calcBudget(items);
+        const actual = actualByRab[r.id] || 0;
+        const variance = budget - actual;
+        const variancePercent = budget > 0 ? (variance / budget) * 100 : 0;
+        let status: 'safe' | 'warning' | 'over_budget' = 'safe';
+        if (variancePercent < 0) status = 'over_budget';
+        else if (variancePercent < 10) status = 'warning';
+        return {
+          rab_project_id: r.id,
+          project_name: r.nama_proyek || r.keterangan || (r.project_id ? projectMap[r.project_id] : '-') || '-',
+          project_id: r.project_id,
+          budget,
+          actual,
+          variance,
+          variance_percent: variancePercent,
+          status,
+        };
+      });
+
+      // Sort: over_budget dulu (urgent), lalu warning, lalu safe
+      built.sort((a, b) => {
+        const order = { over_budget: 0, warning: 1, safe: 2 };
+        return order[a.status] - order[b.status];
+      });
+
+      setRows(built);
+    } catch (err) {
+      console.error('Audit costs fetch failed:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSave = async () => {
-    const variance = formData.budget - formData.actual;
-    const variance_percent = Number(((variance / formData.budget) * 100).toFixed(2));
-    let status: 'safe' | 'warning' | 'danger' = 'safe';
-    
-    if (variance_percent < -10) status = 'danger';
-    else if (variance_percent < 0) status = 'warning';
-
-    const auditData = { ...formData, variance, variance_percent, status };
-
-    if (isMockMode) {
-      const newItem: AuditCostItem = {
-        id: Math.random().toString(36).substr(2, 9),
-        ...auditData
-      };
-      const updatedCosts = [newItem, ...costItems];
-      setCostItems(updatedCosts);
-      saveMockData('audit_costs', updatedCosts);
-    } else {
-      try {
-        await api.insert('audit_costs', auditData);
-        fetchCostAudit();
-      } catch (error) {
-        console.error('Error saving cost audit:', error);
-      }
-    }
-    setIsModalOpen(false);
-    setFormData({
-      project_name: 'Grand Residence Phase 1',
-      category: '',
-      budget: 0,
-      actual: 0
+  const filtered = useMemo(() => {
+    const s = searchTerm.toLowerCase().trim();
+    return rows.filter(r => {
+      if (filterStatus !== 'all' && r.status !== filterStatus) return false;
+      if (s && !r.project_name.toLowerCase().includes(s)) return false;
+      return true;
     });
-  };
+  }, [rows, searchTerm, filterStatus]);
 
-  const filteredCosts = costItems.filter(item => 
-    item.project_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const stats = useMemo(() => {
+    return {
+      total: rows.length,
+      safe: rows.filter(r => r.status === 'safe').length,
+      warning: rows.filter(r => r.status === 'warning').length,
+      over: rows.filter(r => r.status === 'over_budget').length,
+      totalBudget: rows.reduce((s, r) => s + r.budget, 0),
+      totalActual: rows.reduce((s, r) => s + r.actual, 0),
+    };
+  }, [rows]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/')}
-            className="p-2 h-auto"
-          >
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="p-2 h-auto">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Audit Biaya</h1>
-            <p className="text-text-secondary">Analisis Varian Budget vs Realisasi Proyek</p>
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-6 h-6 text-text-secondary" />
+              <h1 className="text-2xl font-bold text-text-primary">Audit Biaya Proyek</h1>
+            </div>
+            <p className="text-text-secondary">Bandingkan budget RAB vs aktual (PO Received) per proyek</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Tambah Temuan
-          </Button>
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Laporan Varian
-          </Button>
-          <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
-            <AlertTriangle className="w-4 h-4 mr-2" />
-            Temuan Overbudget
-          </Button>
-        </div>
+        <Button variant="outline" onClick={fetchAll}>
+          <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 border-l-4 border-accent-dark">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-accent-lavender/20 flex items-center justify-center text-accent-dark">
-              <DollarSign className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-text-secondary">Total Budget</p>
-              <h3 className="text-2xl font-bold text-text-primary">{formatCurrency(2500000000)}</h3>
-            </div>
-          </div>
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4 bg-blue-50 border-blue-100">
+          <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">Total Budget</p>
+          <h3 className="text-lg font-bold text-blue-900 mt-1">{formatCurrency(stats.totalBudget)}</h3>
         </Card>
-        <Card className="p-6 border-l-4 border-green-600">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
-              <TrendingDown className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-text-secondary">Total Realisasi</p>
-              <h3 className="text-2xl font-bold text-text-primary">{formatCurrency(2625000000)}</h3>
-            </div>
-          </div>
+        <Card className="p-4 bg-violet-50 border-violet-100">
+          <p className="text-[10px] font-black uppercase tracking-widest text-violet-700">Total Aktual</p>
+          <h3 className="text-lg font-bold text-violet-900 mt-1">{formatCurrency(stats.totalActual)}</h3>
         </Card>
-        <Card className="p-6 border-l-4 border-red-600">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-600">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-text-secondary">Total Varian</p>
-              <h3 className="text-2xl font-bold text-text-primary text-red-600">-{formatCurrency(125000000)}</h3>
-            </div>
-          </div>
+        <Card className={cn("p-4 border", stats.totalBudget - stats.totalActual >= 0 ? "bg-emerald-50 border-emerald-100" : "bg-rose-50 border-rose-100")}>
+          <p className={cn("text-[10px] font-black uppercase tracking-widest", stats.totalBudget - stats.totalActual >= 0 ? "text-emerald-700" : "text-rose-700")}>
+            {stats.totalBudget - stats.totalActual >= 0 ? '✓ Hemat' : '⚠ Over'}
+          </p>
+          <h3 className={cn("text-lg font-bold mt-1", stats.totalBudget - stats.totalActual >= 0 ? "text-emerald-900" : "text-rose-900")}>
+            {formatCurrency(Math.abs(stats.totalBudget - stats.totalActual))}
+          </h3>
+        </Card>
+        <Card className={cn("p-4 border", stats.over > 0 ? "bg-rose-50 border-rose-100" : "bg-slate-50 border-slate-100")}>
+          <p className={cn("text-[10px] font-black uppercase tracking-widest", stats.over > 0 ? "text-rose-700" : "text-text-muted")}>
+            ⚠ Over Budget
+          </p>
+          <h3 className={cn("text-2xl font-bold mt-1", stats.over > 0 ? "text-rose-900" : "text-text-secondary")}>{stats.over}</h3>
         </Card>
       </div>
 
-      <Card className="p-0">
-        <div className="p-4 border-b border-white/40 flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <Input 
-              placeholder="Cari proyek atau kategori..." 
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter Proyek
-          </Button>
-        </div>
+      {/* Status filter pills */}
+      <div className="flex flex-wrap gap-2">
+        {(['all', 'over_budget', 'warning', 'safe'] as const).map(st => (
+          <button
+            key={st}
+            onClick={() => setFilterStatus(st)}
+            className={cn("px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all",
+              filterStatus === st
+                ? st === 'over_budget' ? "border-rose-600 bg-rose-50 text-rose-700"
+                  : st === 'warning' ? "border-amber-600 bg-amber-50 text-amber-700"
+                  : st === 'safe' ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                  : "border-accent-dark bg-accent-dark/5"
+                : "border-white/40 bg-white/40 text-text-secondary hover:bg-white/70")}
+          >
+            {st === 'all' ? `Semua (${stats.total})` :
+             st === 'over_budget' ? `Over Budget (${stats.over})` :
+             st === 'warning' ? `Hampir Over (${stats.warning})` :
+             `Safe (${stats.safe})`}
+          </button>
+        ))}
+      </div>
 
-        <Table className="min-w-[800px]">
-            <THead>
-              <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
-                <TH className="px-6 py-3 font-semibold">Proyek / Kategori</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Budget</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Realisasi</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Varian (Rp)</TH>
-                <TH className="px-6 py-3 font-semibold text-right">Varian (%)</TH>
-                <TH className="px-6 py-3 font-semibold">Status</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {loading ? (
-                <TR>
-                  <TD colSpan={6} className="px-6 py-10 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
-                  </TD>
-                </TR>
-              ) : filteredCosts.length === 0 ? (
-                <TR>
-                  <TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">
-                    Tidak ada data audit biaya.
-                  </TD>
-                </TR>
-              ) : (
-                filteredCosts.map((item) => (
-                  <TR key={item.id} className="hover:bg-white/30 transition-colors">
-                    <TD className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-text-primary">{item.project_name}</span>
-                        <span className="text-xs text-text-secondary">{item.category}</span>
-                      </div>
-                    </TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary text-right font-medium">{formatCurrency(item.budget)}</TD>
-                    <TD className="px-6 py-4 text-sm text-text-secondary text-right font-medium">{formatCurrency(item.actual)}</TD>
-                    <TD className={cn(
-                      "px-6 py-4 text-sm font-bold text-right",
-                      item.variance < 0 ? "text-red-600" : "text-green-600"
-                    )}>
-                      {item.variance < 0 ? `-${formatCurrency(Math.abs(item.variance))}` : `+${formatCurrency(item.variance)}`}
-                    </TD>
-                    <TD className={cn(
-                      "px-6 py-4 text-sm font-bold text-right",
-                      item.variance_percent < 0 ? "text-red-600" : "text-green-600"
-                    )}>
-                      {item.variance_percent > 0 ? `+${item.variance_percent}%` : `${item.variance_percent}%`}
-                    </TD>
-                    <TD className="px-6 py-4">
-                      <span className={cn(
-                        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
-                        item.status === 'safe' ? 'bg-green-100 text-green-700' : 
-                        item.status === 'warning' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                      )}>
-                        {item.status}
-                      </span>
-                    </TD>
-                  </TR>
-                ))
-              )}
-            </TBody>
-          </Table>
+      <Card className="p-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+          <Input placeholder="Cari nama proyek..." className="pl-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+        </div>
       </Card>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Input Audit Biaya Proyek"
-      >
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-          <div>
-            <label className="text-sm font-medium text-text-primary mb-1.5 block">Proyek</label>
-            <select 
-              className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none"
-              value={formData.project_name}
-              onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
-              required
-            >
-              <option value="Grand Residence Phase 1">Grand Residence Phase 1</option>
-              <option value="Grand Residence Phase 2">Grand Residence Phase 2</option>
-            </select>
-          </div>
-          <Input 
-            label="Kategori Pekerjaan" 
-            placeholder="Contoh: Pekerjaan Atap" 
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            required
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <Input 
-              label="Budget (Rp)" 
-              type="number" 
-              value={formData.budget}
-              onChange={(e) => setFormData({ ...formData, budget: Number(e.target.value) })}
-              required
-            />
-            <Input 
-              label="Realisasi (Rp)" 
-              type="number" 
-              value={formData.actual}
-              onChange={(e) => setFormData({ ...formData, actual: Number(e.target.value) })}
-              required
-            />
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button type="submit">Simpan Hasil Audit</Button>
-          </div>
-        </form>
-      </Modal>
+      <Card className="p-0 overflow-hidden">
+        <Table className="min-w-[900px]">
+          <THead>
+            <TR className="bg-white/30 text-text-secondary text-xs uppercase tracking-wider">
+              <TH className="px-4 py-3 font-semibold">Proyek / RAB</TH>
+              <TH className="px-4 py-3 font-semibold text-right">Budget RAB</TH>
+              <TH className="px-4 py-3 font-semibold text-right">Aktual (PO)</TH>
+              <TH className="px-4 py-3 font-semibold text-right">Selisih</TH>
+              <TH className="px-4 py-3 font-semibold text-right">% Selisih</TH>
+              <TH className="px-4 py-3 font-semibold text-center">Status</TH>
+            </TR>
+          </THead>
+          <TBody>
+            {loading ? (
+              <TR><TD colSpan={6} className="px-6 py-10 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-dark mx-auto"></div>
+              </TD></TR>
+            ) : filtered.length === 0 ? (
+              <TR><TD colSpan={6} className="px-6 py-10 text-center text-text-secondary">
+                Tidak ada data RAB sesuai filter.
+              </TD></TR>
+            ) : (
+              filtered.map(r => (
+                <TR key={r.rab_project_id} className={cn("hover:bg-white/30 transition-colors",
+                  r.status === 'over_budget' && "bg-rose-50/30",
+                  r.status === 'warning' && "bg-amber-50/30")}>
+                  <TD className="px-4 py-3 text-sm font-bold text-text-primary">{r.project_name}</TD>
+                  <TD className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(r.budget)}</TD>
+                  <TD className="px-4 py-3 text-sm font-bold text-violet-700 text-right">{formatCurrency(r.actual)}</TD>
+                  <TD className={cn("px-4 py-3 text-sm font-bold text-right",
+                    r.variance >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                    {r.variance >= 0 ? '+' : ''} {formatCurrency(r.variance)}
+                  </TD>
+                  <TD className={cn("px-4 py-3 text-sm font-bold text-right flex items-center justify-end gap-1",
+                    r.variance_percent >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                    {r.variance_percent >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                    {r.variance_percent.toFixed(1)}%
+                  </TD>
+                  <TD className="px-4 py-3 text-center">
+                    <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase",
+                      r.status === 'safe' ? 'bg-emerald-100 text-emerald-700' :
+                      r.status === 'warning' ? 'bg-amber-100 text-amber-700' :
+                      'bg-rose-100 text-rose-700')}>
+                      {r.status === 'safe' ? <><CheckCircle className="w-3 h-3 mr-1" /> Safe</> :
+                       r.status === 'warning' ? <><AlertTriangle className="w-3 h-3 mr-1" /> Warning</> :
+                       <><AlertTriangle className="w-3 h-3 mr-1" /> Over</>}
+                    </span>
+                  </TD>
+                </TR>
+              ))
+            )}
+          </TBody>
+        </Table>
+      </Card>
+
+      <Card className="p-4 bg-blue-50 border-blue-100">
+        <p className="text-xs text-blue-900">
+          <strong>Catatan:</strong> Budget dihitung dari item RAB level 3 (volume × harga material). Aktual dihitung dari Purchase Order ber-status APPROVED/RECEIVED/COMPLETED.
+          Status: <strong className="text-emerald-700">Safe</strong> = sisa budget &gt; 10%, <strong className="text-amber-700">Warning</strong> = sisa &lt; 10%, <strong className="text-rose-700">Over</strong> = aktual melebihi budget.
+        </p>
+      </Card>
     </div>
   );
 };
 
 export default AuditCostsPage;
-
-
-
