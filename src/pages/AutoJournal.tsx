@@ -64,8 +64,7 @@ const AutoJournal: React.FC = () => {
     sourceType: '',
     status: 'pending',
     search: '',
-    dateFrom: '',
-    dateTo: ''
+    month: '' // format: YYYY-MM
   });
   const [stats, setStats] = useState({
     pending: 0,
@@ -116,8 +115,10 @@ const AutoJournal: React.FC = () => {
         if (!(p.reference_no || '').toLowerCase().includes(q) &&
             !(p.description || '').toLowerCase().includes(q)) return false;
       }
-      if (filter.dateFrom && p.transaction_date < filter.dateFrom) return false;
-      if (filter.dateTo && p.transaction_date > filter.dateTo) return false;
+      if (filter.month) {
+        const txMonth = (p.transaction_date || '').slice(0, 7); // YYYY-MM
+        if (txMonth !== filter.month) return false;
+      }
       return true;
     });
   }, [pending, filter]);
@@ -277,10 +278,10 @@ const AutoJournal: React.FC = () => {
             <option value="">Semua Status</option>
           </select>
           <Input
-            type="date"
-            placeholder="Dari tanggal"
-            value={filter.dateFrom}
-            onChange={(e) => setFilter({ ...filter, dateFrom: e.target.value })}
+            type="month"
+            placeholder="Pilih Bulan"
+            value={filter.month}
+            onChange={(e) => setFilter({ ...filter, month: e.target.value })}
             className="h-11 border-none bg-slate-50/50"
           />
         </div>
