@@ -22,12 +22,20 @@ export async function apiRequest(path: string, options: RequestInit = {}) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      if (isDev) console.error(`❌ API ERROR [${response.status}] for ${url}:`, errorText);
+      // 404 = tabel/resource tidak ada (umumnya migrasi belum jalan) → log warn, bukan error
+      // 400 = query salah (kolom tidak ada, dll) → log warn
+      // >= 500 = server error → log error
+      if (isDev) {
+        if (response.status === 404 || response.status === 400) {
+          console.warn(`⚠️  API ${response.status} for ${url}:`, errorText.slice(0, 200));
+        } else {
+          console.error(`❌ API ERROR [${response.status}] for ${url}:`, errorText);
+        }
+      }
       throw new Error(`API Error ${response.status}: ${errorText}`);
     }
 
     if (isDev) console.log(`✅ API SUCCESS: ${url}`);
-    // Handle DELETE or empty responses
     if (response.status === 204) return null;
 
     return await response.json();

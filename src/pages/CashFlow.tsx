@@ -185,7 +185,7 @@ const CashFlowPage: React.FC = () => {
       const [data, payments, deposits, sales, kprDisbursements] = await Promise.all([
         api.get('cash_flow', 'status=eq.verified&order=date.desc,created_at.desc'),
         api.get('payments', 'select=id,sale_id'),
-        api.get('deposits', 'select=id,customer_name'),
+        api.get('deposits', 'select=id,name'),
         api.get('sales', 'select=id,customer:customers(full_name)'),
         api.get('kpr_disbursement', 'select=id,sale_id')
       ]);
@@ -194,7 +194,7 @@ const CashFlowPage: React.FC = () => {
       (sales || []).forEach((s: any) => { salesMap[s.id] = s.customer?.full_name || 'Tanpa Nama'; });
 
       const customerMap: Record<string, string> = {};
-      (deposits || []).forEach((d: any) => { customerMap[d.id] = d.customer_name; });
+      (deposits || []).forEach((d: any) => { customerMap[d.id] = d.name || '-'; });
       (payments || []).forEach((p: any) => { customerMap[p.id] = salesMap[p.sale_id] || '-'; });
       (kprDisbursements || []).forEach((k: any) => { customerMap[k.id] = salesMap[k.sale_id] || '-'; });
 

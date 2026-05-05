@@ -19,56 +19,50 @@ interface LedgerEntry {
   balance: number;
 }
 
+interface CoaOpt { code: string; name: string }
+
 const LedgerPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isMockMode, division, setDivision } = useAuth();
+  const { isMockMode } = useAuth();
   const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedAccount, setSelectedAccount] = useState('101');
+  const [selectedAccount, setSelectedAccount] = useState('');
+  const [coaOptions, setCoaOptions] = useState<CoaOpt[]>([]);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
 
   useEffect(() => {
     fetchLedger();
   }, [selectedAccount]);
+
+  const fetchAccounts = async () => {
+    try {
+      const data = await api.get('chart_of_accounts',
+        'select=code,name&is_postable=eq.true&is_active=eq.true&order=code.asc');
+      setCoaOptions(data || []);
+      if (!selectedAccount && data && data[0]) setSelectedAccount(data[0].code);
+    } catch (err) {
+      console.error('Error fetching accounts:', err);
+    }
+  };
 
   const fetchLedger = async () => {
     setLoading(true);
     try {
       if (isMockMode) {
         const mockLedger: LedgerEntry[] = [
-          {
-            id: '1',
-            date: '2026-03-27',
-            description: 'Penerimaan Booking Fee - Cici Lestari',
-            reference_no: 'BF-001',
-            debit: 5000000,
-            credit: 0,
-            balance: 105000000
-          },
-          {
-            id: '2',
-            date: '2026-03-26',
-            description: 'Pembayaran Listrik Kantor',
-            reference_no: 'EXP-001',
-            debit: 0,
-            credit: 1500000,
-            balance: 100000000
-          },
-          {
-            id: '3',
-            date: '2026-03-25',
-            description: 'Saldo Awal',
-            reference_no: 'SA-001',
-            debit: 101500000,
-            credit: 0,
-            balance: 101500000
-          }
+          { id: '1', date: '2026-03-27', description: 'Penerimaan Booking Fee - Cici Lestari', reference_no: 'BF-001', debit: 5000000, credit: 0, balance: 105000000 },
+          { id: '2', date: '2026-03-26', description: 'Pembayaran Listrik Kantor', reference_no: 'EXP-001', debit: 0, credit: 1500000, balance: 100000000 },
+          { id: '3', date: '2026-03-25', description: 'Saldo Awal', reference_no: 'SA-001', debit: 101500000, credit: 0, balance: 101500000 },
         ];
         setLedgerEntries(mockLedger);
       } else {
-        const data = await api.get('ledger', `select=*&order=date.desc`);
-        // Basic fallback if table doesn't exist yet
-        setLedgerEntries(data || []);
+        // Tabel ledger / journal_entries belum dibuat — tampilkan empty state.
+        // Akan di-implement saat modul Jurnal Umum dibangun.
+        setLedgerEntries([]);
       }
     } catch (error) {
       console.error('Error fetching ledger:', error);
@@ -113,16 +107,18 @@ const LedgerPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-medium text-text-primary mb-1.5 block">Pilih Akun</label>
-            <select 
+            <select
               className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none"
               value={selectedAccount}
               onChange={(e) => setSelectedAccount(e.target.value)}
             >
-              <option value="101">101 - Kas / Bank</option>
-              <option value="102">102 - Piutang Usaha</option>
-              <option value="103">103 - Persediaan Proyek</option>
-              <option value="401">401 - Pendapatan Penjualan</option>
-              <option value="601">601 - Beban Operasional</option>
+              {coaOptions.length === 0 ? (
+                <option value="">Belum ada akun</option>
+              ) : (
+                coaOptions.map(c => (
+                  <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+                ))
+              )}
             </select>
           </div>
           <div>
