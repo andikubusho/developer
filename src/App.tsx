@@ -72,6 +72,7 @@ const GeneralJournal = lazy(() => import('./pages/GeneralJournal'));
 const Ledger = lazy(() => import('./pages/Ledger'));
 const FinancialReports = lazy(() => import('./pages/FinancialReports'));
 const Taxation = lazy(() => import('./pages/Taxation'));
+const AutoJournal = lazy(() => import('./pages/AutoJournal'));
 
 // HRD
 const Employees = lazy(() => import('./pages/Employees'));
@@ -181,6 +182,7 @@ export default function App() {
               <Route path="master-account" element={<MasterAccount />} />
               <Route path="fixed-assets" element={<FixedAssets />} />
               <Route path="general-journal" element={<GeneralJournal />} />
+              <Route path="auto-journal" element={<AutoJournal />} />
               <Route path="ledger" element={<Ledger />} />
               <Route path="financial-reports" element={<FinancialReports />} />
               <Route path="taxation" element={<Taxation />} />
