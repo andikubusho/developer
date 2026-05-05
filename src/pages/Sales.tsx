@@ -70,18 +70,53 @@ const Sales: React.FC = () => {
       setLoading(true);
       const from = (currentPage - 1) * pageSize;
       const filterParam = selectedConsultantId !== 'all' ? `&consultant_id=eq.${selectedConsultantId}` : '';
-      
-      let queryParams = `select=*,unit:units(id,unit_number,price,project_id,project:projects(id,name)),customer:customers(id,full_name),consultant:consultants(id,name)&order=sale_date.desc&offset=${from}&limit=${pageSize}${filterParam}`;
-      
-      if (activeTab !== 'all') queryParams += `&status=eq.${activeTab}`;
-      if (debouncedSearch) queryParams += `&or=(status.ilike.*${debouncedSearch}*,payment_method.ilike.*${debouncedSearch}*)`;
 
-      const data = await api.get('sales', queryParams);
-      setSales(data || []);
-      
+      // Bangun filter pencarian: cari berdasarkan nama konsumen, unit number, dan payment method
+      let searchFilter = '';
+      if (debouncedSearch) {
+        const s = encodeURIComponent(debouncedSearch);
+        // Cari customer ID yang namanya cocok
+        const matchCustomers = await api.get('customers', `select=id&full_name=ilike.*${s}*`);
+        const custIds = (matchCustomers || []).map((c: any) => c.id);
+        // Cari unit ID yang unit_number-nya cocok
+        const matchUnits = await api.get('units', `select=id&unit_number=ilike.*${s}*`);
+        // Juga cari di price_list_items (format "blok - unit")
+        const matchPli = await api.get('price_list_items', `select=unit_id&or=(blok.ilike.*${s}*,unit.ilike.*${s}*)`);
+        const unitIds = [
+          ...(matchUnits || []).map((u: any) => u.id),
+          ...(matchPli || []).filter((p: any) => p.unit_id).map((p: any) => p.unit_id)
+        ].filter((v, i, a) => a.indexOf(v) === i);
+
+        const parts = [`payment_method.ilike.*${s}*`];
+        if (custIds.length) parts.push(`customer_id.in.(${custIds.join(',')})`);
+        if (unitIds.length) parts.push(`unit_id.in.(${unitIds.join(',')})`);
+        searchFilter = `&or=(${parts.join(',')})`;
+      }
+
+      let queryParams = `select=*,unit:units(id,unit_number,price,project_id,project:projects(id,name)),customer:customers(id,full_name),consultant:consultants(id,name)&order=sale_date.desc&offset=${from}&limit=${pageSize}${filterParam}`;
+
+      if (activeTab !== 'all') queryParams += `&status=eq.${activeTab}`;
+      queryParams += searchFilter;
+
+      const [data, pliData] = await Promise.all([
+        api.get('sales', queryParams),
+        api.get('price_list_items', 'select=unit_id,blok,unit')
+      ]);
+
+      // Enrichi unit_number dengan format dari price_list_items agar konsisten dengan halaman Unit
+      const pliMap: Record<string, string> = {};
+      (pliData || []).forEach((p: any) => {
+        if (p.unit_id) pliMap[p.unit_id] = `${p.blok} - ${p.unit}`;
+      });
+      const enriched = (data || []).map((s: any) => ({
+        ...s,
+        unit: s.unit ? { ...s.unit, unit_number: pliMap[s.unit.id] || s.unit.unit_number } : s.unit
+      }));
+      setSales(enriched);
+
       let countQuery = `select=id${filterParam}`;
       if (activeTab !== 'all') countQuery += `&status=eq.${activeTab}`;
-      if (debouncedSearch) countQuery += `&or=(status.ilike.*${debouncedSearch}*,payment_method.ilike.*${debouncedSearch}*)`;
+      countQuery += searchFilter;
       const countData = await api.get('sales', countQuery);
       setTotalCount(countData?.length || 0);
       
