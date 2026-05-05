@@ -18,7 +18,7 @@ import {
 } from '../../lib/asset';
 
 interface ProjectOpt { id: string; name: string }
-interface UserOpt { id: number; display_name: string; username: string }
+interface UserOpt { id: string; full_name: string }
 interface CoaOpt { code: string; name: string; account_type: string }
 
 export interface AssetViewProps {
@@ -121,7 +121,7 @@ const AssetView: React.FC<AssetViewProps> = ({ defaultClass, pageTitle, pageSubt
       const [assetData, projData, userData, coaA, coaAd, coaDe] = await Promise.all([
         api.get('assets', `select=*&asset_class=eq.${defaultClass}&order=asset_code.desc`),
         api.get('projects', 'select=id,name&order=name.asc'),
-        api.get('users', 'select=id,username,display_name&order=display_name.asc'),
+        api.get('profiles', 'select=id,full_name&order=full_name.asc'),
         api.get('chart_of_accounts', 'select=code,name,account_type&account_type=eq.asset&is_postable=eq.true&is_active=eq.true&order=code.asc'),
         api.get('chart_of_accounts', 'select=code,name,account_type&code=like.129%25&is_postable=eq.true&is_active=eq.true&order=code.asc'),
         api.get('chart_of_accounts', 'select=code,name,account_type&code=like.624%25&is_postable=eq.true&is_active=eq.true&order=code.asc'),
@@ -139,7 +139,7 @@ const AssetView: React.FC<AssetViewProps> = ({ defaultClass, pageTitle, pageSubt
 
   const userMap = useMemo(() => {
     const m: Record<number, string> = {};
-    users.forEach(u => { m[u.id] = u.display_name || u.username; });
+    users.forEach(u => { m[u.id] = u.full_name; });
     return m;
   }, [users]);
 
@@ -699,7 +699,7 @@ const AssetView: React.FC<AssetViewProps> = ({ defaultClass, pageTitle, pageSubt
               <select value={form.current_holder_user_id} onChange={e => setForm({ ...form, current_holder_user_id: e.target.value })}
                 className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none">
                 <option value="">— Tidak ada —</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.display_name || u.username}</option>)}
+                {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
               </select>
             </div>
             <div>
@@ -827,7 +827,7 @@ const AssetView: React.FC<AssetViewProps> = ({ defaultClass, pageTitle, pageSubt
                     <select value={mutForm.to_holder_user_id} onChange={e => setMutForm({ ...mutForm, to_holder_user_id: e.target.value })}
                       className="w-full h-10 rounded-xl glass-input px-3 py-2 text-sm focus:outline-none">
                       <option value="">— Tidak ada —</option>
-                      {users.map(u => <option key={u.id} value={u.id}>{u.display_name || u.username}</option>)}
+                      {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
                     </select>
                   </div>
                   <div>
@@ -1240,7 +1240,7 @@ const OpnameModal: React.FC<{
                         <select value={it.actual_holder_user_id || ''} onChange={e => updateItem(idx, { actual_holder_user_id: e.target.value ? Number(e.target.value) : null })}
                           className="w-full h-8 px-2 text-xs rounded border border-slate-200 focus:outline-none" disabled={!it.is_found}>
                           <option value="">—</option>
-                          {users.map(u => <option key={u.id} value={u.id}>{u.display_name || u.username}</option>)}
+                          {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
                         </select>
                       </td>
                       <td className="px-2 py-2">
