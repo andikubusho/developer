@@ -146,7 +146,7 @@ const CashFlowPage: React.FC = () => {
 
   const fetchBanks = async () => {
     try {
-      const data = await api.get('bank_accounts', 'select=id,bank_name,account_number&order=bank_name.asc');
+      const data = await api.get('bank_accounts', 'select=id,bank_name,account_number,account_holder&order=bank_name.asc');
       setBanks(data || []);
     } catch (error) {
       console.error('Error fetching banks:', error);
@@ -274,8 +274,50 @@ const CashFlowPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Cash Flow</h1>
-            <p className="text-text-secondary">Pelacakan Arus Kas Per Rekening & Tunai</p>
+            {(() => {
+              if (selectedAccount === 'all') {
+                return (
+                  <>
+                    <h1 className="text-2xl font-bold text-text-primary">Cash Flow</h1>
+                    <p className="text-text-secondary">Pelacakan Arus Kas Per Rekening & Tunai</p>
+                  </>
+                );
+              }
+              if (selectedAccount === 'cash') {
+                return (
+                  <>
+                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Cash Flow</p>
+                    <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
+                      <Wallet className="w-6 h-6 text-emerald-600" /> Kas Besar (Tunai)
+                    </h1>
+                    <p className="text-text-secondary text-sm">Pemasukan & Pengeluaran Tunai</p>
+                  </>
+                );
+              }
+              const bank = banks.find((b: any) => b.id === selectedAccount);
+              if (!bank) {
+                return (
+                  <>
+                    <h1 className="text-2xl font-bold text-text-primary">Cash Flow</h1>
+                    <p className="text-text-secondary">Pelacakan Arus Kas Per Rekening & Tunai</p>
+                  </>
+                );
+              }
+              return (
+                <>
+                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-0.5">Cash Flow • Rekening Bank</p>
+                  <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
+                    <Landmark className="w-6 h-6 text-blue-600" /> {bank.bank_name}
+                    <span className="text-base font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">
+                      {bank.account_number}
+                    </span>
+                  </h1>
+                  <p className="text-text-secondary text-sm">
+                    a.n. <span className="font-bold text-text-primary">{bank.account_holder || '-'}</span>
+                  </p>
+                </>
+              );
+            })()}
           </div>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
