@@ -723,6 +723,8 @@ export const MENU_KEYS = [
   { key: "master-material", label: "Master Material", group: "Teknik", category: "TEKNIK: MASTER", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "material-suppliers", label: "Master Supplier", group: "Teknik", category: "TEKNIK: MASTER", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 
+  { key: "petty-cash-teknik", label: "Petty Cash Teknik", group: "Teknik", category: "TEKNIK: KAS", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+
   // KEUANGAN
   { key: "petty-cash", label: "Petty Cash", group: "Keuangan", category: "FIN: MANAJEMEN KAS", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
   { key: "cash-flow", label: "Cash Flow", group: "Keuangan", category: "FIN: MANAJEMEN KAS", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },

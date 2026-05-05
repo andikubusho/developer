@@ -59,6 +59,7 @@ const SupplierPayables = lazy(() => import('./pages/SupplierPayables'));
 const SupplierPayments = lazy(() => import('./pages/SupplierPayments'));
 const CashFlow = lazy(() => import('./pages/CashFlow'));
 const PettyCash = lazy(() => import('./pages/PettyCash'));
+const PettyCashTeknik = lazy(() => import('./pages/PettyCashTeknik'));
 const BankMaster = lazy(() => import('./pages/BankMaster'));
 const CustomerReceivables = lazy(() => import('./pages/CustomerReceivables'));
 const ConsumerPayments = lazy(() => import('./pages/ConsumerPayments'));
@@ -167,6 +168,7 @@ export default function App() {
               <Route path="supplier-payments" element={<SupplierPayments />} />
               <Route path="cash-flow" element={<CashFlow />} />
               <Route path="petty-cash" element={<PettyCash />} />
+              <Route path="petty-cash-teknik" element={<PettyCashTeknik />} />
               <Route path="bank-master" element={<BankMaster />} />
               <Route path="customer-receivables" element={<CustomerReceivables />} />
               <Route path="consumer-payments" element={<ConsumerPayments />} />

@@ -73,6 +73,7 @@ const CashFlowPage: React.FC = () => {
   const { setDivision } = useAuth();
   const [cashFlow, setCashFlow] = useState<CashFlowItem[]>([]);
   const [banks, setBanks] = useState<any[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAccount, setSelectedAccount] = useState('all');
@@ -154,7 +155,7 @@ const CashFlowPage: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      await fetchBanks();
+      await Promise.all([fetchBanks(), fetchProjects()]);
       await fetchCashFlow();
     } finally {
       setLoading(false);
@@ -167,6 +168,15 @@ const CashFlowPage: React.FC = () => {
       setBanks(data || []);
     } catch (error) {
       console.error('Error fetching banks:', error);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const data = await api.get('projects', 'select=id,name&order=name.asc');
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
     }
   };
 
@@ -250,11 +260,17 @@ const CashFlowPage: React.FC = () => {
     setTransferOpen(true);
   };
 
-  // Konversi key dropdown ('cash' | 'petty' | bankId) → AccountRef
+  // Konversi key dropdown → AccountRef
+  // Format: 'cash' | 'petty_keu' | 'petty_tek:<projectId>' | bankId
   const keyToAccountRef = (key: string): AccountRef | null => {
     if (!key) return null;
-    if (key === 'cash')  return { kind: 'cash_besar', label: 'Kas Besar (Tunai)' };
-    if (key === 'petty') return { kind: 'petty_cash', label: 'Petty Cash' };
+    if (key === 'cash')      return { kind: 'cash_besar', label: 'Kas Besar (Tunai)' };
+    if (key === 'petty_keu') return { kind: 'petty_cash', division: 'keuangan', label: 'Petty Cash Keuangan' };
+    if (key.startsWith('petty_tek:')) {
+      const pid = key.split(':')[1];
+      const proj = projects.find(p => p.id === pid);
+      return { kind: 'petty_cash', division: 'teknik', projectId: pid, label: `Petty Cash Teknik - ${proj?.name || pid}` };
+    }
     const bank = banks.find((b: any) => b.id === key);
     if (!bank) return null;
     return { kind: 'bank', id: bank.id, label: `${bank.bank_name} - ${bank.account_number}` };
@@ -700,13 +716,27 @@ const CashFlowPage: React.FC = () => {
               className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-violet-500 bg-white"
             >
               <option value="">-- Pilih Sumber --</option>
-              <option value="cash">Kas Besar (Tunai)</option>
-              <option value="petty">Petty Cash</option>
-              {banks.map((b: any) => (
-                <option key={b.id} value={b.id} disabled={transferForm.toKey === b.id}>
-                  {b.bank_name} - {b.account_number}
-                </option>
-              ))}
+              <optgroup label="Tunai">
+                <option value="cash" disabled={transferForm.toKey === 'cash'}>Kas Besar (Tunai)</option>
+              </optgroup>
+              <optgroup label="Bank">
+                {banks.map((b: any) => (
+                  <option key={b.id} value={b.id} disabled={transferForm.toKey === b.id}>
+                    {b.bank_name} - {b.account_number}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Petty Cash">
+                <option value="petty_keu" disabled={transferForm.toKey === 'petty_keu'}>Petty Cash Keuangan</option>
+                {projects.map(p => {
+                  const k = `petty_tek:${p.id}`;
+                  return (
+                    <option key={k} value={k} disabled={transferForm.toKey === k}>
+                      Petty Cash Teknik - {p.name}
+                    </option>
+                  );
+                })}
+              </optgroup>
             </select>
           </div>
 
@@ -725,13 +755,27 @@ const CashFlowPage: React.FC = () => {
               className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-violet-500 bg-white"
             >
               <option value="">-- Pilih Tujuan --</option>
-              <option value="cash" disabled={transferForm.fromKey === 'cash'}>Kas Besar (Tunai)</option>
-              <option value="petty" disabled={transferForm.fromKey === 'petty'}>Petty Cash</option>
-              {banks.map((b: any) => (
-                <option key={b.id} value={b.id} disabled={transferForm.fromKey === b.id}>
-                  {b.bank_name} - {b.account_number}
-                </option>
-              ))}
+              <optgroup label="Tunai">
+                <option value="cash" disabled={transferForm.fromKey === 'cash'}>Kas Besar (Tunai)</option>
+              </optgroup>
+              <optgroup label="Bank">
+                {banks.map((b: any) => (
+                  <option key={b.id} value={b.id} disabled={transferForm.fromKey === b.id}>
+                    {b.bank_name} - {b.account_number}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Petty Cash">
+                <option value="petty_keu" disabled={transferForm.fromKey === 'petty_keu'}>Petty Cash Keuangan</option>
+                {projects.map(p => {
+                  const k = `petty_tek:${p.id}`;
+                  return (
+                    <option key={k} value={k} disabled={transferForm.fromKey === k}>
+                      Petty Cash Teknik - {p.name}
+                    </option>
+                  );
+                })}
+              </optgroup>
             </select>
           </div>
 

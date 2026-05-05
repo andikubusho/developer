@@ -120,6 +120,9 @@ const menuItems = [
   { name: 'Penugasan Mandor', icon: UserCheck, path: '/worker-assignment', divisions: ['teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },
   { name: 'Real Cost', icon: BarChart3, path: '/real-cost', divisions: ['teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },
 
+  // Teknik - KAS PROYEK
+  { name: 'Petty Cash Teknik', icon: Wallet, path: '/petty-cash-teknik', divisions: ['teknik', 'audit'], category: 'TEKNIK: KAS' },
+
   // Teknik - DATA MASTER
   { name: 'Master Material', icon: Package, path: '/master-material', divisions: ['teknik', 'audit'], category: 'TEKNIK: MASTER' },
   { name: 'Master Supplier', icon: Users, path: '/material-suppliers', divisions: ['teknik', 'audit'], category: 'TEKNIK: MASTER' },
