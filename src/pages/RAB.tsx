@@ -5,7 +5,7 @@ import { Calculator, Plus, ArrowLeft, MapPin, Eye, Edit, Trash2, Home, BarChart3
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { api } from '../lib/api';
-import { formatCurrency, formatDate } from '../lib/utils';
+import { formatCurrency, formatDate, formatNumber } from '../lib/utils';
 import * as XLSX from 'xlsx';
 
 const RAB: React.FC = () => {

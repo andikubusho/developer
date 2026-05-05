@@ -35,6 +35,7 @@ const saleSchema = z.object({
   deposit_id: z.string().optional().nullable(),
   deposit_amount: z.number().min(0).optional().nullable(),
   installments: z.array(z.object({
+    name: z.string().optional().nullable(),
     due_date: z.string(),
     amount: z.number().min(0),
     status: z.string(),
