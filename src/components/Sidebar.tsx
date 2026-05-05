@@ -35,7 +35,8 @@ import {
   Clock,
   Briefcase,
   Landmark,
-  PenTool
+  PenTool,
+  Store
 } from 'lucide-react';
 import { useAuth, Division } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
@@ -52,6 +53,7 @@ const menuItems = [
   { name: 'Cash Flow', icon: ArrowLeftRight, path: '/cash-flow', divisions: ['keuangan', 'accounting', 'audit'], category: 'MANAJEMEN KAS' },
   { name: 'Master Bank', icon: Landmark, path: '/bank-master', divisions: ['keuangan', 'audit'], category: 'MANAJEMEN KAS' },
 
+  { name: 'Master Supplier', icon: Store, path: '/material-suppliers', divisions: ['keuangan', 'audit'], category: 'HUTANG PIUTANG' },
   { name: 'Hutang Supplier', icon: Truck, path: '/supplier-payables', divisions: ['keuangan', 'audit'], category: 'HUTANG PIUTANG' },
   { name: 'Piutang Konsumen', icon: FileText, path: '/customer-receivables', divisions: ['keuangan', 'audit'], category: 'HUTANG PIUTANG' },
   { name: 'Pencairan KPR', icon: Banknote, path: '/kpr-disbursement', divisions: ['keuangan', 'audit'], category: 'HUTANG PIUTANG' },
