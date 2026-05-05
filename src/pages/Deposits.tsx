@@ -190,8 +190,24 @@ const Deposits: React.FC = () => {
       if (selectedDeposit) {
         await api.update('deposits', selectedDeposit.id, payload);
       } else {
-        await api.insert('deposits', payload);
-        
+        const newDeposit = await api.insert('deposits', payload);
+        const depositId = newDeposit?.id || newDeposit?.[0]?.id;
+
+        // Buat entri cash_flow pending agar masuk Antrian Verifikasi
+        if (depositId) {
+          await api.insert('cash_flow', {
+            date: formData.date,
+            description: `Titipan Konsumen - ${formData.name} (${formData.submission})`,
+            type: 'in',
+            category: 'Titipan Konsumen',
+            amount: formData.amount,
+            status: 'pending',
+            reference_id: depositId,
+            reference_type: 'deposit',
+            bank_account_id: formData.payment_type === 'bank' ? (formData.bank_account_id || null) : null,
+          });
+        }
+
         // Notify Manager
         try {
           await api.insert('notifications', {
