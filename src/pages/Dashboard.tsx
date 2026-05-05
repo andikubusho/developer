@@ -782,14 +782,13 @@ const Dashboard: React.FC = () => {
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-lavender"></div>
                 </div>
-              ) : isMounted ? (
-                <div className="w-full h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <PieChart>
+              ) : isMounted && pieData.length > 0 ? (
+                <div className="w-full h-[300px] flex items-center justify-center">
+                  <PieChart width={300} height={300}>
                     <Pie
                       data={pieData}
-                      cx="50%"
-                      cy="50%"
+                      cx={150}
+                      cy={150}
                       innerRadius={70}
                       outerRadius={90}
                       paddingAngle={8}
@@ -800,12 +799,11 @@ const Dashboard: React.FC = () => {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                     />
                   </PieChart>
-                </ResponsiveContainer>
-              </div>
+                </div>
               ) : null}
               <div className="flex flex-wrap justify-center gap-6 mt-8">
                 {pieData.map((entry, index) => (

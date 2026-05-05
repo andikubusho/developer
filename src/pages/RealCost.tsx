@@ -557,26 +557,26 @@ const RealCostPage: React.FC = () => {
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-              ) : isMounted ? (
-                <div className="relative w-full h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Material', value: data.materialActual },
-                          { name: 'Upah', value: data.wageActual }
-                        ]}
-                        innerRadius={80}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        <Cell fill="#6366f1" />
-                        <Cell fill="#10b981" />
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+              ) : isMounted && (data.materialActual > 0 || data.wageActual > 0) ? (
+                <div className="relative w-full h-[300px] flex items-center justify-center">
+                  <PieChart width={300} height={300}>
+                    <Pie
+                      data={[
+                        { name: 'Material', value: data.materialActual },
+                        { name: 'Upah', value: data.wageActual }
+                      ]}
+                      cx={150}
+                      cy={150}
+                      innerRadius={80}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      <Cell fill="#6366f1" />
+                      <Cell fill="#10b981" />
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Total Actual</div>
                     <div className="text-2xl font-black italic tracking-tighter">{formatCurrency(data.totalActual)}</div>
