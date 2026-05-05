@@ -53,6 +53,7 @@ const WorkerMaster = lazy(() => import('./pages/WorkerMaster'));
 const WorkerAssignment = lazy(() => import('./pages/WorkerAssignment'));
 
 // Keuangan
+const OpnamePayment = lazy(() => import('./pages/OpnamePayment'));
 const KPRDisbursement = lazy(() => import('./pages/KPRDisbursement'));
 const SupplierPayables = lazy(() => import('./pages/SupplierPayables'));
 const SupplierPayments = lazy(() => import('./pages/SupplierPayments'));
@@ -159,6 +160,7 @@ export default function App() {
               <Route path="worker-assignment" element={<WorkerAssignment />} />
               
               {/* Keuangan */}
+              <Route path="opname-payment" element={<OpnamePayment />} />
               <Route path="verification-queue" element={<VerificationQueue />} />
               <Route path="kpr-disbursement" element={<KPRDisbursement />} />
               <Route path="supplier-payables" element={<SupplierPayables />} />

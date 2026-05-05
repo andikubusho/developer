@@ -59,6 +59,7 @@ const menuItems = [
   { name: 'Pencairan KPR', icon: Banknote, path: '/kpr-disbursement', divisions: ['keuangan', 'audit'], category: 'HUTANG PIUTANG' },
 
   { name: 'Pembayaran Supplier', icon: Truck, path: '/supplier-payments', divisions: ['keuangan', 'audit'], category: 'VERIFIKASI & BAYAR' },
+  { name: 'Pembayaran Opname/Upah', icon: Banknote, path: '/opname-payment', divisions: ['keuangan', 'audit'], category: 'VERIFIKASI & BAYAR' },
   { name: 'Antrian Verifikasi', icon: UserCheck, path: '/verification-queue', divisions: ['keuangan', 'audit'], category: 'VERIFIKASI & BAYAR' },
 
   // HRD & Payroll

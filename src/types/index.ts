@@ -472,3 +472,26 @@ export interface AuditCostItem {
   variance_percent: number;
   status: 'safe' | 'warning' | 'danger';
 }
+
+export interface OpnamePayment {
+  id: string;
+  payment_date: string;
+  worker_id?: string | null;
+  worker_name: string;
+  bank_account_info?: string | null;
+  total_amount: number;
+  payment_method: 'bank' | 'cash';
+  bank_account_id?: string | null;
+  note?: string | null;
+  created_by?: string | null;
+  created_at: string;
+  items?: OpnamePaymentItem[];
+}
+
+export interface OpnamePaymentItem {
+  id: string;
+  payment_id: string;
+  opname_id: string;
+  amount: number;
+  opname?: ProjectOpname;
+}
