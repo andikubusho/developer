@@ -43,7 +43,7 @@ const OpnamePayment: React.FC = () => {
     setLoading(true);
     try {
       const [opnameData, projectData, bankData, paymentData] = await Promise.all([
-        api.get('project_opname', 'select=*&status=eq.approved&order=date.desc'),
+        api.get('project_opnames', 'select=*&status=eq.approved&order=date.desc'),
         api.get('projects', 'select=id,name&order=name.asc'),
         api.get('bank_accounts', 'select=id,bank_name,account_number&order=bank_name.asc'),
         api.get('opname_payments', 'select=*&order=created_at.desc'),
@@ -149,7 +149,7 @@ const OpnamePayment: React.FC = () => {
 
         // Update opname status → paid
         for (const opname of group.items) {
-          await api.update('project_opname', opname.id, { status: 'paid' });
+          await api.update('project_opnames', opname.id, { status: 'paid' });
         }
 
         // Catat ke cash flow
