@@ -80,7 +80,7 @@ const menuItems = [
   { name: 'Penjualan', icon: ShoppingCart, path: '/sales', divisions: ['marketing', 'audit'], category: 'MKT: PROSPEK & SALES' },
   { name: 'Pembayaran Konsumen', icon: Plus, path: '/consumer-payments', divisions: ['marketing', 'keuangan', 'accounting', 'audit'], category: 'MKT: PROSPEK & SALES' },
   { name: 'Schedule Pembayaran', icon: History, path: '/payments', divisions: ['marketing', 'keuangan', 'accounting', 'audit'], category: 'MKT: PROSPEK & SALES' },
-  { name: 'Pekerjaan Tambahan', icon: PenTool, path: '/sale-addons', divisions: ['marketing', 'keuangan', 'teknik', 'audit'], category: 'MKT: PROSPEK & SALES' },
+  { name: 'Pekerjaan Tambahan', icon: PenTool, path: '/sale-addons', divisions: ['marketing', 'audit'], category: 'MKT: PROSPEK & SALES' },
 
   // Marketing - MANAJEMEN KONSUMEN
   { name: 'Data Konsumen', icon: Users, path: '/customers', divisions: ['marketing', 'audit'], category: 'MKT: KONSUMEN' },
