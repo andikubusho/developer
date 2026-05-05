@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, ArrowLeft, Edit, Trash2, CheckCircle2, Clock, RotateCcw, Landmark, Wallet } from 'lucide-react';
+import { Plus, Search, Filter, ArrowLeft, Edit, Trash2, CheckCircle2, Clock, Landmark, Wallet } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -171,57 +171,6 @@ const Deposits: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleVerify = async (deposit: Deposit) => {
-    if (!confirm('Verifikasi titipan ini? Mutasi arus kas akan dicatat.')) return;
-    try {
-      setLoading(true);
-      // 1. Update status
-      await api.update('deposits', deposit.id, { status: 'verified' });
-
-      // 2. Insert to Cash Flow
-      const cashFlowPayload = {
-        date: deposit.date,
-        description: `Titipan Konsumen - ${deposit.name} (${deposit.submission})`,
-        type: 'in',
-        category: 'Titipan Konsumen',
-        amount: deposit.amount,
-        reference_id: deposit.id,
-        bank_account_id: deposit.payment_type === 'bank' ? (deposit as any).bank_account_id : null
-      };
-
-      await api.insert('cash_flow', cashFlowPayload);
-      await fetchDeposits();
-      alert('Titipan berhasil diverifikasi.');
-    } catch (error: any) {
-      alert(`Gagal verifikasi: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUnverify = async (deposit: Deposit) => {
-    if (!confirm('Batalkan verifikasi? Mutasi arus kas terkait akan dihapus.')) return;
-    try {
-      setLoading(true);
-      // 1. Revert status
-      await api.update('deposits', deposit.id, { status: 'pending' });
-
-      // 2. Delete from Cash Flow
-      const cfData = await api.get('cash_flow', `reference_id=eq.${deposit.id}`);
-      if (cfData && cfData.length > 0) {
-        for (const cf of cfData) {
-          await api.delete('cash_flow', cf.id);
-        }
-      }
-      await fetchDeposits();
-      alert('Verifikasi dibatalkan.');
-    } catch (error: any) {
-      alert(`Gagal membatalkan: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSave = async () => {
     try {
       setLoading(true);
@@ -383,15 +332,10 @@ const Deposits: React.FC = () => {
                       </TD>
                       <TD className="px-3 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {(d as any).status === 'verified' ? (
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-amber-600" onClick={() => handleUnverify(d)}>
-                              <RotateCcw className="w-3.5 h-3.5" />
-                            </Button>
-                          ) : (
+                          {(d as any).status === 'pending' && (
                             <>
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(d)}><Edit className="w-3.5 h-3.5" /></Button>
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-                              <Button variant="outline" size="sm" className="h-7 text-[8px] px-1.5" onClick={() => handleVerify(d)}>Verify</Button>
                             </>
                           )}
                         </div>
