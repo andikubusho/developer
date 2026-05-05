@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, ArrowLeft, ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Calendar, Wallet, Landmark, Trash2, Plus, X, ChevronDown } from 'lucide-react';
+import { Search, Filter, ArrowLeft, ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Calendar, Wallet, Landmark, Trash2, Plus, X, ChevronDown, ArrowLeftRight, ArrowDown } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDate, cn } from '../lib/utils';
 import { api } from '../lib/api';
+import { executeTransfer, deleteTransferGroup, AccountRef } from '../lib/transfer';
 
 interface CashFlowItem {
   id: string;
@@ -23,7 +24,18 @@ interface CashFlowItem {
   };
   reference_id?: string | null;
   reference_type?: string | null;
+  transfer_group_id?: string | null;
+  transfer_target_type?: 'bank' | 'cash_besar' | 'petty_cash' | null;
+  transfer_target_id?: string | null;
 }
+
+const emptyTransferForm = {
+  tanggal: new Date().toISOString().split('T')[0],
+  fromKey: '',     // 'cash' | 'petty' | bankId
+  toKey: '',
+  jumlah: '',
+  keterangan: '',
+};
 
 const DEFAULT_KATEGORI_MASUK = [
   'Penjualan Tunai',
@@ -70,6 +82,11 @@ const CashFlowPage: React.FC = () => {
   const [modalType, setModalType] = useState<'in' | 'out'>('in');
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+
+  // Transfer Modal
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferForm, setTransferForm] = useState(emptyTransferForm);
+  const [transferring, setTransferring] = useState(false);
 
   // State kategori dinamis
   const [kategoriMasuk, setKategoriMasuk] = useState<string[]>([]);
@@ -183,6 +200,21 @@ const CashFlowPage: React.FC = () => {
   };
 
   const handleDelete = async (item: CashFlowItem) => {
+    // Skenario: row hasil transfer → hapus pasangannya juga
+    if (item.reference_type === 'transfer' && item.transfer_group_id) {
+      if (!confirm('Transaksi ini adalah transfer antar akun. Hapus akan menghilangkan kedua sisi (sumber & tujuan). Lanjutkan?')) return;
+      try {
+        setLoading(true);
+        await deleteTransferGroup(item.transfer_group_id);
+        await fetchCashFlow();
+      } catch (err: any) {
+        alert(`Gagal menghapus transfer: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!confirm('Hapus data arus kas ini? Status pembayaran terkait akan kembali ke antrean verifikasi.')) return;
     try {
       setLoading(true);
@@ -211,6 +243,47 @@ const CashFlowPage: React.FC = () => {
     setKategoriDropdownOpen(false);
     setInputKategoriBaru('');
     setModalOpen(true);
+  };
+
+  const openTransfer = () => {
+    setTransferForm({ ...emptyTransferForm, tanggal: new Date().toISOString().split('T')[0] });
+    setTransferOpen(true);
+  };
+
+  // Konversi key dropdown ('cash' | 'petty' | bankId) → AccountRef
+  const keyToAccountRef = (key: string): AccountRef | null => {
+    if (!key) return null;
+    if (key === 'cash')  return { kind: 'cash_besar', label: 'Kas Besar (Tunai)' };
+    if (key === 'petty') return { kind: 'petty_cash', label: 'Petty Cash' };
+    const bank = banks.find((b: any) => b.id === key);
+    if (!bank) return null;
+    return { kind: 'bank', id: bank.id, label: `${bank.bank_name} - ${bank.account_number}` };
+  };
+
+  const handleTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const from = keyToAccountRef(transferForm.fromKey);
+    const to   = keyToAccountRef(transferForm.toKey);
+    if (!from || !to) { alert('Pilih akun sumber dan tujuan'); return; }
+    const jumlah = Number(transferForm.jumlah.replace(/\D/g, ''));
+    if (!jumlah || jumlah <= 0) { alert('Jumlah harus lebih dari 0'); return; }
+
+    setTransferring(true);
+    try {
+      await executeTransfer({
+        date: transferForm.tanggal,
+        amount: jumlah,
+        description: transferForm.keterangan || undefined,
+        from, to,
+        requestedBy: 'Transfer',
+      });
+      setTransferOpen(false);
+      await fetchCashFlow();
+    } catch (err: any) {
+      alert(`Gagal transfer: ${err.message}`);
+    } finally {
+      setTransferring(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,8 +326,13 @@ const CashFlowPage: React.FC = () => {
     return item.bank_account_id === selectedAccount;
   });
 
-  const totalIn = filteredFlow.filter(i => i.type === 'in').reduce((sum, i) => sum + i.amount, 0);
-  const totalOut = filteredFlow.filter(i => i.type === 'out').reduce((sum, i) => sum + i.amount, 0);
+  // Saat "Semua Akun" dipilih, transfer dikecualikan dari total karena sifatnya hanya
+  // pemindahan saldo (zero-sum) — kalau dihitung akan inflate angka kotor secara misleading.
+  // Saat akun spesifik dipilih, transfer tetap dihitung karena memengaruhi saldo akun tsb.
+  const isTransfer = (i: CashFlowItem) => i.reference_type === 'transfer';
+  const totalsBase = selectedAccount === 'all' ? filteredFlow.filter(i => !isTransfer(i)) : filteredFlow;
+  const totalIn = totalsBase.filter(i => i.type === 'in').reduce((sum, i) => sum + i.amount, 0);
+  const totalOut = totalsBase.filter(i => i.type === 'out').reduce((sum, i) => sum + i.amount, 0);
   const netFlow = totalIn - totalOut;
 
   const getAccountLabel = () => {
@@ -338,6 +416,9 @@ const CashFlowPage: React.FC = () => {
           </Button>
           <Button onClick={() => openModal('out')} className="h-10 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold flex items-center gap-2 shadow-none border-0">
             <Plus className="w-4 h-4" /> Pengeluaran
+          </Button>
+          <Button onClick={openTransfer} className="h-10 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold flex items-center gap-2 shadow-none border-0">
+            <ArrowLeftRight className="w-4 h-4" /> Transfer
           </Button>
           <Button>Export Laporan</Button>
         </div>
@@ -426,13 +507,21 @@ const CashFlowPage: React.FC = () => {
                   </TD>
                   <TD className="px-6 py-4">
                     <div className="text-sm font-bold text-text-primary">
-                      {item.reference_type === 'manual'
-                        ? <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Manual</span>
-                        : (item.customerName || '-')}
+                      {item.reference_type === 'transfer'
+                        ? <span className="text-[10px] font-black uppercase tracking-widest text-violet-700 bg-violet-100 px-2 py-0.5 rounded-full">Transfer</span>
+                        : item.reference_type === 'manual'
+                          ? <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Manual</span>
+                          : ((item as any).customerName || '-')}
                     </div>
                   </TD>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-text-primary">{item.category}</div>
+                    {item.reference_type === 'transfer' ? (
+                      <div className="flex items-center gap-1.5 text-sm font-bold text-violet-700">
+                        <ArrowLeftRight className="w-3.5 h-3.5" /> Transfer Antar Akun
+                      </div>
+                    ) : (
+                      <div className="text-sm font-medium text-text-primary">{item.category}</div>
+                    )}
                     <div className="text-xs text-text-secondary">{item.description}</div>
                   </td>
                   <TD className="px-6 py-4 text-sm font-bold text-green-600 text-right">{item.type === 'in' ? formatCurrency(item.amount) : '-'}</TD>
@@ -585,6 +674,99 @@ const CashFlowPage: React.FC = () => {
             <Button type="button" variant="ghost" className="flex-1 h-11 rounded-xl" onClick={() => { setModalOpen(false); setKategoriDropdownOpen(false); setInputKategoriBaru(''); }}>Batal</Button>
             <Button type="submit" isLoading={submitting} className={cn("flex-1 h-11 rounded-xl font-black text-white border-0", modalType === 'in' ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700")}>
               Simpan {modalType === 'in' ? 'Pemasukan' : 'Pengeluaran'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Transfer Antar Akun */}
+      <Modal isOpen={transferOpen} onClose={() => setTransferOpen(false)} title="Transfer Antar Akun" size="lg">
+        <form onSubmit={handleTransfer} className="space-y-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest bg-violet-50 text-violet-700 border border-violet-200">
+            <ArrowLeftRight className="w-4 h-4" /> Pemindahan Saldo
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Tanggal</label>
+            <input type="date" value={transferForm.tanggal} onChange={e => setTransferForm({ ...transferForm, tanggal: e.target.value })} required className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-violet-500" />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Dari Akun (Sumber)</label>
+            <select
+              value={transferForm.fromKey}
+              onChange={e => setTransferForm({ ...transferForm, fromKey: e.target.value })}
+              required
+              className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-violet-500 bg-white"
+            >
+              <option value="">-- Pilih Sumber --</option>
+              <option value="cash">Kas Besar (Tunai)</option>
+              <option value="petty">Petty Cash</option>
+              {banks.map((b: any) => (
+                <option key={b.id} value={b.id} disabled={transferForm.toKey === b.id}>
+                  {b.bank_name} - {b.account_number}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex justify-center">
+            <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
+              <ArrowDown className="w-5 h-5 text-violet-600" />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Ke Akun (Tujuan)</label>
+            <select
+              value={transferForm.toKey}
+              onChange={e => setTransferForm({ ...transferForm, toKey: e.target.value })}
+              required
+              className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-violet-500 bg-white"
+            >
+              <option value="">-- Pilih Tujuan --</option>
+              <option value="cash" disabled={transferForm.fromKey === 'cash'}>Kas Besar (Tunai)</option>
+              <option value="petty" disabled={transferForm.fromKey === 'petty'}>Petty Cash</option>
+              {banks.map((b: any) => (
+                <option key={b.id} value={b.id} disabled={transferForm.fromKey === b.id}>
+                  {b.bank_name} - {b.account_number}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Jumlah (Rp)</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={transferForm.jumlah}
+              onChange={e => {
+                const raw = e.target.value.replace(/\D/g, '');
+                const formatted = raw ? Number(raw).toLocaleString('id-ID') : '';
+                setTransferForm({ ...transferForm, jumlah: formatted });
+              }}
+              placeholder="0"
+              required
+              className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-black text-violet-700 focus:outline-none focus:border-violet-500"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Keterangan (Opsional)</label>
+            <textarea
+              value={transferForm.keterangan}
+              onChange={e => setTransferForm({ ...transferForm, keterangan: e.target.value })}
+              rows={2}
+              placeholder="Mis. Top-up kas kecil bulan Mei..."
+              className="rounded-xl border-2 border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-violet-500 resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="ghost" className="flex-1 h-11 rounded-xl" onClick={() => setTransferOpen(false)}>Batal</Button>
+            <Button type="submit" isLoading={transferring} className="flex-1 h-11 rounded-xl font-black text-white border-0 bg-violet-600 hover:bg-violet-700">
+              Eksekusi Transfer
             </Button>
           </div>
         </form>
