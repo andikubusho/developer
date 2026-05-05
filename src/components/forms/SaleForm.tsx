@@ -106,7 +106,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({ onSuccess, onCancel, initial
   const filteredDeposits = useMemo(() => {
     const pli = pliItems.find(p => p.unit_id === watchUnitId);
     if (!pli || verifiedDeposits.length === 0) return verifiedDeposits;
-    const matching = verifiedDeposits.filter(d => d.project_id === pli.project_id && d.blok === pli.blok);
+    // Match based on project_id AND (exact blok OR full "blok - unit")
+    const matching = verifiedDeposits.filter(d => 
+      d.project_id === pli.project_id && 
+      (d.blok === pli.blok || d.blok === `${pli.blok} - ${pli.unit}`)
+    );
     return matching.length > 0 ? matching : verifiedDeposits;
   }, [pliItems, watchUnitId, verifiedDeposits]);
 
