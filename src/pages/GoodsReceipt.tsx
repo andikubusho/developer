@@ -83,8 +83,8 @@ const GoodsReceipt: React.FC = () => {
 
   const handleOpenGR = (po: any) => {
     setSelectedPO(po);
-    const items = Array.isArray(po.items) 
-      ? po.items.map((it: any) => ({ ...it, checked: true, qty_received: it.quantity }))
+    const items = Array.isArray(po.items)
+      ? po.items.map((it: any) => ({ ...it, id_variant: it.id_variant ?? it.variant_id, checked: true, qty_received: it.quantity }))
       : [{ 
           material_id: po.material_id, 
           material_name: po.master?.name, 
@@ -121,7 +121,7 @@ const GoodsReceipt: React.FC = () => {
           tanggal: form.tanggal,
           po_id: selectedPO.id,
           material_id: it.material_id,
-          id_variant: it.id_variant,
+          id_variant: it.id_variant ?? it.variant_id,
           qty: it.qty_received,
           worker_id: form.worker_id || null
         });
