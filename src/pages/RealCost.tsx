@@ -559,7 +559,7 @@ const RealCostPage: React.FC = () => {
                 </div>
               ) : isMounted ? (
                 <div className="relative w-full h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <PieChart>
                       <Pie
                         data={[
