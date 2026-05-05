@@ -37,7 +37,9 @@ import {
   Landmark,
   PenTool,
   Store,
-  BookOpen
+  BookOpen,
+  Wrench,
+  Boxes
 } from 'lucide-react';
 import { useAuth, Division } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
@@ -71,6 +73,7 @@ const menuItems = [
 
   // Accounting
   { name: 'Master Akun', icon: BookOpen, path: '/master-account', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
+  { name: 'Aset Tetap', icon: Boxes, path: '/fixed-assets', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
   { name: 'Jurnal Umum', icon: History, path: '/general-journal', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
   { name: 'Buku Besar', icon: FileSpreadsheet, path: '/ledger', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
   { name: 'Perpajakan', icon: Receipt, path: '/taxation', divisions: ['accounting', 'audit'], category: 'ACCOUNTING' },
@@ -113,6 +116,7 @@ const menuItems = [
   { name: 'Pemakaian Material', icon: HardHat, path: '/material-usage', divisions: ['teknik', 'audit'], category: 'TEKNIK: LOGISTIK' },
   { name: 'Stok Material', icon: Package, path: '/materials', divisions: ['teknik', 'audit'], category: 'TEKNIK: LOGISTIK' },
   { name: 'Kartu Stok', icon: History, path: '/stock-card', divisions: ['teknik', 'audit'], category: 'TEKNIK: LOGISTIK' },
+  { name: 'Inventaris Alat Kerja', icon: Wrench, path: '/asset-tools', divisions: ['teknik', 'audit'], category: 'TEKNIK: LOGISTIK' },
   
   // Teknik - PELAKSANAAN & BIAYA
   { name: 'SPK Kontraktor', icon: FileText, path: '/spk', divisions: ['teknik', 'audit'], category: 'TEKNIK: PELAKSANAAN' },

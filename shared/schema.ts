@@ -724,9 +724,11 @@ export const MENU_KEYS = [
   { key: "material-suppliers", label: "Master Supplier", group: "Teknik", category: "TEKNIK: MASTER", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 
   { key: "petty-cash-teknik", label: "Petty Cash Teknik", group: "Teknik", category: "TEKNIK: KAS", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "asset-tools", label: "Inventaris Alat Kerja", group: "Teknik", category: "TEKNIK: LOGISTIK", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
 
   // ACCOUNTING
   { key: "master-account", label: "Master Akun", group: "Accounting", category: "ACCOUNTING", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },
+  { key: "fixed-assets", label: "Aset Tetap", group: "Accounting", category: "ACCOUNTING", capabilities: { view: true, create: true, edit: true, delete: true, print: true } },
 
   // KEUANGAN
   { key: "petty-cash", label: "Petty Cash", group: "Keuangan", category: "FIN: MANAJEMEN KAS", capabilities: { view: true, create: true, edit: true, delete: true, print: false } },

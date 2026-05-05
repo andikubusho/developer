@@ -48,6 +48,7 @@ const MaterialSuppliers = lazy(() => import('./pages/Suppliers'));
 const GoodsReceipt = lazy(() => import('./pages/GoodsReceipt.tsx'));
 const MaterialUsage = lazy(() => import('./pages/MaterialUsage.tsx'));
 const StockCard = lazy(() => import('./pages/StockCard.tsx'));
+const AssetTools = lazy(() => import('./pages/AssetTools'));
 const ApprovalManager = lazy(() => import('./pages/ApprovalManager.tsx'));
 const WorkerMaster = lazy(() => import('./pages/WorkerMaster'));
 const WorkerAssignment = lazy(() => import('./pages/WorkerAssignment'));
@@ -66,6 +67,7 @@ const ConsumerPayments = lazy(() => import('./pages/ConsumerPayments'));
 
 // Accounting
 const MasterAccount = lazy(() => import('./pages/MasterAccount'));
+const FixedAssets = lazy(() => import('./pages/FixedAssets'));
 const GeneralJournal = lazy(() => import('./pages/GeneralJournal'));
 const Ledger = lazy(() => import('./pages/Ledger'));
 const FinancialReports = lazy(() => import('./pages/FinancialReports'));
@@ -157,6 +159,7 @@ export default function App() {
               <Route path="goods-receipt" element={<GoodsReceipt />} />
               <Route path="material-usage" element={<MaterialUsage />} />
               <Route path="stock-card" element={<StockCard />} />
+              <Route path="asset-tools" element={<AssetTools />} />
               <Route path="approval-manager" element={<ApprovalManager />} />
               <Route path="worker-master" element={<WorkerMaster />} />
               <Route path="worker-assignment" element={<WorkerAssignment />} />
@@ -176,6 +179,7 @@ export default function App() {
               
               {/* Accounting */}
               <Route path="master-account" element={<MasterAccount />} />
+              <Route path="fixed-assets" element={<FixedAssets />} />
               <Route path="general-journal" element={<GeneralJournal />} />
               <Route path="ledger" element={<Ledger />} />
               <Route path="financial-reports" element={<FinancialReports />} />
