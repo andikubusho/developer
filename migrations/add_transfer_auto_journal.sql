@@ -256,18 +256,45 @@ $$ LANGUAGE plpgsql;
 
 -- ---------------------------------------------------------------------
 -- 5. Trigger function & triggers
+--    Saat sumber transfer dihapus:
+--      - Kalau pending masih 'pending'  → tandai 'cancelled'
+--      - Kalau sudah 'posted'           → hapus general_journal entries
+--                                         (ledger ikut via ON DELETE CASCADE),
+--                                         lalu tandai pending 'cancelled'
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_trg_transfer_journal()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_pending_id     UUID;
+  v_pending_status TEXT;
+  v_ref            TEXT;
 BEGIN
   IF TG_OP = 'DELETE' THEN
     IF OLD.transfer_group_id IS NOT NULL THEN
+      SELECT id, status, reference_no
+        INTO v_pending_id, v_pending_status, v_ref
+        FROM journal_pending
+       WHERE source_type = 'transfer'
+         AND source_id   = OLD.transfer_group_id::TEXT
+       LIMIT 1;
+
+      -- Kalau sudah posted → hapus general_journal & ledger (via cascade FK)
+      IF v_pending_status = 'posted' THEN
+        DELETE FROM general_journal
+         WHERE source_type = 'transfer'
+           AND source_id   = OLD.transfer_group_id;
+        -- Fallback: match via reference_no kalau posting fn tidak set source_*
+        IF v_ref IS NOT NULL THEN
+          DELETE FROM general_journal WHERE reference_no = v_ref;
+        END IF;
+      END IF;
+
+      -- Tandai pending sebagai cancelled (apapun status lamanya)
       UPDATE journal_pending
          SET status = 'cancelled',
-             error_message = 'Source transfer dihapus'
-       WHERE source_type = 'transfer'
-         AND source_id = OLD.transfer_group_id::TEXT
-         AND status = 'pending';
+             error_message = 'Source transfer dihapus',
+             detected_at = now()
+       WHERE id = v_pending_id;
     END IF;
     RETURN OLD;
   END IF;
