@@ -17,6 +17,7 @@
 import { api } from './api';
 
 const TRANSFER_CATEGORY = 'Transfer Antar Akun';
+const TRANSFER_FEE_CATEGORY = 'Biaya Admin Bank';
 
 // Tipe identitas akun yang bisa jadi sumber/tujuan transfer
 export type AccountRef =
@@ -32,6 +33,7 @@ export interface TransferInput {
   from: AccountRef;
   to: AccountRef;
   requestedBy?: string;  // Hanya dipakai jika sisi Petty Cash terlibat
+  adminFee?: number;     // Biaya admin bank (hanya berlaku jika `from` = bank)
 }
 
 const uuid = (): string => {
@@ -60,6 +62,27 @@ const pettyKey = (a: AccountRef): string | null => {
   if (a.kind !== 'petty_cash') return null;
   return a.division === 'teknik' ? `petty:teknik:${a.projectId}` : 'petty:keuangan';
 };
+
+// ---------------------------------------------------------------------
+// Helper: insert row biaya admin bank (debet rekening sumber)
+// Hanya dipanggil jika `from` adalah BANK dan adminFee > 0.
+// Row tetap di-link via transfer_group_id agar terhapus berbarengan.
+// ---------------------------------------------------------------------
+async function insertAdminFeeRow(input: TransferInput, groupId: string): Promise<void> {
+  if (!input.adminFee || input.adminFee <= 0) return;
+  if (input.from.kind !== 'bank') return;
+  await api.insert('cash_flow', {
+    date: input.date,
+    type: 'out',
+    category: TRANSFER_FEE_CATEGORY,
+    description: `Biaya admin transfer ke ${accountLabel(input.to)}`,
+    amount: input.adminFee,
+    bank_account_id: input.from.id,
+    status: 'verified',
+    reference_type: 'transfer_fee',
+    transfer_group_id: groupId,
+  });
+}
 
 // ---------------------------------------------------------------------
 // Skenario A: cash_flow ↔ cash_flow  (bank/kas_besar antar dirinya)
@@ -99,6 +122,7 @@ async function transferCashFlowToCashFlow(input: TransferInput): Promise<void> {
       transfer_target_type: fromTargetType,
       transfer_target_id: fromBankId,
     });
+    await insertAdminFeeRow(input, groupId);
   } catch (err) {
     const outId = Array.isArray(outRow) ? outRow[0]?.id : outRow?.id;
     if (outId) await api.delete('cash_flow', outId).catch(() => {});
@@ -147,6 +171,7 @@ async function transferToPettyCash(input: TransferInput): Promise<void> {
       division: toDivision,
       project_id: toProjectId,
     });
+    await insertAdminFeeRow(input, groupId);
   } catch (err) {
     const cashId = Array.isArray(cashRow) ? cashRow[0]?.id : cashRow?.id;
     if (cashId) await api.delete('cash_flow', cashId).catch(() => {});

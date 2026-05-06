@@ -34,6 +34,7 @@ const emptyTransferForm = {
   fromKey: '',     // 'cash' | 'petty' | bankId
   toKey: '',
   jumlah: '',
+  biayaAdmin: '',  // hanya relevan jika fromKey = bank
   keterangan: '',
 };
 
@@ -284,6 +285,8 @@ const CashFlowPage: React.FC = () => {
     const jumlah = Number(transferForm.jumlah.replace(/\D/g, ''));
     if (!jumlah || jumlah <= 0) { alert('Jumlah harus lebih dari 0'); return; }
 
+    const adminFee = Number((transferForm.biayaAdmin || '').replace(/\D/g, '')) || 0;
+
     setTransferring(true);
     try {
       await executeTransfer({
@@ -292,6 +295,7 @@ const CashFlowPage: React.FC = () => {
         description: transferForm.keterangan || undefined,
         from, to,
         requestedBy: 'Transfer',
+        adminFee: adminFee > 0 && from.kind === 'bank' ? adminFee : undefined,
       });
       setTransferOpen(false);
       await fetchCashFlow();
@@ -795,6 +799,30 @@ const CashFlowPage: React.FC = () => {
               className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-black text-violet-700 focus:outline-none focus:border-violet-500"
             />
           </div>
+
+          {/* Biaya Admin Bank — hanya tampil jika sumber adalah bank */}
+          {!!banks.find((b: any) => b.id === transferForm.fromKey) && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                Biaya Admin Bank (Opsional)
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={transferForm.biayaAdmin}
+                onChange={e => {
+                  const raw = e.target.value.replace(/\D/g, '');
+                  const formatted = raw ? Number(raw).toLocaleString('id-ID') : '';
+                  setTransferForm({ ...transferForm, biayaAdmin: formatted });
+                }}
+                placeholder="0"
+                className="h-11 rounded-xl border-2 border-slate-100 px-4 text-sm font-bold text-rose-600 focus:outline-none focus:border-violet-500"
+              />
+              <span className="text-[11px] font-bold text-slate-400">
+                Akan dicatat sebagai pengeluaran terpisah di rekening sumber (kategori "Biaya Admin Bank").
+              </span>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Keterangan (Opsional)</label>

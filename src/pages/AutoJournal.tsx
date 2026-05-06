@@ -49,6 +49,7 @@ const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
   petty:      { label: 'Petty Cash',             color: 'bg-pink-100 text-pink-700' },
   payroll:    { label: 'Gaji Karyawan',          color: 'bg-indigo-100 text-indigo-700' },
   addon:      { label: 'Pekerjaan Tambahan',     color: 'bg-teal-100 text-teal-700' },
+  transfer:   { label: 'Transfer Antar Akun',    color: 'bg-violet-100 text-violet-700' },
 };
 
 const AutoJournal: React.FC = () => {
