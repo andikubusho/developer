@@ -255,12 +255,40 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ---------------------------------------------------------------------
--- 5. Trigger function & triggers
+-- 5. Pastikan FK ledger → general_journal pakai ON DELETE CASCADE
+--    (data lama mungkin terinstall sebelum migrasi expand_accounting_tables
+--     dijalankan, sehingga FK existing tanpa CASCADE — di-replace di sini.)
+-- ---------------------------------------------------------------------
+DO $$
+DECLARE v_constraint_name TEXT;
+BEGIN
+  SELECT conname INTO v_constraint_name
+    FROM pg_constraint
+   WHERE conrelid = 'ledger'::regclass
+     AND confrelid = 'general_journal'::regclass
+     AND contype = 'f'
+   LIMIT 1;
+
+  IF v_constraint_name IS NOT NULL THEN
+    EXECUTE format('ALTER TABLE ledger DROP CONSTRAINT %I', v_constraint_name);
+  END IF;
+
+  ALTER TABLE ledger
+    ADD CONSTRAINT ledger_journal_entry_id_fkey
+    FOREIGN KEY (journal_entry_id) REFERENCES general_journal(id) ON DELETE CASCADE;
+END $$;
+
+-- ---------------------------------------------------------------------
+-- 6. Trigger function & triggers
 --    Saat sumber transfer dihapus:
 --      - Kalau pending masih 'pending'  → tandai 'cancelled'
 --      - Kalau sudah 'posted'           → hapus general_journal entries
 --                                         (ledger ikut via ON DELETE CASCADE),
 --                                         lalu tandai pending 'cancelled'
+--    Inner block dibungkus EXCEPTION agar gangguan cleanup tidak rollback
+--    DELETE/UPDATE/INSERT pada cash_flow / petty_cash induk.
+--    `general_journal.source_id` di proyek ini bertipe TEXT, jadi cast
+--    `OLD.transfer_group_id::TEXT` saat compare.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_trg_transfer_journal()
 RETURNS TRIGGER AS $$
@@ -271,36 +299,43 @@ DECLARE
 BEGIN
   IF TG_OP = 'DELETE' THEN
     IF OLD.transfer_group_id IS NOT NULL THEN
-      SELECT id, status, reference_no
-        INTO v_pending_id, v_pending_status, v_ref
-        FROM journal_pending
-       WHERE source_type = 'transfer'
-         AND source_id   = OLD.transfer_group_id::TEXT
-       LIMIT 1;
-
-      -- Kalau sudah posted → hapus general_journal & ledger (via cascade FK)
-      IF v_pending_status = 'posted' THEN
-        DELETE FROM general_journal
+      BEGIN
+        SELECT id, status, reference_no
+          INTO v_pending_id, v_pending_status, v_ref
+          FROM journal_pending
          WHERE source_type = 'transfer'
-           AND source_id   = OLD.transfer_group_id;
-        -- Fallback: match via reference_no kalau posting fn tidak set source_*
-        IF v_ref IS NOT NULL THEN
-          DELETE FROM general_journal WHERE reference_no = v_ref;
-        END IF;
-      END IF;
+           AND source_id   = OLD.transfer_group_id::TEXT
+         LIMIT 1;
 
-      -- Tandai pending sebagai cancelled (apapun status lamanya)
-      UPDATE journal_pending
-         SET status = 'cancelled',
-             error_message = 'Source transfer dihapus',
-             detected_at = now()
-       WHERE id = v_pending_id;
+        IF v_pending_status = 'posted' THEN
+          DELETE FROM general_journal
+           WHERE source_type = 'transfer'
+             AND source_id   = OLD.transfer_group_id::TEXT;
+          IF v_ref IS NOT NULL THEN
+            DELETE FROM general_journal WHERE reference_no = v_ref;
+          END IF;
+        END IF;
+
+        IF v_pending_id IS NOT NULL THEN
+          UPDATE journal_pending
+             SET status = 'cancelled',
+                 error_message = 'Source transfer dihapus',
+                 detected_at = now()
+           WHERE id = v_pending_id;
+        END IF;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE WARNING 'Cleanup auto-journal gagal: %', SQLERRM;
+      END;
     END IF;
     RETURN OLD;
   END IF;
 
   IF NEW.transfer_group_id IS NOT NULL THEN
-    PERFORM fn_propose_transfer_journal(NEW.transfer_group_id);
+    BEGIN
+      PERFORM fn_propose_transfer_journal(NEW.transfer_group_id);
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'Stage auto-journal gagal: %', SQLERRM;
+    END;
   END IF;
   RETURN NEW;
 END;
