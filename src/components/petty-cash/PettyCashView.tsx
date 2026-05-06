@@ -307,14 +307,17 @@ export const PettyCashView: React.FC<PettyCashViewProps> = ({
       </div>
 
       {/* Saldo Card */}
-      <Card className={cn("p-6 text-white", balanceCardBg)}>
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-            <Wallet className="w-7 h-7 text-white" />
+      <Card className="p-6 shadow-premium">
+        <div className="flex items-center gap-6">
+          <div className={cn(
+            "w-14 h-14 rounded-2xl flex items-center justify-center shadow-3d-inset",
+            accentColor === 'amber' ? "bg-amber-50 text-amber-600" : "bg-teal-50 text-teal-600"
+          )}>
+            <Wallet className="w-7 h-7" />
           </div>
           <div>
-            <p className="text-white text-sm font-medium">Saldo Kas Kecil Saat Ini</p>
-            <h3 className="text-3xl font-bold">{formatCurrency(currentBalance)}</h3>
+            <p className="text-xs font-bold text-text-muted uppercase tracking-widest mb-1">Saldo Kas Kecil Saat Ini</p>
+            <h3 className="text-3xl font-black text-text-primary tracking-tight">{formatCurrency(currentBalance)}</h3>
           </div>
         </div>
       </Card>

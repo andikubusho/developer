@@ -385,10 +385,10 @@ const ConstructionProgressPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 bg-gradient-to-br from-primary to-accent-lavender text-white shadow-3d border-none group overflow-hidden relative">
-          <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-700"><Building2 size={120} /></div>
-          <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Total Unit Berjalan</div>
-          <div className="text-4xl font-black mt-2 tracking-tighter italic">{new Set(progressItems.map(p => p.unit_id)).size} Units</div>
+        <Card className="p-6 bg-white/40 backdrop-blur-xl shadow-3d border-white/60 group overflow-hidden relative">
+          <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-700 text-accent-dark"><Building2 size={120} /></div>
+          <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Total Unit Berjalan</div>
+          <div className="text-4xl font-black mt-2 tracking-tighter text-text-primary italic">{new Set(progressItems.map(p => p.unit_id)).size} Units</div>
         </Card>
         <Card className="p-6 bg-white/40 backdrop-blur-xl shadow-3d border-white/60">
           <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Laporan Terbaru</div>

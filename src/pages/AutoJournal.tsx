@@ -223,25 +223,44 @@ const AutoJournal: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-3d border-none">
-          <Clock className="w-6 h-6 mb-2 opacity-70" />
-          <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Pending</div>
-          <div className="text-3xl font-black mt-1 italic">{stats.pending}</div>
+        <Card className="p-5 bg-white border-none shadow-premium flex items-center gap-4 group overflow-hidden relative">
+          <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+            <Clock className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Pending</div>
+            <div className="text-3xl font-black text-text-primary mt-1 italic tracking-tighter">{stats.pending}</div>
+          </div>
         </Card>
-        <Card className="p-5 bg-gradient-to-br from-emerald-400 to-emerald-500 text-white shadow-3d border-none">
-          <FileCheck2 className="w-6 h-6 mb-2 opacity-70" />
-          <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Posted Hari Ini</div>
-          <div className="text-3xl font-black mt-1 italic">{stats.posted_today}</div>
+
+        <Card className="p-5 bg-white border-none shadow-premium flex items-center gap-4 group overflow-hidden relative">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+            <FileCheck2 className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Posted Hari Ini</div>
+            <div className="text-3xl font-black text-text-primary mt-1 italic tracking-tighter">{stats.posted_today}</div>
+          </div>
         </Card>
-        <Card className="p-5 bg-gradient-to-br from-rose-400 to-rose-500 text-white shadow-3d border-none">
-          <AlertTriangle className="w-6 h-6 mb-2 opacity-70" />
-          <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Error</div>
-          <div className="text-3xl font-black mt-1 italic">{stats.error_count}</div>
+
+        <Card className="p-5 bg-white border-none shadow-premium flex items-center gap-4 group overflow-hidden relative">
+          <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Error</div>
+            <div className="text-3xl font-black text-rose-600 mt-1 italic tracking-tighter">{stats.error_count}</div>
+          </div>
         </Card>
-        <Card className="p-5 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-3d border-none">
-          <TrendingUp className="w-6 h-6 mb-2 opacity-70" />
-          <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Total Nilai Pending</div>
-          <div className="text-xl font-black mt-1 italic tracking-tighter">{formatCurrency(stats.total_value)}</div>
+
+        <Card className="p-5 bg-white border-none shadow-premium flex items-center gap-4 group overflow-hidden relative">
+          <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Total Nilai Pending</div>
+            <div className="text-xl font-black text-text-primary mt-1 italic tracking-tighter">{formatCurrency(stats.total_value)}</div>
+          </div>
         </Card>
       </div>
 

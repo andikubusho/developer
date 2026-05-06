@@ -235,9 +235,16 @@ const Sales: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-6 border-none shadow-premium rounded-xl bg-gradient-to-br from-accent-dark to-accent-dark/80 text-white">
-          <div className="flex justify-between items-start mb-4"><div className="p-2 bg-white/20 rounded-xl"><TrendingUp className="w-5 h-5" /></div><span className="text-[10px] font-bold uppercase tracking-widest bg-white/20 px-2 py-1 rounded-xl">Total Omzet</span></div>
-          <div className="text-2xl font-black">{formatCurrency(stats.totalOmzet)}</div>
+        <Card className="p-6 border-none shadow-premium rounded-xl bg-white">
+          <div className="flex items-center gap-5">
+            <div className="p-3 bg-accent-lavender/10 text-accent-dark rounded-xl shadow-3d-inset">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-0.5">Total Omzet</p>
+              <p className="text-2xl font-black text-text-primary tracking-tight">{formatCurrency(stats.totalOmzet)}</p>
+            </div>
+          </div>
         </Card>
         <Card className="p-6 border-none shadow-premium rounded-xl bg-white">
           <div className="flex justify-between items-start mb-4"><div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><ShoppingBag className="w-5 h-5" /></div><span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Unit Terjual</span></div>

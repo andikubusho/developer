@@ -527,7 +527,10 @@ const VerificationQueue: React.FC = () => {
           <Clock className="w-4 h-4 inline mr-1.5 -mt-0.5" />
           Menunggu Verifikasi
           {pendingCount !== null && pendingCount > 0 && (
-            <span className="ml-2 bg-white/30 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+            <span className={cn(
+              "ml-2 text-[10px] font-black px-1.5 py-0.5 rounded-full",
+              activeTab === 'pending' ? "bg-white text-amber-600 shadow-sm" : "bg-black/10 text-text-primary"
+            )}>
               {pendingCount}
             </span>
           )}

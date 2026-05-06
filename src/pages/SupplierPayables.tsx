@@ -164,12 +164,14 @@ const SupplierPayables: React.FC = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 border-none shadow-premium bg-gradient-to-br from-accent-dark to-accent-dark/80 text-white">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-white/20 rounded-xl"><DollarSign className="w-5 h-5" /></div>
+        <Card className="p-5 border-none shadow-premium bg-white">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-accent-lavender/10 text-accent-dark rounded-xl shadow-3d-inset">
+              <DollarSign className="w-6 h-6" />
+            </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Total Outstanding</p>
-              <p className="text-xl font-black">{formatCurrency(agingStats.totalOutstanding)}</p>
+              <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-0.5">Total Outstanding</p>
+              <p className="text-xl font-black text-text-primary tracking-tight">{formatCurrency(agingStats.totalOutstanding)}</p>
             </div>
           </div>
         </Card>

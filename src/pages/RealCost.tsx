@@ -353,10 +353,10 @@ const RealCostPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 bg-primary text-white shadow-3d border-none relative overflow-hidden group">
-          <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-700"><DollarSign size={100} /></div>
-          <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Total Anggaran (RAB)</div>
-          <div className="text-3xl font-black mt-2 italic tracking-tighter">{formatCurrency(data.rabTotal)}</div>
+        <Card className="p-6 bg-white/40 backdrop-blur-xl shadow-3d border-white/60 relative overflow-hidden group">
+          <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform duration-700 text-primary"><DollarSign size={100} /></div>
+          <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Total Anggaran (RAB)</div>
+          <div className="text-3xl font-black mt-2 italic tracking-tighter text-text-primary">{formatCurrency(data.rabTotal)}</div>
         </Card>
         
         <Card className="p-6 bg-white/40 backdrop-blur-xl shadow-3d border-white/60 relative overflow-hidden group">
